@@ -581,3 +581,7 @@
   border-image: linear-gradient(90deg, #3b82f6, #60a5fa);
   border-image-slice: 1;
 }
+
+.Badges{
+  border-radius: 10px;
+}

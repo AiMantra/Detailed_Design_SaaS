@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// const BASE_URL = 'https://ksncfd6v-8007.inc1.devtunnels.ms';
-const BASE_URL = 'http://139.59.23.48';
+const BASE_URL = 'https://ksncfd6v-8007.inc1.devtunnels.ms';
+// const BASE_URL = 'http://139.59.23.48';
 const API_PREFIX = '/detaildesign';
 
 const api = axios.create({
