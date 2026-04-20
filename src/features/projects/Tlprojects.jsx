@@ -101,7 +101,7 @@ const TlProjectList = () => {
         changed_by: user?.emp_code || "",
         remarks: "",
         document_type: "ref_doc",
-        client_remarks: ""
+        client_remarks: "",
     });
     const [viewdocumentmodel, setViewDocumentModel] = useState({
         model: false,
