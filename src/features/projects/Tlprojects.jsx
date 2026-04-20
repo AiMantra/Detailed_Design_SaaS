@@ -589,7 +589,7 @@ const TlProjectList = () => {
             changed_by: user?.emp_code || "",
             remarks: "",
             document_type: "ref_doc",
-            client_remarks: ""
+            client_remarks: "",
         });
         setShowProofModal(false);
     };
@@ -824,7 +824,7 @@ const TlProjectList = () => {
                                     changed_by: user?.emp_code || "",
                                     remarks: "",
                                     document_type: "ref_doc",
-                                    client_remarks: ""
+                                    client_remarks: "",
                                 });
                             }}
                         >
@@ -851,7 +851,7 @@ const TlProjectList = () => {
                                                 changed_by: user?.emp_code || "",
                                                 remarks: "",
                                                 document_type: "ref_doc",
-                                                client_remarks: ""
+                                                client_remarks: "",
                                             })
                                         }}
                                         className="p-2 hover:bg-gray-100 rounded-lg"
@@ -949,7 +949,7 @@ const TlProjectList = () => {
                                                 changed_by: user?.emp_code || "",
                                                 remarks: "",
                                                 document_type: "ref_doc",
-                                                client_remarks: ""
+                                                client_remarks: "",
                                             })
                                         }}
                                         className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
@@ -1838,7 +1838,7 @@ const TlProjectList = () => {
                                                                                                                                                                                 // disabled={changeStatus != "Inprogress"}
                                                                                                                                                                                 className={`text-m px-1.5 text-green-600 flex items-center gap-1 `
                                                                                                                                                                                     // + (changeStatus != "Inprogress" ? "!cursor-no-drop opacity-70" : "")
-                                                                                                                                                                                }
+                                                                                                                                                                                }Handshake
                                                                                                                                                                                 title={"Submit"}>
                                                                                                                                                                                 <CheckCircle size={12} /> Submit
                                                                                                                                                                             </button>
@@ -1847,7 +1847,7 @@ const TlProjectList = () => {
                                                                                                                                                                     <td className={`text-center border-b border-gray-300 ${blurstatus}`}>
                                                                                                                                                                         <div className="relative inline-block p-2 ${blurstatus}">
                                                                                                                                                                             <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
-                                                                                                                                                   ${submissionStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
+                                                                                                                                                                                    ${submissionStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
                                                                                                                                                                                     submissionStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
                                                                                                                                                                                         submissionStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
                                                                                                                                                                                             submissionStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
@@ -1858,56 +1858,56 @@ const TlProjectList = () => {
                                                                                                                                                                         </div>
                                                                                                                                                                         {/* <div className="relative inline-block p-2">
 
-                                                                                                                                                    <select
-                                                                                                                                                        value={handleApprovalStatus}
-                                                                                                                                                        onChange={(e) =>
-                                                                                                                                                            setHandleApprovalStatus(e.target.value)
-                                                                                                                                                        }
-                                                                                                                                                        className={`appearance-none text-[11px] font-medium px-3 py-1 pr-6 rounded-full border
-                                                                                                                                                                ${handleApprovalStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" : handleApprovalStatus === "Raised" ?
-                                                                                                                                                                "bg-blue-100 text-blue-600 border-blue-200" : handleApprovalStatus === "Received"
-                                                                                                                                                                    ? "bg-purple-100 text-purple-600 border-purple-200"
-                                                                                                                                                                    : handleApprovalStatus === "Completed"
-                                                                                                                                                                        ? "bg-green-100 text-green-600 border-green-200"
-                                                                                                                                                                        : "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                                                                                            }
-  `}
-                                                                                                                                                    >
-                                                                                                                                                        <option value="Waiting">Pending</option>
-                                                                                                                                                        <option value="Pending">Submit</option>
-                                                                                                                                                        <option value="Received">Received</option>
-                                                                                                                                                        <option value="Completed">Completed</option>
-                                                                                                                                                    </select>
+                                                                                                                                                                            <select
+                                                                                                                                                                                value={handleApprovalStatus}
+                                                                                                                                                                                onChange={(e) =>
+                                                                                                                                                                                    setHandleApprovalStatus(e.target.value)
+                                                                                                                                                                                }1
+                                                                                                                                                                                className={`appearance-none text-[11px] font-medium px-3 py-1 pr-6 rounded-full border
+                                                                                                                                                                                        ${handleApprovalStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" : handleApprovalStatus === "Raised" ?
+                                                                                                                                                                                        "bg-blue-100 text-blue-600 border-blue-200" : handleApprovalStatus === "Received"
+                                                                                                                                                                                            ? "bg-purple-100 text-purple-600 border-purple-200"
+                                                                                                                                                                                            : handleApprovalStatus === "Completed"
+                                                                                                                                                                                                ? "bg-green-100 text-green-600 border-green-200"
+                                                                                                                                                                                                : "bg-gray-100 text-gray-600 border-gray-200"
+                                                                                                                                                                                    }
+                        `}
+                                                                                                                                                                            >
+                                                                                                                                                                                <option value="Waiting">Pending</option>
+                                                                                                                                                                                <option value="Pending">Submit</option>
+                                                                                                                                                                                <option value="Received">Received</option>
+                                                                                                                                                                                <option value="Completed">Completed</option>
+                                                                                                                                                                            </select>
 
-                                                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 pointer-events-none">
-                                                                                                                                                        <ChevronDown size={13} />
-                                                                                                                                                    </span>
-                                                                                                                                                </div> */}
+                                                                                                                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 pointer-events-none">
+                                                                                                                                                                                <ChevronDown size={13} />
+                                                                                                                                                                            </span>
+                                                                                                                                                                        </div> */}
                                                                                                                                                                     </td>
                                                                                                                                                                 </>
                                                                                                                                                             ) : (<tr className="border-b border-gray-300"></tr>)}
                                                                                                                                                         {/* <td className="text-right px-2 py-2 border-b border-gray-300">
-                                                                                                                                    <button
-                                                                                                                                        className="text-xs px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-300 transition"
-                                                                                                                                    // onClick={() => {
-                                                                                                                                    //     setSelectedTaskfortimelog({
-                                                                                                                                    //         id: sub.id,
-                                                                                                                                    //         project_id: project.id || project.project_id,
-                                                                                                                                    //         subactivity_name: sub.subactivity_name,
-                                                                                                                                    //         project_name: project.shortName || project.short_name,
-                                                                                                                                    //     });
-                                                                                                                                    //     setTimeLogData({
-                                                                                                                                    //         date: new Date().toISOString().split("T")[0],
-                                                                                                                                    //         startTime: "",
-                                                                                                                                    //         endTime: "",
-                                                                                                                                    //         description: "",
-                                                                                                                                    //     });
-                                                                                                                                    //     setShowTimeLogModal(true);
-                                                                                                                                    // }}
-                                                                                                                                    >
-                                                                                                                                        Submit
-                                                                                                                                    </button>
-                                                                                                                                </td> */}
+                                                                                                                                                            <button
+                                                                                                                                                                className="text-xs px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-300 transition"
+                                                                                                                                                            // onClick={() => {
+                                                                                                                                                            //     setSelectedTaskfortimelog({
+                                                                                                                                                            //         id: sub.id,
+                                                                                                                                                            //         project_id: project.id || project.project_id,
+                                                                                                                                                            //         subactivity_name: sub.subactivity_name,
+                                                                                                                                                            //         project_name: project.shortName || project.short_name,
+                                                                                                                                                            //     });
+                                                                                                                                                            //     setTimeLogData({
+                                                                                                                                                            //         date: new Date().toISOString().split("T")[0],
+                                                                                                                                                            //         startTime: "",
+                                                                                                                                                            //         endTime: "",
+                                                                                                                                                            //         description: "",
+                                                                                                                                                            //     });
+                                                                                                                                                            //     setShowTimeLogModal(true);
+                                                                                                                                                            // }}
+                                                                                                                                                            >
+                                                                                                                                                                Submit
+                                                                                                                                                            </button>
+                                                                                                                                                        </td> */}
                                                                                                                                                     </tr>
                                                                                                                                                     {
                                                                                                                                                         sub.approval_payment > 0 ? (

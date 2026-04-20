@@ -2585,7 +2585,10 @@ const ProjectList = () => {
                                                                     }
                                                                     {
                                                                       isUser &&
-                                                                      <th className="px-2 py-3 text-right">Action</th>
+                                                                      <>
+                                                                        <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                        <th className="px-2 py-3 text-right">Action</th>
+                                                                      </>
                                                                     }
                                                                   </tr>
                                                                 </thead>
@@ -2774,35 +2777,62 @@ const ProjectList = () => {
                                                                           }
                                                                           {
                                                                             isUser &&
-                                                                            <td rowSpan="2" className={"text-right px-2 py-2 "}>
-                                                                              <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
-                                                                                disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
-                                                                                onClick={() => {
-                                                                                  setSelectedTaskfortimelog({
-                                                                                    id: sub.id,
-                                                                                    project_id: project.id || project.project_id,
-                                                                                    subactivity_name: sub.subactivity_name,
-                                                                                    project_name:
-                                                                                      project.shortName || project.short_name,
-                                                                                  });
+                                                                            <>
+                                                                              <td className={"text-center "}>
+                                                                                <div className="relative inline-block py-2 !inline-flex items-center" >
+                                                                                  <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
+                                                                                ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
+                                                                                      changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                        changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
+                                                                                          changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                            changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                                                                                              "bg-gray-100 text-gray-600 border-gray-200"
+                                                                                    }`}>
+                                                                                    {changeStatus == "Approved" ? "Submitted" : changeStatus}
+                                                                                  </span>
+                                                                                  {
+                                                                                    !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
+                                                                                    <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
+                                                                                      onClick={(e) => setViewDocumentModel({
+                                                                                        model: true,
+                                                                                        data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
+                                                                                        title: "Submission Stage Documents"
+                                                                                      })} />
+                                                                                  }
+                                                                                </div>
+                                                                              </td>
 
-                                                                                  setTimeLogData({
-                                                                                    date: new Date()
-                                                                                      .toISOString()
-                                                                                      .split("T")[0],
-                                                                                    startTime: "",
-                                                                                    endTime: "",
-                                                                                    description: "",
-                                                                                  });
 
-                                                                                  setShowTimeLogModal(true);
-                                                                                }}>
-                                                                                <span className='flex flex-row '>
-                                                                                  <PlusCircle size={16} />
-                                                                                  Work Log
-                                                                                </span>
-                                                                              </button>
-                                                                            </td>
+                                                                              <td rowSpan="2" className={"text-right px-2 py-2 "}>
+                                                                                <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
+                                                                                  disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
+                                                                                  onClick={() => {
+                                                                                    setSelectedTaskfortimelog({
+                                                                                      id: sub.id,
+                                                                                      project_id: project.id || project.project_id,
+                                                                                      subactivity_name: sub.subactivity_name,
+                                                                                      project_name:
+                                                                                        project.shortName || project.short_name,
+                                                                                    });
+
+                                                                                    setTimeLogData({
+                                                                                      date: new Date()
+                                                                                        .toISOString()
+                                                                                        .split("T")[0],
+                                                                                      startTime: "",
+                                                                                      endTime: "",
+                                                                                      description: "",
+                                                                                    });
+
+                                                                                    setShowTimeLogModal(true);
+                                                                                  }}>
+                                                                                  <span className='flex flex-row '>
+                                                                                    <PlusCircle size={16} />
+                                                                                    Work Log
+                                                                                  </span>
+                                                                                </button>
+                                                                              </td>
+                                                                            </>
                                                                           }
                                                                         </tr >
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 
 let AUTH_BASE_URL = 'https://6mpwdglt-8000.inc1.devtunnels.ms';
-AUTH_BASE_URL = 'https://ksncfd6v-8007.inc1.devtunnels.ms';
+AUTH_BASE_URL = 'https://dd.aimantra.info';
 
 const authApi = axios.create({
   baseURL: AUTH_BASE_URL,
