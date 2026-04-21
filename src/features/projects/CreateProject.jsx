@@ -1647,6 +1647,8 @@ const CreateProject = () => {
           weightage: weightage,
           start_date: dates.startDate,
           end_date: dates.endDate,
+          sorting_var: allActivities.find((a) => a.id === activityId)
+            ?.sorting_var
         };
       });
       const activitiesResponse = await dispatch(
