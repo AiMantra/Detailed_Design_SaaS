@@ -2,8 +2,8 @@
 import axios from 'axios';
 
 
-let AUTH_BASE_URL = 'https://6mpwdglt-8000.inc1.devtunnels.ms';
-AUTH_BASE_URL = 'https://dd.aimantra.info';
+let AUTH_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 
 const authApi = axios.create({
   baseURL: AUTH_BASE_URL,
