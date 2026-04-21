@@ -164,7 +164,7 @@ const ProjectList = () => {
 
     if (totalWeight === 0) return 0;
 
-    return Math.round((completedWeight / totalWeight) * 100);
+    return ((completedWeight / totalWeight) * 100);
   };
 
   // Load all data in a single loading session
@@ -1994,6 +1994,9 @@ const ProjectList = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedCard(isExpanded ? null : projectId);
+                                if (!isExpanded) {
+                                  fetchProjectDetailsIfNeeded(projectId);
+                                }
                               }}
                               className="p-3 hover:bg-gray-100 rounded-xl transition-colors"
                             >
@@ -2504,9 +2507,9 @@ const ProjectList = () => {
                                                                 // title={activityProgress}
                                                                 className="font-medium text-blue-600"
                                                               >
-                                                                {Math.round(
-                                                                  activityProgress,
-                                                                )}
+                                                                {/* {Math.round( */}
+                                                                {activityProgress}
+                                                                {/* )} */}
                                                                 %
                                                               </span>
                                                             </div>
