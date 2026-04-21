@@ -1699,6 +1699,7 @@ const CreateProject = () => {
             chainage_start: chainagestart,
             chainage_end: chainageend,
             description: description,
+            sorting_var: subObj?.sorting_var
           };
         });
 
