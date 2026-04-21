@@ -1656,7 +1656,7 @@ const TlProjectList = () => {
                                                                                                                         <div className="mt-2">
                                                                                                                             <div className="flex justify-between text-xs mb-1">
                                                                                                                                 <span className="text-gray-500">Activity Progress</span>
-                                                                                                                                <span className="font-medium text-blue-600">{Math.round(activityProgress)}%</span>
+                                                                                                                                <span className="font-medium text-blue-600">{activityProgress}%</span>
                                                                                                                             </div>
                                                                                                                             <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                                                                                                                 <motion.div initial={{ width: 0 }} animate={{ width: `${activityProgress}%` }}
