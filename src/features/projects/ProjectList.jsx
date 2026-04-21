@@ -37,6 +37,7 @@ import {
   FileStack,
   File,
   FileText,
+  Trash,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
@@ -1978,7 +1979,7 @@ const ProjectList = () => {
                             </button>
                           </div> */}
 
-                          <div className="flex flex-column items-center justify-center gap-2">
+                          <div className="flex flex-col items-center justify-center gap-2">
                             {/* <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
@@ -2006,6 +2007,17 @@ const ProjectList = () => {
                                 <ChevronDown size={20} />
                               )}
                             </button>
+
+                            {isAdmin && (
+                              <button
+                                onClick={(e) => handleDeleteProject(projectId, projectName, e)}
+                                disabled={deleteInProgress}
+                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+
                           </div>
                         </div>
                         {/* 🔥 Progress Section */}
