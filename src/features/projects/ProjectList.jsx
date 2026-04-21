@@ -2421,7 +2421,7 @@ const ProjectList = () => {
                                                 className="text-blue-600"
                                               />
                                               Activities & Sub-Activities (
-                                              {projectData?.activities_detail.length})
+                                              {projectData?.activities_detail?.length})
                                             </h4>
                                             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                                               {/* {projectData?.activities_detail?.sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)).map((activity, actIndex) => { */}

@@ -1625,11 +1625,11 @@ const TlProjectList = () => {
                                                                                 <>
 
                                                                                     {/* Activities Section */}
-                                                                                    {projectData?.activities_detail.length > 0 && (
+                                                                                    {projectData?.activities_detail?.length > 0 && (
                                                                                         <div className="mt-6">
                                                                                             <h4 className="font-semibold mb-4 text-gray-800 flex items-center gap-2">
                                                                                                 <Briefcase size={18} className="text-blue-600" />
-                                                                                                Activities & Sub-Activities ({projectData?.activities_detail.length})
+                                                                                                Activities & Sub-Activities ({projectData?.activities_detail?.length})
                                                                                             </h4>
                                                                                             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                                                                                                 {/* {projectData?.activities_detail?.sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)).map((activity, actIndex) => { */}
@@ -1700,7 +1700,10 @@ const TlProjectList = () => {
                                                                                                                                         </tr>
                                                                                                                                     </thead>
                                                                                                                                     <tbody>
-                                                                                                                                        {subs.map((sub, i) => {
+                                                                                                                                        {subs
+                                                                                                                                        // .sort
+                                                                                                                                        // .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0))
+                                                                                                                                        .map((sub, i) => {
                                                                                                                                             const stages = sub?.payment_stages || [];
 
                                                                                                                                             const getAmount = (type, status, key) => {
@@ -1835,10 +1838,10 @@ const TlProjectList = () => {
                                                                                                                                                                                     setShowProofModal(true)
                                                                                                                                                                                     setProofData({ ...proofData, subactivity: sub.id, to_status: "Submitted" })
                                                                                                                                                                                 }}
-                                                                                                                                                                                // disabled={changeStatus != "Inprogress"}
+                                                                                                                                                                                disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
                                                                                                                                                                                 className={`text-m px-1.5 text-green-600 flex items-center gap-1 `
-                                                                                                                                                                                    // + (changeStatus != "Inprogress" ? "!cursor-no-drop opacity-70" : "")
-                                                                                                                                                                                }Handshake
+                                                                                                                                                                                    + ((changeStatus == "Submitted" || changeStatus == "Approved") ? "!cursor-no-drop opacity-70" : "")
+                                                                                                                                                                                } Handshake
                                                                                                                                                                                 title={"Submit"}>
                                                                                                                                                                                 <CheckCircle size={12} /> Submit
                                                                                                                                                                             </button>
@@ -1976,9 +1979,9 @@ const TlProjectList = () => {
                                                                                                                                                                                 setShowProofModal(true)
                                                                                                                                                                                 setProofData({ ...proofData, subactivity: sub.id, to_status: "Approved" })
                                                                                                                                                                             }}
-                                                                                                                                                                            // disabled={changeStatus != "Inprogress" || changeStatus != "Submitted"}
+                                                                                                                                                                            disabled={changeStatus == "Approved"}
                                                                                                                                                                             className={`text-m px-1.5 text-blue-600 flex items-center gap-1 `
-                                                                                                                                                                                // + (changeStatus != "Inprogress" || changeStatus != "Submitted" ? "!cursor-no-drop opacity-70" : "")
+                                                                                                                                                                                + (changeStatus == "Approved" ? "!cursor-no-drop opacity-70" : "")
                                                                                                                                                                             }
                                                                                                                                                                             title={"Approve"}>
                                                                                                                                                                             <Handshake size={13} /> Approve
