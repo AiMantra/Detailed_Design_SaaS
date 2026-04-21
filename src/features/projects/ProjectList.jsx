@@ -1994,6 +1994,9 @@ const ProjectList = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedCard(isExpanded ? null : projectId);
+                                if (!isExpanded) {
+                                  fetchProjectDetailsIfNeeded(projectId);
+                                }
                               }}
                               className="p-3 hover:bg-gray-100 rounded-xl transition-colors"
                             >
