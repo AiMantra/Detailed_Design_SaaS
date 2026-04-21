@@ -1456,7 +1456,13 @@ const TlProjectList = () => {
                                                         </div>
 
                                                         <div className="flex flex-col items-center justify-center gap-2">
-                                                            <button onClick={(e) => { e.stopPropagation(); setExpandedCard(isExpanded ? null : projectId); }} className="p-3 hover:bg-gray-100 rounded-xl transition-colors">
+                                                            <button onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setExpandedCard(isExpanded ? null : projectId);
+                                                                if (!isExpanded) {
+                                                                    fetchProjectDetailsIfNeeded(projectId);
+                                                                }
+                                                            }} className="p-3 hover:bg-gray-100 rounded-xl transition-colors">
                                                                 {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                                                             </button>
                                                         </div>
