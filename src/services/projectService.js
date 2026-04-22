@@ -94,16 +94,70 @@ export const projectService = {
   },
 
 
+  // createProject: async (projectData) => {
+  //   try {
+  //     const response = await api.post('/project/', projectData);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error creating project:', error);
+  //     if (error.response) {
+  //       console.error('Error response data:', error.response.data);
+  //       console.error('Error response status:', error.response.status);
+
+  //       const enhancedError = new Error(
+  //         error.response.data?.message ||
+  //         JSON.stringify(error.response.data) ||
+  //         'Failed to create project'
+  //       );
+  //       enhancedError.response = error.response;
+  //       enhancedError.request = error.request;
+  //       throw enhancedError;
+  //     } else if (error.request) {
+  //       console.error('No response received:', error.request);
+  //       throw new Error('No response from server. Please check your connection.');
+  //     } else {
+  //       console.error('Error setting up request:', error.message);
+  //       throw error;
+  //     }
+  //   }
+  // },
+
   createProject: async (projectData) => {
     try {
-      const response = await api.post('/project/', projectData);
+      const formData = new FormData();
+
+      // 🔹 Append all fields
+      Object.keys(projectData).forEach((key) => {
+        const value = projectData[key];
+        if (value === null || value === undefined) return;
+        // ✅ Handle file
+        if (key === "workorder_document") {
+          formData.append(key, value?.[0]);
+        }
+        // ✅ Handle array / object (activities)
+        else if (typeof value === "object") {
+          formData.append(key, JSON.stringify(value));
+        }
+        else if (key == "sector" || key == "client") {
+          formData.append(key, '"' + value + '"');
+        }
+        // ✅ Normal fields
+        else {
+          formData.append(key, value);
+        }
+      });
+
+      const response = await api.post('/new-project/', formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error) {
       console.error('Error creating project:', error);
       if (error.response) {
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
-
         const enhancedError = new Error(
           error.response.data?.message ||
           JSON.stringify(error.response.data) ||
@@ -112,6 +166,7 @@ export const projectService = {
         enhancedError.response = error.response;
         enhancedError.request = error.request;
         throw enhancedError;
+
       } else if (error.request) {
         console.error('No response received:', error.request);
         throw new Error('No response from server. Please check your connection.');
@@ -121,6 +176,7 @@ export const projectService = {
       }
     }
   },
+
 
 
   updateProjectProgress: async (projectId, progressData) => {

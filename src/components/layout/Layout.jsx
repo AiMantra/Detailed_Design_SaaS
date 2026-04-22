@@ -79,7 +79,7 @@ const Layout = () => {
     if (path.includes("/all-projects")) return "All Projects";
     if (path.includes("/my-tasks")) return "My Tasks";
     if (path.includes("/my-picked-projects")) return "Project Details";
-    return "Civil Infrastructure Dashboard";
+    return "Detailed Design";
   };
 
   const getMarginLeft = () => {

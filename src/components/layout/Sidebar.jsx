@@ -21,7 +21,8 @@ import {
   CheckCircle,
   Briefcase,
   Users,
-  Clock
+  Clock,
+  Settings2
 } from "lucide-react";
 
 import logo from "../../assets/aimantra.png";
@@ -70,6 +71,7 @@ const Sidebar = () => {
       description: "Browse all projects and pick tasks",
     },
 
+
     {
       name: "My Projects",
       icon: FolderKanban,
@@ -95,6 +97,14 @@ const Sidebar = () => {
       badge: null,
       description: "Employee Report",
     },
+    // {
+    //   name: "Settings",
+    //   icon: Settings2,
+    //   path: "/settings",
+    //   roles: ["ACCOUNT"],
+    //   badge: null,
+    //   description: "Settings",
+    // },
 
     // My Tasks - For users to manage picked tasks
     {
@@ -124,6 +134,7 @@ const Sidebar = () => {
       badge: null,
       description: "My work hours & logs",
     },
+
 
     // User specific - My Projects
     // {
@@ -200,7 +211,11 @@ const Sidebar = () => {
 
   // Separate menu sections for better organization
   const mainMenu = filteredMenu.filter(item =>
-    ["Dashboard", "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Daily Logs"].includes(item.name)
+    [
+      // "Dashboard",
+      "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Daily Logs",
+      // "settings"
+    ].includes(item.name)
   );
 
   const managementMenu = filteredMenu.filter(item =>

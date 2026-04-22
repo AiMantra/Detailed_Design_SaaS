@@ -38,6 +38,7 @@ import {
   File,
   FileText,
   Trash,
+  DownloadCloudIcon,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
@@ -1802,7 +1803,7 @@ const ProjectList = () => {
                           {/* LEFT SECTION */}
                           <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-3 mb-3">
-                              <h3 className="text-lg md:text-lg font-semibold text-gray-800  flex items-center gap-2" title={projectName}>
+                              <h3 className="text-lg md:text-lg font-semibold text-gray-800  flex items-center gap-2 w-full" title={projectName}>
                                 {projectName.length > 200 ? `${projectName.substring(0, 200)}...` : projectName}
                               </h3>
                               <motion.span
@@ -1999,7 +2000,7 @@ const ProjectList = () => {
                                   fetchProjectDetailsIfNeeded(projectId);
                                 }
                               }}
-                              className="p-3 hover:bg-gray-100 rounded-xl transition-colors"
+                              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
                             >
                               {isExpanded ? (
                                 <ChevronUp size={20} />
@@ -2009,13 +2010,28 @@ const ProjectList = () => {
                             </button>
 
                             {isAdmin && (
-                              <button
-                                onClick={(e) => handleDeleteProject(projectId, projectName, e)}
-                                disabled={deleteInProgress}
-                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              <>
+                                {
+                                  project?.workorder_document &&
+                                  <a
+                                    href={project?.workorder_document}
+                                    target="_blank"
+                                    disabled={deleteInProgress}
+                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
+                                    title="Workorder Document"
+                                  >
+                                    <DownloadCloudIcon size={16} />
+                                  </a>
+                                }
+                                <button
+                                  onClick={(e) => handleDeleteProject(projectId, projectName, e)}
+                                  disabled={deleteInProgress}
+                                  className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110 "
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+
+                              </>
                             )}
 
                           </div>
@@ -2646,7 +2662,7 @@ const ProjectList = () => {
                                                                     let submissionStatus = sub?.submission_status || "Waiting";
                                                                     let approvalStatus = sub?.approval_status || "Waiting";
                                                                     const blurstatus = sub?.submission_status === "Waiting" && sub.status != "Submitted" ? "opacity-50" : "";
-                                                                    const highlite = submissionStatus === "Pending" ? " bg-green-50  " : ""
+                                                                    const highlite = submissionStatus === "Pending" ? " bg-orange-50  " : ""
 
                                                                     return (
                                                                       <>
@@ -2855,7 +2871,7 @@ const ProjectList = () => {
                                                                         {
                                                                           !isUser &&
                                                                             sub.approval_payment > 0 ? (
-                                                                            <tr className={" text-[12px] border-b " + (approvalStatus === "Waiting" ? "opacity-50" : "") + (approvalStatus === "Pending" ? " bg-blue-50 " : "")}>
+                                                                            <tr className={" text-[12px] border-b " + (approvalStatus === "Waiting" ? "opacity-50" : "") + (approvalStatus === "Pending" ? " bg-orange-50 " : "")}>
                                                                               <td className="text-center font-semibold text-blue-600 border-gray-300 border-l -pl-1">
                                                                                 Approval
                                                                               </td>
