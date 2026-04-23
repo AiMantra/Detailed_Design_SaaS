@@ -22,7 +22,8 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import TlProjectList from "../features/projects/Tlprojects";
 import SubmittedTasks from "../features/tasks/SubmittedTask";
 import EmployeeReport from "../features/projects/empreport";
-import SettingsComponent from "../features/projects/settings";
+import SettingsComponent from "../features/setupsettings/settings";
+
 export default function AppRoutes() {
   return (
     <Routes>
