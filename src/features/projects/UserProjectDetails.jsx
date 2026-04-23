@@ -313,7 +313,7 @@ const UserProjectDetails = () => {
       });
     } catch (error) {
       dispatch(showSnackbar({
-        message: error.message || 'Failed to save record',
+        message: 'Your total work log exceeds 24 hours.',
         type: 'error'
       }));
     } finally {

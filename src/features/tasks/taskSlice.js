@@ -52,7 +52,8 @@ export const fetchUserWorkLogs = createAsyncThunk(
       return transformedLogs;
     } catch (error) {
       console.error('Error fetching user work logs:', error);
-      return rejectWithValue(error.response?.data || error.message);
+      showError(error.message || 'Failed to save record');
+      return rejectWithValue(error.message);
     }
   }
 );

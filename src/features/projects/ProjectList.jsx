@@ -377,14 +377,14 @@ const ProjectList = () => {
     }
     filtered.sort((a, b) => {
       const aDays =
-        getDaysUntilDeadline(a.completion_date || a.completionDate) || 999;
+        getDaysUntilDeadline(a.created_at || a.completionDate) || 999;
       const bDays =
-        getDaysUntilDeadline(b.completion_date || b.completionDate) || 999;
+        getDaysUntilDeadline(b.created_at || b.completionDate) || 999;
       const aProgress = a.progress || 0;
       const bProgress = b.progress || 0;
       const aName = a.project_name || a.name || "";
       const bName = b.project_name || b.name || "";
-      if (sortBy === "deadline") return aDays - bDays;
+      if (sortBy === "deadline") return bDays - aDays;
       if (sortBy === "progress") return bProgress - aProgress;
       if (sortBy === "name") return aName.localeCompare(bName);
       return 0;
@@ -605,7 +605,7 @@ const ProjectList = () => {
 
     } catch (error) {
       dispatch(showSnackbar({
-        message: error.message || 'Failed to save record',
+        message: error.message || 'Your total work log exceeds 24 hours.',
         type: 'error'
       }));
     } finally {
@@ -941,6 +941,7 @@ const ProjectList = () => {
                 <input
                   type="date"
                   value={timeLogData.date}
+                  min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
                   onChange={(e) =>
                     setTimeLogData({ ...timeLogData, date: e.target.value })
                   }
@@ -2510,7 +2511,7 @@ const ProjectList = () => {
                                                             </h5>
                                                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">
                                                               Weightage:{" "}
-                                                              {activity.weightage || 0}%
+                                                              {activity.weightage.toFixed(2) || 0}%
                                                             </span>
                                                             <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600">
                                                               {subs.length} tasks

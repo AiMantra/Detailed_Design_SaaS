@@ -1,17 +1,9 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-    BarChart3,
-    TrendingUp,
-    CheckCircle,
-    XCircle,
-    AlertCircle,
-    Calendar,
     Search,
-    Filter,
-    Download,
     User,
     Briefcase,
     Activity,
@@ -19,22 +11,17 @@ import {
     FileText,
     Users,
     Timer,
-    Award,
-    Target,
     Eye,
     ChevronRight,
     Clock,
-    Building2,
     ArrowUpDown,
-    List,
-    Plus,
-    Minus,
-    ExternalLink,
-    MapPin,
     Layers,
     ChevronDown,
     ChevronUp,
-    Recycle
+    Recycle,
+    CheckCircle,
+    XCircle,
+    FilterX
 } from 'lucide-react';
 import { fetchAllEmployeesReport } from '../tasks/taskSlice';
 
@@ -47,7 +34,6 @@ const TeamLeaderReport = () => {
     const [selectedEmployee, setSelectedEmployee] = useState('all');
     const [selectedProject, setSelectedProject] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
-    const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
     const [expandedEmployee, setExpandedEmployee] = useState(null);
@@ -89,30 +75,22 @@ const TeamLeaderReport = () => {
         }
     };
 
-    // Transform API data to employee-centric structure
+    // Transform API data - FIXED to handle the actual API structure
     const transformedData = useMemo(() => {
         if (!allEmployeesReport?.projects || allEmployeesReport.projects.length === 0) {
-            return { employees: [], totalHours: 0, totalProjects: 0, projectsInfo: [] };
+            return {
+                employees: [],
+                totalHours: 0,
+                totalProjects: 0,
+                projectsInfo: [],
+                allProjects: []
+            };
         }
 
         const projects = allEmployeesReport.projects;
         const employeesMap = new Map();
 
         projects.forEach(project => {
-            let totalProjectTasks = 0;
-            let completedProjectTasks = 0;
-
-            project.users?.forEach(user => {
-                user.activities?.forEach(activity => {
-                    activity.subactivities?.forEach(sub => {
-                        totalProjectTasks++;
-                        if (sub.status === 'Approved' || sub.status === 'Submitted') {
-                            completedProjectTasks++;
-                        }
-                    });
-                });
-            });
-
             project.users?.forEach(user => {
                 if (!employeesMap.has(user.emp_code)) {
                     employeesMap.set(user.emp_code, {
@@ -184,14 +162,11 @@ const TeamLeaderReport = () => {
 
         const employees = Array.from(employeesMap.values()).map(emp => ({
             ...emp,
-            working_days: emp.working_days.size,
-            completion_rate: emp.total_tasks > 0
-                ? ((emp.approved_tasks + emp.submitted_tasks) / emp.total_tasks * 100).toFixed(1)
-                : 0
+            working_days: emp.working_days.size
         }));
 
         const totalHours = employees.reduce((sum, emp) => sum + emp.total_hours, 0);
-        const projectsInfo = projects.map(project => ({
+        const allProjects = projects.map(project => ({
             project_id: project.project_id,
             project_name: project.project_name,
             total_users: project.users?.length || 0,
@@ -205,16 +180,18 @@ const TeamLeaderReport = () => {
             employees,
             totalHours,
             totalProjects: projects.length,
-            projectsInfo
+            projectsInfo: allProjects,
+            allProjects
         };
     }, [allEmployeesReport]);
 
-    // Filter employees based on all filters
+    // Filter employees based on all filters - ENSURES data shows ONLY according to selected filters
     const filteredEmployees = useMemo(() => {
         if (!transformedData.employees.length) return [];
 
         let filtered = [...transformedData.employees];
 
+        // 1. Filter by search term
         if (searchTerm) {
             filtered = filtered.filter(emp =>
                 emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -222,10 +199,12 @@ const TeamLeaderReport = () => {
             );
         }
 
+        // 2. Filter by specific employee
         if (selectedEmployee !== 'all') {
             filtered = filtered.filter(emp => emp.emp_code === selectedEmployee);
         }
 
+        // 3. Filter by specific project - CRITICAL: Only shows data for selected project
         if (selectedProject !== 'all') {
             filtered = filtered.map(emp => ({
                 ...emp,
@@ -233,6 +212,7 @@ const TeamLeaderReport = () => {
             })).filter(emp => emp.projects.length > 0);
         }
 
+        // 4. Filter by status - Only shows subactivities with selected status
         if (selectedStatus !== 'all') {
             filtered = filtered.map(emp => ({
                 ...emp,
@@ -246,27 +226,54 @@ const TeamLeaderReport = () => {
             })).filter(emp => emp.projects.length > 0);
         }
 
-        if (dateRange.start || dateRange.end) {
-            filtered = filtered.map(emp => ({
-                ...emp,
-                projects: emp.projects.map(project => ({
-                    ...project,
-                    activities: project.activities.map(activity => ({
-                        ...activity,
-                        subactivities: activity.subactivities.map(sub => ({
-                            ...sub,
-                            date_wise: sub.date_wise?.filter(dateLog => {
-                                let valid = true;
-                                if (dateRange.start && dateLog.date < dateRange.start) valid = false;
-                                if (dateRange.end && dateLog.date > dateRange.end) valid = false;
-                                return valid;
-                            })
-                        })).filter(sub => sub.date_wise?.length > 0)
-                    })).filter(activity => activity.subactivities.length > 0)
-                })).filter(project => project.activities.length > 0)
-            })).filter(emp => emp.projects.length > 0);
-        }
+        // Recalculate totals for filtered data and add total_projects count
+        filtered = filtered.map(emp => {
+            let totalHours = 0;
+            let totalTasks = 0;
+            let approvedTasks = 0;
+            let submittedTasks = 0;
+            let inprogressTasks = 0;
+            let rejectedTasks = 0;
+            const workingDays = new Set();
 
+            // Get unique project IDs for this employee
+            const uniqueProjectIds = new Set();
+
+            emp.projects.forEach(project => {
+                uniqueProjectIds.add(project.project_id);
+
+                project.activities.forEach(activity => {
+                    activity.subactivities.forEach(sub => {
+                        totalTasks++;
+                        if (sub.status === 'Approved') approvedTasks++;
+                        if (sub.status === 'Submitted') submittedTasks++;
+                        if (sub.status === 'Inprogress') inprogressTasks++;
+                        if (sub.status === 'Rejected') rejectedTasks++;
+
+                        const hours = parseInt(sub.total_time_spent?.split(':')[0] || 0);
+                        totalHours += hours;
+
+                        sub.date_wise?.forEach(dateLog => {
+                            if (dateLog.date) workingDays.add(dateLog.date);
+                        });
+                    });
+                });
+            });
+
+            return {
+                ...emp,
+                total_projects: uniqueProjectIds.size, // Add total projects count for this user
+                total_hours: totalHours,
+                total_tasks: totalTasks,
+                approved_tasks: approvedTasks,
+                submitted_tasks: submittedTasks,
+                inprogress_tasks: inprogressTasks,
+                rejected_tasks: rejectedTasks,
+                working_days: workingDays.size
+            };
+        });
+
+        // Sort
         filtered.sort((a, b) => {
             let aVal, bVal;
             switch (sortField) {
@@ -274,17 +281,17 @@ const TeamLeaderReport = () => {
                     aVal = a.name || '';
                     bVal = b.name || '';
                     break;
-                case 'emp_code':
-                    aVal = a.emp_code || '';
-                    bVal = b.emp_code || '';
-                    break;
                 case 'total_hours':
                     aVal = a.total_hours || 0;
                     bVal = b.total_hours || 0;
                     break;
-                case 'completion_rate':
-                    aVal = parseFloat(a.completion_rate) || 0;
-                    bVal = parseFloat(b.completion_rate) || 0;
+                case 'total_tasks':
+                    aVal = a.total_tasks || 0;
+                    bVal = b.total_tasks || 0;
+                    break;
+                case 'total_projects':
+                    aVal = a.total_projects || 0;
+                    bVal = b.total_projects || 0;
                     break;
                 default:
                     aVal = a[sortField] || '';
@@ -294,9 +301,9 @@ const TeamLeaderReport = () => {
         });
 
         return filtered;
-    }, [transformedData, searchTerm, selectedEmployee, selectedProject, selectedStatus, dateRange, sortField, sortDirection]);
+    }, [transformedData, searchTerm, selectedEmployee, selectedProject, selectedStatus, sortField, sortDirection]);
 
-    // Calculate statistics based on filtered data
+    // Calculate statistics based on filtered data ONLY
     const filteredStats = useMemo(() => {
         if (!filteredEmployees.length) {
             return {
@@ -307,8 +314,7 @@ const TeamLeaderReport = () => {
                 approvedTasks: 0,
                 submittedTasks: 0,
                 inprogressTasks: 0,
-                rejectedTasks: 0,
-                completionRate: 0
+                rejectedTasks: 0
             };
         }
 
@@ -341,8 +347,7 @@ const TeamLeaderReport = () => {
             approvedTasks,
             submittedTasks,
             inprogressTasks,
-            rejectedTasks,
-            completionRate: totalTasks > 0 ? ((approvedTasks + submittedTasks) / totalTasks * 100).toFixed(1) : 0
+            rejectedTasks
         };
     }, [filteredEmployees]);
 
@@ -354,37 +359,6 @@ const TeamLeaderReport = () => {
             setSortDirection('asc');
         }
     };
-
-    // const exportToCSV = () => {
-    //     if (!filteredEmployees.length) return;
-
-    //     const headers = ['Employee Name', 'Emp Code', 'Total Tasks', 'Approved', 'Submitted', 'In Progress', 'Rejected', 'Total Hours', 'Working Days', 'Completion Rate'];
-    //     const rows = [];
-
-    //     filteredEmployees.forEach(emp => {
-    //         rows.push([
-    //             emp.name,
-    //             emp.emp_code,
-    //             emp.total_tasks || 0,
-    //             emp.approved_tasks || 0,
-    //             emp.submitted_tasks || 0,
-    //             emp.inprogress_tasks || 0,
-    //             emp.rejected_tasks || 0,
-    //             emp.total_hours || 0,
-    //             emp.working_days || 0,
-    //             `${emp.completion_rate || 0}%`
-    //         ]);
-    //     });
-
-    //     const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
-    //     const blob = new Blob([csvContent], { type: 'text/csv' });
-    //     const url = window.URL.createObjectURL(blob);
-    //     const a = document.createElement('a');
-    //     a.href = url;
-    //     a.download = `team_report_${new Date().toISOString().split('T')[0]}.csv`;
-    //     a.click();
-    //     window.URL.revokeObjectURL(url);
-    // };
 
     const SortIcon = ({ field }) => {
         if (sortField !== field) return <ArrowUpDown size={14} className="text-gray-400" />;
@@ -398,7 +372,7 @@ const TeamLeaderReport = () => {
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-500">Loading team report...</p>
+                    <p className="text-gray-500">Loading report...</p>
                 </div>
             </div>
         );
@@ -408,69 +382,57 @@ const TeamLeaderReport = () => {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="max-w-full mx-auto px-4 py-6 bg-gray-50"
+            className="max-w-full mx-auto px-4 py-6 bg-gray-50 min-h-screen"
         >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-8 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-8 text-white shadow-xl">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold mb-2">Team Leader Report</h1>
-                        <p className="text-blue-100">View and manage your team's performance</p>
+                        <p className="text-blue-100">View your team's task details and performance</p>
+
+                        {/* Active Filters Display */}
+                        {(selectedProject !== 'all' || selectedEmployee !== 'all' || selectedStatus !== 'all' || searchTerm) && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                <span className="text-xs text-blue-200 mr-1">Active filters:</span>
+                                {selectedProject !== 'all' && (
+                                    <span className="inline-flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm">
+                                        <Briefcase size={14} />
+                                        {transformedData.allProjects.find(p => p.project_id === selectedProject)?.project_name?.substring(0, 30) || 'Selected Project'}
+                                    </span>
+                                )}
+                                {selectedEmployee !== 'all' && (
+                                    <span className="inline-flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm">
+                                        <User size={14} />
+                                        {transformedData.employees.find(e => e.emp_code === selectedEmployee)?.name || 'Selected'}
+                                    </span>
+                                )}
+                                {selectedStatus !== 'all' && (
+                                    <span className="inline-flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm">
+                                        <Activity size={14} />
+                                        Status: {selectedStatus}
+                                    </span>
+                                )}
+                                {searchTerm && (
+                                    <span className="inline-flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm">
+                                        <Search size={14} />
+                                        Search: {searchTerm}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={fetchReportData}
-                            className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-                        >
-                            <Recycle size={18} />
-                            <span>Refresh</span>
-                        </button>
-                        {/* <button
-                            onClick={exportToCSV}
-                            className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-                        >
-                            <Download size={18} />
-                            <span>Export CSV</span>
-                        </button> */}
-                    </div>
+                    <button
+                        onClick={fetchReportData}
+                        className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
+                    >
+                        <Recycle size={18} />
+                        <span>Refresh</span>
+                    </button>
                 </div>
             </div>
 
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <motion.div whileHover={{ scale: 1.02 }} className="bg-white rounded-xl p-4 shadow-md">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Users size={18} className="text-blue-600" />
-                        <p className="text-sm text-gray-500">Team Members</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-800">{filteredStats.totalEmployees}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                        {filteredStats.totalEmployees === transformedData.employees?.length ? 'All employees' : 'Filtered employees'}
-                    </p>
-                </motion.div>
-
-                <motion.div whileHover={{ scale: 1.02 }} className="bg-white rounded-xl p-4 shadow-md">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Briefcase size={18} className="text-purple-600" />
-                        <p className="text-sm text-gray-500">Total Projects</p>
-                    </div>
-                    <p className="text-2xl font-bold text-purple-700">{filteredStats.totalProjects}</p>
-                    <p className="text-xs text-gray-400 mt-1">Active projects</p>
-                </motion.div>
-
-                <motion.div whileHover={{ scale: 1.02 }} className="bg-white rounded-xl p-4 shadow-md">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Timer size={18} className="text-green-600" />
-                        <p className="text-sm text-gray-500">Total Hours</p>
-                    </div>
-                    <p className="text-2xl font-bold text-green-700">{filteredStats.totalHours} hrs</p>
-                    <div className="mt-2 h-1 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, (filteredStats.totalHours / 500) * 100)}%` }} />
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Status Summary */}
+            {/* Task Summary Cards - Shows filtered data only */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                 <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-100">
                     <div className="flex items-center justify-between">
@@ -479,32 +441,86 @@ const TeamLeaderReport = () => {
                     </div>
                     <p className="text-xs text-yellow-600 mt-1">In Progress</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-                    <div className="flex items-center justify-between">
-                        <FileText size={20} className="text-green-600" />
-                        <span className="text-lg font-bold text-green-700">{filteredStats.submittedTasks}</span>
-                    </div>
-                    <p className="text-xs text-green-600 mt-1">Submitted Tasks</p>
-                </div>
                 <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                     <div className="flex items-center justify-between">
-                        <CheckCircle size={20} className="text-blue-600" />
-                        <span className="text-lg font-bold text-blue-700">{filteredStats.approvedTasks}</span>
+                        <FileText size={20} className="text-blue-600" />
+                        <span className="text-lg font-bold text-blue-700">{filteredStats.submittedTasks}</span>
                     </div>
-                    <p className="text-xs text-blue-600 mt-1">Approved Tasks</p>
+                    <p className="text-xs text-blue-600 mt-1">Submitted</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+                    <div className="flex items-center justify-between">
+                        <CheckCircle size={20} className="text-green-600" />
+                        <span className="text-lg font-bold text-green-700">{filteredStats.approvedTasks}</span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">Approved</p>
                 </div>
                 <div className="bg-red-50 rounded-lg p-3 border border-red-100">
                     <div className="flex items-center justify-between">
                         <XCircle size={20} className="text-red-600" />
                         <span className="text-lg font-bold text-red-700">{filteredStats.rejectedTasks}</span>
                     </div>
-                    <p className="text-xs text-red-600 mt-1">Rejected Tasks</p>
+                    <p className="text-xs text-red-600 mt-1">Rejected</p>
+                </div>
+            </div>
+
+            {/* Statistics Cards - Shows filtered data only */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white rounded-xl p-5 shadow-md">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Total Projects</p>
+                            <p className="text-3xl font-bold text-gray-800">{filteredStats.totalProjects}</p>
+                            {selectedProject !== 'all' && (
+                                <p className="text-xs text-blue-500 mt-1">Filtered</p>
+                            )}
+                        </div>
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <Briefcase size={24} className="text-purple-600" />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-xl p-5 shadow-md">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Team Members</p>
+                            <p className="text-3xl font-bold text-gray-800">{filteredStats.totalEmployees}</p>
+                            {selectedEmployee !== 'all' && (
+                                <p className="text-xs text-blue-500 mt-1">Filtered</p>
+                            )}
+                        </div>
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Users size={24} className="text-blue-600" />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-xl p-5 shadow-md">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Total Hours</p>
+                            <p className="text-3xl font-bold text-gray-800">{filteredStats.totalHours}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <Timer size={24} className="text-green-600" />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-xl p-5 shadow-md">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">Total Tasks</p>
+                            <p className="text-3xl font-bold text-gray-800">{filteredStats.totalTasks}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <FileText size={24} className="text-yellow-600" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* Filters */}
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
@@ -515,6 +531,19 @@ const TeamLeaderReport = () => {
                             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
+
+                    <select
+                        value={selectedProject}
+                        onChange={(e) => setSelectedProject(e.target.value)}
+                        className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                        <option value="all">All Projects</option>
+                        {transformedData.allProjects?.map(project => (
+                            <option key={project.project_id} value={project.project_id}>
+                                {project.project_name.length > 40 ? project.project_name.substring(0, 40) + '...' : project.project_name}
+                            </option>
+                        ))}
+                    </select>
 
                     <select
                         value={selectedEmployee}
@@ -530,49 +559,44 @@ const TeamLeaderReport = () => {
                     </select>
 
                     <select
-                        value={selectedProject}
-                        onChange={(e) => setSelectedProject(e.target.value)}
-                        className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                        <option value="all">All Projects</option>
-                        {transformedData.projectsInfo?.map(project => (
-                            <option key={project.project_id} value={project.project_id}>
-                                {project.project_name.length > 40 ? project.project_name.substring(0, 40) + '...' : project.project_name}
-                            </option>
-                        ))}
-                    </select>
-
-                    <select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
                         className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                         <option value="all">All Status</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Submitted">Submitted</option>
-                        <option value="Inprogress">In Progress</option>
-                        <option value="Rejected">Rejected</option>
+                        <option value="Approved">✅ Approved</option>
+                        <option value="Submitted">📤 Submitted</option>
+                        <option value="Inprogress">⏳ In Progress</option>
+                        <option value="Rejected">❌ Rejected</option>
                     </select>
-
-                    <button
-                        onClick={() => {
-                            setSearchTerm('');
-                            setSelectedEmployee('all');
-                            setSelectedProject('all');
-                            setSelectedStatus('all');
-                            setDateRange({ start: '', end: '' });
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-700"
-                    >
-                        Clear all filters
-                    </button>
                 </div>
+
+                {/* Clear Filters Button */}
+                {(searchTerm || selectedProject !== 'all' || selectedEmployee !== 'all' || selectedStatus !== 'all') && (
+                    <div className="mt-3 text-right">
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setSelectedProject('all');
+                                setSelectedEmployee('all');
+                                setSelectedStatus('all');
+                            }}
+                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                        >
+                            <FilterX size={14} />
+                            Clear all filters
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Results Count */}
             <div className="mb-4 flex justify-between items-center">
                 <p className="text-sm text-gray-500">
                     Showing {filteredEmployees.length} of {transformedData.employees?.length || 0} employees
+                    {selectedProject !== 'all' && <span className="text-blue-500 ml-1">(filtered by project)</span>}
+                    {selectedEmployee !== 'all' && <span className="text-blue-500 ml-1">(filtered by employee)</span>}
+                    {selectedStatus !== 'all' && <span className="text-blue-500 ml-1">(filtered by status)</span>}
                 </p>
             </div>
 
@@ -583,98 +607,112 @@ const TeamLeaderReport = () => {
                         <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
-                                    <div className="flex items-center gap-1">Employee Name <SortIcon field="name" /></div>
+                                    <div className="flex items-center gap-1">Employee <SortIcon field="name" /></div>
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tasks</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200" onClick={() => handleSort('total_tasks')}>
+                                    <div className="flex items-center gap-1">Projects & Tasks <SortIcon field="total_tasks" /></div>
+                                </th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200" onClick={() => handleSort('total_hours')}>
                                     <div className="flex items-center gap-1">Total Hours <SortIcon field="total_hours" /></div>
                                 </th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Working Days</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {filteredEmployees.map((employee) => {
                                 const isExpanded = expandedEmployee === employee.emp_code;
-                                const totalTasks = employee.total_tasks || 0;
-                                const approved = employee.approved_tasks || 0;
-                                const submitted = employee.submitted_tasks || 0;
-                                const inprogress = employee.inprogress_tasks || 0;
-                                const rejected = employee.rejected_tasks || 0;
-
-                                const approvedPercent = totalTasks > 0 ? (approved / totalTasks * 100).toFixed(0) : 0;
-                                const submittedPercent = totalTasks > 0 ? (submitted / totalTasks * 100).toFixed(0) : 0;
-                                const inprogressPercent = totalTasks > 0 ? (inprogress / totalTasks * 100).toFixed(0) : 0;
-                                const rejectedPercent = totalTasks > 0 ? (rejected / totalTasks * 100).toFixed(0) : 0;
 
                                 return (
                                     <Fragment key={employee.emp_code}>
                                         <tr className="hover:bg-gray-50 transition-colors">
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <User size={16} className="text-blue-600" />
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                                        {employee.name?.charAt(0) || 'U'}
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium text-gray-900">{employee.name} ({employee.emp_code})</p>
-                                                        <p className="text-xs text-gray-500">{employee.working_days} days worked</p>
+                                                        <p className="font-medium text-gray-900">{employee.name}</p>
+                                                        <p className="text-xs text-gray-500">{employee.emp_code}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
+                                                {/* Modern Stats Display */}
                                                 <div className="space-y-2">
-                                                    <div className="flex h-2 rounded-full overflow-hidden">
-                                                        {inprogress > 0 && (
-                                                            <div className="bg-yellow-500" style={{ width: `${inprogressPercent}%` }} title={`In Progress: ${inprogress}`} />
-                                                        )}
-                                                        {submitted > 0 && (
-                                                            <div className="bg-blue-500" style={{ width: `${submittedPercent}%` }} title={`Submitted: ${submitted}`} />
-                                                        )}
-                                                        {approved > 0 && (
-                                                            <div className="bg-green-500" style={{ width: `${approvedPercent}%` }} title={`Approved: ${approved}`} />
-                                                        )}
-                                                        {rejected > 0 && (
-                                                            <div className="bg-red-500" style={{ width: `${rejectedPercent}%` }} title={`Rejected: ${rejected}`} />
-                                                        )}
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="flex items-center gap-1">
-                                                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                                                <span className="text-gray-600">Approved:</span>
-                                                            </span>
-                                                            <span className="font-semibold text-gray-800">{approved}</span>
+                                                    {/* Projects & Tasks Row */}
+                                                    <div className="flex items-center gap-3 justify-evenly">
+                                                        <div className="flex items-center gap-1">
+                                                            <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                                                                <Briefcase size={14} className="text-purple-600" />
+                                                            </div>
+                                                            <div className="flex gap-1 items-center">
+                                                                <p className="text-lg font-bold text-purple-700">{employee.total_projects || 0}</p>
+                                                                <p className="text-xs text-gray-400 leading-none">Projects</p>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="flex items-center gap-1">
-                                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                                                <span className="text-gray-600">Submitted:</span>
-                                                            </span>
-                                                            <span className="font-semibold text-gray-800">{submitted}</span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="flex items-center gap-1">
-                                                                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                                                <span className="text-gray-600">In Progress:</span>
-                                                            </span>
-                                                            <span className="font-semibold text-gray-800">{inprogress}</span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="flex items-center gap-1">
-                                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                                                <span className="text-gray-600">Rejected:</span>
-                                                            </span>
-                                                            <span className="font-semibold text-gray-800">{rejected}</span>
+                                                        <div className="w-px h-8 bg-gray-200"></div>
+                                                        <div className="flex items-center gap-1">
+                                                            <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                                <FileText size={14} className="text-blue-600" />
+                                                            </div>
+                                                            <div className="flex gap-1 items-center">
+                                                                <p className="text-lg font-bold text-blue-700">{employee.total_tasks || 0}</p>
+                                                                <p className="text-xs text-gray-400 leading-none">Tasks</p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-400 pt-1 border-t border-gray-100">
-                                                        Total: {totalTasks} tasks
+
+                                                    {/* Status Progress Bar */}
+                                                    <div className="space-y-1">
+                                                        <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-100">
+                                                            {employee.approved_tasks > 0 && (
+                                                                <div className="bg-green-500" style={{ width: `${(employee.approved_tasks / employee.total_tasks) * 100}%` }} />
+                                                            )}
+                                                            {employee.submitted_tasks > 0 && (
+                                                                <div className="bg-blue-500" style={{ width: `${(employee.submitted_tasks / employee.total_tasks) * 100}%` }} />
+                                                            )}
+                                                            {employee.inprogress_tasks > 0 && (
+                                                                <div className="bg-yellow-500" style={{ width: `${(employee.inprogress_tasks / employee.total_tasks) * 100}%` }} />
+                                                            )}
+                                                            {employee.rejected_tasks > 0 && (
+                                                                <div className="bg-red-500" style={{ width: `${(employee.rejected_tasks / employee.total_tasks) * 100}%` }} />
+                                                            )}
+                                                        </div>
+
+                                                        {/* Status Legend */}
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                                    <span className="text-gray-600">App</span>
+                                                                    <span className="font-medium text-gray-800">{employee.approved_tasks}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                                    <span className="text-gray-600">Sub</span>
+                                                                    <span className="font-medium text-gray-800">{employee.submitted_tasks}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                                                    <span className="text-gray-600">Prog</span>
+                                                                    <span className="font-medium text-gray-800">{employee.inprogress_tasks}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                                    <span className="text-gray-600">Rej</span>
+                                                                    <span className="font-medium text-gray-800">{employee.rejected_tasks}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <div>
-                                                    <p className="text-lg font-bold text-blue-600">{employee.total_hours || 0}<span className="text-sm font-normal text-gray-500"> hrs ~{(employee.total_hours / 8).toFixed(0)} days</span></p>
-                                                </div>
+                                                <p className="font-semibold text-blue-600">{employee.total_hours || 0}h</p>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <p className="text-gray-700">{employee.working_days || 0} days</p>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <button
@@ -687,19 +725,23 @@ const TeamLeaderReport = () => {
                                             </td>
                                         </tr>
 
-                                        {/* Expanded Details - Shows all Projects, Activities, Sub-activities */}
+                                        {/* Expanded Details - Shows ONLY filtered projects */}
                                         {isExpanded && (
                                             <tr className="bg-gray-50">
-                                                <td colSpan="4" className="px-4 py-4">
+                                                <td colSpan="5" className="px-4 py-4">
                                                     <div className="space-y-4">
                                                         <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
                                                             <Layers size={16} />
                                                             Task Details for {employee.name}
+                                                            {selectedProject !== 'all' && (
+                                                                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full ml-2">
+                                                                    Filtered by project
+                                                                </span>
+                                                            )}
                                                         </h4>
 
                                                         {employee.projects?.map((project) => (
                                                             <div key={project.project_id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                                                                {/* Project Header */}
                                                                 <div className="flex justify-between items-center p-4 bg-gray-50">
                                                                     <div className="flex items-center gap-2">
                                                                         <Briefcase size={16} className="text-purple-500" />
@@ -710,11 +752,9 @@ const TeamLeaderReport = () => {
                                                                     </span>
                                                                 </div>
 
-                                                                {/* Project Activities */}
                                                                 <div className="p-4 space-y-3">
                                                                     {project.activities?.map((activity) => (
                                                                         <div key={activity.activity_id} className="ml-4 border border-gray-100 rounded-lg overflow-hidden">
-                                                                            {/* Activity Header */}
                                                                             <div className="flex justify-between items-center p-3 bg-gray-50/50">
                                                                                 <h6 className="font-medium text-gray-600 text-sm">{activity.activity_name}</h6>
                                                                                 <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
@@ -722,14 +762,12 @@ const TeamLeaderReport = () => {
                                                                                 </span>
                                                                             </div>
 
-                                                                            {/* Activity Sub-activities - Clickable to expand date-wise breakdown */}
                                                                             <div className="p-3 space-y-2">
                                                                                 {activity.subactivities?.map((sub) => {
                                                                                     const isSubExpanded = expandedSubActivity === `${employee.emp_code}-${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`;
 
                                                                                     return (
                                                                                         <div key={sub.subactivity_id} className="border border-gray-100 rounded-lg overflow-hidden">
-                                                                                            {/* Subactivity Header - Click to expand date-wise breakdown */}
                                                                                             <div
                                                                                                 className="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-50 transition-colors"
                                                                                                 onClick={() => setExpandedSubActivity(isSubExpanded ? null : `${employee.emp_code}-${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`)}
@@ -746,14 +784,13 @@ const TeamLeaderReport = () => {
                                                                                                         {sub.status}
                                                                                                     </span>
                                                                                                 </div>
-                                                                                                <span className="text-sm font-medium text-blue-600">{formatDuration(sub.total_time_spent)} <span className='text-xs font-normal text-gray-500 '>({sub.date_wise.length > 1 ? sub.date_wise?.length + " Days" : sub.date_wise?.length + " Day"})</span></span>
+                                                                                                <span className="text-sm font-medium text-blue-600">{formatDuration(sub.total_time_spent)}</span>
                                                                                             </div>
 
-                                                                                            {/* Date-wise Time Breakdown - Only expands when clicking on sub-activity */}
                                                                                             {isSubExpanded && sub.date_wise && sub.date_wise.length > 0 && (
                                                                                                 <div className="border-t border-gray-100 p-3 bg-gray-50/30">
                                                                                                     <div className="flex items-center gap-2 mb-2">
-                                                                                                        <Calendar size={12} className="text-gray-500" />
+                                                                                                        <CalendarDays size={12} className="text-gray-500" />
                                                                                                         <span className="text-xs font-medium text-gray-600">Date-wise Breakdown</span>
                                                                                                     </div>
                                                                                                     <div className="space-y-1">
@@ -785,6 +822,12 @@ const TeamLeaderReport = () => {
                                                                 </div>
                                                             </div>
                                                         ))}
+
+                                                        {employee.projects?.length === 0 && (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                No tasks found for this employee with the current filters.
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -803,6 +846,18 @@ const TeamLeaderReport = () => {
                     <Users size={64} className="mx-auto mb-4 text-gray-300" />
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">No Results Found</h2>
                     <p className="text-gray-500">No employees match your filter criteria.</p>
+                    <button
+                        onClick={() => {
+                            setSearchTerm('');
+                            setSelectedProject('all');
+                            setSelectedEmployee('all');
+                            setSelectedStatus('all');
+                        }}
+                        className="mt-4 text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                    >
+                        <FilterX size={14} />
+                        Clear all filters
+                    </button>
                 </div>
             )}
         </motion.div>

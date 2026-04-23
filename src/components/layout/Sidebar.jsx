@@ -126,14 +126,14 @@ const Sidebar = () => {
       badge: null,
       description: "All project logs",
     },
-    {
-      name: "My Work Logs",
-      icon: Clock,
-      path: "/my-work-logs",
-      roles: ["USER"],
-      badge: null,
-      description: "My work hours & logs",
-    },
+    // {
+    //   name: "My Work Logs",
+    //   icon: Clock,
+    //   path: "/my-work-logs",
+    //   roles: ["USER"],
+    //   badge: null,
+    //   description: "My work hours & logs",
+    // },
 
 
     // User specific - My Projects
