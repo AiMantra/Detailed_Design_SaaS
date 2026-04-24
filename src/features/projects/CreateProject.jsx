@@ -92,7 +92,7 @@ const CreateProject = () => {
     project_confirmation_date: "",
     loa_date: "",
     completion_date: "",
-    assigned_to: "",
+    assigned_to: [],
     clientbranch: "",
     workorder_document: ""
   });
@@ -4362,85 +4362,7 @@ const CreateProject = () => {
               </div>
             )}
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">
-                Assign Project Owner *
-              </label>
-              <div
-                className="relative"
-                ref={ReportingHeadsDropdownRef}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <User
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
 
-                <input
-                  type="text"
-                  value={reportingHeadSearch}
-                  placeholder="Select Supervisor"
-                  onFocus={() => setShowSupervisorDropdown(true)}
-                  onChange={(e) => {
-                    setReportingHeadSearch(e.target.value);
-                    setShowSupervisorDropdown(true);
-                  }}
-                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                />
-
-                {showSupervisorDropdown && (
-                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {(reportingHeadSearch
-                      ? reportingHeads.filter(
-                        (c) =>
-                          c.name
-                            ?.toLowerCase()
-                            .includes(reportingHeadSearch.toLowerCase()) ||
-                          c.emp_code
-                            ?.toLowerCase()
-                            .includes(reportingHeadSearch.toLowerCase()),
-                      )
-                      : reportingHeads
-                    ).length > 0 ? (
-                      (reportingHeadSearch
-                        ? reportingHeads.filter(
-                          (c) =>
-                            c.name
-                              ?.toLowerCase()
-                              .includes(reportingHeadSearch.toLowerCase()) ||
-                            c.emp_code
-                              ?.toLowerCase()
-                              .includes(reportingHeadSearch.toLowerCase()),
-                        )
-                        : reportingHeads
-                      ).map((reportingHead) => (
-                        <div
-                          key={reportingHead.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setForm({
-                              ...form,
-                              assigned_to: reportingHead.emp_code,
-                            });
-                            setReportingHeadSearch(
-                              `${reportingHead.name} - ${reportingHead.emp_code}`,
-                            ); // show both
-                            setShowSupervisorDropdown(false);
-                          }}
-                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                        >
-                          {reportingHead.name} - {reportingHead?.emp_code}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-gray-400 text-sm">
-                        No Matching Project Owner
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">
                 Workorder Document *
@@ -4466,6 +4388,142 @@ const CreateProject = () => {
                 />
               </label>
             </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">
+                Assign Project Owners *
+              </label>
+
+              <div
+                className="relative border rounded-xl px-3 py-2  bg-white focus-within:ring-2 focus-within:ring-blue-500 border-gray-200"
+                ref={ReportingHeadsDropdownRef}
+              >
+                {/* Selected Users */}
+                {
+                  form.assigned_to.length > 0 &&
+                  <div className="flex flex-wrap gap-2 mb-1">
+                    {form.assigned_to?.map((userCode) => {
+                      const user = reportingHeads.find(u => u.emp_code === userCode);
+
+                      return user ? (
+                        <div
+                          key={userCode}
+                          className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 rounded-full"
+                        >
+                          {/* Avatar */}
+                          <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
+                            {user.name?.charAt(0)}
+                          </div>
+
+                          {/* Name + Code */}
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-xs font-medium text-gray-800">
+                              {user.name}
+                            </span>
+                            <span className="text-[10px] text-gray-500">
+                              {user.emp_code}
+                            </span>
+                          </div>
+
+                          {/* Remove */}
+                          <button
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                assigned_to: form.assigned_to.filter(u => u !== userCode),
+                              });
+                            }}
+                            className="ml-1 text-gray-400 hover:text-red-500"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                }
+
+                {/* Input */}
+                <div className="flex items-center gap-2">
+                  <User size={16} className="text-gray-400" />
+
+                  <input
+                    type="text"
+                    value={reportingHeadSearch}
+                    placeholder="Search by name or code..."
+                    onFocus={() => setShowSupervisorDropdown(true)}
+                    onChange={(e) => {
+                      setReportingHeadSearch(e.target.value);
+                      setShowSupervisorDropdown(true);
+                    }}
+                    className="flex-1 outline-none text-sm py-1"
+                  />
+                </div>
+
+                {/* Dropdown */}
+                {showSupervisorDropdown && (
+                  <div className="absolute z-50 mt-2 w-full bg-white border rounded-xl shadow-lg max-h-60 overflow-y-auto border-gray-200 left-0">
+                    {(() => {
+                      const availableUsers = reportingHeads.filter(
+                        user => !form.assigned_to?.includes(user.emp_code)
+                      );
+
+                      const filteredUsers = reportingHeadSearch
+                        ? availableUsers.filter(
+                          (u) =>
+                            u.name?.toLowerCase().includes(reportingHeadSearch.toLowerCase()) ||
+                            u.emp_code?.toLowerCase().includes(reportingHeadSearch.toLowerCase())
+                        )
+                        : availableUsers;
+
+                      return filteredUsers.length > 0 ? (
+                        filteredUsers.map((user) => (
+                          <div
+                            key={user.id}
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                assigned_to: [...(form.assigned_to || []), user.emp_code],
+                              });
+
+                              setReportingHeadSearch("");
+                            }}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                          >
+                            {/* Avatar */}
+                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
+                              {user.name?.charAt(0)}
+                            </div>
+
+                            {/* Name + Code */}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-800">
+                                {user.name}
+
+                                <span className="text-xs text-gray-500"> ( {user.emp_code} )</span>
+                              </span>
+                            </div>
+
+                            <Plus size={14} className="ml-auto text-blue-500" />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-400 text-sm">
+                          {availableUsers.length === 0
+                            ? "All supervisors selected"
+                            : "No results found"}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-400">
+                Select multiple supervisors. Click × to remove.
+              </p>
+            </div>
+
 
             {/* <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Assigned to</label>
