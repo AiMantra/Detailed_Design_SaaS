@@ -22,6 +22,8 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import TlProjectList from "../features/projects/Tlprojects";
 import SubmittedTasks from "../features/tasks/SubmittedTask";
 import EmployeeReport from "../features/projects/empreport";
+import SettingsComponent from "../features/setupsettings/settings";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -135,6 +137,12 @@ export default function AppRoutes() {
         <Route path="/tl-projects" element={
           <ProtectedRoute allowedRoles={["TL"]}>
             <TlProjectList />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/settings" element={
+          <ProtectedRoute allowedRoles={["TL"]}>
+            <SettingsComponent />
           </ProtectedRoute>
         } />
 

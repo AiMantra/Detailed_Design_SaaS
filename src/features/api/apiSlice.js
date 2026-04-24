@@ -341,17 +341,17 @@ export const updateSubActivityStatus = createAsyncThunk(
   }
 );
 
-export const updateSubActivity = createAsyncThunk(
-  "api/updateSubActivity",
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      const response = await subActivityService.updateSubActivity(id, data);
-      return response;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
+// export const updateSubActivity = createAsyncThunk(
+//   "api/updateSubActivity",
+//   async ({ id, data }, { rejectWithValue }) => {
+//     try {
+//       const response = await subActivityService.updateSubActivity(id, data);
+//       return response;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
 
 // ============ PROJECT THUNKS ============
 export const fetchProjects = createAsyncThunk(
@@ -412,6 +412,18 @@ export const fetchProjectDetails = createAsyncThunk(
   }
 );
 
+
+// export const createProject = createAsyncThunk(
+//   'api/createProjectx',
+//   async (projectData, { rejectWithValue }) => {
+//     try {
+//       const response = await projectService.createProject(projectData);
+//       return response;
+//     } catch (error) {
+//       return rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
 
 export const createProject = createAsyncThunk(
   'api/createProjectx',
@@ -498,6 +510,121 @@ const updateItemInArray = (array, updatedItem, key = 'id') => {
     array[index] = updatedItem;
   }
 };
+
+
+// >>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<//
+// ==================== ACTIVITY TEMPLATES API ====================
+
+// Fetch all activity templates
+export const fetchActivityTemplates = createAsyncThunk(
+  "api/fetchActivityTemplates",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await activityTemplateService.getActivityTemplates();
+      return response;
+      // const response = await axios.get(
+      //   `${API_BASE_URL}/detaildesign/activity-template/`,
+      //   getAxiosConfig()
+      // );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
+
+// Update activity template with subactivities
+export const updateActivityTemplate = createAsyncThunk(
+  "api/updateActivityTemplate",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      // Format the data according to the API structure
+      const formattedData = {
+        activity_name: data.activity_name,
+        sorting_var: data.sorting_var,
+        template_description: data.template_description,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        weightage: data.weightage,
+        company: data.company,
+        sector: data.sector,
+        subactivities: data.subactivities || []
+      };
+
+      const response = await axios.put(
+        `${API_BASE_URL}/detaildesign/activity-template/${id}/`,
+        formattedData,
+        getAxiosConfig()
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Delete activity template
+export const deleteActivityTemplate = createAsyncThunk(
+  "api/deleteActivityTemplate",
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/detaildesign/activity-template/${id}/`,
+        getAxiosConfig()
+      );
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// ==================== SUB-ACTIVITIES API ====================
+
+// Update sub-activity
+export const updateSubActivity = createAsyncThunk(
+  "api/updateSubActivity",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/detaildesign/sub-activity/${id}/`,
+        data,
+        getAxiosConfig()
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Delete sub-activity
+export const deleteSubActivity = createAsyncThunk(
+  "api/deleteSubActivity",
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/detaildesign/sub-activity/${id}/`,
+        getAxiosConfig()
+      );
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// ==================== COMPANIES API ====================
+
+
+
+// ==================== SECTORS API ====================
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<//
 
 // Create the slice
 const apiSlice = createSlice({
@@ -688,12 +815,12 @@ const apiSlice = createSlice({
       .addCase(createSubActivitiesBulk.fulfilled, (state, action) => {
         addUniqueItems(state.subActivities, action.payload);
       })
-      .addCase(updateSubActivityProgress.fulfilled, (state, action) => {
-        updateItemInArray(state.subActivities, action.payload);
-      })
-      .addCase(updateSubActivityStatus.fulfilled, (state, action) => {
-        updateItemInArray(state.subActivities, action.payload);
-      })
+      // .addCase(updateSubActivityProgress.fulfilled, (state, action) => {
+      //   updateItemInArray(state.subActivities, action.payload);
+      // })
+      // .addCase(updateSubActivityStatus.fulfilled, (state, action) => {
+      //   updateItemInArray(state.subActivities, action.payload);
+      // })
 
       // ============ PROJECTS ============
       .addCase(fetchProjects.pending, (state) => {
@@ -739,7 +866,7 @@ const apiSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-       .addCase(fetchProjectDetails.fulfilled, (state, action) => {
+      .addCase(fetchProjectDetails.fulfilled, (state, action) => {
         state.loading = false;
         state.projectDetails = action.payload;
       })
@@ -759,8 +886,87 @@ const apiSlice = createSlice({
       })
       .addCase(deleteProject.fulfilled, (state, action) => {
         state.projects = state.projects.filter(p => p.id !== action.payload);
+      })
+
+
+
+      // >>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<< //
+      // Fetch Activity Templates
+    .addCase(fetchActivityTemplates.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+    .addCase(fetchActivityTemplates.fulfilled, (state, action) => {
+      state.loading = false;
+      state.activityTemplates = action.payload;
+    })
+    .addCase(fetchActivityTemplates.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    })
+   
+    // Update Activity Template
+    .addCase(updateActivityTemplate.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(updateActivityTemplate.fulfilled, (state, action) => {
+      state.loading = false;
+      const index = state.activityTemplates.findIndex(
+        (item) => item.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.activityTemplates[index] = action.payload;
+      }
+    })
+    .addCase(updateActivityTemplate.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    })
+    // Delete Activity Template
+    .addCase(deleteActivityTemplate.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(deleteActivityTemplate.fulfilled, (state, action) => {
+      state.loading = false;
+      state.activityTemplates = state.activityTemplates.filter(
+        (item) => item.id !== action.payload
+      );
+    })
+    .addCase(deleteActivityTemplate.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    })
+    
+   
+    
+    // Update Sub-activity
+    .addCase(updateSubActivity.fulfilled, (state, action) => {
+      // Find and update the sub-activity
+      state.activityTemplates.forEach((activity) => {
+        if (activity.subactivities) {
+          const index = activity.subactivities.findIndex(
+            (sub) => sub.id === action.payload.id
+          );
+          if (index !== -1) {
+            activity.subactivities[index] = action.payload;
+          }
+        }
       });
-  },
+    })
+    // Delete Sub-activity
+    .addCase(deleteSubActivity.fulfilled, (state, action) => {
+      // Remove the sub-activity from its parent activity
+      state.activityTemplates.forEach((activity) => {
+        if (activity.subactivities) {
+          activity.subactivities = activity.subactivities.filter(
+            (sub) => sub.id !== action.payload
+          );
+        }
+      });
+    });
+},
 });
 
 export const { clearError, clearProjects, clearActivities, clearSubActivities } = apiSlice.actions;

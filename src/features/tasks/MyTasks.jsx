@@ -352,7 +352,7 @@ const MyTasks = () => {
                 <FolderOpen size={16} />
                 Projects
               </button>
-              <button
+              {/* <button
                 onClick={() => setViewMode('timeline')}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'timeline'
                   ? 'bg-blue-600 text-white shadow-md'
@@ -361,7 +361,7 @@ const MyTasks = () => {
               >
                 <BarChart3 size={16} />
                 Timeline
-              </button>
+              </button> */}
             </div>
           </div>
         </motion.div>
