@@ -1,3 +1,5 @@
+// import "./App.css";
+import "./style/Layout.css";
 import "./style/Inputs.css";
 import AppRoutes from "./app/routes";
 import Snackbar from "./features/notifications/Snackbar";

@@ -10,7 +10,8 @@ import {
   Sun,
   Monitor,
   Shield,
-  UserCog
+  UserCog,
+  Bell
 } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { useState, useRef, useEffect } from "react";
@@ -131,6 +132,7 @@ const Layout = () => {
 
             <div className="flex items-center gap-1 md:gap-2">
               <ThemeToggle />
+              <Bell />
               <UserDropdown />
             </div>
           </div>
