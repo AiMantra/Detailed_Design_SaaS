@@ -2139,22 +2139,25 @@ const TlProjectList = () => {
                                                                 )}
 
                                                                 {/* Assigned Personnel Section */}
-                                                                {project.assigned_to && (
-                                                                    <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                                                                        <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
-                                                                            <UserCheck size={18} className="text-blue-600" />
-                                                                            Assigned Personnel
-                                                                        </h4>
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                                                                {project.assigned_to?.charAt(0)?.toUpperCase() || "U"}
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-sm font-medium text-gray-800">{project.assigned_to_detail?.name || project.assigned_to}</p>
-                                                                                <p className="text-xs text-gray-500">Project Owner</p>
+                                                                {console.log(project.assigned_to, project.assigned_to_detail)}
+                                                                {project.assigned_to_detail?.length > 10 && (
+                                                                    project.assigned_to_detail?.map((data) =>
+                                                                        <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                                                                            <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
+                                                                                <UserCheck size={18} className="text-blue-600" />
+                                                                                Assigned Personnel
+                                                                            </h4>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                                                                    {data?.name?.charAt(0)?.toUpperCase() || "U"}
+                                                                                </div>
+                                                                                <div>
+                                                                                    {/* <p className="text-sm font-medium text-gray-800">{data?.name}</p> */}
+                                                                                    <p className="text-xs text-gray-500">Project Owner</p>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
+                                                                    )
                                                                 )}
                                                             </motion.div>
                                                         )}
