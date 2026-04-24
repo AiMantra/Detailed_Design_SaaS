@@ -1,0 +1,2 @@
+- 21st April : Vercel Staging setup
+- 21st April : BASE_URL Bug fix

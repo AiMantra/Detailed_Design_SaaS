@@ -1,31 +1,6 @@
-// import AppRoutes from "./app/routes";
-// import Snackbar from "./features/notifications/Snackbar";
-// import { useLocation } from "react-router-dom";
-// import { AnimatePresence, motion } from "framer-motion";
-
-// function App() {
-//   const location = useLocation();
-
-//   return (
-//     <>
-//       <AnimatePresence mode="wait">
-//         <motion.div
-//           key={location.pathname}
-//           initial={{ opacity: 0, y: 10 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -10 }}
-//           transition={{ duration: 0.2 }}
-//         >
-//           <AppRoutes />
-//         </motion.div>
-//       </AnimatePresence>
-
-//       <Snackbar />
-//     </>
-//   );
-// }
-
-// export default App;
+// import "./App.css";
+import "./style/Layout.css";
+import "./style/Inputs.css";
 import AppRoutes from "./app/routes";
 import Snackbar from "./features/notifications/Snackbar";
 import NotificationManager from "./components/NotificationManager";
@@ -35,7 +10,7 @@ import { useLocation } from "react-router-dom";
 function App() {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const location = useLocation();
-  
+
   // Don't show NotificationManager on login page even if authenticated
   const isLoginPage = location.pathname === '/' || location.pathname === '/login';
   const shouldShowNotifications = isAuthenticated && !isLoginPage;

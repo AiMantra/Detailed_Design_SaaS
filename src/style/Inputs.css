@@ -1,0 +1,49 @@
+/* ------------------------------------------------------------------------ */
+/* ? ************* Inputs Styling ***************** */
+/* ------------------------------------------------------------------------ */
+
+/* ? ************* CheckBox ***************** */
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+
+  cursor: pointer;
+  position: relative;
+
+  height: 1em;
+  width: 1em;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+
+  transition: all 0.25s ease;
+}
+
+/* checked */
+input[type="checkbox"]:checked {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  animation: checkbox-click-pop 0.4s ease;
+}
+
+/* tick */
+input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  display: none;
+
+  left: 0.28em;
+  top: 0.12em;
+  width: 0.25em;
+  height: 0.5em;
+
+  border: solid white;
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:checked::after {
+  display: block;
+}
+
+/* ! ************* CheckBox ***************** */
