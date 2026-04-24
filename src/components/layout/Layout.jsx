@@ -18,6 +18,7 @@ import { useState, useRef, useEffect } from "react";
 import { logout } from "../../features/auth/authSlice";
 import { motion, AnimatePresence } from "framer-motion";
 import DevRoleSwitcher from "../DevRoleSwitcher";
+import NotificationsModal from "./Notifications";
 
 const ThemeToggle = () => {
   const dispatch = useDispatch();
@@ -47,6 +48,21 @@ const ThemeToggle = () => {
     </button>
   );
 };
+
+const Notifications = () => {
+  return (
+    <button
+      type="button"
+      // onClick={cycle}
+      title="Notifications Coming Soon..."
+      aria-label={"Notifications Coming Soon..."}
+      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+    >
+      <Bell size={20} />
+    </button>
+  );
+};
+
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -132,7 +148,8 @@ const Layout = () => {
 
             <div className="flex items-center gap-1 md:gap-2">
               <ThemeToggle />
-              <Bell />
+              <Notifications />
+              {/* <NotificationsModal /> */}
               <UserDropdown />
             </div>
           </div>

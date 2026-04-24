@@ -3114,23 +3114,23 @@ useEffect(() => {
                                                                                       className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1 "
                                                                                       style={{
                                                                                         backgroundColor:
-                                                                                          submissionStatus === "Pending" ? "#FEF3C7" :
-                                                                                            submissionStatus === "Raised" ? "#DBEAFE" :
-                                                                                              submissionStatus === "Received" ? "#D1FAE5" :
-                                                                                                submissionStatus === "Completed" ? "#F3E8FF" :
-                                                                                                  submissionStatus === "Waiting" ? "#F3F4F6" : "#F3F4F6",
+                                                                                          approvalStatus === "Pending" ? "#FEF3C7" :
+                                                                                            approvalStatus === "Raised" ? "#DBEAFE" :
+                                                                                              approvalStatus === "Received" ? "#D1FAE5" :
+                                                                                                approvalStatus === "Completed" ? "#F3E8FF" :
+                                                                                                  approvalStatus === "Waiting" ? "#F3F4F6" : "#F3F4F6",
                                                                                         color:
-                                                                                          submissionStatus === "Pending" ? "#D97706" :
-                                                                                            submissionStatus === "Raised" ? "#2563EB" :
-                                                                                              submissionStatus === "Received" ? "#059669" :
-                                                                                                submissionStatus === "Completed" ? "#9333EA" :
-                                                                                                  submissionStatus === "Waiting" ? "#6B7280" : "#6B7280",
+                                                                                          approvalStatus === "Pending" ? "#D97706" :
+                                                                                            approvalStatus === "Raised" ? "#2563EB" :
+                                                                                              approvalStatus === "Received" ? "#059669" :
+                                                                                                approvalStatus === "Completed" ? "#9333EA" :
+                                                                                                  approvalStatus === "Waiting" ? "#6B7280" : "#6B7280",
                                                                                         borderColor:
-                                                                                          submissionStatus === "Pending" ? "#D97706" :
-                                                                                            submissionStatus === "Raised" ? "#2563EB" :
-                                                                                              submissionStatus === "Received" ? "#059669" :
-                                                                                                submissionStatus === "Completed" ? "#9333EA" :
-                                                                                                  submissionStatus === "Waiting" ? "#D1D5DB" : "#D1D5DB"
+                                                                                          approvalStatus === "Pending" ? "#D97706" :
+                                                                                            approvalStatus === "Raised" ? "#2563EB" :
+                                                                                              approvalStatus === "Received" ? "#059669" :
+                                                                                                approvalStatus === "Completed" ? "#9333EA" :
+                                                                                                  approvalStatus === "Waiting" ? "#D1D5DB" : "#D1D5DB"
                                                                                       }}
                                                                                     >
                                                                                       <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
