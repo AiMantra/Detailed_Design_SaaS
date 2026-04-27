@@ -1,0 +1,65 @@
+/* ==================== Toastify STYLES ==================== */
+
+/* Simple version with essential backdrop blur */
+.Toastify__toast-container {
+  z-index: 10000 !important;
+}
+
+.Toastify__toast {
+  border-radius: 12px !important;
+  font-family: inherit !important;
+}
+
+/* Modal Backdrop with Blur Effect */
+.fixed.inset-0 {
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Ensure modal content stays sharp */
+/* .fixed.inset-0 > div {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+} */
+
+
+/* ==================== Custom Image Modal ==================== */
+
+.profile-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  cursor: zoom-out;
+  animation: fadeIn 0.3s ease forwards;
+  will-change: opacity;
+}
+
+.profile-modal-overlay-back {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.profile-modal-overlay-back-dashboard {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+
+.profile-modal-image {
+  max-height: 90vh;
+  max-width: 90vw;
+  border-radius: 10px;
+  /* box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); */
+  cursor: default;
+  animation: zoomIn 0.3s ease forwards;
+  will-change: transform;
+  z-index: 10000;
+  /* Optional but safe */
+}

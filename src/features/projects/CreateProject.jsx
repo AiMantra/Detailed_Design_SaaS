@@ -58,6 +58,8 @@ import {
 import { showSnackbar } from "../notifications/notificationSlice";
 import { addProject } from "./projectSlice";
 import { UNIT_OPTIONS, SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
+import { IMAGE_URL } from "../../services/api";
+import { CustomImageModal } from "../../utils/CustomFunctions";
 
 const CreateProject = () => {
   const dispatch = useDispatch();
@@ -4395,7 +4397,7 @@ const CreateProject = () => {
               </label>
 
               <div
-                className="relative border rounded-xl px-3 py-2  bg-white focus-within:ring-2 focus-within:ring-blue-500 border-gray-200"
+                className="relative border rounded-lg px-3 pt-2 min-h-11 bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500 border-gray-200"
                 ref={ReportingHeadsDropdownRef}
               >
                 {/* Selected Users */}
@@ -4411,9 +4413,23 @@ const CreateProject = () => {
                           className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 rounded-full"
                         >
                           {/* Avatar */}
-                          <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
+                          {/* <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
                             {user.name?.charAt(0)}
-                          </div>
+                          </div> */}
+                          {/* Avatar with Profile Picture Support */}
+                          {user.profilepic ? (
+                            <CustomImageModal customStyle>
+                              <img
+                                src={`${IMAGE_URL}${user.profilepic}`}
+                                alt={user.name}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                            </CustomImageModal>
+                          ) : (
+                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
+                              {user.name?.charAt(0)}
+                            </div>
+                          )}
 
                           {/* Name + Code */}
                           <div className="flex flex-col leading-tight">
@@ -4491,9 +4507,21 @@ const CreateProject = () => {
                             className="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 cursor-pointer"
                           >
                             {/* Avatar */}
-                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
+                            {/* <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
                               {user.name?.charAt(0)}
-                            </div>
+                            </div> */}
+                            {/* Avatar with Profile Picture Support */}
+                            {user.profilepic ? (
+                              <img
+                                src={`${IMAGE_URL}${user.profilepic}`}
+                                alt={user.name}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
+                                {user.name?.charAt(0)}
+                              </div>
+                            )}
 
                             {/* Name + Code */}
                             <div className="flex flex-col">
