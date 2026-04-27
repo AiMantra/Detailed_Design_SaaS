@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -35,7 +35,6 @@ import {
   BadgePercent,
   Copy,
   DockIcon,
-  Upload,
 } from "lucide-react";
 import {
   fetchCompanies,
@@ -58,8 +57,6 @@ import {
 import { showSnackbar } from "../notifications/notificationSlice";
 import { addProject } from "./projectSlice";
 import { UNIT_OPTIONS, SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
-import { IMAGE_URL } from "../../services/api";
-import { CustomImageModal } from "../../utils/CustomFunctions";
 
 const CreateProject = () => {
   const dispatch = useDispatch();
@@ -94,11 +91,10 @@ const CreateProject = () => {
     project_confirmation_date: "",
     loa_date: "",
     completion_date: "",
-    assigned_to: [],
+    assigned_to: "",
     clientbranch: "",
     workorder_document: ""
   });
-
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,14 +123,12 @@ const CreateProject = () => {
     name: "",
     gst_no: "",
   });
-
   const [showAddSectorModal, setShowAddSectorModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [newSector, setNewSector] = useState({
     name: "",
     unit: "",
   });
-
   const [newClient, setNewClient] = useState({
     code: "",
     client_name: "",
@@ -156,10 +150,12 @@ const CreateProject = () => {
   const [showAddActivityModal, setShowAddActivityModal] = useState(false);
   const [showAddSubActivityModal, setShowAddSubActivityModal] = useState(false);
 
-  const [showEditSubActivityModal, setShowEditSubActivityModal] = useState(false);
+  const [showEditSubActivityModal, setShowEditSubActivityModal] =
+    useState(false);
   const [editingSubActivity, setEditingSubActivity] = useState(null);
 
-  const [showCloneSubActivityModal, setShowCloneSubActivityModal] = useState(false);
+  const [showCloneSubActivityModal, setShowCloneSubActivityModal] =
+    useState(false);
   const [cloningSubActivity, setCloningSubActivity] = useState(null);
 
   const [selectedActivityForSub, setSelectedActivityForSub] = useState(null);
@@ -174,10 +170,6 @@ const CreateProject = () => {
     lengthType: "same", // 'same' or 'different'
     chainageLengths: [],
   });
-
-  const [editingActivityStage, setEditingActivityStage] = useState(null); // { activityId, currentStage }
-  const [editingStage, setEditingStage] = useState(null); // { activityId, subId, currentStage }
-  const [availableStages, setAvailableStages] = useState([]);
 
   const [branches, setBranches] = useState([
     { name: "", gst: "", state: "", status: "Active" },
@@ -1474,252 +1466,8 @@ const CreateProject = () => {
     }
   };
 
-  const recalculateStagePositions = (activities, selectedActivityIds, selectedSubActivitiesState) => {
-    // Get all selected activities with their subactivities
-    const allSelectedActivities = selectedActivityIds
-      .map(id => activities.find(a => a.id === id))
-      .filter(Boolean);
-
-    // Build a flat list of all selected subactivities with their current stages
-    let allSubactivities = [];
-
-    allSelectedActivities.forEach(activity => {
-      const selectedSubIds = selectedSubActivitiesState[activity.id] || [];
-      const selectedSubs = activity.subActivities.filter(sub => selectedSubIds.includes(sub.id));
-
-      selectedSubs.forEach(sub => {
-        allSubactivities.push({
-          activityId: activity.id,
-          activityName: activity.activity_name,
-          subId: sub.id,
-          subName: sub.subactivity_name,
-          currentStage: sub.sorting_var || 0,
-          subData: sub
-        });
-      });
-    });
-
-    // Sort by current stage
-    allSubactivities.sort((a, b) => a.currentStage - b.currentStage);
-
-    // Reassign sequential stages starting from 1
-    const reassigned = allSubactivities.map((item, idx) => ({
-      ...item,
-      newStage: idx + 1
-    }));
-
-    return reassigned;
-  };
-
-  const getAvailableStagesForActivity = (activityId) => {
-    const totalActivities = selectedActivities.length;
-    const available = [];
-
-    for (let i = 1; i <= totalActivities; i++) {
-      available.push(i);
-    }
-
-    return available;
-  };
-
-  const handleActivityOrderChange = (activityId, newStage) => {
-    // Get all selected activities
-    const allSelectedActivities = selectedActivities
-      .map(id => getAllActivities().find(a => a.id === id))
-      .filter(Boolean);
-
-    // Get the target activity
-    const targetActivity = allSelectedActivities.find(a => a.id === activityId);
-    if (!targetActivity) return;
-
-    const oldStage = targetActivity.sorting_var || 0;
-    if (newStage === oldStage) return;
-
-    // Remove target and reinsert at new position
-    const otherActivities = allSelectedActivities.filter(a => a.id !== activityId);
-
-    // Insert at new position (1-indexed)
-    const newOrder = [...otherActivities];
-    newOrder.splice(newStage - 1, 0, targetActivity);
-
-    // Reassign stages sequentially
-    const updatedActivities = newOrder.map((activity, idx) => ({
-      activityId: activity.id,
-      newStage: idx + 1
-    }));
-
-    // Update states
-    updatedActivities.forEach(({ activityId: actId, newStage: stage }) => {
-      const templateIndex = templatesActivities.findIndex(act => act.id === actId);
-
-      if (templateIndex !== -1) {
-        setTemplateActivities(prev =>
-          prev.map(act => {
-            if (act.id === actId) {
-              return { ...act, sorting_var: stage };
-            }
-            return act;
-          })
-        );
-      } else {
-        setCustomActivities(prev =>
-          prev.map(act => {
-            if (act.id === actId) {
-              return { ...act, sorting_var: stage };
-            }
-            return act;
-          })
-        );
-      }
-    });
-
-    // Close modal and show success
-    setEditingActivityStage(null);
-    // dispatch(showSnackbar({
-    //   message: "Activity sequence order updated successfully",
-    //   type: "success"
-    // }));
-  };
-
-  const getAvailableStagesForSubactivity = (activityId, subId) => {
-    const allSelectedActivities = selectedActivities
-      .map(id => getAllActivities().find(a => a.id === id))
-      .filter(Boolean);
-
-
-    const selectedSubIds = selectedSubActivities[activityId] || [];
-
-    const currentActivity = allSelectedActivities.find(act => act.id === activityId);
-    const selectedSubs = currentActivity.subActivities?.filter(sub => selectedSubIds.includes(sub.id)) || [];  // objects list of selected sub activities of the activityId
-
-    const available = [];
-
-    selectedSubs.forEach(subactivity => {
-      available.push(subactivity.sorting_var);
-    });
-
-
-    return available;
-  };
-
-  const handleStageChange = (activityId, subId, newStage) => {
-    // Get all selected activities with their sub-activities
-    const allSelectedActivities = selectedActivities
-      .map(id => getAllActivities().find(a => a.id === id))
-      .filter(Boolean);
-
-    // Collect all selected sub-activities
-    let allSubs = [];
-
-    allSelectedActivities.forEach(activity => {
-      const selectedSubIds = selectedSubActivities[activity.id] || [];
-      const selectedSubs = activity.subActivities.filter(sub => selectedSubIds.includes(sub.id));
-
-      selectedSubs.forEach(sub => {
-        allSubs.push({
-          activityId: activity.id,
-          subId: sub.id,
-          activitySortingVar: activity.sorting_var || 0,
-          currentStage: sub.sorting_var || 0,
-          subData: sub
-        });
-      });
-    });
-
-    // Find the target sub-activity
-    const targetIndex = allSubs.findIndex(s => s.subId === subId);
-    if (targetIndex === -1) return;
-
-    const target = allSubs[targetIndex];
-    if (newStage === target.currentStage) return;
-
-    // Remove target and insert at new position
-    allSubs.splice(targetIndex, 1);
-    allSubs.splice(newStage - 1, 0, target);
-
-    // Sort by activity sorting_var first to maintain activity order, then by new stage
-    allSubs.sort((a, b) => {
-      if (a.activitySortingVar !== b.activitySortingVar) {
-        return a.activitySortingVar - b.activitySortingVar;
-      }
-      return 0; // Keep relative order within same activity
-    });
-
-    // Reassign stages sequentially and get the reordered sub-activities per activity
-    const updates = allSubs.map((sub, idx) => ({
-      activityId: sub.activityId,
-      subId: sub.subId,
-      newStage: idx + 1
-    }));
-
-    // Group updates by activity to reorder the subActivities array
-    const updatesByActivity = {};
-    updates.forEach(update => {
-      if (!updatesByActivity[update.activityId]) {
-        updatesByActivity[update.activityId] = [];
-      }
-      updatesByActivity[update.activityId].push(update);
-    });
-
-    // Apply updates and reorder subActivities arrays
-    Object.keys(updatesByActivity).forEach(actId => {
-      const activityUpdates = updatesByActivity[actId];
-      const activityObj = allSelectedActivities.find(a => a.id === actId);
-
-      if (activityObj) {
-        // Create new ordered subActivities array
-        const allSubsForActivity = [...activityObj.subActivities];
-        const updatedSubsMap = {};
-
-        activityUpdates.forEach(update => {
-          updatedSubsMap[update.subId] = update.newStage;
-        });
-
-        // Sort the subActivities by their new stage (selected ones) or keep original order for unselected
-        const newOrder = [...allSubsForActivity].sort((a, b) => {
-          const aStage = updatedSubsMap[a.id] !== undefined ? updatedSubsMap[a.id] : a.sorting_var || 999;
-          const bStage = updatedSubsMap[b.id] !== undefined ? updatedSubsMap[b.id] : b.sorting_var || 999;
-          return aStage - bStage;
-        });
-
-        const templateIndex = templatesActivities.findIndex(act => act.id === actId);
-
-        if (templateIndex !== -1) {
-          setTemplateActivities(prev =>
-            prev.map(act => {
-              if (act.id === actId) {
-                return {
-                  ...act,
-                  subActivities: newOrder.map(sub => ({
-                    ...sub,
-                    sorting_var: updatedSubsMap[sub.id] !== undefined ? updatedSubsMap[sub.id] : sub.sorting_var
-                  }))
-                };
-              }
-              return act;
-            })
-          );
-        } else {
-          setCustomActivities(prev =>
-            prev.map(act => {
-              if (act.id === actId) {
-                return {
-                  ...act,
-                  subActivities: newOrder.map(sub => ({
-                    ...sub,
-                    sorting_var: updatedSubsMap[sub.id] !== undefined ? updatedSubsMap[sub.id] : sub.sorting_var
-                  }))
-                };
-              }
-              return act;
-            })
-          );
-        }
-      }
-    });
-
-    // Close modal
-    setEditingStage(null);
+  const getAllActivitiesBackup = () => {
+    return [...templatesActivities, ...customActivities];
   };
 
   const getAllActivities = () => {
@@ -1789,7 +1537,7 @@ const CreateProject = () => {
       dispatch(
         showSnackbar({
           message:
-            "Please fill mandatory fields: Project Code, Name, Short Name And Work Order Document",
+            "Please fill mandatory fields: Project Code, Name, and Short Name",
           type: "error",
         }),
       );
@@ -1925,28 +1673,39 @@ const CreateProject = () => {
     try {
       const allActivities = getAllActivities();
 
-      // Build Activities + SubActivities together with sorting_var
+      // 🔥 Build Activities + SubActivities together
       const activitiesPayload = selectedActivities.map((activityId) => {
         const activityObj = allActivities.find((a) => a.id === activityId);
         const dates = activityDates[activityId];
         const weightage = activityWeightages[activityId] || 0;
-        const activitySortingVar = activityObj?.sorting_var || 0;
 
         const selectedSubs = selectedSubActivities[activityId] || [];
 
         const subactivities = selectedSubs.map((subId) => {
           const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
-          const unit = subActivityUnits[`${activityId}_${subId}`] || subObj?.unit;
-          const plannedQty = subActivityPlannedQtys[`${subId}_quantity`] || 0;
-          const submissionpayment = subActivityPlannedQtys[`${subId}_subpayment`] || 0;
-          const approvalpayment = subActivityPlannedQtys[`${subId}_approvalpayment`] || 0;
-          const chainagestart = subActivityPlannedQtys[`${subId}_chainagestart`] || 0;
-          const chainageend = subActivityPlannedQtys[`${subId}_chainageend`] || 0;
-          const coveredarea = subActivityPlannedQtys[`${subId}_coveredarea`] || 0;
-          const description = subActivityPlannedQtys[`${subId}_description`] || "";
+          const unit =
+            subActivityUnits[`${activityId}_${subId}`] || subObj?.unit;
+
+          const plannedQty =
+            subActivityPlannedQtys[`${subId}_quantity`] || 0;
+
+          const submissionpayment =
+            subActivityPlannedQtys[`${subId}_subpayment`] || 0;
+
+          const approvalpayment =
+            subActivityPlannedQtys[`${subId}_approvalpayment`] || 0;
+
+          const chainagestart =
+            subActivityPlannedQtys[`${subId}_chainagestart`] || 0;
+
+          const chainageend =
+            subActivityPlannedQtys[`${subId}_chainageend`] || 0;
+
+          const description =
+            subActivityPlannedQtys[`${subId}_description`] || "";
+
           const isStatusBased = unit === "status";
-          const subSortingVar = subObj?.sorting_var || 0;
 
           return {
             subactivity_name: subObj?.subactivity_name || String(subId),
@@ -1957,8 +1716,7 @@ const CreateProject = () => {
             approval_payment: approvalpayment,
             chainage_start: chainagestart,
             chainage_end: chainageend,
-            covered_area: coveredarea || "0.00",
-            sorting_var: subSortingVar
+            covered_area: "0.00", // same as your API example
           };
         });
 
@@ -1967,7 +1725,6 @@ const CreateProject = () => {
           start_date: dates.startDate,
           end_date: dates.endDate,
           weightage: weightage,
-          sorting_var: activitySortingVar,
           subactivities: subactivities,
         };
       });
@@ -1987,7 +1744,7 @@ const CreateProject = () => {
         loa_date: form.loa_date,
         completion_date: form.completion_date,
         assigned_to: form.assigned_to,
-        created_by: sessionStorage.getItem('emp_code'),
+        created_by: "CIPL10039", // keep dynamic if needed
         gst_type: "exclude",
         igst: null,
         cgst: null,
@@ -2001,13 +1758,10 @@ const CreateProject = () => {
         workorder_document: form.workorder_document
       };
 
-      console.log('payload-', payload)
-
       const apiResult = await dispatch(createProjectApi(payload)).unwrap();
       // ✅ Success
       dispatch(
         showSnackbar({
-
           message: "Project created successfully!",
           type: "success",
         })
@@ -2264,195 +2018,6 @@ const CreateProject = () => {
     if (unit === "Percentage") return "%";
     return unit;
   };
-
-
-  // Add a ref to track if we're currently recalculating to avoid loops
-  const isRecalculatingRef = useRef(false);
-
-  // Single source of truth for recalculating all stages
-  const recalculateAllStages = useCallback(() => {
-    if (isRecalculatingRef.current) return;
-
-    // Get all selected activities
-    const allSelectedActivities = selectedActivities
-      .map(id => getAllActivities().find(a => a.id === id))
-      .filter(Boolean);
-
-    // Collect all selected sub-activities across all activities
-    let allSelectedSubs = [];
-
-    allSelectedActivities.forEach(activity => {
-      const selectedSubIds = selectedSubActivities[activity.id] || [];
-      const selectedSubs = activity.subActivities.filter(sub => selectedSubIds.includes(sub.id));
-
-      selectedSubs.forEach(sub => {
-        allSelectedSubs.push({
-          activityId: activity.id,
-          subId: sub.id,
-          activitySortingVar: activity.sorting_var || 0,
-          subSortingVar: sub.sorting_var || 0,
-          subData: sub
-        });
-      });
-    });
-
-    // Sort by activity sorting_var first, then by current sub stage
-    allSelectedSubs.sort((a, b) => {
-      if (a.activitySortingVar !== b.activitySortingVar) {
-        return a.activitySortingVar - b.activitySortingVar;
-      }
-      return a.subSortingVar - b.subSortingVar;
-    });
-
-    // Check if any stage needs to change
-    let needsUpdate = false;
-    const updates = [];
-
-    allSelectedSubs.forEach((sub, index) => {
-      const expectedStage = index + 1;
-      if (sub.subSortingVar !== expectedStage) {
-        needsUpdate = true;
-        updates.push({
-          activityId: sub.activityId,
-          subId: sub.subId,
-          newStage: expectedStage
-        });
-      }
-    });
-
-    if (needsUpdate && !isRecalculatingRef.current) {
-      isRecalculatingRef.current = true;
-
-      // Apply updates
-      updates.forEach(({ activityId, subId, newStage }) => {
-        const templateIndex = templatesActivities.findIndex(act => act.id === activityId);
-
-        if (templateIndex !== -1) {
-          setTemplateActivities(prev =>
-            prev.map(act => {
-              if (act.id === activityId) {
-                return {
-                  ...act,
-                  subActivities: act.subActivities.map(sub =>
-                    sub.id === subId ? { ...sub, sorting_var: newStage } : sub
-                  )
-                };
-              }
-              return act;
-            })
-          );
-        } else {
-          setCustomActivities(prev =>
-            prev.map(act => {
-              if (act.id === activityId) {
-                return {
-                  ...act,
-                  subActivities: act.subActivities.map(sub =>
-                    sub.id === subId ? { ...sub, sorting_var: newStage } : sub
-                  )
-                };
-              }
-              return act;
-            })
-          );
-        }
-      });
-
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        isRecalculatingRef.current = false;
-      }, 100);
-    }
-  }, [selectedActivities, selectedSubActivities, templatesActivities, customActivities]);
-
-  // Recalculate stages whenever activities are selected/unselected or sub-activities change
-  useEffect(() => {
-    if (selectedActivities.length > 0) {
-      recalculateAllStages();
-    }
-  }, [selectedActivities, selectedSubActivities, recalculateAllStages]);
-
-  // Recalculate activity sorting_vars when activities are reordered
-  const recalculateActivityStages = useCallback(() => {
-    // Get all selected activities
-    const allSelectedActivities = selectedActivities
-      .map(id => getAllActivities().find(a => a.id === id))
-      .filter(Boolean);
-
-    // Sort by current sorting_var
-    const sorted = [...allSelectedActivities].sort((a, b) =>
-      (a.sorting_var || 0) - (b.sorting_var || 0)
-    );
-
-    // Check if any needs update
-    let needsUpdate = false;
-    const updates = [];
-
-    sorted.forEach((activity, index) => {
-      const expectedStage = index + 1;
-      if ((activity.sorting_var || 0) !== expectedStage) {
-        needsUpdate = true;
-        updates.push({
-          activityId: activity.id,
-          newStage: expectedStage
-        });
-      }
-    });
-
-    if (needsUpdate) {
-      updates.forEach(({ activityId, newStage }) => {
-        const templateIndex = templatesActivities.findIndex(act => act.id === activityId);
-
-        if (templateIndex !== -1) {
-          setTemplateActivities(prev =>
-            prev.map(act => {
-              if (act.id === activityId) {
-                return { ...act, sorting_var: newStage };
-              }
-              return act;
-            })
-          );
-        } else {
-          setCustomActivities(prev =>
-            prev.map(act => {
-              if (act.id === activityId) {
-                return { ...act, sorting_var: newStage };
-              }
-              return act;
-            })
-          );
-        }
-      });
-    }
-  }, [selectedActivities, templatesActivities, customActivities]);
-
-  // Recalculate activity stages when selected activities change
-  useEffect(() => {
-    if (selectedActivities.length > 0) {
-      recalculateActivityStages();
-    }
-  }, [selectedActivities, recalculateActivityStages]);
-
-
-  const debugStages = () => {
-    const allSelectedActivities = selectedActivities
-      .map(id => getAllActivities().find(a => a.id === id))
-      .filter(Boolean);
-
-    console.log("=== STAGE DEBUG ===");
-    allSelectedActivities.forEach(activity => {
-      const selectedSubIds = selectedSubActivities[activity.id] || [];
-      const selectedSubs = activity.subActivities.filter(sub => selectedSubIds.includes(sub.id));
-
-      console.log(`Activity: ${activity.activity_name} (sorting_var: ${activity.sorting_var})`);
-      selectedSubs.forEach(sub => {
-        console.log(`  - ${sub.subactivity_name}: stage ${sub.sorting_var}`);
-      });
-    });
-    console.log("=================");
-  };
-
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -3693,167 +3258,6 @@ const CreateProject = () => {
         )}
       </AnimatePresence>
 
-      {/* Edit Activity Stage Modal */}
-      <AnimatePresence>
-        {editingActivityStage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setEditingActivityStage(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg md:text-xl font-bold">
-                  Edit Activity Sequence
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setEditingActivityStage(null)}
-                  className="p-1 hover:bg-gray-100 rounded-lg"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Activity
-                  </label>
-                  <p className="text-gray-600 bg-gray-50 p-2 rounded-lg">
-                    {getAllActivities()
-                      .find(a => a.id === editingActivityStage.activityId)
-                      ?.activity_name}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sequence Order *
-                  </label>
-                  <select
-                    value={editingActivityStage.currentStage || 1}
-                    onChange={(e) => {
-                      const newStage = parseInt(e.target.value);
-                      handleActivityOrderChange(editingActivityStage.activityId, newStage);
-                    }}
-                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    {getAvailableStagesForActivity(editingActivityStage.activityId).map(stage => (
-                      <option key={stage} value={stage}>
-                        {stage}
-                      </option>
-                    ))}
-                  </select>
-                  {/* <p className="text-xs text-gray-500 mt-1">
-                    Stages must be unique across all activities in the project
-                  </p> */}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setEditingActivityStage(null)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Edit Stage Modal */}
-      <AnimatePresence>
-        {editingStage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setEditingStage(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg md:text-xl font-bold">
-                  Edit Stage Number
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setEditingStage(null)}
-                  className="p-1 hover:bg-gray-100 rounded-lg"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sub-Activity
-                  </label>
-                  <p className="text-gray-600 bg-gray-50 p-2 rounded-lg">
-                    {getAllActivities()
-                      .find(a => a.id === editingStage.activityId)
-                      ?.subActivities.find(s => s.id === editingStage.subId)
-                      ?.subactivity_name}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Stage Number *
-                  </label>
-                  <select
-                    value={editingStage.currentStage || 1}
-                    onChange={(e) => {
-                      const newStage = parseInt(e.target.value);
-                      handleStageChange(editingStage.activityId, editingStage.subId, newStage);
-                    }}
-                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    {getAvailableStagesForSubactivity(editingStage.activityId, editingStage.subId).map(stage => (
-                      <option key={stage} value={stage}>
-                        Stage {stage}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Stages must be unique across all sub-activities in the project
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setEditingStage(null)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Edit Sub-Activity Modal */}
       <AnimatePresence>
         {showEditSubActivityModal && editingSubActivity && (
@@ -4364,22 +3768,99 @@ const CreateProject = () => {
               </div>
             )}
 
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">
+                Assign Project Owner *
+              </label>
+              <div
+                className="relative"
+                ref={ReportingHeadsDropdownRef}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
 
+                <input
+                  type="text"
+                  value={reportingHeadSearch}
+                  placeholder="Select Supervisor"
+                  onFocus={() => setShowSupervisorDropdown(true)}
+                  onChange={(e) => {
+                    setReportingHeadSearch(e.target.value);
+                    setShowSupervisorDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
+
+                {showSupervisorDropdown && (
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {(reportingHeadSearch
+                      ? reportingHeads.filter(
+                        (c) =>
+                          c.name
+                            ?.toLowerCase()
+                            .includes(reportingHeadSearch.toLowerCase()) ||
+                          c.emp_code
+                            ?.toLowerCase()
+                            .includes(reportingHeadSearch.toLowerCase()),
+                      )
+                      : reportingHeads
+                    ).length > 0 ? (
+                      (reportingHeadSearch
+                        ? reportingHeads.filter(
+                          (c) =>
+                            c.name
+                              ?.toLowerCase()
+                              .includes(reportingHeadSearch.toLowerCase()) ||
+                            c.emp_code
+                              ?.toLowerCase()
+                              .includes(reportingHeadSearch.toLowerCase()),
+                        )
+                        : reportingHeads
+                      ).map((reportingHead) => (
+                        <div
+                          key={reportingHead.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setForm({
+                              ...form,
+                              assigned_to: reportingHead.emp_code,
+                            });
+                            setReportingHeadSearch(
+                              `${reportingHead.name} - ${reportingHead.emp_code}`,
+                            ); // show both
+                            setShowSupervisorDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          {reportingHead.name} - {reportingHead?.emp_code}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-gray-400 text-sm">
+                        No Matching Project Owner
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">
                 Workorder Document *
               </label>
 
-              <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
-                <Upload
+              <label className="relative flex items-center justify-center  cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
+                <DockIcon
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={16}
                 />
-                <div className=" text-gray-500">
+                <div className="flex flex-col items-center gap-1 text-gray-500">
                   <span className="text-sm">
                     {form?.workorder_document?.[0]?.name || "Click to upload or drag & drop"}
-                  </span>
-                  {/* <span className="text-xs text-gray-400">PDF, DOC, JPG (Max 5MB)</span> */}
+                  </span>            {/* <span className="text-xs text-gray-400">PDF, DOC, JPG (Max 5MB)</span> */}
                 </div>
 
                 <input
@@ -4390,168 +3871,6 @@ const CreateProject = () => {
                 />
               </label>
             </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">
-                Assign Project Owners *
-              </label>
-
-              <div
-                className="relative border rounded-lg px-3 pt-2 min-h-11 bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500 border-gray-200"
-                ref={ReportingHeadsDropdownRef}
-              >
-                {/* Selected Users */}
-                {
-                  form.assigned_to.length > 0 &&
-                  <div className="flex flex-wrap gap-2 mb-1">
-                    {form.assigned_to?.map((userCode) => {
-                      const user = reportingHeads.find(u => u.emp_code === userCode);
-
-                      return user ? (
-                        <div
-                          key={userCode}
-                          className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 rounded-full"
-                        >
-                          {/* Avatar */}
-                          {/* <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
-                            {user.name?.charAt(0)}
-                          </div> */}
-                          {/* Avatar with Profile Picture Support */}
-                          {user.profilepic ? (
-                            <CustomImageModal customStyle>
-                              <img
-                                src={`${IMAGE_URL}${user.profilepic}`}
-                                alt={user.name}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
-                            </CustomImageModal>
-                          ) : (
-                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
-                              {user.name?.charAt(0)}
-                            </div>
-                          )}
-
-                          {/* Name + Code */}
-                          <div className="flex flex-col leading-tight">
-                            <span className="text-xs font-medium text-gray-800">
-                              {user.name}
-                            </span>
-                            <span className="text-[10px] text-gray-500">
-                              {user.emp_code}
-                            </span>
-                          </div>
-
-                          {/* Remove */}
-                          <button
-                            onClick={() => {
-                              setForm({
-                                ...form,
-                                assigned_to: form.assigned_to.filter(u => u !== userCode),
-                              });
-                            }}
-                            className="ml-1 text-gray-400 hover:text-red-500"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                }
-
-                {/* Input */}
-                <div className="flex items-center gap-2">
-                  <User size={16} className="text-gray-400" />
-
-                  <input
-                    type="text"
-                    value={reportingHeadSearch}
-                    placeholder="Search by name or code..."
-                    onFocus={() => setShowSupervisorDropdown(true)}
-                    onChange={(e) => {
-                      setReportingHeadSearch(e.target.value);
-                      setShowSupervisorDropdown(true);
-                    }}
-                    className="flex-1 outline-none text-sm py-1"
-                  />
-                </div>
-
-                {/* Dropdown */}
-                {showSupervisorDropdown && (
-                  <div className="absolute z-50 mt-2 w-full bg-white border rounded-xl shadow-lg max-h-60 overflow-y-auto border-gray-200 left-0">
-                    {(() => {
-                      const availableUsers = reportingHeads.filter(
-                        user => !form.assigned_to?.includes(user.emp_code)
-                      );
-
-                      const filteredUsers = reportingHeadSearch
-                        ? availableUsers.filter(
-                          (u) =>
-                            u.name?.toLowerCase().includes(reportingHeadSearch.toLowerCase()) ||
-                            u.emp_code?.toLowerCase().includes(reportingHeadSearch.toLowerCase())
-                        )
-                        : availableUsers;
-
-                      return filteredUsers.length > 0 ? (
-                        filteredUsers.map((user) => (
-                          <div
-                            key={user.id}
-                            onClick={() => {
-                              setForm({
-                                ...form,
-                                assigned_to: [...(form.assigned_to || []), user.emp_code],
-                              });
-
-                              setReportingHeadSearch("");
-                            }}
-                            className="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 cursor-pointer"
-                          >
-                            {/* Avatar */}
-                            {/* <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
-                              {user.name?.charAt(0)}
-                            </div> */}
-                            {/* Avatar with Profile Picture Support */}
-                            {user.profilepic ? (
-                              <img
-                                src={`${IMAGE_URL}${user.profilepic}`}
-                                alt={user.name}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
-                                {user.name?.charAt(0)}
-                              </div>
-                            )}
-
-                            {/* Name + Code */}
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium text-gray-800">
-                                {user.name}
-
-                                <span className="text-xs text-gray-500"> ( {user.emp_code} )</span>
-                              </span>
-                            </div>
-
-                            <Plus size={14} className="ml-auto text-blue-500" />
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-3 py-2 text-gray-400 text-sm">
-                          {availableUsers.length === 0
-                            ? "All supervisors selected"
-                            : "No results found"}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-
-              <p className="text-xs text-gray-400">
-                Select multiple supervisors. Click × to remove.
-              </p>
-            </div>
-
 
             {/* <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Assigned to</label>
@@ -5045,29 +4364,10 @@ const CreateProject = () => {
                             <div
                               className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isExpanded ? "bg-blue-600" : "bg-gray-400"}`}
                             />
-
-                            {/* Activity Stage Edit Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingActivityStage({
-                                  activityId: activityId,
-                                  currentStage: activityObj.sorting_var || 0
-                                });
-                              }}
-                              className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
-                              title="Edit Activity Stage"
-                            >
-                              <Edit3 size={12} />
-                              <span>Activity {activityObj.sorting_var || '?'}</span>
-                            </button>
-
                             <h5 className="font-medium md:font-semibold text-gray-800 text-sm md:text-base truncate">
                               {/* {activityObj.sorting_var}. */}
                               {activityObj.activity_name}
                             </h5>
-
                             {/* {isCustom && (
                             <span className="text-[10px] md:text-xs bg-yellow-100 text-yellow-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
                               Custom
@@ -5107,7 +4407,7 @@ const CreateProject = () => {
                               exit={{ height: 0, opacity: 0 }}
                               className="border-t border-gray-200 bg-white p-3 md:p-4"
                             >
-                              <div className="mb-3 md:mb-4 cursor-not-allowed">
+                              <div className="mb-3 md:mb-4">
                                 <label className="block text-xs font-medium text-gray-600 mb-1">
                                   Activity Weightage (% of total project) *
                                 </label>
@@ -5123,8 +4423,8 @@ const CreateProject = () => {
                                       ) || ""
                                     }
                                     disabled
-                                    className="cursor-not-allowed w-full px-3 py-1.5 md:py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8"
-                                    placeholder="Weightage as per SubActivities"
+                                    className="w-full px-3 py-1.5 md:py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8"
+                                    placeholder="Enter weightage"
                                   />
                                   <Percent
                                     size={14}
@@ -5143,7 +4443,7 @@ const CreateProject = () => {
                                       activityDates[activityId]?.startDate || ""
                                     }
                                     min={form.loa_date}
-                                    max={activityDates[activityId]?.endDate || form.completion_date}
+                                    max={form.completion_date}
                                     onChange={(e) =>
                                       handleActivityDateChange(
                                         activityId,
@@ -5163,7 +4463,7 @@ const CreateProject = () => {
                                     value={
                                       activityDates[activityId]?.endDate || ""
                                     }
-                                    min={activityDates[activityId]?.startDate || form.loa_date}
+                                    min={form.loa_date}
                                     max={form.completion_date}
                                     onChange={(e) =>
                                       handleActivityDateChange(
@@ -5303,7 +4603,7 @@ const CreateProject = () => {
                                           className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
                                         >
                                           <div className="flex items-center justify-between mb-2">
-                                            {/* <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2">
                                               <input
                                                 type="checkbox"
                                                 checked={isSelected}
@@ -5327,73 +4627,14 @@ const CreateProject = () => {
                                                   );
                                                 }}
                                               >
-                                                Stage {sub.sorting_var}: {displayName}
+                                                {sub.sorting_var}. {displayName}
                                               </span>
-
-
-                                              {sub.isCustom && (
-                                                <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
-                                                  Custom
-                                                </span>
-                                              )}
-                                            </div> */}
-                                            <div className="flex items-center gap-2 flex-1">
-                                              <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={(e) =>
-                                                  handleSubActivitySelection(
-                                                    activityId,
-                                                    sub.id,
-                                                    e.target.checked,
-                                                  )
-                                                }
-                                                className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                              />
-                                              <div className="flex items-center gap-2 flex-wrap">
-                                                {/* Stage Edit Button */}
-                                                {isSelected && (
-                                                  <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setEditingStage({
-                                                        activityId: activityId,
-                                                        subId: sub.id,
-                                                        currentStage: sub.sorting_var || 0
-                                                      });
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
-                                                    title="Edit Stage"
-                                                  >
-                                                    <Edit3 size={12} />
-                                                    <span>Stage {sub.sorting_var || '?'}</span>
-                                                  </button>
-                                                )}
-
-                                                <span
-                                                  className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSubActivitySelection(
-                                                      activityId,
-                                                      sub.id,
-                                                      !isSelected,
-                                                    );
-                                                  }}
-                                                >
-                                                  {/* {sub.sorting_var}. {displayName} */}
-                                                  {displayName}
-                                                </span>
-
-                                              </div>
                                               {sub.isCustom && (
                                                 <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
                                                   Custom
                                                 </span>
                                               )}
                                             </div>
-
                                             <div className="flex items-center gap-1">
                                               {/* Clone Button */}
                                               <button
@@ -5754,6 +4995,38 @@ const CreateProject = () => {
                                                       </span>
                                                     </div>
                                                   </div>}
+
+                                                {/* Right Side Backup */}
+                                                {/* <div>
+                                                {(parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0 || parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0) && (
+                                                  <div className="col-span-1 sm:col-span-2 lg:col-span-3 mt-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                      {subActivityPlannedQtys[`${sub.id}_subpayment`] > 0 &&
+                                                        <div>
+                                                          <p className="text-[10px] text-gray-500">Submission ({subActivityPlannedQtys[`${sub.id}_subpayment`]}%)</p>
+                                                          <p className="text-sm font-semibold text-blue-600">
+                                                            ₹ {((parseFloat(form.workorder_Amount) * parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`])) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })} Lakhs
+                                                          </p>
+                                                        </div>
+                                                      }
+                                                      {parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0 &&
+                                                        <div>
+                                                          <p className="text-[10px] text-gray-500">Approval ({subActivityPlannedQtys[`${sub.id}_approvalpayment`]}%)</p>
+                                                          <p className="text-sm font-semibold text-blue-600">
+                                                            ₹ {((parseFloat(form.workorder_Amount) * parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`])) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })} Lakhs
+                                                          </p>
+                                                        </div>
+                                                      }
+                                                      <div>
+                                                        <p className="text-[10px] text-gray-500">Total Amount</p>
+                                                        <p className="text-sm font-bold text-green-600">
+                                                          ₹ {((parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0 ? ((parseFloat(form.workorder_Amount) * parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`])) / 100) : 0) + (parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0 ? ((parseFloat(form.workorder_Amount) * parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`])) / 100) : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })} Lakhs
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div> */}
 
                                                 <div className="col-span-3 mt-2">
                                                   {(parseFloat(

@@ -4,12 +4,15 @@
 
 /* Hide scrollbar completely - for sidebar */
 .scrollbar-none {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .scrollbar-none::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* Thin scrollbar - for main content areas */
@@ -46,16 +49,17 @@
   background: #9ca3af;
 }
 
-
-
 /* Hide scrollbar for all elements */
 * {
-  scrollbar-width: none;  /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 *::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* Ensure sidebar container hides scrollbar */
@@ -84,7 +88,9 @@
   right: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle,
+      rgba(59, 130, 246, 0.1) 0%,
+      transparent 70%);
   animation: rotate 20s linear infinite;
 }
 
@@ -92,6 +98,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -113,7 +120,9 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition:
+    width 0.3s ease,
+    height 0.3s ease;
 }
 
 .sidebar-menu-item:hover::after {
@@ -167,7 +176,9 @@
 .premium-card {
   background: white;
   border-radius: 1.5rem;
-  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 20px 35px -8px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.02);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -218,7 +229,9 @@
   right: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -276,7 +289,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
   animation: shimmer 2s infinite;
 }
 
@@ -284,6 +300,7 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -339,7 +356,9 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   transform: translate(-50%, -50%);
-  transition: width 0.5s ease, height 0.5s ease;
+  transition:
+    width 0.5s ease,
+    height 0.5s ease;
 }
 
 .premium-button:hover::after {
@@ -348,6 +367,10 @@
 }
 
 /* ==================== BADGE STYLES ==================== */
+
+.Badges {
+  border-radius: 10px;
+}
 
 .badge {
   padding: 0.25rem 0.75rem;
@@ -417,6 +440,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -428,6 +452,7 @@
     transform: translateX(-20px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -439,6 +464,7 @@
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -502,7 +528,7 @@
   .hide-on-mobile {
     display: none;
   }
-  
+
   .full-width-on-mobile {
     width: 100% !important;
   }
@@ -580,8 +606,4 @@
   border: 2px solid transparent;
   border-image: linear-gradient(90deg, #3b82f6, #60a5fa);
   border-image-slice: 1;
-}
-
-.Badges{
-  border-radius: 10px;
 }

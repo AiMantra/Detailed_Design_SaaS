@@ -38,6 +38,9 @@ import {
   File,
   FileText,
   Trash,
+  DownloadCloudIcon,
+  EllipsisVertical,
+  Pencil,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
@@ -58,6 +61,8 @@ import TaskPicker from "../tasks/TaskPicker";
 import LoadingModal from "../../components/modals/LoadingModal";
 import { SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
 import { saveDailyWorkLog } from "../tasks/taskSlice";
+import { CustomImageModal } from "../../utils/CustomFunctions";
+import { IMAGE_URL } from "../../services/api";
 
 const ProjectList = () => {
   const navigate = useNavigate();
@@ -273,7 +278,7 @@ const ProjectList = () => {
   const toggleActivity = (activityId, e) => {
     e.stopPropagation();
     setExpandedActivities((prev) => ({
-      ...prev,
+      // ...prev,
       [activityId]: !prev[activityId],
     }));
   };
@@ -376,14 +381,14 @@ const ProjectList = () => {
     }
     filtered.sort((a, b) => {
       const aDays =
-        getDaysUntilDeadline(a.completion_date || a.completionDate) || 999;
+        getDaysUntilDeadline(a.created_at || a.completionDate) || 999;
       const bDays =
-        getDaysUntilDeadline(b.completion_date || b.completionDate) || 999;
+        getDaysUntilDeadline(b.created_at || b.completionDate) || 999;
       const aProgress = a.progress || 0;
       const bProgress = b.progress || 0;
       const aName = a.project_name || a.name || "";
       const bName = b.project_name || b.name || "";
-      if (sortBy === "deadline") return aDays - bDays;
+      if (sortBy === "deadline") return bDays - aDays;
       if (sortBy === "progress") return bProgress - aProgress;
       if (sortBy === "name") return aName.localeCompare(bName);
       return 0;
@@ -604,7 +609,7 @@ const ProjectList = () => {
 
     } catch (error) {
       dispatch(showSnackbar({
-        message: error.message || 'Failed to save record',
+        message: error.message || 'Your total work log exceeds 24 hours.',
         type: 'error'
       }));
     } finally {
@@ -878,6 +883,20 @@ const ProjectList = () => {
       </div>
     );
   }
+
+  const [openMenuId, setOpenMenuId] = useState(null);
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMenuId && !event.target.closest(`.project-menu-${openMenuId}`)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openMenuId]);
+
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -940,6 +959,7 @@ const ProjectList = () => {
                 <input
                   type="date"
                   value={timeLogData.date}
+                  min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
                   onChange={(e) =>
                     setTimeLogData({ ...timeLogData, date: e.target.value })
                   }
@@ -1802,7 +1822,7 @@ const ProjectList = () => {
                           {/* LEFT SECTION */}
                           <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-3 mb-3">
-                              <h3 className="text-lg md:text-lg font-semibold text-gray-800  flex items-center gap-2" title={projectName}>
+                              <h3 className="text-lg md:text-lg font-semibold text-gray-800  flex items-center gap-2 w-full" title={projectName}>
                                 {projectName.length > 200 ? `${projectName.substring(0, 200)}...` : projectName}
                               </h3>
                               <motion.span
@@ -1979,7 +1999,7 @@ const ProjectList = () => {
                             </button>
                           </div> */}
 
-                          <div className="flex flex-col items-center justify-center gap-2">
+                          <div className="flex flex-row items-center justify-center gap-2">
                             {/* <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
@@ -1991,6 +2011,8 @@ const ProjectList = () => {
                             >
                               <Eye size={18} /> View Details
                             </motion.button> */}
+
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1999,7 +2021,7 @@ const ProjectList = () => {
                                   fetchProjectDetailsIfNeeded(projectId);
                                 }
                               }}
-                              className="p-3 hover:bg-gray-100 rounded-xl transition-colors"
+                              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
                             >
                               {isExpanded ? (
                                 <ChevronUp size={20} />
@@ -2007,16 +2029,98 @@ const ProjectList = () => {
                                 <ChevronDown size={20} />
                               )}
                             </button>
+                            {/* 
+                            {isAdmin && (
+                              <>
+                                {
+                                  project?.workorder_document &&
+                                  <a
+                                    href={project?.workorder_document}
+                                    target="_blank"
+                                    disabled={deleteInProgress}
+                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
+                                    title="Workorder Document"
+                                  >
+                                    <DownloadCloudIcon size={16} />
+                                  </a>
+                                }
+                                <button
+                                  onClick={(e) => handleDeleteProject(projectId, projectName, e)}
+                                  disabled={deleteInProgress}
+                                  className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110 "
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+
+                              </>
+                            )} */}
 
                             {isAdmin && (
-                              <button
-                                onClick={(e) => handleDeleteProject(projectId, projectName, e)}
-                                disabled={deleteInProgress}
-                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Toggle dropdown
+                                    const dropdown = document.getElementById(`project-menu-${projectId}`);
+                                    if (dropdown) {
+                                      dropdown.classList.toggle("hidden");
+                                    }
+                                  }}
+                                  // className="p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
+                                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                                  title="More options"
+                                >
+                                  <EllipsisVertical size={20} />
+                                </button>
+
+                                <div
+                                  id={`project-menu-${projectId}`}
+                                  className="hidden absolute right-0 mt-2 w-50 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden"
+                                >
+                                  <div className="py-1">
+                                    {project?.workorder_document && (
+                                      <a
+                                        href={project?.workorder_document}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 px-4 py-2 text-sm text-green-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-150"
+                                      >
+                                        <DownloadCloudIcon size={16} />
+                                        <span>Workorder Document</span>
+                                      </a>
+                                    )}
+
+                                    {/* <button
+                                      onClick={() => {
+                                        // Close menu first
+                                        document.getElementById(`project-menu-${projectId}`)?.classList.add("hidden");
+                                        // Handle edit project
+                                        handleEditProject(projectId);
+                                      }}
+                                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 w-full"
+                                    >
+                                      <Pencil/>
+                                      <span>Edit Project</span>
+                                    </button> */}
+
+                                    <button
+                                      onClick={(e) => {
+                                        // Close menu
+                                        document.getElementById(`project-menu-${projectId}`)?.classList.add("hidden");
+                                        handleDeleteProject(projectId, projectName, e);
+                                      }}
+                                      disabled={deleteInProgress}
+                                      className="flex items-center gap-3 px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      <Trash2 size={16} />
+                                      <span>Delete Project</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             )}
+
+
 
                           </div>
                         </div>
@@ -2438,11 +2542,10 @@ const ProjectList = () => {
                                               Activities & Sub-Activities (
                                               {projectData?.activities_detail?.length})
                                             </h4>
-                                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                                              {/* {projectData?.activities_detail?.sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)).map((activity, actIndex) => { */}
-                                              {/* {projectData?.activities_detail? */}
+                                            <div className="space-y-3 max-h-[900px] overflow-y-auto pr-2">
                                               {[...(projectData?.activities_detail || [])]
-                                                .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0))
+                                                // .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0))
+                                                .sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0))
                                                 .map((activity, actIndex) => {
                                                   // if (activity.activity_name == "Deliverable Item" && isUser) return null; // Skip rendering this activity
                                                   const subs = activity.subactivities || [];
@@ -2494,7 +2597,7 @@ const ProjectList = () => {
                                                             </h5>
                                                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">
                                                               Weightage:{" "}
-                                                              {activity.weightage || 0}%
+                                                              {activity.weightage.toFixed(2) || 0}%
                                                             </span>
                                                             <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600">
                                                               {subs.length} tasks
@@ -2575,88 +2678,93 @@ const ProjectList = () => {
 
 
                                                             <div className="overflow-x-auto bg-white rounded-xl border shadow-sm">
-                                                              <table className="w-full text-sm">
+                                                              {/* Table wrapper with fixed height and scroll */}
+                                                              <div className="max-h-[500px] overflow-y-auto relative">
+                                                                <table className="w-full text-sm">
 
-                                                                {/* HEADER */}
-                                                                <thead className="bg-gray-100 text-[10px] uppercase text-gray-600">
-                                                                  <tr>
-                                                                    <th className="px-2 py-3"></th>
-                                                                    <th className="px-2 py-3 text-left ">Sub Activity</th>
-                                                                    <th className="px-2 py-3 text-center">Chainage</th>
-                                                                    <th className="px-2 py-3 text-center">Qty</th>
-                                                                    <th className="px-2 py-3 text-center">Area</th>
-                                                                    {
-                                                                      !isUser &&
-                                                                      <>
-                                                                        <th className="px-2 py-3 text-center">Stage</th>
-                                                                        <th className="px-2 py-3 text-center">%</th>
-                                                                        <th className="px-2 py-3 text-center">Amount ₹</th>
-                                                                        <th className="px-2 py-3 text-center">Raised</th>
-                                                                        <th className="px-2 py-3 text-center">Received</th>
-                                                                        <th className="px-2 py-3 text-center">Remaining</th>
-                                                                        <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
-                                                                        <th className="px-2 py-3 text-center">Invoice Status</th>
-                                                                      </>
-                                                                    }
-                                                                    {
-                                                                      isUser &&
-                                                                      <>
-                                                                        <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
-                                                                        <th className="px-2 py-3 text-right">Action</th>
-                                                                      </>
-                                                                    }
-                                                                  </tr>
-                                                                </thead>
+                                                                  {/* HEADER */}
+                                                                  <thead className="sticky top-0 z-10 bg-gray-100 text-[10px] uppercase text-gray-600 shadow-sm">
+                                                                    <tr>
+                                                                      <th className="px-2 py-3"></th>
+                                                                      <th className="px-2 py-3 text-left ">Sub Activity</th>
+                                                                      <th className="px-2 py-3 text-center">Chainage</th>
+                                                                      <th className="px-2 py-3 text-center">Qty</th>
+                                                                      <th className="px-2 py-3 text-center">Area</th>
+                                                                      {
+                                                                        !isUser &&
+                                                                        <>
+                                                                          <th className="px-2 py-3 text-center">Stage</th>
+                                                                          <th className="px-2 py-3 text-center">%</th>
+                                                                          <th className="px-2 py-3 text-center">Amount ₹</th>
+                                                                          <th className="px-2 py-3 text-center">Raised</th>
+                                                                          <th className="px-2 py-3 text-center">Received</th>
+                                                                          <th className="px-2 py-3 text-center">Remaining</th>
+                                                                          <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                          <th className="px-2 py-3 text-center">Invoice Status</th>
+                                                                        </>
+                                                                      }
+                                                                      {
+                                                                        isUser &&
+                                                                        <>
+                                                                          <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                          <th className="px-2 py-3 text-right">Action</th>
+                                                                        </>
+                                                                      }
+                                                                    </tr>
+                                                                  </thead>
 
-                                                                {/* BODY */}
-                                                                <tbody>
-                                                                  {subs.map((sub, i) => {
-                                                                    const submissionAmount =
-                                                                      (((project?.workorder_cost || 0) *
-                                                                        (sub?.submission_payment || 0)) /
-                                                                        100) * 1.18;
+                                                                  {/* BODY */}
+                                                                  <tbody>
+                                                                    {/* {subs */}
+                                                                    {[...(subs || [])]
+                                                                      .sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0))
+                                                                      .map((sub, i) => {
+                                                                        const submissionAmount =
+                                                                          (((project?.workorder_cost || 0) *
+                                                                            (sub?.submission_payment || 0)) /
+                                                                            100) * 1.18;
 
-                                                                    const approvalAmount =
-                                                                      (((project?.workorder_cost || 0) *
-                                                                        (sub?.approval_payment || 0)) /
-                                                                        100) * 1.18;
+                                                                        const approvalAmount =
+                                                                          (((project?.workorder_cost || 0) *
+                                                                            (sub?.approval_payment || 0)) /
+                                                                            100) * 1.18;
 
-                                                                    const stages = sub?.payment_stages || [];
+                                                                        const stages = sub?.payment_stages || [];
 
-                                                                    const getAmount = (type, status, key) => {
-                                                                      return stages
-                                                                        .filter(
-                                                                          (s) => s.stage_type === type && s.to_status === status
-                                                                        )
-                                                                        .reduce((sum, item) => sum + (item?.[key] || 0), 0);
-                                                                    };
+                                                                        const getAmount = (type, status, key) => {
+                                                                          return stages
+                                                                            .filter(
+                                                                              (s) => s.stage_type === type && s.to_status === status
+                                                                            )
+                                                                            .reduce((sum, item) => sum + (item?.[key] || 0), 0);
+                                                                        };
 
-                                                                    // submission
-                                                                    const subRaised = getAmount("submission", "Raised", "raised_amount");
-                                                                    const subReceived = getAmount("submission", "Received", "received_amount");
-                                                                    const subRemaining = submissionAmount - subReceived;
+                                                                        // submission
+                                                                        const subRaised = getAmount("submission", "Raised", "raised_amount");
+                                                                        const subReceived = getAmount("submission", "Received", "received_amount");
+                                                                        const subRemaining = submissionAmount - subReceived;
 
-                                                                    // approval
-                                                                    const apprRaised = getAmount("approval", "Raised", "raised_amount");
-                                                                    const apprReceived = getAmount("approval", "Received", "received_amount");
+                                                                        // approval
+                                                                        const apprRaised = getAmount("approval", "Raised", "raised_amount");
+                                                                        const apprReceived = getAmount("approval", "Received", "received_amount");
 
-                                                                    const apprRemaining = approvalAmount - apprReceived;
-                                                                    const changeStatus = (sub.status || "Pending");
+                                                                        const apprRemaining = approvalAmount - apprReceived;
+                                                                        const changeStatus = (sub.status || "Pending");
 
-                                                                    let submissionStatus = sub?.submission_status || "Waiting";
-                                                                    let approvalStatus = sub?.approval_status || "Waiting";
-                                                                    const blurstatus = sub?.submission_status === "Waiting" && sub.status != "Submitted" ? "opacity-50" : "";
-                                                                    const highlite = submissionStatus === "Pending" ? " bg-green-50  " : ""
+                                                                        let submissionStatus = sub?.submission_status || "Waiting";
+                                                                        let approvalStatus = sub?.approval_status || "Waiting";
+                                                                        const blurstatus = sub?.submission_status === "Waiting" && sub.status != "Submitted" ? "opacity-50" : "";
+                                                                        const highlite = submissionStatus === "Pending" ? " bg-orange-50  " : ""
 
-                                                                    return (
-                                                                      <>
-                                                                        {/* 🔵 SUBMISSION ROW */}
-                                                                        <tr
-                                                                          id={`subactivity-row-${sub.id}`}
-                                                                          className="border-t  text-[12px]"
-                                                                          key={sub?.id}
-                                                                        >
-                                                                          {/* 
+                                                                        return (
+                                                                          <>
+                                                                            {/* 🔵 SUBMISSION ROW */}
+                                                                            <tr
+                                                                              id={`subactivity-row-${sub.id}`}
+                                                                              className="border-t  text-[12px]"
+                                                                              key={sub?.id}
+                                                                            >
+                                                                              {/* 
                                                                           <td rowSpan="2" className="px-2 text-center align-center">
                                                                             {
                                                                               sub.work_summary?.users.length > 0 || worklogreturned
@@ -2673,278 +2781,396 @@ const ProjectList = () => {
                                                                               ) : ""}
                                                                           </td> */}
 
-                                                                          <td rowSpan="2" className="px-2 text-center align-middle">
-                                                                            {(sub.work_summary?.users?.length > 0) ? (
-                                                                              <motion.button
-                                                                                onClick={() => setExpandedRow(expandedRow === sub.id ? null : sub.id)}
-                                                                                whileHover={{ scale: 1.1 }}
-                                                                                whileTap={{ scale: 0.95 }}
-                                                                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
-                                                                                  ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                                                  : "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                                                                                  }`}
-                                                                                title={expandedRow === sub.id ? "Collapse" : "Expand"}
-                                                                              >
-                                                                                {expandedRow === sub.id ? (
-                                                                                  <ChevronUp size={14} />
+                                                                              <td rowSpan="2" className="px-2 text-center align-middle">
+                                                                                {(sub.work_summary?.users?.length > 0) ? (
+                                                                                  <motion.button
+                                                                                    onClick={() => setExpandedRow(expandedRow === sub.id ? null : sub.id)}
+                                                                                    whileHover={{ scale: 1.1 }}
+                                                                                    whileTap={{ scale: 0.95 }}
+                                                                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
+                                                                                      ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                      : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                      }`}
+                                                                                    title={expandedRow === sub.id ? "Collapse" : "Expand"}
+                                                                                  >
+                                                                                    {expandedRow === sub.id ? (
+                                                                                      <ChevronUp size={14} />
+                                                                                    ) : (
+                                                                                      <ChevronDown size={14} />
+                                                                                    )}
+                                                                                  </motion.button>
                                                                                 ) : (
-                                                                                  <ChevronDown size={14} />
+                                                                                  <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
                                                                                 )}
-                                                                              </motion.button>
-                                                                            ) : (
-                                                                              <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
-                                                                            )}
-                                                                          </td>
-
-                                                                          <td rowSpan="2" className="px-2 font-medium align-center">
-                                                                            {sub.subactivity_name}
-                                                                          </td>
-
-
-                                                                          <td rowSpan="2" className="text-center">{formatNumber(sub.chainage_start)}</td>
-                                                                          <td rowSpan="2" className="text-center">{sub.total_quantity}</td>
-                                                                          <td rowSpan="2" className="text-center">{formatNumber(sub.covered_area)}</td>
-                                                                          {
-                                                                            !isUser && sub.submission_payment > 0 &&
-                                                                            <>
-                                                                              <td className={"text-center font-semibold text-green-600 border-b border-gray-300 border-l pl-1 " + blurstatus + highlite}>
-                                                                                Submission
                                                                               </td>
 
-                                                                              <td className={"text-center text-green-600 border-b border-gray-300 " + blurstatus + highlite}>
-                                                                                {sub.submission_payment}%
+                                                                              <td rowSpan="2" className="px-2 font-medium align-center">
+                                                                                {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                               </td>
 
-                                                                              <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>
-                                                                                ₹ {submissionAmount.toFixed(2)} L
-                                                                              </td>
 
-                                                                              <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>{subRaised.toFixed(2)} L
-                                                                                {
-                                                                                  subRaised > 0 &&
-                                                                                  <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                    model: true,
-                                                                                    data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission") || [],
-                                                                                    title: "Raised Stage Documents"
-                                                                                  })} />
-                                                                                }
-                                                                              </td>
-                                                                              <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>{subReceived == 0 && sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission")[0] ?
-                                                                                getDaysStatus(sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission")[0]?.created_at)
-                                                                                : subReceived.toFixed(2) + " L"}
-                                                                                {
-                                                                                  subReceived > 0 &&
-                                                                                  <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                    model: true,
-                                                                                    data: sub?.payment_stages?.filter((stage) => stage.to_status == "Received" && stage.stage_type == "submission") || [],
-                                                                                    title: "Received Stage Documents"
-                                                                                  })} />
-                                                                                }
-                                                                              </td>
-                                                                              <td className={"text-center border-b border-gray-300 " + blurstatus + highlite + (subRemaining.toFixed(2) == 0 ? " text-black-500" : subRemaining.toFixed(2) < 0 ? " text-green-500" : " text-red-500")}>
-                                                                                {subRemaining.toFixed(2) == 0 ? "0" : subRemaining.toFixed(2)} L
-                                                                              </td>
-                                                                              <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>
-                                                                                <div className="relative inline-block py-2 !inline-flex items-center" >
-                                                                                  <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
-                                                                                ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                      changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                        changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
-                                                                                          changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                            changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                              "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                    }`}>
-                                                                                    {changeStatus == "Approved" ? "Submitted" : changeStatus}
-                                                                                  </span>
-                                                                                  {
-                                                                                    !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
-                                                                                    <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
-                                                                                      onClick={(e) => setViewDocumentModel({
+                                                                              <td rowSpan="2" className="text-center">{formatNumber(sub.chainage_start)}</td>
+                                                                              <td rowSpan="2" className="text-center">{sub.total_quantity}</td>
+                                                                              <td rowSpan="2" className="text-center">{formatNumber(sub.covered_area)}</td>
+                                                                              {
+                                                                                !isUser && sub.submission_payment > 0 &&
+                                                                                <>
+                                                                                  <td className={"text-center font-semibold text-green-600 border-b border-gray-300 border-l pl-1 " + blurstatus + highlite}>
+                                                                                    Submission
+                                                                                  </td>
+
+                                                                                  <td className={"text-center text-green-600 border-b border-gray-300 " + blurstatus + highlite}>
+                                                                                    {sub.submission_payment}%
+                                                                                  </td>
+
+                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>
+                                                                                    ₹ {submissionAmount.toFixed(2)} L
+                                                                                  </td>
+
+                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>{subRaised.toFixed(2)} L
+                                                                                    {
+                                                                                      subRaised > 0 &&
+                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
                                                                                         model: true,
-                                                                                        data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
-                                                                                        title: "Submission Stage Documents"
+                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission") || [],
+                                                                                        title: "Raised Stage Documents"
                                                                                       })} />
-                                                                                  }
-                                                                                </div>
-                                                                              </td>
-                                                                              <td className={"text-center border-b border-gray-300 p-1 " + blurstatus + highlite}>
-                                                                                <select
-                                                                                  value={submissionStatus}
-                                                                                  disabled={submissionStatus == "Waiting"}
-                                                                                  onChange={(e) => {
-                                                                                    handleSubmissionapproveStatus("submission", sub, e.target.value, (subRemaining > 0 ? subRemaining.toFixed(2) : submissionAmount.toFixed(2)), projectId)
-                                                                                    submissionStatus = e.target.value;
-                                                                                  }}
-                                                                                  className={`text-xs border m-1 rounded  cursor-pointer w-[90px] p-1 
+                                                                                    }
+                                                                                  </td>
+                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>{subReceived == 0 && sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission")[0] ?
+                                                                                    getDaysStatus(sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission")[0]?.created_at)
+                                                                                    : subReceived.toFixed(2) + " L"}
+                                                                                    {
+                                                                                      subReceived > 0 &&
+                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
+                                                                                        model: true,
+                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Received" && stage.stage_type == "submission") || [],
+                                                                                        title: "Received Stage Documents"
+                                                                                      })} />
+                                                                                    }
+                                                                                  </td>
+                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite + (subRemaining.toFixed(2) == 0 ? " text-black-500" : subRemaining.toFixed(2) < 0 ? " text-green-500" : " text-red-500")}>
+                                                                                    {subRemaining.toFixed(2) == 0 ? "0" : subRemaining.toFixed(2)} L
+                                                                                  </td>
+                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>
+                                                                                    <div className="relative inline-block py-2 !inline-flex items-center" >
+                                                                                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
+                                                                                ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
+                                                                                          changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                            changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
+                                                                                              changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                                changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                                                                                                  "bg-gray-100 text-gray-600 border-gray-200"
+                                                                                        }`}>
+                                                                                        {changeStatus == "Approved" ? "Submitted" : changeStatus}
+                                                                                      </span>
+                                                                                      {
+                                                                                        !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
+                                                                                        <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
+                                                                                          onClick={(e) => setViewDocumentModel({
+                                                                                            model: true,
+                                                                                            data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
+                                                                                            title: "Submission Stage Documents"
+                                                                                          })} />
+                                                                                      }
+                                                                                    </div>
+                                                                                  </td>
+                                                                                  {/* <td className={"text-center border-b border-gray-300 p-1 " + blurstatus + highlite}>
+                                                                                  <select
+                                                                                    value={submissionStatus}
+                                                                                    disabled={submissionStatus == "Waiting"}
+                                                                                    onChange={(e) => {
+                                                                                      handleSubmissionapproveStatus("submission", sub, e.target.value, (subRemaining > 0 ? subRemaining.toFixed(2) : submissionAmount.toFixed(2)), projectId)
+                                                                                      submissionStatus = e.target.value;
+                                                                                    }}
+                                                                                    className={`text-xs border m-1 rounded  cursor-pointer w-[90px] p-1 
                                                                         ${submissionStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                      submissionStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
-                                                                                        submissionStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                          submissionStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                            "bg-gray-100 text-gray-600 border-gray-200"}`}
-                                                                                >
-                                                                                  <option value="Waiting" disabled>Not Started</option>
-                                                                                  <option value="Pending" disabled>Pending</option>
-                                                                                  <option value="Raised">Raised</option>
-                                                                                  <option value="Received" disabled={submissionStatus === "Raised" ? false : true}>Received</option>
-                                                                                </select>
-                                                                              </td>
-                                                                            </>
-                                                                          }
-                                                                          {
-                                                                            isUser &&
-                                                                            <>
-                                                                              <td className={"text-center "}>
-                                                                                <div className="relative inline-block py-2 !inline-flex items-center" >
-                                                                                  <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
+                                                                                        submissionStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
+                                                                                          submissionStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                            submissionStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                                                                                              "bg-gray-100 text-gray-600 border-gray-200"}`}
+                                                                                  >
+                                                                                    <option value="Waiting" disabled>Not Started</option>
+                                                                                    <option value="Pending" disabled>Pending</option>
+                                                                                    <option value="Raised">Raised</option>
+                                                                                    <option value="Received" disabled={submissionStatus === "Raised" ? false : true}>Received</option>
+                                                                                  </select>
+                                                                                </td> */}
+                                                                                  <td className={"text-center border-b border-gray-300 p-1 " + blurstatus + highlite}>
+                                                                                    <div className="relative inline-block">
+                                                                                      <select
+                                                                                        value={submissionStatus}
+                                                                                        disabled={submissionStatus === "Waiting"}
+                                                                                        onChange={(e) => {
+                                                                                          handleSubmissionapproveStatus("submission", sub, e.target.value, (subRemaining > 0 ? subRemaining.toFixed(2) : submissionAmount.toFixed(2)), projectId);
+                                                                                          submissionStatus = e.target.value;
+                                                                                        }}
+                                                                                        className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
+                                                                                        style={{
+                                                                                          backgroundColor:
+                                                                                            submissionStatus === "Pending" ? "#FEF3C7" :
+                                                                                              submissionStatus === "Raised" ? "#DBEAFE" :
+                                                                                                submissionStatus === "Received" ? "#D1FAE5" :
+                                                                                                  submissionStatus === "Completed" ? "#F3E8FF" :
+                                                                                                    submissionStatus === "Waiting" ? "#F3F4F6" : "#F3F4F6",
+                                                                                          color:
+                                                                                            submissionStatus === "Pending" ? "#D97706" :
+                                                                                              submissionStatus === "Raised" ? "#2563EB" :
+                                                                                                submissionStatus === "Received" ? "#059669" :
+                                                                                                  submissionStatus === "Completed" ? "#9333EA" :
+                                                                                                    submissionStatus === "Waiting" ? "#6B7280" : "#6B7280",
+                                                                                          borderColor:
+                                                                                            submissionStatus === "Pending" ? "#D97706" :
+                                                                                              submissionStatus === "Raised" ? "#2563EB" :
+                                                                                                submissionStatus === "Received" ? "#059669" :
+                                                                                                  submissionStatus === "Completed" ? "#9333EA" :
+                                                                                                    submissionStatus === "Waiting" ? "#D1D5DB" : "#D1D5DB"
+                                                                                        }}
+                                                                                      >
+                                                                                        <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+                                                                                          Not Started
+                                                                                        </option>
+                                                                                        <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>
+                                                                                          Pending
+                                                                                        </option>
+                                                                                        <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>
+                                                                                          Raised
+                                                                                        </option>
+                                                                                        <option
+                                                                                          value="Received"
+                                                                                          disabled={submissionStatus !== "Raised"}
+                                                                                          style={{ backgroundColor: "#D1FAE5", color: "#059669" }}
+                                                                                        >
+                                                                                          Received
+                                                                                        </option>
+                                                                                      </select>
+                                                                                    </div>
+                                                                                  </td>
+
+                                                                                </>
+                                                                              }
+                                                                              {
+                                                                                isUser &&
+                                                                                <>
+                                                                                  <td className={"text-center "}>
+                                                                                    <div className="relative inline-block py-2 !inline-flex items-center" >
+                                                                                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
                                                                                 ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                      changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                        changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
-                                                                                          changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                            changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                              "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                    }`}>
-                                                                                    {changeStatus == "Approved" ? "Submitted" : changeStatus}
-                                                                                  </span>
-                                                                                  {
-                                                                                    !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
-                                                                                    <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
-                                                                                      onClick={(e) => setViewDocumentModel({
+                                                                                          changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                            changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
+                                                                                              changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                                changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                                                                                                  "bg-gray-100 text-gray-600 border-gray-200"
+                                                                                        }`}>
+                                                                                        {changeStatus == "Approved" ? "Submitted" : changeStatus}
+                                                                                      </span>
+                                                                                      {
+                                                                                        !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
+                                                                                        <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
+                                                                                          onClick={(e) => setViewDocumentModel({
+                                                                                            model: true,
+                                                                                            data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
+                                                                                            title: "Submission Stage Documents"
+                                                                                          })} />
+                                                                                      }
+                                                                                    </div>
+                                                                                  </td>
+
+
+                                                                                  <td rowSpan="2" className={"text-right px-2 py-2 "}>
+                                                                                    <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
+                                                                                      disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
+                                                                                      onClick={() => {
+                                                                                        setSelectedTaskfortimelog({
+                                                                                          id: sub.id,
+                                                                                          project_id: project.id || project.project_id,
+                                                                                          subactivity_name: sub.subactivity_name,
+                                                                                          project_name:
+                                                                                            project.shortName || project.short_name,
+                                                                                        });
+
+                                                                                        setTimeLogData({
+                                                                                          date: new Date()
+                                                                                            .toISOString()
+                                                                                            .split("T")[0],
+                                                                                          startTime: "",
+                                                                                          endTime: "",
+                                                                                          description: "",
+                                                                                        });
+
+                                                                                        setShowTimeLogModal(true);
+                                                                                      }}>
+                                                                                      <span className='flex flex-row '>
+                                                                                        <PlusCircle size={16} />
+                                                                                        Work Log
+                                                                                      </span>
+                                                                                    </button>
+                                                                                  </td>
+                                                                                </>
+                                                                              }
+                                                                            </tr >
+
+                                                                            {/* 🟢 APPROVAL ROW */}
+                                                                            {
+                                                                              !isUser &&
+                                                                                sub.approval_payment > 0 ? (
+                                                                                <tr className={" text-[12px] border-b " + (approvalStatus === "Waiting" ? "opacity-50" : "") + (approvalStatus === "Pending" ? " bg-orange-50 " : "")}>
+                                                                                  <td className="text-center font-semibold text-blue-600 border-gray-300 border-l -pl-1">
+                                                                                    Approval
+                                                                                  </td>
+
+                                                                                  <td className="text-center text-blue-600">
+                                                                                    {sub.approval_payment}%
+                                                                                  </td>
+
+                                                                                  <td className="text-center">
+                                                                                    ₹ {approvalAmount.toFixed(2)} L
+                                                                                  </td>
+
+                                                                                  <td className="text-center">{apprRaised.toFixed(2)} L
+                                                                                    {
+                                                                                      apprRaised > 0 &&
+                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
                                                                                         model: true,
-                                                                                        data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
-                                                                                        title: "Submission Stage Documents"
+                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval") || [],
+                                                                                        title: "Raised Stage Documents"
                                                                                       })} />
-                                                                                  }
-                                                                                </div>
-                                                                              </td>
-
-
-                                                                              <td rowSpan="2" className={"text-right px-2 py-2 "}>
-                                                                                <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
-                                                                                  disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
-                                                                                  onClick={() => {
-                                                                                    setSelectedTaskfortimelog({
-                                                                                      id: sub.id,
-                                                                                      project_id: project.id || project.project_id,
-                                                                                      subactivity_name: sub.subactivity_name,
-                                                                                      project_name:
-                                                                                        project.shortName || project.short_name,
-                                                                                    });
-
-                                                                                    setTimeLogData({
-                                                                                      date: new Date()
-                                                                                        .toISOString()
-                                                                                        .split("T")[0],
-                                                                                      startTime: "",
-                                                                                      endTime: "",
-                                                                                      description: "",
-                                                                                    });
-
-                                                                                    setShowTimeLogModal(true);
-                                                                                  }}>
-                                                                                  <span className='flex flex-row '>
-                                                                                    <PlusCircle size={16} />
-                                                                                    Work Log
-                                                                                  </span>
-                                                                                </button>
-                                                                              </td>
-                                                                            </>
-                                                                          }
-                                                                        </tr >
-
-                                                                        {/* 🟢 APPROVAL ROW */}
-                                                                        {
-                                                                          !isUser &&
-                                                                            sub.approval_payment > 0 ? (
-                                                                            <tr className={" text-[12px] border-b " + (approvalStatus === "Waiting" ? "opacity-50" : "") + (approvalStatus === "Pending" ? " bg-blue-50 " : "")}>
-                                                                              <td className="text-center font-semibold text-blue-600 border-gray-300 border-l -pl-1">
-                                                                                Approval
-                                                                              </td>
-
-                                                                              <td className="text-center text-blue-600">
-                                                                                {sub.approval_payment}%
-                                                                              </td>
-
-                                                                              <td className="text-center">
-                                                                                ₹ {approvalAmount.toFixed(2)} L
-                                                                              </td>
-
-                                                                              <td className="text-center">{apprRaised.toFixed(2)} L
-                                                                                {
-                                                                                  apprRaised > 0 &&
-                                                                                  <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                    model: true,
-                                                                                    data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval") || [],
-                                                                                    title: "Raised Stage Documents"
-                                                                                  })} />
-                                                                                }
-                                                                              </td>
-                                                                              <td className="text-center">{apprReceived == 0 && sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval")[0] ?
-                                                                                getDaysStatus(sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval")[0]?.created_at)
-                                                                                : apprReceived.toFixed(2) + " L"}
-                                                                                {
-                                                                                  apprReceived > 0 &&
-                                                                                  <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                    model: true,
-                                                                                    data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval") || [],
-                                                                                    title: "Raised Stage Documents"
-                                                                                  })} />
-                                                                                }
-                                                                              </td>
-                                                                              <td className={"text-center " + (apprRemaining.toFixed(2) == 0 ? " text-black-500" : apprRemaining.toFixed(2) < 0 ? " text-green-500" : " text-red-500")}>
-                                                                                {apprRemaining.toFixed(2) == 0 ? "0" : apprRemaining.toFixed(2)} L
-                                                                              </td>
-                                                                              <td className="text-center">
-                                                                                <div className="relative inline-block py-2 !inline-flex items-center" >
-                                                                                  <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
+                                                                                    }
+                                                                                  </td>
+                                                                                  <td className="text-center">{apprReceived == 0 && sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval")[0] ?
+                                                                                    getDaysStatus(sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval")[0]?.created_at)
+                                                                                    : apprReceived.toFixed(2) + " L"}
+                                                                                    {
+                                                                                      apprReceived > 0 &&
+                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
+                                                                                        model: true,
+                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval") || [],
+                                                                                        title: "Raised Stage Documents"
+                                                                                      })} />
+                                                                                    }
+                                                                                  </td>
+                                                                                  <td className={"text-center " + (apprRemaining.toFixed(2) == 0 ? " text-black-500" : apprRemaining.toFixed(2) < 0 ? " text-green-500" : " text-red-500")}>
+                                                                                    {apprRemaining.toFixed(2) == 0 ? "0" : apprRemaining.toFixed(2)} L
+                                                                                  </td>
+                                                                                  <td className="text-center">
+                                                                                    <div className="relative inline-block py-2 !inline-flex items-center" >
+                                                                                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
                                                                                 ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                      changeStatus === "Submitted" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                        changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
-                                                                                          changeStatus === "Approved" ? "bg-blue-100 text-blue-600 border-blue-200" :
-                                                                                            changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                              "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                    }`}>
-                                                                                    {changeStatus == "Submitted" ? "Inprogress" : changeStatus}
-                                                                                  </span>
-                                                                                  {
-                                                                                    !isUser && sub?.submission_stages[0] && changeStatus == "Approved" &&
-                                                                                    <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
-                                                                                      onClick={(e) => setViewDocumentModel({
-                                                                                        model: true,
-                                                                                        data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
-                                                                                        title: "Approved Stage Documents"
-                                                                                      })} />
-                                                                                  }
-                                                                                </div>
-                                                                              </td>
-                                                                              <td className="text-center  p-1 ">
-                                                                                <select
-                                                                                  value={approvalStatus}
-                                                                                  disabled={approvalStatus == "Waiting"}
-                                                                                  onChange={(e) => {
-                                                                                    handleSubmissionapproveStatus("approval", sub, e.target.value, (apprRemaining > 0 ? apprRemaining.toFixed(2) : approvalAmount.toFixed(2)), projectId)
-                                                                                    approvalStatus = e.target.value;
-                                                                                  }}
-                                                                                  className={`text-xs border m-1 rounded cursor-pointer w-[90px] p-1 
+                                                                                          changeStatus === "Submitted" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
+                                                                                            changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
+                                                                                              changeStatus === "Approved" ? "bg-blue-100 text-blue-600 border-blue-200" :
+                                                                                                changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                                                                                                  "bg-gray-100 text-gray-600 border-gray-200"
+                                                                                        }`}>
+                                                                                        {changeStatus == "Submitted" ? "Inprogress" : changeStatus}
+                                                                                      </span>
+                                                                                      {
+                                                                                        !isUser && sub?.submission_stages[0] && changeStatus == "Approved" &&
+                                                                                        <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
+                                                                                          onClick={(e) => setViewDocumentModel({
+                                                                                            model: true,
+                                                                                            data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
+                                                                                            title: "Approved Stage Documents"
+                                                                                          })} />
+                                                                                      }
+                                                                                    </div>
+                                                                                  </td>
+                                                                                  {/* <td className="text-center  p-1 ">
+                                                                                  <select
+                                                                                    value={approvalStatus}
+                                                                                    disabled={approvalStatus == "Waiting"}
+                                                                                    onChange={(e) => {
+                                                                                      handleSubmissionapproveStatus("approval", sub, e.target.value, (apprRemaining > 0 ? apprRemaining.toFixed(2) : approvalAmount.toFixed(2)), projectId)
+                                                                                      approvalStatus = e.target.value;
+                                                                                    }}
+                                                                                    className={`text-xs border m-1 rounded cursor-pointer w-[90px] p-1 
                                                                                     ${approvalStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                      approvalStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
-                                                                                        approvalStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                          approvalStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                            "bg-gray-100 text-gray-600 border-gray-200"}`}
-                                                                                >
-                                                                                  <option value="Waiting" disabled>Not Started</option>
-                                                                                  <option value="Pending" disabled>Pending</option>
-                                                                                  <option value="Raised">Raised</option>
-                                                                                  <option value="Received" disabled={approvalStatus === "Raised" ? false : true}>Received</option>
-                                                                                </select>
-                                                                              </td>
+                                                                                        approvalStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
+                                                                                          approvalStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
+                                                                                            approvalStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                                                                                              "bg-gray-100 text-gray-600 border-gray-200"}`}
+                                                                                  >
+                                                                                    <option value="Waiting" disabled>Not Started</option>
+                                                                                    <option value="Pending" disabled>Pending</option>
+                                                                                    <option value="Raised">Raised</option>
+                                                                                    <option value="Received" disabled={approvalStatus === "Raised" ? false : true}>Received</option>
+                                                                                  </select>
+                                                                                </td> */}
 
-                                                                              <td></td>
-                                                                            </tr>
-                                                                          ) : <tr>
-                                                                          </tr>
-                                                                        }
+                                                                                  <td className={"text-center  p-1 "}>
+                                                                                    {/* <td className="text-center p-1"> */}
+                                                                                    <div className="relative inline-block">
+                                                                                      <select
+                                                                                        value={approvalStatus}
+                                                                                        disabled={approvalStatus === "Waiting"}
+                                                                                        onChange={(e) => {
+                                                                                          handleSubmissionapproveStatus(
+                                                                                            "approval",
+                                                                                            sub,
+                                                                                            e.target.value,
+                                                                                            apprRemaining > 0
+                                                                                              ? apprRemaining.toFixed(2)
+                                                                                              : approvalAmount.toFixed(2),
+                                                                                            projectId
+                                                                                          );
+                                                                                        }}
+                                                                                        // className="text-xs border rounded cursor-pointer w-[100px] px-2 py-1 pr-6 appearance-none transition-all focus:outline-none"
+                                                                                        className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1 "
+                                                                                        style={{
+                                                                                          backgroundColor:
+                                                                                            approvalStatus === "Pending" ? "#FEF3C7" :
+                                                                                              approvalStatus === "Raised" ? "#DBEAFE" :
+                                                                                                approvalStatus === "Received" ? "#D1FAE5" :
+                                                                                                  approvalStatus === "Completed" ? "#F3E8FF" :
+                                                                                                    approvalStatus === "Waiting" ? "#F3F4F6" : "#F3F4F6",
+                                                                                          color:
+                                                                                            approvalStatus === "Pending" ? "#D97706" :
+                                                                                              approvalStatus === "Raised" ? "#2563EB" :
+                                                                                                approvalStatus === "Received" ? "#059669" :
+                                                                                                  approvalStatus === "Completed" ? "#9333EA" :
+                                                                                                    approvalStatus === "Waiting" ? "#6B7280" : "#6B7280",
+                                                                                          borderColor:
+                                                                                            approvalStatus === "Pending" ? "#D97706" :
+                                                                                              approvalStatus === "Raised" ? "#2563EB" :
+                                                                                                approvalStatus === "Received" ? "#059669" :
+                                                                                                  approvalStatus === "Completed" ? "#9333EA" :
+                                                                                                    approvalStatus === "Waiting" ? "#D1D5DB" : "#D1D5DB"
+                                                                                        }}
+                                                                                      >
+                                                                                        <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+                                                                                          Not Started
+                                                                                        </option>
 
-                                                                        {/* {
+                                                                                        <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>
+                                                                                          Pending
+                                                                                        </option>
+
+                                                                                        <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>
+                                                                                          Raised
+                                                                                        </option>
+
+                                                                                        <option
+                                                                                          value="Received"
+                                                                                          disabled={approvalStatus !== "Raised"}
+                                                                                          style={{ backgroundColor: "#D1FAE5", color: "#059669" }}
+                                                                                        >
+                                                                                          Received
+                                                                                        </option>
+                                                                                      </select>
+
+                                                                                      {/* dropdown arrow */}
+                                                                                      {/* <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 text-[10px]">
+                                                                                      ▼
+                                                                                    </span> */}
+                                                                                    </div>
+                                                                                  </td>
+                                                                                  <td></td>
+                                                                                </tr>
+                                                                              ) : <tr>
+                                                                              </tr>
+                                                                            }
+
+                                                                            {/* {
                                                                           isUser &&
                                                                           <tr>
                                                                             <td></td>
@@ -2952,68 +3178,69 @@ const ProjectList = () => {
                                                                         } */}
 
 
-                                                                        {/* 🔽 EXPAND ROW - Minimalist Version */}
-                                                                        {expandedRow === sub.id && (
-                                                                          <tr className="bg-gray-50/80">
-                                                                            <td colSpan="13" className="px-4 py-4">
-                                                                              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                                                            {/* 🔽 EXPAND ROW - Minimalist Version */}
+                                                                            {expandedRow === sub.id && (
+                                                                              <tr className="bg-gray-50/80">
+                                                                                <td colSpan="13" className="px-4 py-4">
+                                                                                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
 
-                                                                                {/* Header */}
-                                                                                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                                                                                  <div className="flex items-center gap-2">
-                                                                                    <Clock size={16} className="text-blue-500" />
-                                                                                    <span className="text-sm font-medium text-gray-700">Time Logs</span>
-                                                                                  </div>
-                                                                                  <span className="text-xs text-gray-500">
-                                                                                    Total: {sub.work_summary?.total_hours || "00:00:00"}
-                                                                                  </span>
-                                                                                </div>
-
-                                                                                {/* Time Log Entries */}
-                                                                                <div className="divide-y divide-gray-100">
-                                                                                  {sub.work_summary?.users?.length > 0 ? (
-                                                                                    sub.work_summary.users.map((log, i) => (
-                                                                                      <div key={i} className="px-4 py-2.5 flex justify-between items-center hover:bg-gray-50">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
-                                                                                            {log.name?.charAt(0)?.toUpperCase()}
-                                                                                          </div>
-                                                                                          <span className="text-sm text-gray-700">{log.name}</span>
-                                                                                        </div>
-                                                                                        <div className="flex items-center gap-3">
-                                                                                          <span className="text-xs text-gray-400">{log.days_worked} day(s)</span>
-                                                                                          <span className="text-sm font-mono font-medium text-blue-600">
-                                                                                            {log.total_time_spent}
-                                                                                          </span>
-                                                                                        </div>
+                                                                                    {/* Header */}
+                                                                                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                                                                                      <div className="flex items-center gap-2">
+                                                                                        <Clock size={16} className="text-blue-500" />
+                                                                                        <span className="text-sm font-medium text-gray-700">Time Logs</span>
                                                                                       </div>
-                                                                                    ))
-                                                                                  ) : (
-                                                                                    <div className="px-4 py-6 text-center text-sm text-gray-400">
-                                                                                      No time logs recorded
+                                                                                      <span className="text-xs text-gray-500">
+                                                                                        Total: {sub.work_summary?.total_hours || "00:00:00"}
+                                                                                      </span>
                                                                                     </div>
-                                                                                  )}
-                                                                                </div>
 
-                                                                                {/* Collapse Button */}
-                                                                                <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
-                                                                                  <button
-                                                                                    onClick={() => setExpandedRow(null)}
-                                                                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mx-auto"
-                                                                                  >
-                                                                                    <ChevronUp size={12} />
-                                                                                    Collapse
-                                                                                  </button>
-                                                                                </div>
-                                                                              </div>
-                                                                            </td>
-                                                                          </tr>
-                                                                        )}
-                                                                      </>
-                                                                    );
-                                                                  })}
-                                                                </tbody>
-                                                              </table>
+                                                                                    {/* Time Log Entries */}
+                                                                                    <div className="divide-y divide-gray-100">
+                                                                                      {sub.work_summary?.users?.length > 0 ? (
+                                                                                        sub.work_summary.users.map((log, i) => (
+                                                                                          <div key={i} className="px-4 py-2.5 flex justify-between items-center hover:bg-gray-50">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
+                                                                                                {log.name?.charAt(0)?.toUpperCase()}
+                                                                                              </div>
+                                                                                              <span className="text-sm text-gray-700">{log.name}</span>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-3">
+                                                                                              <span className="text-xs text-gray-400">{log.days_worked} day(s)</span>
+                                                                                              <span className="text-sm font-mono font-medium text-blue-600">
+                                                                                                {log.total_time_spent}
+                                                                                              </span>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                        ))
+                                                                                      ) : (
+                                                                                        <div className="px-4 py-6 text-center text-sm text-gray-400">
+                                                                                          No time logs recorded
+                                                                                        </div>
+                                                                                      )}
+                                                                                    </div>
+
+                                                                                    {/* Collapse Button */}
+                                                                                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
+                                                                                      <button
+                                                                                        onClick={() => setExpandedRow(null)}
+                                                                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mx-auto"
+                                                                                      >
+                                                                                        <ChevronUp size={12} />
+                                                                                        Collapse
+                                                                                      </button>
+                                                                                    </div>
+                                                                                  </div>
+                                                                                </td>
+                                                                              </tr>
+                                                                            )}
+                                                                          </>
+                                                                        );
+                                                                      })}
+                                                                  </tbody>
+                                                                </table>
+                                                              </div>
                                                             </div>
                                                           </motion.div>
                                                         )}
@@ -3033,33 +3260,46 @@ const ProjectList = () => {
 
                               {/* Assigned Personnel Section */}
                               {
-                                project.assigned_to && (
-                                  <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                                    <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
-                                      <UserCheck
-                                        size={18}
-                                        className="text-blue-600"
-                                      />
-                                      Assigned Personnel
-                                    </h4>
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                        {project.assigned_to
-                                          ?.charAt(0)
-                                          ?.toUpperCase() || "U"}
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-medium text-gray-800">
-                                          {project.assigned_to_detail?.name ||
-                                            project.assigned_to}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                          Project Owner
-                                        </p>
-                                      </div>
-                                    </div>
+                                !loadingProjectDetails[projectId] && expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 &&
+                                <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                                  <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
+                                    <UserCheck size={18} className="text-blue-600" />
+                                    Assigned Personnel
+                                  </h4>
+                                  <div className="flex flex-row gap-4 flex-wrap">
+                                    {expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 && (
+                                      // {project.assigned_to_detail?.length > 10 && (
+                                      expandedProjectDetails[projectId]?.assigned_to_detail?.map((data, index) =>
+                                        <div key={index} className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                            {data?.profilepic ? (
+                                              <CustomImageModal customStyle>
+                                                <img
+                                                  src={`${IMAGE_URL}${data?.profilepic}`}
+                                                  alt={data?.name}
+                                                  className=" rounded-full object-cover"
+                                                />
+                                              </CustomImageModal>
+                                            ) : (
+                                              // <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
+                                              <div >
+                                                {data?.name?.charAt(0)}
+                                              </div>
+                                            )}
+                                            {/* {data?.name?.charAt(0)?.toUpperCase() || "U"} */}
+                                          </div>
+                                          <div>
+                                            {/* <p className="text-sm font-medium text-gray-800">{data?.name}</p> */}
+                                            <p className="text-sm font-medium text-gray-800">{data?.name}</p>
+                                            {/* <p className="text-xs text-gray-500">Project Owner</p> */}
+                                            {/* <p className="text-xs text-gray-500">{data?.role || "Project Owner"}</p> */}
+                                            <p className="text-xs text-gray-500">{expandedProjectDetails[projectId]?.assigned_to_detail?.length > 1 ? "Project CO-Owner" : "Project Owner"}</p>
+                                          </div>
+                                        </div>
+                                      )
+                                    )}
                                   </div>
-                                )
+                                </div>
                               }
                             </motion.div>
                           )}
