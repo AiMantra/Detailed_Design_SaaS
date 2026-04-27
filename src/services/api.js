@@ -2,7 +2,10 @@ import axios from 'axios';
 
 // Prod server
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+export const IMAGE_URL = "https://cipl-aimantra.s3.ap-south-1.amazonaws.com/";
+// const IMAGE_URL = import.meta.env.VITE_IMAGE_URL;
 const API_PREFIX = '/detaildesign';
+const API_PREFIX_HRMS = '/wfm';
 
 const api = axios.create({
   baseURL: BASE_URL + API_PREFIX,

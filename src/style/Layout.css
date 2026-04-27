@@ -2,225 +2,225 @@
 
 /* Custom scrollbar for sidebar only */
 .sidebar-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #94a3b8 #e2e8f0;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
 }
 
 .sidebar-scroll::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+  width: 5px;
+  height: 5px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
+  background: #f1f5f9;
+  border-radius: 10px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-    transition: background 0.2s ease;
+  background: #cbd5e1;
+  border-radius: 10px;
+  transition: background 0.2s ease;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+  background: #94a3b8;
 }
 
 /* Dark mode sidebar scrollbar */
 .dark .sidebar-scroll {
-    scrollbar-color: #475569 #1e293b;
+  scrollbar-color: #475569 #1e293b;
 }
 
 .dark .sidebar-scroll::-webkit-scrollbar-track {
-    background: #1e293b;
+  background: #1e293b;
 }
 
 .dark .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: #475569;
+  background: #475569;
 }
 
 .dark .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+  background: #64748b;
 }
 
 /* Professional thin scrollbar - for main content */
 .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  width: 6px;
+  height: 6px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
+  background: #f1f5f9;
+  border-radius: 10px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-    transition: all 0.2s ease;
+  background: #cbd5e1;
+  border-radius: 10px;
+  transition: all 0.2s ease;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-    width: 8px;
+  background: #94a3b8;
+  width: 8px;
 }
 
 /* Dark mode thin scrollbar */
 .dark .scrollbar-thin {
-    scrollbar-color: #475569 #1e293b;
+  scrollbar-color: #475569 #1e293b;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-track {
-    background: #1e293b;
+  background: #1e293b;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #475569;
+  background: #475569;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+  background: #64748b;
 }
 
 /* Table scrollbar - for data tables */
 .table-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #94a3b8 #e2e8f0;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
 }
 
 .table-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  width: 8px;
+  height: 8px;
 }
 
 .table-scroll::-webkit-scrollbar-track {
-    background: #f8fafc;
-    border-radius: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
 }
 
 .table-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 8px;
-    border: 1px solid #f1f5f9;
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
 }
 
 .table-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+  background: #94a3b8;
 }
 
 /* Modal/Sheet scrollbar */
 .modal-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f8fafc;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
 }
 
 .modal-scroll::-webkit-scrollbar {
-    width: 6px;
+  width: 6px;
 }
 
 .modal-scroll::-webkit-scrollbar-track {
-    background: #f8fafc;
-    border-radius: 10px;
+  background: #f8fafc;
+  border-radius: 10px;
 }
 
 .modal-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
+  background: #cbd5e1;
+  border-radius: 10px;
 }
 
 .modal-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+  background: #94a3b8;
 }
 
 /* Hide scrollbar but keep functionality - for specific cases */
 .scrollbar-hidden {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .scrollbar-hidden::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 /* Smooth scrolling for all elements */
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
 /* Custom scrollbar corner (for when both scrollbars appear) */
 ::-webkit-scrollbar-corner {
-    background: transparent;
+  background: transparent;
 }
 
 /* Horizontal scrollbar styling */
 .overflow-x-auto {
-    scrollbar-width: thin;
+  scrollbar-width: thin;
 }
 
 .overflow-x-auto::-webkit-scrollbar {
-    height: 6px;
+  height: 6px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
+  background: #f1f5f9;
+  border-radius: 10px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
+  background: #cbd5e1;
+  border-radius: 10px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+  background: #94a3b8;
 }
 
 /* Custom scrollbar for code blocks */
 .code-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #334155 #1e293b;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #1e293b;
 }
 
 .code-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  width: 8px;
+  height: 8px;
 }
 
 .code-scroll::-webkit-scrollbar-track {
-    background: #1e293b;
-    border-radius: 8px;
+  background: #1e293b;
+  border-radius: 8px;
 }
 
 .code-scroll::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 8px;
+  background: #334155;
+  border-radius: 8px;
 }
 
 .code-scroll::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+  background: #475569;
 }
 
 /* Gradient effect on scrollable area (optional) */
 .scroll-gradient {
-    position: relative;
+  position: relative;
 }
 
 .scroll-gradient::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 32px;
-    background: linear-gradient(to bottom, transparent, white);
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(to bottom, transparent, white);
+  pointer-events: none;
 }
 
 .dark .scroll-gradient::after {
-    background: linear-gradient(to bottom, transparent, #0f172a);
+  background: linear-gradient(to bottom, transparent, #0f172a);
 }

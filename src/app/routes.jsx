@@ -119,6 +119,12 @@ export default function AppRoutes() {
             <DailyLogs />
           </ProtectedRoute>
         } />
+        <Route path="/settings" element={
+          <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
+            <SettingsComponent />
+          </ProtectedRoute>
+        } />
+
         {/* Admin only routes */}
         {/* <Route path="/contractors" element={
           <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
@@ -140,11 +146,11 @@ export default function AppRoutes() {
           </ProtectedRoute>
         } />
 
-        <Route path="/settings" element={
+        {/* <Route path="/settings" element={
           <ProtectedRoute allowedRoles={["TL"]}>
             <SettingsComponent />
           </ProtectedRoute>
-        } />
+        } /> */}
 
         <Route path="/submitted-task" element={
           <ProtectedRoute allowedRoles={["TL"]}>

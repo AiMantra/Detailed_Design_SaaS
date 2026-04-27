@@ -193,10 +193,15 @@ const Login = () => {
               </label>
               <div className="relative">
                 <input
-                  type="email"
+                  id="email"
                   name="email"
+                  type="email"
+                  // autoComplete="off"
                   value={formData.email}
                   onChange={handleChange}
+                  onInput={(e) => {
+                    e.target.value = e.target.value.toLowerCase().trim();// Convert input to lowercase
+                  }}
                   placeholder="Enter your email"
                   className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-200'
                     }`}
@@ -218,8 +223,9 @@ const Login = () => {
               </label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  id="password"
                   name="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"

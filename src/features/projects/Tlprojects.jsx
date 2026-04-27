@@ -1638,9 +1638,9 @@ const TlProjectList = () => {
                                                                                                 Activities & Sub-Activities ({projectData?.activities_detail?.length})
                                                                                             </h4>
                                                                                             <div className="space-y-3 max-h-[900px] overflow-y-auto pr-2">
-                                                                                                {/* {projectData?.activities_detail?.sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)).map((activity, actIndex) => { */}
                                                                                                 {[...(projectData?.activities_detail || [])]
-                                                                                                    .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0))
+                                                                                                    // .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0))
+                                                                                                    .sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0))
                                                                                                     .map((activity, actIndex) => {
                                                                                                         const subs = activity.subactivities || [];
                                                                                                         const isActivityExpanded = expandedActivities[activity.id];
@@ -1707,8 +1707,9 @@ const TlProjectList = () => {
                                                                                                                                             </tr>
                                                                                                                                         </thead>
                                                                                                                                         <tbody>
-                                                                                                                                            {subs
-                                                                                                                                                // .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0))
+                                                                                                                                            {/* {subs */}
+                                                                                                                                            {[...(subs || [])]
+                                                                                                                                                .sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0))
                                                                                                                                                 .map((sub, i) => {
                                                                                                                                                     const stages = sub?.payment_stages || [];
 
@@ -2139,26 +2140,28 @@ const TlProjectList = () => {
                                                                 )}
 
                                                                 {/* Assigned Personnel Section */}
-                                                                {console.log(project.assigned_to, project.assigned_to_detail)}
-                                                                {project.assigned_to_detail?.length > 10 && (
-                                                                    project.assigned_to_detail?.map((data) =>
-                                                                        <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                                                                            <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
-                                                                                <UserCheck size={18} className="text-blue-600" />
-                                                                                Assigned Personnel
-                                                                            </h4>
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                                                                    {data?.name?.charAt(0)?.toUpperCase() || "U"}
+                                                                <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                                                                    <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
+                                                                        <UserCheck size={18} className="text-blue-600" />
+                                                                        Assigned Personnel
+                                                                    </h4>
+                                                                    <div className="flex flex-row gap-4 flex-wrap">
+                                                                        {expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 && (
+                                                                            expandedProjectDetails[projectId]?.assigned_to_detail?.map((data, index) => (
+                                                                                <div key={index} className="flex items-center gap-3">
+                                                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                                                                        {data?.name?.charAt(0)?.toUpperCase() || "U"}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <p className="text-sm font-medium text-gray-800">{data?.name}</p>
+                                                                                        {/* <p className="text-xs text-gray-500">{data?.role || "Project Owner"}</p> */}
+                                                                                        <p className="text-xs text-gray-500">{expandedProjectDetails[projectId]?.assigned_to_detail?.length > 1 ? "Project CO-Owner" : "Project Owner"}</p>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <div>
-                                                                                    {/* <p className="text-sm font-medium text-gray-800">{data?.name}</p> */}
-                                                                                    <p className="text-xs text-gray-500">Project Owner</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )
-                                                                )}
+                                                                            ))
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </motion.div>
                                                         )}
                                                     </AnimatePresence>
