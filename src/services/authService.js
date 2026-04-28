@@ -1,4 +1,5 @@
 // src/services/authService.js
+import { clearEncryptionKey } from '../utils/secureStorage';
 import authApi from './authApi';
 
 class AuthService {
@@ -16,7 +17,7 @@ class AuthService {
     }
   }
 
-  
+
   async refreshToken(refreshToken) {
     try {
       const response = await authApi.post('/user/token/refresh/', {
@@ -29,30 +30,31 @@ class AuthService {
     }
   }
 
-  
+
   logout() {
-    localStorage.clear();
+    clearEncryptionKey()
+    // localStorage.clear();
     sessionStorage.clear();
   }
 
 
   getUserData() {
     return {
-      token: localStorage.getItem('authToken'),
-      refreshToken: localStorage.getItem('refreshToken'),
-      email: localStorage.getItem('userEmail'),
-      name: localStorage.getItem('userName'),
-      role: localStorage.getItem('userRole'),
-      
+      token: sessionStorage.getItem('authToken'),
+      refreshToken: sessionStorage.getItem('refreshToken'),
+      email: sessionStorage.getItem('userEmail'),
+      name: sessionStorage.getItem('userName'),
+      role: sessionStorage.getItem('userRole'),
+
       empCode: sessionStorage.getItem('emp_code'),
       department: sessionStorage.getItem('department_name'),
       company: sessionStorage.getItem('company'),
     };
   }
 
-  
+
   isAuthenticated() {
-    return !!localStorage.getItem('authToken');
+    return !!sessionStorage.getItem('authToken');
   }
 }
 

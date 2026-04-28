@@ -4538,7 +4538,7 @@ const CreateProject = () => {
                       ) : (
                         <div className="px-3 py-2 text-gray-400 text-sm">
                           {availableUsers.length === 0
-                            ? "All supervisors selected"
+                            ? "No Supervisors Selected"
                             : "No results found"}
                         </div>
                       );

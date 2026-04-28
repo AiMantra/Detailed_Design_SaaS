@@ -3,7 +3,7 @@ export const THEME_STORAGE_KEY = "appTheme";
 
 export function readStoredTheme() {
   if (typeof window === "undefined") return "light";
-  const value = localStorage.getItem(THEME_STORAGE_KEY);
+  const value = sessionStorage.getItem(THEME_STORAGE_KEY);
   if (value === "light" || value === "dark" || value === "system") return value;
   return "light";
 }

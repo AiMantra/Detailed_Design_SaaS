@@ -2,6 +2,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "../../services/authService";
 import { showSuccess, showError, showLoading, dismissToast } from "../../utils/toast";
+import { clearEncryptionKey, setEncryptionKey, setupSecureStorage } from "../../utils/secureStorage";
 
 // Role mapping function - converts HRMS roles to app roles
 const mapHRMSRoleToAppRole = (hrmsRole, additionalData = {}) => {
@@ -48,21 +49,25 @@ export const loginUser = createAsyncThunk(
 
       const { access, refresh, payload, employeecode, payload_a } = response;
 
+      clearEncryptionKey();
+
+      setEncryptionKey(access);
+
       // Map the role from HRMS to app role
       const appRole = mapHRMSRoleToAppRole(payload?.role, payload_a);
 
       // Get user UUID - critical for time logs
-      const userUUID = payload?.user_id || payload_a?.user_id || payload?.id || payload_a?.id || null;
+      // const userUUID = payload?.user_id || payload_a?.user_id || payload?.id || payload_a?.id || null;
 
       // Store in localStorage (persistent)
-      localStorage.setItem('authToken', access);
-      localStorage.setItem('refreshToken', refresh);
-      localStorage.setItem('userEmail', payload?.email || '');
-      localStorage.setItem('userName', payload?.name || payload_a?.name || 'User');
-      localStorage.setItem('userRole', appRole);
-      localStorage.setItem('userOriginalRole', payload?.role || '');
-      localStorage.setItem('emp_code', employeecode || payload_a?.emp_code || '');
-      localStorage.setItem('user_uuid', userUUID || employeecode || payload_a?.emp_code || '');
+      sessionStorage.setItem('authToken', access);
+      sessionStorage.setItem('refreshToken', refresh);
+      sessionStorage.setItem('userEmail', payload?.email || '');
+      sessionStorage.setItem('userName', payload?.name || payload_a?.name || 'User');
+      sessionStorage.setItem('userRole', appRole);
+      sessionStorage.setItem('hrms_role', payload?.role || '');
+      sessionStorage.setItem('emp_code', employeecode || payload_a?.emp_code || '');
+      // sessionStorage.setItem('user_uuid', userUUID || employeecode || payload_a?.emp_code || '');
 
       // Store session data in sessionStorage
       if (payload_a) {
@@ -77,7 +82,7 @@ export const loginUser = createAsyncThunk(
           company_id: payload_a?.sub_company_id || '',
           designation: payload_a?.designation_name || '',
           hrms_role: payload?.role || '',
-          user_uuid: userUUID || payload_a?.user_id || '',
+          // user_uuid: userUUID || payload_a?.user_id || '',
         }).forEach(([key, value]) => {
           if (value) {
             sessionStorage.setItem(key, String(value));
@@ -89,8 +94,9 @@ export const loginUser = createAsyncThunk(
 
       return {
         user: {
-          id: userUUID || employeecode || payload_a?.emp_code || '',
-          user_uuid: userUUID,
+          // id: userUUID || employeecode || payload_a?.emp_code || '',
+          id: employeecode || payload_a?.emp_code || '',
+          // user_uuid: userUUID,
           emp_code: employeecode || payload_a?.emp_code || '',
           email: payload?.email || '',
           name: payload?.name || payload_a?.name || 'User',
@@ -130,21 +136,28 @@ export const loginUser = createAsyncThunk(
 
 // Check if user is already logged in (for page refresh)
 const loadUserFromStorage = () => {
+
   try {
-    const token = localStorage.getItem('authToken');
-    const email = localStorage.getItem('userEmail');
+    const token = sessionStorage.getItem('authToken');
+    const email = sessionStorage.getItem('userEmail');
+    if (token) {
+      console.log('🔑 Restoring encryption key from existing session on Auth Slice call');
+      setEncryptionKey(token);
+    }
+    setupSecureStorage();
 
     if (!token || !email) return null;
 
     return {
       user: {
-        id: localStorage.getItem('user_uuid') || localStorage.getItem('emp_code') || '',
-        user_uuid: localStorage.getItem('user_uuid') || '',
-        emp_code: localStorage.getItem('emp_code') || '',
+        // id: sessionStorage.getItem('user_uuid') || sessionStorage.getItem('emp_code') || '',
+        id: sessionStorage.getItem('emp_code') || '',
+        // user_uuid: sessionStorage.getItem('user_uuid') || '',
+        emp_code: sessionStorage.getItem('emp_code') || '',
         email: email,
-        name: localStorage.getItem('userName') || 'User',
-        role: localStorage.getItem('userRole') || 'USER',
-        originalRole: localStorage.getItem('userOriginalRole') || '',
+        name: sessionStorage.getItem('userName') || 'User',
+        role: sessionStorage.getItem('userRole') || 'USER',
+        originalRole: sessionStorage.getItem('hrms_role') || '',
         department: sessionStorage.getItem('department') || '',
         company: sessionStorage.getItem('company') || '',
         profilePic: sessionStorage.getItem('profilepic') || '',
@@ -152,12 +165,13 @@ const loadUserFromStorage = () => {
         designation: sessionStorage.getItem('designation') || '',
       },
       token: token,
-      refreshToken: localStorage.getItem('refreshToken'),
+      refreshToken: sessionStorage.getItem('refreshToken'),
       isAuthenticated: true,
     };
   } catch (error) {
     console.error('Error loading user from storage:', error);
-    localStorage.clear();
+    // localStorage.clear();
+    clearEncryptionKey()
     sessionStorage.clear();
     return null;
   }
@@ -177,7 +191,8 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     logout: (state) => {
-      localStorage.clear();
+      // localStorage.clear();
+      clearEncryptionKey();
       sessionStorage.clear();
 
       state.user = null;
@@ -195,21 +210,21 @@ const authSlice = createSlice({
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
 
-        if (action.payload.name) localStorage.setItem('userName', action.payload.name);
+        if (action.payload.name) sessionStorage.setItem('userName', action.payload.name);
         if (action.payload.profilePic) sessionStorage.setItem('profilepic', action.payload.profilePic);
-        if (action.payload.role) localStorage.setItem('userRole', action.payload.role);
+        if (action.payload.role) sessionStorage.setItem('userRole', action.payload.role);
       }
     },
 
     refreshTokenSuccess: (state, action) => {
       state.token = action.payload.token;
-      localStorage.setItem('authToken', action.payload.token);
+      sessionStorage.setItem('authToken', action.payload.token);
     },
 
     setUserRole: (state, action) => {
       if (state.user) {
         state.user.role = action.payload.role;
-        localStorage.setItem('userRole', action.payload.role);
+        sessionStorage.setItem('userRole', action.payload.role);
       }
     }
   },
@@ -242,7 +257,7 @@ export const selectUserRole = (state) => state.auth.user?.role;
 export const selectAuthLoading = (state) => state.auth.loading;
 export const selectAuthError = (state) => state.auth.error;
 export const selectToken = (state) => state.auth.token;
-export const selectUserUUID = (state) => state.auth.user?.user_uuid || localStorage.getItem('user_uuid');
+// export const selectUserUUID = (state) => state.auth.user?.user_uuid || sessionStorage.getItem('user_uuid');
 
 export const { logout, clearError, updateUserProfile, refreshTokenSuccess, setUserRole } = authSlice.actions;
 export default authSlice.reducer;

@@ -11,6 +11,16 @@ import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 
 import { ToastContainer } from 'react-toastify';
+import { setupSecureStorage, clearEncryptionKey, getCurrentEncryptionKey, setEncryptionKey, runIntegrityCheck } from './utils/secureStorage';
+
+// ALSO restore the encryption key IMMEDIATELY if there's an existing session
+const existingToken = sessionStorage.getItem('authToken');
+if (existingToken) {
+  console.log('🔑 Restoring encryption key from existing session on app load');
+  setEncryptionKey(existingToken);
+}
+
+setupSecureStorage();
 
 function App() {
   const { isAuthenticated } = useSelector((state) => state.auth);
