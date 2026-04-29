@@ -593,7 +593,7 @@ const CreateProject = () => {
     try {
       // Try to add via API
       const result = await dispatch(
-        createCompany({ name: trimmedName, gst_no: trimmedgst }),
+        createCompany({ name: trimmedName, gst_no: trimmedgst, created_by: sessionStorage.getItem('emp_code')}),
       ).unwrap();
       dispatch(
         showSnackbar({
@@ -667,7 +667,7 @@ const CreateProject = () => {
     }
 
     try {
-      await dispatch(createSector({ name, unit })).unwrap();
+      await dispatch(createSector({ name, unit, created_by: sessionStorage.getItem('emp_code'), })).unwrap();
       dispatch(
         showSnackbar({ message: "Sector added successfully", type: "success" }),
       );
@@ -716,6 +716,7 @@ const CreateProject = () => {
           client_code: newClient?.code,
           status: newClient?.status,
           branches: branches,
+          created_by: sessionStorage.getItem('emp_code')
         }),
       ).unwrap();
       dispatch(
