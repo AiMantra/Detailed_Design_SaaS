@@ -4585,7 +4585,7 @@ const CreateProject = () => {
 
             {/* Workorder Cost */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Workorder Amount</label>
+              <label className="text-xs text-gray-500">Workorder Amount *</label>
               <div className="relative">
                 <IndianRupee
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
