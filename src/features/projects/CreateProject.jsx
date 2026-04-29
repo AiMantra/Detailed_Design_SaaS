@@ -1796,41 +1796,26 @@ const CreateProject = () => {
     };
 
     // 🔹 Required Fields
-    if (
-      !form.project_code ||
-      !form.project_name ||
-      !form.short_name ||
-      !form.workorder_document
-    ) {
-      return showError(
-        "Please fill all required fields: Project Code, Name, Short Name, Client Branch, Work Order Document, and Assign Owner"
-      );
+    const missingFields = [];
+
+    if (!form.project_code) missingFields.push("Project Code");
+    if (!form.project_name) missingFields.push("Project Name");
+    if (!form.short_name) missingFields.push("Short Name");
+    if (!form.company) missingFields.push("Please select a Company");
+    if (!form.sector) missingFields.push("Sector");
+    if (!form.workorder_Amount) missingFields.push("Workorder Amount");
+    if (!form.location) missingFields.push("Work location");
+    if (!form.workorder_document) missingFields.push("Workorder Document");
+    if (!form.clientbranch) missingFields.push("Please select a Client & branch");
+    if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
+    if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
+    if (!selectedActivities.length) missingFields.push("Please select at least one activity");
+
+    if (missingFields.length) {
+      return showError(`Please fill: ${missingFields.join(", ")}`);
     }
 
-    // 🔹 Company
-    if (!form.company) {
-      return showError("Please select a Company");
-    }
 
-    // 🔹 Client
-    if (!form.clientbranch) {
-      return showError("Please select a Client");
-    }
-
-    // 🔹 Assign to
-    if (!form.assigned_to?.length) {
-      return showError("Please select a Project Owner");
-    }
-
-    // 🔹 Total Length
-    if (!form.total_length || form.total_length <= 0) {
-      return showError("Please enter a valid Total Length");
-    }
-
-    // 🔹 Activities Check
-    if (!selectedActivities.length) {
-      return showError("Please select at least one activity");
-    }
 
     // 🔹 Weightage Check
     const totalWeightage = Object.values(activityWeightages).reduce(
@@ -4284,7 +4269,7 @@ const CreateProject = () => {
                 </div> */}
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Branch</label>
+                  <label className="text-xs text-gray-500">Branch *</label>
                   <div className="relative">
                     <MapPinned
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
