@@ -1785,126 +1785,98 @@ const CreateProject = () => {
   };
 
   const validate = () => {
-    if (!form.project_code || !form.project_name || !form.short_name || !form?.workorder_document) {
+    const showError = (message) => {
       dispatch(
         showSnackbar({
-          message:
-            "Please fill mandatory fields: Project Code, Name, Short Name And Work Order Document",
+          message,
           type: "error",
-        }),
+        })
       );
       return false;
+    };
+
+    // 🔹 Required Fields
+    if (
+      !form.project_code ||
+      !form.project_name ||
+      !form.short_name ||
+      !form.workorder_document
+    ) {
+      return showError(
+        "Please fill all required fields: Project Code, Name, Short Name, Client Branch, Work Order Document, and Assign Owner"
+      );
     }
+
+    // 🔹 Company
     if (!form.company) {
-      dispatch(
-        showSnackbar({
-          message: "Please select a Company",
-          type: "error",
-        }),
-      );
-      return false;
+      return showError("Please select a Company");
     }
+
+    // 🔹 Client
+    if (!form.clientbranch) {
+      return showError("Please select a Client");
+    }
+
+    // 🔹 Assign to
+    if (!form.assigned_to?.length) {
+      return showError("Please select a Project Owner");
+    }
+
+    // 🔹 Total Length
     if (!form.total_length || form.total_length <= 0) {
-      dispatch(
-        showSnackbar({
-          message: "Please enter a valid Total Length",
-          type: "error",
-        }),
-      );
-      return false;
+      return showError("Please enter a valid Total Length");
     }
-    if (selectedActivities.length === 0) {
-      dispatch(
-        showSnackbar({
-          message: "Please select at least one activity",
-          type: "error",
-        }),
-      );
-      return false;
+
+    // 🔹 Activities Check
+    if (!selectedActivities.length) {
+      return showError("Please select at least one activity");
     }
+
+    // 🔹 Weightage Check
     const totalWeightage = Object.values(activityWeightages).reduce(
       (sum, w) => sum + (w || 0),
-      0,
+      0
     );
-    if (Math.abs(totalWeightage - 100) > 0.01) {
-      dispatch(
-        showSnackbar({
-          message: `Total activity weightage must sum to 100%. Current total: ${totalWeightage}%`,
-          type: "error",
-        }),
-      );
-      return false;
-    }
-    for (const activityId of selectedActivities) {
-      const dates = activityDates[activityId];
-      const activityLabel =
-        getAllActivities().find((a) => a.id === activityId)?.activity_name ||
-        activityId;
-      if (!dates?.startDate || !dates?.endDate) {
-        dispatch(
-          showSnackbar({
-            message: `Please set start and end dates for ${activityLabel}`,
-            type: "error",
-          }),
-        );
-        return false;
-      }
-      if (new Date(dates.startDate) > new Date(dates.endDate)) {
-        dispatch(
-          showSnackbar({
-            message: `End date must be after start date for ${activityLabel}`,
-            type: "error",
-          }),
-        );
-        return false;
-      }
-    }
-    for (const activityId of selectedActivities) {
-      const activityObj = getAllActivities().find((a) => a.id === activityId);
-      const activityLabel = activityObj?.activity_name || activityId;
-      const selectedSubs = selectedSubActivities[activityId] || [];
-      if (selectedSubs.length === 0) {
-        dispatch(
-          showSnackbar({
-            message: `Please select at least one sub-activity for ${activityLabel}`,
-            type: "error",
-          }),
-        );
-        return false;
-      }
-      // for (const subId of selectedSubs) {
-      //   const subObj = activityObj?.subActivities.find(s => s.id === subId);
-      //   const key = subObj ? `${subId}_${subObj.name}` : `${subId}_${activityId}`;
-      //   const unit = subActivityUnits[key] || subObj?.unit || "Km";
-      //   const plannedQty = subActivityPlannedQtys[key];
-      //   if (unit !== "status" && (!plannedQty || plannedQty <= 0)) {
-      //     dispatch(showSnackbar({
-      //       message: `Please enter planned quantity for ${subObj?.name || subId} in ${activityLabel}`,
-      //       type: "error"
-      //     }));
-      //     return false;
-      //   }
-      // }
 
-      // for (const subId of selectedSubs) {
-      //   const subObj = activityObj?.subActivities.find((s) => s.id === subId);
-      //   const unit =
-      //     subActivityUnits[`${activityId}_${subId}`] || subObj?.unit || "Km";
-      //   const plannedQty = subActivityPlannedQtys[`${subId}_quantity`];
-      //   if (unit !== "status" && (!plannedQty || plannedQty <= 0)) {
-      //     dispatch(
-      //       showSnackbar({
-      //         message: `Please enter planned quantity for ${subObj?.subactivity_name || subId} in ${activityLabel}`,
-      //         type: "error",
-      //       }),
-      //     );
-      //     return false;
-      //   }
-      // }
+    if (Math.abs(totalWeightage - 100) > 0.01) {
+      return showError(
+        `Total activity weightage must be 100%. Current: ${totalWeightage}%`
+      );
     }
+
+    const allActivities = getAllActivities();
+
+    // 🔹 Activity Validation
+    for (const activityId of selectedActivities) {
+      const activityObj = allActivities.find((a) => a.id === activityId);
+      const activityLabel = activityObj?.activity_name || activityId;
+
+      const dates = activityDates[activityId];
+
+      // Dates check
+      if (!dates?.startDate || !dates?.endDate) {
+        return showError(`Please set start & end dates for ${activityLabel}`);
+      }
+
+      if (new Date(dates.startDate) > new Date(dates.endDate)) {
+        return showError(`End date must be after start date for ${activityLabel}`);
+      }
+
+      // Sub-activity check
+      const selectedSubs = selectedSubActivities[activityId] || [];
+
+      if (!selectedSubs.length) {
+        return showError(
+          `Please select at least one sub-activity for ${activityLabel}`
+        );
+      }
+    }
+
+    // 🔹 Global Date Validation
     if (!validateDates()) {
       return false;
     }
+
     return true;
   };
 
