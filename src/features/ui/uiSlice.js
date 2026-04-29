@@ -6,7 +6,7 @@ const uiSlice = createSlice({
   initialState: {
     sidebarOpen: false,
     desktopCollapsed:
-      localStorage.getItem("desktopCollapsed") === "false",
+      sessionStorage.getItem("desktopCollapsed") === "false",
     theme: readStoredTheme(),
   },
   reducers: {
@@ -20,7 +20,7 @@ const uiSlice = createSlice({
 
     toggleDesktopCollapse: (state) => {
       state.desktopCollapsed = !state.desktopCollapsed;
-      localStorage.setItem(
+      sessionStorage.setItem(
         "desktopCollapsed",
         state.desktopCollapsed
       );
@@ -30,7 +30,7 @@ const uiSlice = createSlice({
       const next = action.payload;
       if (next === "light" || next === "dark" || next === "system") {
         state.theme = next;
-        localStorage.setItem(THEME_STORAGE_KEY, next);
+        sessionStorage.setItem(THEME_STORAGE_KEY, next);
       }
     },
   },

@@ -5,14 +5,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
 import { showSuccess, showError } from "../../utils/toast";
 
-const getUserUUID = () => {
-  return localStorage.getItem('user_uuid') ||
-    sessionStorage.getItem('user_uuid') ||
-    null;
-};
+// const getUserUUID = () => {
+//   return sessionStorage.getItem('user_uuid') ||
+//     sessionStorage.getItem('user_uuid') ||
+//     null;
+// };
 
 const getEmpCode = () => {
-  return localStorage.getItem('emp_code') ||
+  return sessionStorage.getItem('emp_code') ||
     sessionStorage.getItem('emp_code') ||
     null;
 };
@@ -22,7 +22,7 @@ export const fetchUserWorkLogs = createAsyncThunk(
   'tasks/fetchUserWorkLogs',
   async (_, { rejectWithValue }) => {
     try {
-      const userUUID = getUserUUID();
+      const userUUID = getEmpCode();
       if (!userUUID) {
         return [];
       }
@@ -79,7 +79,7 @@ export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
   async ({ projectId, subActivityId, date, startTime, endTime, note, status }, { getState, rejectWithValue }) => {
     try {
-      const userUUID = getUserUUID();
+      const userUUID = getEmpCode();
 
       if (!userUUID) throw new Error('User not authenticated');
 

@@ -593,7 +593,7 @@ const CreateProject = () => {
     try {
       // Try to add via API
       const result = await dispatch(
-        createCompany({ name: trimmedName, gst_no: trimmedgst }),
+        createCompany({ name: trimmedName, gst_no: trimmedgst, created_by: sessionStorage.getItem('emp_code')}),
       ).unwrap();
       dispatch(
         showSnackbar({
@@ -667,7 +667,7 @@ const CreateProject = () => {
     }
 
     try {
-      await dispatch(createSector({ name, unit })).unwrap();
+      await dispatch(createSector({ name, unit, created_by: sessionStorage.getItem('emp_code'), })).unwrap();
       dispatch(
         showSnackbar({ message: "Sector added successfully", type: "success" }),
       );
@@ -716,6 +716,7 @@ const CreateProject = () => {
           client_code: newClient?.code,
           status: newClient?.status,
           branches: branches,
+          created_by: sessionStorage.getItem('emp_code')
         }),
       ).unwrap();
       dispatch(
@@ -1785,126 +1786,83 @@ const CreateProject = () => {
   };
 
   const validate = () => {
-    if (!form.project_code || !form.project_name || !form.short_name || !form?.workorder_document) {
+    const showError = (message) => {
       dispatch(
         showSnackbar({
-          message:
-            "Please fill mandatory fields: Project Code, Name, Short Name And Work Order Document",
+          message,
           type: "error",
-        }),
+        })
       );
       return false;
+    };
+
+    // 🔹 Required Fields
+    const missingFields = [];
+
+    if (!form.project_code) missingFields.push("Project Code");
+    if (!form.project_name) missingFields.push("Project Name");
+    if (!form.short_name) missingFields.push("Short Name");
+    if (!form.company) missingFields.push("Please select a Company");
+    if (!form.sector) missingFields.push("Sector");
+    if (!form.workorder_Amount) missingFields.push("Workorder Amount");
+    if (!form.location) missingFields.push("Work location");
+    if (!form.workorder_document) missingFields.push("Workorder Document");
+    if (!form.clientbranch) missingFields.push("Please select a Client & branch");
+    if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
+    if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
+    if (!selectedActivities.length) missingFields.push("Please select at least one activity");
+
+    if (missingFields.length) {
+      return showError(`Please fill: ${missingFields.join(", ")}`);
     }
-    if (!form.company) {
-      dispatch(
-        showSnackbar({
-          message: "Please select a Company",
-          type: "error",
-        }),
-      );
-      return false;
-    }
-    if (!form.total_length || form.total_length <= 0) {
-      dispatch(
-        showSnackbar({
-          message: "Please enter a valid Total Length",
-          type: "error",
-        }),
-      );
-      return false;
-    }
-    if (selectedActivities.length === 0) {
-      dispatch(
-        showSnackbar({
-          message: "Please select at least one activity",
-          type: "error",
-        }),
-      );
-      return false;
-    }
+
+
+
+    // 🔹 Weightage Check
     const totalWeightage = Object.values(activityWeightages).reduce(
       (sum, w) => sum + (w || 0),
-      0,
+      0
     );
-    if (Math.abs(totalWeightage - 100) > 0.01) {
-      dispatch(
-        showSnackbar({
-          message: `Total activity weightage must sum to 100%. Current total: ${totalWeightage}%`,
-          type: "error",
-        }),
-      );
-      return false;
-    }
-    for (const activityId of selectedActivities) {
-      const dates = activityDates[activityId];
-      const activityLabel =
-        getAllActivities().find((a) => a.id === activityId)?.activity_name ||
-        activityId;
-      if (!dates?.startDate || !dates?.endDate) {
-        dispatch(
-          showSnackbar({
-            message: `Please set start and end dates for ${activityLabel}`,
-            type: "error",
-          }),
-        );
-        return false;
-      }
-      if (new Date(dates.startDate) > new Date(dates.endDate)) {
-        dispatch(
-          showSnackbar({
-            message: `End date must be after start date for ${activityLabel}`,
-            type: "error",
-          }),
-        );
-        return false;
-      }
-    }
-    for (const activityId of selectedActivities) {
-      const activityObj = getAllActivities().find((a) => a.id === activityId);
-      const activityLabel = activityObj?.activity_name || activityId;
-      const selectedSubs = selectedSubActivities[activityId] || [];
-      if (selectedSubs.length === 0) {
-        dispatch(
-          showSnackbar({
-            message: `Please select at least one sub-activity for ${activityLabel}`,
-            type: "error",
-          }),
-        );
-        return false;
-      }
-      // for (const subId of selectedSubs) {
-      //   const subObj = activityObj?.subActivities.find(s => s.id === subId);
-      //   const key = subObj ? `${subId}_${subObj.name}` : `${subId}_${activityId}`;
-      //   const unit = subActivityUnits[key] || subObj?.unit || "Km";
-      //   const plannedQty = subActivityPlannedQtys[key];
-      //   if (unit !== "status" && (!plannedQty || plannedQty <= 0)) {
-      //     dispatch(showSnackbar({
-      //       message: `Please enter planned quantity for ${subObj?.name || subId} in ${activityLabel}`,
-      //       type: "error"
-      //     }));
-      //     return false;
-      //   }
-      // }
 
-      // for (const subId of selectedSubs) {
-      //   const subObj = activityObj?.subActivities.find((s) => s.id === subId);
-      //   const unit =
-      //     subActivityUnits[`${activityId}_${subId}`] || subObj?.unit || "Km";
-      //   const plannedQty = subActivityPlannedQtys[`${subId}_quantity`];
-      //   if (unit !== "status" && (!plannedQty || plannedQty <= 0)) {
-      //     dispatch(
-      //       showSnackbar({
-      //         message: `Please enter planned quantity for ${subObj?.subactivity_name || subId} in ${activityLabel}`,
-      //         type: "error",
-      //       }),
-      //     );
-      //     return false;
-      //   }
-      // }
+    if (Math.abs(totalWeightage - 100) > 0.01) {
+      return showError(
+        `Total activity weightage must be 100%. Current: ${totalWeightage}%`
+      );
     }
+
+    const allActivities = getAllActivities();
+
+    // 🔹 Activity Validation
+    for (const activityId of selectedActivities) {
+      const activityObj = allActivities.find((a) => a.id === activityId);
+      const activityLabel = activityObj?.activity_name || activityId;
+
+      const dates = activityDates[activityId];
+
+      // Dates check
+      if (!dates?.startDate || !dates?.endDate) {
+        return showError(`Please set start & end dates for ${activityLabel}`);
+      }
+
+      if (new Date(dates.startDate) > new Date(dates.endDate)) {
+        return showError(`End date must be after start date for ${activityLabel}`);
+      }
+
+      // Sub-activity check
+      const selectedSubs = selectedSubActivities[activityId] || [];
+
+      if (!selectedSubs.length) {
+        return showError(
+          `Please select at least one sub-activity for ${activityLabel}`
+        );
+      }
+    }
+
+    // 🔹 Global Date Validation
     if (!validateDates()) {
       return false;
     }
+
     return true;
   };
 
@@ -4312,7 +4270,7 @@ const CreateProject = () => {
                 </div> */}
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Branch</label>
+                  <label className="text-xs text-gray-500">Branch *</label>
                   <div className="relative">
                     <MapPinned
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -4538,7 +4496,7 @@ const CreateProject = () => {
                       ) : (
                         <div className="px-3 py-2 text-gray-400 text-sm">
                           {availableUsers.length === 0
-                            ? "All supervisors selected"
+                            ? "No Supervisors Selected"
                             : "No results found"}
                         </div>
                       );
@@ -4628,7 +4586,7 @@ const CreateProject = () => {
 
             {/* Workorder Cost */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Workorder Amount</label>
+              <label className="text-xs text-gray-500">Workorder Amount *</label>
               <div className="relative">
                 <IndianRupee
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"

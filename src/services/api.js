@@ -19,7 +19,7 @@ api.interceptors.request.use(
   (config) => {
 
 
-    const token = localStorage.getItem('authToken');
+    const token = sessionStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
@@ -47,7 +47,7 @@ api.interceptors.response.use(
 
       try {
 
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = sessionStorage.getItem('refreshToken');
 
         if (!refreshToken) {
           window.location.href = '/';
@@ -62,7 +62,7 @@ api.interceptors.response.use(
 
         if (response.data.access) {
 
-          localStorage.setItem('authToken', response.data.access);
+          sessionStorage.setItem('authToken', response.data.access);
 
 
           originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
@@ -71,7 +71,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
 
-        localStorage.clear();
+        // localStorage.clear();
+        clearEncryptionKey()
         sessionStorage.clear();
         window.location.href = '/';
         return Promise.reject(refreshError);

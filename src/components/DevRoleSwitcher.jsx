@@ -38,7 +38,7 @@ const DevRoleSwitcher = () => {
         <Shield size={20} />
       </button>
 
-      {/* {isOpen && (
+      {isOpen && (
         <div className="absolute bottom-16 right-0 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-[180px]">
           <div className="px-3 py-2 border-b border-gray-100">
             <p className="text-xs text-gray-500">Current Role: <span className="font-semibold">{user?.role}</span></p>
@@ -55,7 +55,7 @@ const DevRoleSwitcher = () => {
             </button>
           ))}
         </div>
-      )} */}
+      )}
     </div>
   );
 };
