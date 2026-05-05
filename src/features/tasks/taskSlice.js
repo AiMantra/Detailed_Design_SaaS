@@ -59,7 +59,14 @@ export const fetchUserWorkLogs = createAsyncThunk(
 );
 
 
-
+// In taskSlice.js
+export const fetchProjectReport = createAsyncThunk(
+  'tasks/fetchProjectReport',
+  async ({ emp_code }, { rejectWithValue }) => {
+    const response = await api.get(`/tl-project-user-work-report/?emp_code=${emp_code}`);
+    return response.data;
+  }
+);
 // Fetch user work summary from API
 export const fetchUserWorkSummary = createAsyncThunk(
   'tasks/fetchUserWorkSummary',
@@ -261,6 +268,7 @@ const taskSlice = createSlice({
     userTasks: [],
     userWorkLogs: [],
     userWorkSummary: null,
+    projectsReport: null,
     userSubmittedTask: [],
     userReportData: null,
     allEmployeesReport: null,
@@ -324,6 +332,20 @@ const taskSlice = createSlice({
         state.userWorkLogs = action.payload || [];
       })
       .addCase(fetchUserWorkLogs.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Fetch User Work Summary
+      .addCase(fetchProjectReport.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProjectReport.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projectsReport = action.payload;
+      })
+      .addCase(fetchProjectReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

@@ -26,6 +26,9 @@ class AuthService {
       return response.data;
     } catch (error) {
       console.error('Token refresh error:', error);
+      window.location.href = '/';
+      sessionStorage.clear();
+      clearEncryptionKey()
       throw error;
     }
   }
@@ -45,7 +48,6 @@ class AuthService {
       email: sessionStorage.getItem('userEmail'),
       name: sessionStorage.getItem('userName'),
       role: sessionStorage.getItem('userRole'),
-
       empCode: sessionStorage.getItem('emp_code'),
       department: sessionStorage.getItem('department_name'),
       company: sessionStorage.getItem('company'),

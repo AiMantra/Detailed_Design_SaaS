@@ -192,7 +192,43 @@ export const projectService = {
 
   updateProject: async (projectId, projectData) => {
     try {
-      const response = await api.put(`/project/${projectId}/`, projectData);
+      const formData = new FormData();
+
+      // 🔹 Append all fields
+      Object.keys(projectData).forEach((key) => {
+        const value = projectData[key];
+        if (value === null || value === undefined) return;
+
+        // ✅ Handle file
+        if (key === "workorder_document" && value instanceof File) {
+          formData.append(key, value);
+        }
+        // ✅ Handle activities array (needs to be JSON stringified)
+        else if (key === "activities" && Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        }
+        // ✅ Handle sector and client - send them as regular strings (not quoted)
+        else if (key === "sector" || key === "client") {
+          // If it's already an ID (UUID), send as is
+          // If it's a string ID, send directly without extra quotes
+          formData.append(key, JSON.stringify(value));
+        }
+        // ✅ Handle other objects that need stringification
+        else if (typeof value === "object" && !(value instanceof File)) {
+          formData.append(key, JSON.stringify(value));
+        }
+        // ✅ Normal fields
+        else {
+          formData.append(key, value);
+        }
+      });
+
+      // Make sure to use formData, not projectData object for the request body
+      const response = await api.put(`/project-update/${projectId}/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error) {
       console.error('Error updating project:', error);

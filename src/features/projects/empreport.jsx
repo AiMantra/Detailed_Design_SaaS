@@ -96,7 +96,7 @@ const TeamLeaderReport = () => {
                     employeesMap.set(user.emp_code, {
                         emp_code: user.emp_code,
                         name: user.name,
-                        total_hours: 0,
+                        total_hours: user?.total_time_spent,
                         total_tasks: 0,
                         approved_tasks: 0,
                         submitted_tasks: 0,
@@ -185,6 +185,24 @@ const TeamLeaderReport = () => {
         };
     }, [allEmployeesReport]);
 
+    // 🔹 helper: HH:MM:SS → seconds
+    const timeToSeconds = (time) => {
+        if (!time) return 0;
+        const [h = 0, m = 0, s = 0] = time.split(":").map(Number);
+        return h * 3600 + m * 60 + s;
+    };
+
+    // 🔹 helper: seconds → HH:MM:SS
+    const secondsToTime = (totalSeconds) => {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+
+        return `${h.toString().padStart(2, "0")}:${m
+            .toString()
+            .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    };
+
     // Filter employees based on all filters - ENSURES data shows ONLY according to selected filters
     const filteredEmployees = useMemo(() => {
         if (!transformedData.employees.length) return [];
@@ -228,7 +246,8 @@ const TeamLeaderReport = () => {
 
         // Recalculate totals for filtered data and add total_projects count
         filtered = filtered.map(emp => {
-            let totalHours = 0;
+
+            let totalSeconds = 0;
             let totalTasks = 0;
             let approvedTasks = 0;
             let submittedTasks = 0;
@@ -250,8 +269,8 @@ const TeamLeaderReport = () => {
                         if (sub.status === 'Inprogress') inprogressTasks++;
                         if (sub.status === 'Rejected') rejectedTasks++;
 
-                        const hours = parseInt(sub.total_time_spent?.split(':')[0] || 0);
-                        totalHours += hours;
+                        totalSeconds += timeToSeconds(sub.total_time_spent);
+
 
                         sub.date_wise?.forEach(dateLog => {
                             if (dateLog.date) workingDays.add(dateLog.date);
@@ -263,7 +282,7 @@ const TeamLeaderReport = () => {
             return {
                 ...emp,
                 total_projects: uniqueProjectIds.size, // Add total projects count for this user
-                total_hours: totalHours,
+                total_hours: (totalSeconds / 3600).toFixed(2)?.replace(".", ":"),
                 total_tasks: totalTasks,
                 approved_tasks: approvedTasks,
                 submitted_tasks: submittedTasks,
@@ -318,7 +337,7 @@ const TeamLeaderReport = () => {
             };
         }
 
-        let totalHours = 0;
+        let totalHoursadded = 0;
         let totalTasks = 0;
         let approvedTasks = 0;
         let submittedTasks = 0;
@@ -327,7 +346,7 @@ const TeamLeaderReport = () => {
         const uniqueProjects = new Set();
 
         filteredEmployees.forEach(emp => {
-            totalHours += emp.total_hours || 0;
+            totalHoursadded += timeToSeconds(emp.total_hours || 0);
             totalTasks += emp.total_tasks || 0;
             approvedTasks += emp.approved_tasks || 0;
             submittedTasks += emp.submitted_tasks || 0;
@@ -342,7 +361,7 @@ const TeamLeaderReport = () => {
         return {
             totalEmployees: filteredEmployees.length,
             totalProjects: uniqueProjects.size,
-            totalHours,
+            totalHours: (totalHoursadded / 3600).toFixed(2).replace(".", ":"),
             totalTasks,
             approvedTasks,
             submittedTasks,
