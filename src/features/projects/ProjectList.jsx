@@ -815,6 +815,10 @@ const ProjectList = () => {
     setShowProofModal(false);
   };
 
+  const handleEditProject = (projectid) => {
+    navigate("/projectsupdate/" + projectid)
+  }
+
   function formatNumber(value) {
     const str = value.toString();
 
@@ -2090,18 +2094,15 @@ const ProjectList = () => {
                                       </a>
                                     )}
 
-                                    {/* <button
+                                    <button
                                       onClick={() => {
-                                        // Close menu first
-                                        document.getElementById(`project-menu-${projectId}`)?.classList.add("hidden");
-                                        // Handle edit project
                                         handleEditProject(projectId);
                                       }}
                                       className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 w-full"
                                     >
-                                      <Pencil/>
+                                      <Pencil size={16} />
                                       <span>Edit Project</span>
-                                    </button> */}
+                                    </button>
 
                                     <button
                                       onClick={(e) => {

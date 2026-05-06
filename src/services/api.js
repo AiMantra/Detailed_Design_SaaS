@@ -71,9 +71,9 @@ api.interceptors.response.use(
         console.error('Token refresh failed:', refreshError);
 
         // localStorage.clear();
-        clearEncryptionKey()
-        sessionStorage.clear();
         window.location.href = '/';
+        sessionStorage.clear();
+        clearEncryptionKey()
         return Promise.reject(refreshError);
       }
     }

@@ -605,7 +605,7 @@ const CreateProject = () => {
     try {
       // Try to add via API
       const result = await dispatch(
-        createCompany({ name: trimmedName, gst_no: trimmedgst }),
+        createCompany({ name: trimmedName, gst_no: trimmedgst, created_by: sessionStorage.getItem('emp_code')}),
       ).unwrap();
       dispatch(
         showSnackbar({
@@ -679,7 +679,7 @@ const CreateProject = () => {
     }
 
     try {
-      await dispatch(createSector({ name, unit })).unwrap();
+      await dispatch(createSector({ name, unit, created_by: sessionStorage.getItem('emp_code'), })).unwrap();
       dispatch(
         showSnackbar({ message: "Sector added successfully", type: "success" }),
       );
@@ -746,6 +746,7 @@ const CreateProject = () => {
           client_code: newClient?.code,
           status: newClient?.status,
           branches: branches,
+          created_by: sessionStorage.getItem('emp_code')
         }),
       ).unwrap();
       dispatch(
@@ -4546,7 +4547,7 @@ const CreateProject = () => {
 
             {/* Workorder Cost */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Workorder Amount</label>
+              <label className="text-xs text-gray-500">Workorder Amount *</label>
               <div className="relative">
                 <IndianRupee
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
