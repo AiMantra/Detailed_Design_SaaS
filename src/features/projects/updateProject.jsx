@@ -56,7 +56,7 @@ import {
     clearActivities,
     clearSubActivities,
     fetchReportingHeads,
-    fetchActivityTemplate,
+    fetchStageTemplates,
 } from "../api/apiSlice";
 import { showSnackbar } from "../notifications/notificationSlice";
 import { addProject, updateProject as updateProjectRedux } from "./projectSlice";
@@ -214,7 +214,7 @@ const UpdateProject = () => {
                     dispatch(fetchSectors()),
                     dispatch(fetchClients()),
                     dispatch(fetchReportingHeads()),
-                    dispatch(fetchActivityTemplate()),
+                    dispatch(fetchStageTemplates()),
                 ]);
             } catch (error) {
                 console.error("Error loading reference data:", error);
