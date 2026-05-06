@@ -53,13 +53,15 @@ import {
   clearActivities,
   clearSubActivities,
   fetchReportingHeads,
-  fetchActivityTemplate,
+  fetchStageTemplate,
 } from "../api/apiSlice";
 import { showSnackbar } from "../notifications/notificationSlice";
 import { addProject } from "./projectSlice";
 import { UNIT_OPTIONS, SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
 import { IMAGE_URL } from "../../services/api";
 import { CustomImageModal } from "../../utils/CustomFunctions";
+import { validateName } from "../../utils/HelperValidations";
+import { AddSectorButton } from "../setupsettings/SetupComponents";
 
 const CreateProject = () => {
   const dispatch = useDispatch();
@@ -71,7 +73,7 @@ const CreateProject = () => {
     sectors = [],
     clients = [],
     reportingHeads = [],
-    activityTemplates = [],
+    stageTemplates = [],
     // activities = [],
     // subActivities = [],
     loading,
@@ -105,6 +107,15 @@ const CreateProject = () => {
 
   const [sectorsList, setSectorsList] = useState([]);
   const [sectorsMap, setSectorsMap] = useState({});
+
+  const [sectorWorkTypes, setSectorWorkTypes] = useState([]);
+  const [showAdvancedSectorModal, setShowAdvancedSectorModal] = useState(false);
+  const [sectorFormData, setSectorFormData] = useState({
+    name: "",
+    unit: "",
+    created_by: sessionStorage.getItem('emp_code')
+  });
+  const [sectorLoading, setSectorLoading] = useState(false);
 
   const [templatesActivities, setTemplateActivities] = useState([]);
   const [customActivities, setCustomActivities] = useState([]);
@@ -210,7 +221,7 @@ const CreateProject = () => {
           dispatch(fetchClients()),
           dispatch(fetchReportingHeads()),
 
-          dispatch(fetchActivityTemplate()),
+          dispatch(fetchStageTemplate()),
           // dispatch(fetchActivities()),
           // dispatch(fetchSubActivities())
         ]);
@@ -231,6 +242,7 @@ const CreateProject = () => {
       dispatch(clearSubActivities());
     };
   }, [dispatch]);
+
   useEffect(() => {
     if (sectors && sectors.length > 0) {
       const map = {};
@@ -244,8 +256,8 @@ const CreateProject = () => {
 
   //Activity,Sub-Activity Template
   useEffect(() => {
-    if (activityTemplates && activityTemplates.length > 0) {
-      const transformedActivities = activityTemplates
+    if (stageTemplates && stageTemplates.length > 0) {
+      const transformedActivities = stageTemplates
         .filter((act) => !act.is_deleted)
         .map((template, index) => ({
           id:
@@ -290,7 +302,7 @@ const CreateProject = () => {
     } else {
       setTemplateActivities([]);
     }
-  }, [activityTemplates]);
+  }, [stageTemplates]);
 
   //GST Calculation
   useEffect(() => {
@@ -683,6 +695,24 @@ const CreateProject = () => {
         }),
       );
     }
+  };
+
+  const loadSectorsData = async () => {
+    setSectorLoading(true);
+    try {
+      await dispatch(fetchSectors()).unwrap();
+    } catch (error) {
+      dispatch(showSnackbar({
+        message: "Failed to load sectors",
+        type: "error"
+      }));
+    } finally {
+      setSectorLoading(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    loadSectorsData();
   };
 
   const handleAddClient = async () => {
@@ -2428,81 +2458,7 @@ const CreateProject = () => {
           </div>
         </div>
       )}
-      {/* Add Sector Modal */}
-      <AnimatePresence>
-        {showAddSectorModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => closeModal(setShowAddSectorModal)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-2xl p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg md:text-xl font-bold mb-4">
-                Add New Sector
-              </h3>
-              <input
-                type="text"
-                placeholder="Enter sector name"
-                value={newSector.name}
-                onChange={(e) =>
-                  setNewSector({ ...newSector, name: e.target.value })
-                }
-                className="w-full p-3 border rounded-xl text-sm md:text-base mb-4"
-                autoFocus
-              />
-              <select
-                name=""
-                id=""
-                placeholder="Enter unit"
-                value={newSector.unit}
-                onChange={(e) =>
-                  setNewSector({ ...newSector, unit: e.target.value })
-                }
-                className="w-full p-3 border rounded-xl text-sm md:text-base mb-4"
-                autoFocus
-              >
-                <option value="">Select Type</option>
-                <option value="length">Length</option>
-                <option value="area">Area</option>
-                <option value="quantity">Quantity</option>
-              </select>
 
-              {/* <input
-                type="text"
-                placeholder="Enter sector name"
-                value={newSector.unit}
-                onChange={(e) => setNewSector({ ...newSector, unit: e.target.value })}
-                className="w-full p-3 border rounded-xl text-sm md:text-base mb-4"
-                autoFocus
-              /> */}
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => closeModal(setShowAddSectorModal)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm md:text-base"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddSector}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
-                >
-                  Add Sector
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       {/* Add Client Modal */}
       <AnimatePresence>
         {showAddClientModal && (
@@ -2526,7 +2482,7 @@ const CreateProject = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Client Code (P0001)"
+                  placeholder="Client Code (e.g., P0001)"
                   className="p-3 border rounded-xl"
                   value={newClient.code}
                   onChange={(e) =>
@@ -4160,13 +4116,18 @@ const CreateProject = () => {
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  onClick={() => setShowAddSectorModal(true)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                >
-                  <Plus size={14} />
-                </button>
+                {/* <button
+                    type="button"
+                    onClick={() => setShowAdvancedSectorModal(true)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button> */}
+                {/* <AddSectorButton
+                  onSuccess={handleRefresh}
+                  loadData={loadSectorsData}
+                  sectors={sectors}
+                  BasicButtonView={true} /> */}
               </div>
             </div>
 
@@ -4194,7 +4155,7 @@ const CreateProject = () => {
                   className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
 
-                <button
+                {/* <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -4203,7 +4164,7 @@ const CreateProject = () => {
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
                 >
                   <Plus size={14} />
-                </button>
+                </button> */}
                 {showClientDropdown && (
                   <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {(clientSearch

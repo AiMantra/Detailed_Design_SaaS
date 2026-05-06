@@ -97,14 +97,14 @@ const Sidebar = () => {
       badge: null,
       description: "Employee Report",
     },
-    // {
-    //   name: "Settings",
-    //   icon: Settings2,
-    //   path: "/settings",
-    //   roles: ["ACCOUNT"],
-    //   badge: null,
-    //   description: "Settings",
-    // },
+    {
+      name: "Settings",
+      icon: Settings2,
+      path: "/settings",
+      roles: ["ACCOUNT"],
+      badge: null,
+      description: "Settings",
+    },
 
     // My Tasks - For users to manage picked tasks
     {

@@ -1,11 +1,20 @@
 import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import axios from 'axios';
 import { Modal } from "react-bootstrap";
+import { ToastContainer, toast } from "react-toastify";
 import * as XLSX from "xlsx";
-import ReactDOM, { createPortal } from "react-dom";
+import { FRONTEND_URL, IMAGE_URL } from "../config/axios";
+import { DatePicker, Space } from "antd";
+import { formatDateTime } from "./Date";
+import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
+import UserDefaultLogo from './UserDetails/UserDefaultLogo';
+import ReactDOM from 'react-dom';
+import dayjs from "dayjs";
+import { createPortal } from "react-dom";
 import { Download, Eye, File, FileText, FileVideoCamera, ImageIcon, Paperclip, Table } from 'lucide-react';
-import { IMAGE_URL } from '../services/api';
-import { formatDateTime } from './CustomFormatters';
+
+const { RangePicker } = DatePicker;
 
 
 const getFileExtension = (url) => {
@@ -16,51 +25,6 @@ const getFileExtension = (url) => {
 const isImage = (url) => {
     return /\.(jpg|jpeg|png|gif|bmp|webp)(\?.*)?$/.test(url);
 }
-
-const getInitials = (name) => {
-    if (!name) return '';
-    const nameArray = name.split(" ");
-    return nameArray.length > 1
-        ? nameArray[0][0]?.toUpperCase() + nameArray[1][0]?.toUpperCase()
-        : nameArray[0][0]?.toUpperCase();
-};
-
-const getRandomColor = (name) => {
-    const colorPairs = [
-        { light: "#fbbfc8ff", dark: "#C71585" }, // Light pink and dark pink
-        { light: "#f996c7ff", dark: "#C71585" }, // Light hot pink and dark pink
-        { light: "#f598c9ff", dark: "#8B008B" }, // Deep pink and dark magenta
-        { light: "#fa9b8bff", dark: "#B22222" }, // Light red-orange and dark red
-        { light: "#fcc1abff", dark: "#8B0000" }, // Orange-red and dark red
-        { light: "#FF8C00", dark: "#d55e09ff" }, // Dark orange and chocolate
-        { light: "#f6eea3ff", dark: "#978e12ff" }, // Khaki and dark khaki
-        { light: "#a7e4f8ff", dark: "#1E90FF" }, // Light sky blue and dark blue
-        { light: "#8abfeaff", dark: "#2F4F4F" }, // Steel blue and dark slate gray
-        { light: "#aaf2aaff", dark: "#006400" }, // Light green and dark green
-        { light: "#b8f7dfff", dark: "#228B22" }, // Medium spring green and forest green
-        { light: "#f8edabff", dark: "#FF8C00" }, // Light gold and dark orange
-        { light: "#FFDDC1", dark: "#D2691E" }, // Peach and chocolate
-        { light: "#d1a7f9ff", dark: "#4B0082" }, // Blue-violet and indigo
-        { light: "rgb(210 162 234)", dark: "#8B008B" }, // Dark orchid and dark magenta
-        { light: "#fbb6e2ff", dark: "#8B0000" }, // Medium violet red and dark red
-        { light: "#C0C0C0", dark: "#808080" }, // Silver and gray
-        { light: "#A9A9A9", dark: "#696969" }, // Dark gray and dim gray
-        { light: "#dd9561ff", dark: "#2F4F4F" }, // Saddle brown and dark slate gray
-        { light: "#FFA500", dark: "#FF4500" }, // Orange and orange-red
-        { light: "#f78bc4ff", dark: "#a70566ff" }, // Deep pink and dark magenta
-        { light: "#f9dcdcff", dark: "#A9A9A9" }, // Light gray and dark gray
-        { light: "#E0FFFF", dark: "#00CED1" }, // Light cyan and dark turquoise
-        { light: "#F5FFFA", dark: "#2F4F4F" }, // Mint cream and dark slate gray
-        { light: "#c6f97aff", dark: "#006400" }, // Green yellow and dark green
-        { light: "#b5f9f9ff", dark: "#008B8B" }, // Aqua and dark cyan
-        { light: "#9befebff", dark: "#008B8B" }, // Light sea green and dark cyan
-        { light: "#b4e3f6ff", dark: "#4682B4" }, // Sky blue and steel blue
-        { light: "#FFFFE0", dark: "#BDB76B" }, // Light yellow and dark khaki
-    ];
-
-    const index = name.charCodeAt(0) % colorPairs.length;
-    return colorPairs[index];
-};
 
 const monthOptions = [
     { id: 1, name: "January" },
@@ -84,6 +48,10 @@ const getMonthName = (monthNumber) => {
 
 const formatMonthYear = (monthyear) => {
     const [year, monthNumber] = monthyear?.split("-");
+    console.log("year")
+    console.log(year)
+    console.log("monthNumber")
+    console.log(monthNumber)
     const monthName = getMonthName(Number(monthNumber));
     return `${monthName}, ${year}`;
 };
@@ -158,6 +126,8 @@ const formatRoundoffCompleteNoComma = (amount) => {
     return String(roundedAmount);
 };
 
+
+
 const formatRoundoff2D = (amount) => {
     const numericAmount = Number(amount) || 0;
 
@@ -167,6 +137,7 @@ const formatRoundoff2D = (amount) => {
         maximumFractionDigits: 2,
     }).format(numericAmount);
 };
+
 
 const formatRoundoff3D = (amount) => {
     const roundedAmount = amount;
@@ -438,6 +409,37 @@ const downloadAsExcel = (tableRef, sheetName = "Sheet1", fileName = "download.xl
 };
 
 
+// usage
+// const handleDownload = () => {
+//     downloadTableAsExcel(bulktableRef, "Employee Details", "Employee_Details_Format.xls");
+//   };
+//   <button onClick={handleDownload}>Download Excel</button>
+
+const inputMinLimit = (name, value, minValue) => {
+    const numericValue = value?.trim() ? parseFloat(value) : 0;
+
+    if (numericValue >= minValue) {
+        return { success: true, error: "" };
+    } else {
+        return {
+            success: false,
+            error: `Value must be more than or equal to ${minValue}`,
+        };
+    }
+};
+
+const inputMaxLimit = ({ name, value, maxValue }) => {
+    const numericValue = value?.trim() ? parseFloat(value) : 0;
+
+    if (numericValue <= maxValue) {
+        return { success: true, error: "" };
+    } else {
+        return {
+            success: false,
+            error: `Value must be less than or equal to ${maxValue}`,
+        };
+    }
+};
 
 const getFileNameFromLink = (url) => {
     try {
@@ -472,6 +474,7 @@ const ViewFile = ({ doc, filename, filesrc, defaultIcon = false }) => {
 
     return (
         <>
+            <ToastContainer position="top-center" autoClose={1000} hideProgressBar={false} newestOnTop={true} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <button title={"View File"} style={{ cursor: "pointer" }} onClick={handleShow}>
                 {defaultIcon ? <Paperclip /> : <AttachmentIcon source={filesrc} />}
             </button>
@@ -519,7 +522,20 @@ const ViewOtherFile = ({ doc, filename, filesrc }) => {
     }
     return (
         <>
+            <ToastContainer position="top-center" autoClose={1000} hideProgressBar={false} newestOnTop={true} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <button title={"View File"} style={{ cursor: "pointer" }} onClick={handleShow}>
+                {/* <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="25"
+                    height="25"
+                    viewBox="0 0 16.933 16.933"
+                    id="bill">
+                    <path
+                        d="M1.854 0C.819 0 0 .83 0 1.852c-.002 4.94.002 9.878.002 14.816 0 .221.256.345.429.207l1.488-1.19 1.488 1.19a.265.265 0 0 0 .33 0l1.488-1.19 1.49 1.19a.265.265 0 0 0 .33 0l1.489-1.19 1.488 1.19a.265.265 0 0 0 .33 0l1.487-1.19 1.488 1.19c.174.139.43.015.43-.207l.002-8.733h2.91a.26.26 0 0 0 .263-.263V1.854A1.85 1.85 0 0 0 15.083 0Zm0 .53h11.932c-.35.337-.556.8-.556 1.324l-.002 14.265-1.222-.98a.265.265 0 0 0-.33 0l-1.49 1.191-1.488-1.191a.264.264 0 0 0-.33 0L6.878 16.33 5.391 15.14a.265.265 0 0 0-.33 0L3.575 16.33 2.085 15.14a.264.264 0 0 0-.33 0l-1.224.98L.53 1.852c0-.77.634-1.322 1.324-1.322zm13.228 0c.73 0 1.324.586 1.324 1.324v5.554H13.76V1.854c0-.738.592-1.324 1.322-1.324zM3.707 3.439c-.133 0-.265.089-.265.266v.287c-.599.116-1.058.63-1.058 1.252 0 .42.217.672.48.799.264.127.552.147.816.174.265.027.506.06.639.125.133.064.181.15.181.32 0 .406-.34.743-.782.746-.384-.014-.658-.23-.784-.623-.106-.339-.614-.175-.503.162.152.475.48.844 1.011.96v.294c0 .354.53.354.53 0v-.282c.598-.116 1.058-.635 1.058-1.257 0-.388-.18-.654-.48-.799-.264-.126-.552-.146-.817-.173-.264-.028-.502-.056-.639-.126-.122-.062-.181-.142-.181-.32 0-.41.34-.742.783-.745.421.016.666.26.783.622.107.339.615.175.504-.162-.152-.474-.5-.857-1.012-.959v-.295c0-.177-.132-.266-.264-.266zm2.645.265c-.355 0-.355.527 0 .53h4.763c.353 0 .353-.53 0-.53zm0 1.852c-.355 0-.355.53 0 .53h4.763c.352 0 .353-.53 0-.53zm0 1.852c-.355 0-.355.527 0 .527h4.763c.352 0 .352-.527 0-.527zM2.649 9.26c-.356 0-.356.537 0 .529h8.466c.352 0 .352-.53 0-.53zm0 1.852c-.356 0-.356.53 0 .53h8.466c.352 0 .352-.53 0-.53zm0 1.852c-.356 0-.356.529 0 .53h8.466c.352 0 .352-.53 0-.53z"
+                        fill="#2576BC"
+                    >
+                    </path>
+                </svg> */}
                 <Eye />
             </button>
             <Modal show={show} onHide={handleClose} dialogClassName="request-leave width-40vw">
@@ -614,6 +630,10 @@ const ViewEmployeeList = ({ titlename, sort, list }) => {
                                                 className="profile-img overlap-img"
                                             />
                                         ) : (
+                                            // <UserDefaultLogo
+                                            //     user={{ name: i.name, profilepic: i.profilepic }}
+                                            //     customStyleforParent={"reqOutDuty-default-logo-dashboard"} customStyleforChild={'small-profile-dashboard'}
+                                            // />
                                             <div
                                                 className={`small-profile-dashboard circle`}
                                                 style={{
@@ -626,7 +646,7 @@ const ViewEmployeeList = ({ titlename, sort, list }) => {
                                                     width: '100%'
                                                 }}
                                             >
-                                                {getInitials(i?.name || '')}
+                                                {initials}
                                             </div>
                                         )}
                                     </CustomImageModal>
@@ -719,6 +739,743 @@ const ViewEmployeeList = ({ titlename, sort, list }) => {
     );
 };
 
+const ShowBannerPopup = () => {
+
+    const [show, setShow] = useState(localStorage.getItem("hasSeenPopup") === "true" ? true : false);
+    const handleClose = () => {
+        localStorage.setItem("hasSeenPopup", "false");
+        setShow(false)
+    };
+
+    return (
+        <>
+            <Modal
+                show={show}
+                onHide={handleClose}
+                dialogClassName="request-leave width-40vw"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>New Product Alert</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div style={{ textAlign: 'center' }}>
+                        <h6>To view Newly Developed Software <strong>PMS (Project Management System)</strong></h6>
+                        <h6>Members from Structure, Highway Department can</h6>
+                        <a href="https://pms.aimantra.co/" target="_blank">Click here to login PMS Aimantra</a>
+                    </div>
+
+                </Modal.Body>
+            </Modal>
+        </>
+    );
+};
+
+
+
+const ViewImprestRequestDates = ({ i }) => {
+
+    return (
+        <>
+            <div title="Approval Dates" >
+                {i.rh_leave_status === "approved" ?
+                    <span
+                        request-status={i.rh_leave_status}
+                        className="request-status "
+                    >
+                        Rh ({i.rh_assigned}-{i.rh_assigned_name}) Approved
+                        {i.rh_update_datetime ? <><br />At: {formatDateTime(i.rh_update_datetime).longfull}</> : ''}
+                    </span>
+                    : ""}
+                <br />
+                {i.admin_leave_status === "approved" ?
+                    <span
+                        request-status={i.admin_leave_status}
+                        className="request-status "
+                    >
+                        {i.admin_update_by_user_role || 'Admin'} {i.admin_update_by ? `(${i.admin_update_by}-${i.admin_update_by_name})` : ''} Approved
+                        {i.admin_update_datetime ? <><br />At: {formatDateTime(i.admin_update_datetime).longfull}</> : ''}
+                    </span>
+                    : ""}
+                <br />
+                {i.account_leave_status === "approved" ?
+                    <span
+                        request-status={i.account_leave_status}
+                        className="request-status "
+                    >
+                        Accounts{i.account_update_by ? `(${i.account_update_by}-${i.account_update_by_name})` : ''} Approved
+                        {i.account_update_datetime ? <><br />At: {formatDateTime(i.account_update_datetime).longfull}</> : ''}
+                    </span>
+                    : ""}
+            </div>
+        </>
+    );
+};
+
+const ViewImprestRequestStatus = ({ i }) => {
+
+    return (
+        <div title="Status And Remarks">
+            <span
+                request-status={i.rh_leave_status}
+                className="request-status"
+                title={`${i.rh_leave_status === "rejected" ? `TL Reason For Rejection : \n${i.rejection_reason}` : ''}`}
+            >
+                {i.rh_leave_status === "pending"
+                    ? "Pending For Rh Approval ⌛"
+                    : i.rh_leave_status === "rejected"
+                        ? <>Rh ✖,<br />Rh Reject Reason:<br />"{i.rejection_reason}"</>
+                        : "Approved By Rh ✔,"}
+            </span>
+            <br />
+            <span
+                request-status={i.admin_leave_status}
+                className="request-status"
+                title={`${i.admin_leave_status === "rejected" ? `${i.admin_update_by_user_role || 'Admin'} Reason: ${i.admin_rejection_reason}` : ''}`}
+            >
+                {i.admin_leave_status === "rejected"
+                    ? <>{i.admin_update_by_user_role || 'Admin'} ✖,<br />{i.admin_update_by_user_role || 'Admin'} Reject Reason: "{i.admin_rejection_reason}"</>
+                    :
+                    i.admin_leave_status === "pending"
+                        ? "Pending For Admin Approval ⌛,"
+                        :
+                        i.admin_leave_status === "approved"
+                            ? `Approved By ${i.admin_update_by_user_role || 'Admin'} ✔,`
+                            : "Admin Status: " + i.admin_leave_status}
+            </span>
+            <br />
+            <span
+                request-status={i.account_leave_status}
+                className="request-status"
+                title={`${i.account_leave_status === "rejected" ? `Account Reason: ${i.account_rejection_reason}` : ''}`}
+            >
+                {i.account_leave_status === "rejected"
+                    ? <>Accounts ✖,<br />Accounts Reject Reason:<br />"{i.account_rejection_reason}"</>
+                    : i.account_leave_status === "pending"
+                        ? "Pending For Account Approval ⌛"
+                        :
+                        i.account_leave_status === "approved"
+                            ? "Approved By Accounts ✔,"
+                            : "Accounts Status : " + i.account_leave_status}
+            </span>
+        </div>
+    );
+};
+
+const ViewRequestRemarks = ({ i, table, approval_stages_data }) => {
+    // console.log(approval_stages_data, table, approval_stages_data != null && approval_stages_data != undefined && approval_stages_data?.checker === true)
+    return (
+        <>
+            <td title="Remarks and Approval Dates" className="table-body">
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data?.checker ?
+                    (
+                        <>
+                            <span
+                                request-status={i.checker_approval_status}
+                                className="request-status "
+                            >
+                                {/* {console.log(approval_stages_data.checker, 'checker')} */}
+                                {i.checker_approval_status === "pending"
+                                    ? "-"
+                                    : i.checker_approval_status === "rejected"
+                                        ? `Checker Reject Reason : ${i.checker_rejection_reason}`
+                                        : `Checker${i.checker ? `(${i?.checker_name}) ` : ''}: Checked ${i.checker_update_datetime ? `At: ${formatDateTime(i.checker_update_datetime).date}` : ''}`}
+                            </span>
+                            <br />
+
+                        </>
+                    )
+                    : (
+                        <>
+                            <span
+
+                                className="request-status ">
+                                Checker  Step was skipped
+                            </span >
+                            <br />
+                        </>
+                    )}
+
+                {/* <span
+                    request-status={i.checker_approval_status}
+                    className="request-status "
+                >
+                    {i.checker_approval_status === "pending"
+                        ? "-"
+                        : i.checker_approval_status === "rejected"
+                            ? `Checker Reject Reason : ${i.checker_rejection_reason}`
+                            : `Checker${i.checker ? `(${i?.checker_name}) ` : ''}: Checked ${i.checker_update_datetime ? `At: ${formatDateTime(i.checker_update_datetime).date}` : ''}`}
+                </span>
+                <br /> */}
+                {/* <br /> */}
+
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data.authority ? (
+                    <>
+                        <span
+                            request-status={i.authority_approval_status}
+                            className="request-status "
+                        >
+                            {/* {console.log(approval_stages_data.authority, 'authority', i.authority_approval_status)} */}
+                            {i.authority_approval_status === "pending"
+                                ? "-"
+                                : i.authority_approval_status === "rejected"
+                                    ? `Authority Reject Reason : ${i.authority_rejection_reason}`
+                                    : `Authority${i.authority_engineer ? `(${i?.authority_engineer_name}) ` : ''}: Verified Amounts for Bills ${i.authority_update_datetime ? `At: ${formatDateTime(i.authority_update_datetime).date}` : ''}`}
+                        </span>
+                        <br />
+                    </>
+                ) : (
+                    <>
+                        <span
+
+                            className="request-status ">
+                            Authority  Step was skipped
+                        </span >
+                        <br />
+                    </>
+                )}
+
+                {/* <br /> */}
+
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data.account ? (<>
+                    <span
+                        request-status={i.account_status_a}
+                        className="request-status "
+                    >
+                        {i.account_status_a === "pending"
+                            ? "-"
+                            : i.account_status_a === "rejected"
+                                ? `Accounts Reject Reason : ${i.account1_rejection_reason}`
+                                : `Accounts${i.account_update_by ? `(${i?.account_update_by_name}) ` : ''}: Bills Verified ${i.account_update_datetime ? `At: ${formatDateTime(i.account_update_datetime).date}` : ''}`}
+                    </span>
+                    <br />
+                </>) : (
+                    <>
+                        <span
+
+                            className="request-status ">
+                            Account1  Step was skipped
+                        </span >
+                        <br />
+                    </>
+                )}
+
+                {/* <br /> */}
+
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data.admin1 ? (<>
+                    <span
+                        request-status={i.admin_approval_status_c1}
+                        className="request-status "
+                        title={i.admin_approval_status_c1 === "rejected" ? `Admin 1 Reject Reason : ${i.admin_rejection_reason_c1}` : ""}
+                    >
+                        {i.admin_approval_status_c1 === "pending"
+                            ? "-"
+                            : i.admin_approval_status_c1 === "rejected"
+                                ? `Admin 1 Rejection Reason : ${i.admin_rejection_reason_c1}`
+                                : `Admin 1${i.admin_update_by_c1 ? `(${i?.admin_update_by_c1_name ? i?.admin_update_by_c1_name : ""}) ` : ''}: Approved After Verification  ${i.admin_update_datetime_c1 ? `At: ${formatDateTime(i.admin_update_datetime_c1).date}` : ''}`}
+                    </span>
+                    <br />
+                </>) : (
+                    <>
+                        <span
+
+                            className="request-status ">
+                            Admin1  Step was skipped
+                        </span >
+                        <br />
+                    </>
+                )}
+
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data.admin2 ? (<>
+                    <span
+                        request-status={i.admin_approval_status_c2}
+                        className="request-status "
+                        title={i.admin_approval_status_c2 === "rejected" ? `Admin 2 Reject Reason : ${i.admin_rejection_reason_c2}` : ""}
+                    >
+                        {i.admin_approval_status_c2 === "pending"
+                            ? "-"
+                            : i.admin_approval_status_c2 === "rejected"
+                                ? `Admin 2 Rejection Reason : ${i.admin_rejection_reason_c2}`
+                                : `Admin 2${i.admin_update_by_c2 ? `(${(i?.admin_update_by_c2_name || i.admin_update_by_name_c2) ? (i?.admin_update_by_c2_name || i.admin_update_by_name_c2) : ""}) ` : ''}: Approved After Verification  ${i.admin_update_datetime_c2 ? `At: ${formatDateTime(i.admin_update_datetime_c2).date}` : ''}`}
+                    </span>
+                    {/* <br />
+                <span
+                    request-status={i.admin_approval_status_c3}
+                    className="request-status "
+                    title={i.admin_approval_status_c3 === "rejected" ? `Admin 3 Reject Reason : ${i.admin_rejection_reason_c3}` : ""}
+                >
+                    {i.admin_approval_status_c3 === "pending"
+                        ? "-"
+                        : i.admin_approval_status_c3 === "rejected"
+                            ? `Admin 3 Rejection Reason : ${i.admin_rejection_reason_c3}`
+                            : `Admin 3${i.admin_update_by_c3 ? `(${i.admin_update_by_c3}) ` : ''}: Approved After Verification  ${i.admin_update_datetime_c3 ? `At: ${formatDateTime(i.admin_update_datetime_c3).date}` : ''}`}
+                </span> */}
+                    <br />
+                </>) : (
+                    <>
+                        <span
+
+                            className="request-status ">
+                            Admin2  Step was skipped
+                        </span >
+                        <br />
+                    </>
+                )}
+
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data.admin3 ? (<>
+                    <span
+                        request-status={i.admin_approval_status_c3}
+                        className="request-status "
+                        title={i.admin_approval_status_c3 === "rejected" ? `Admin 3 Reject Reason : ${i.admin_rejection_reason_c3}` : ""}
+                    >
+                        {i.admin_approval_status_c3 === "pending"
+                            ? "-"
+                            : i.admin_approval_status_c3 === "rejected"
+                                ? `Admin 3 Rejection Reason : ${i.admin_rejection_reason_c3}`
+                                : `Admin 3${i.admin_update_by_c3 ? `(${i?.admin_update_by_c3_name ? i?.admin_update_by_c3_name : ""}) ` : ''}: Approved After Verification  ${i.admin_update_datetime_c3 ? `At: ${formatDateTime(i.admin_update_datetime_c3).date}` : ''}`}
+                    </span>
+                    {/* <br />
+                <span
+                    request-status={i.admin_approval_status_c3}
+                    className="request-status "
+                    title={i.admin_approval_status_c3 === "rejected" ? `Admin 3 Reject Reason : ${i.admin_rejection_reason_c3}` : ""}
+                >
+                    {i.admin_approval_status_c3 === "pending"
+                        ? "-"
+                        : i.admin_approval_status_c3 === "rejected"
+                            ? `Admin 3 Rejection Reason : ${i.admin_rejection_reason_c3}`
+                            : `Admin 3${i.admin_update_by_c3 ? `(${i.admin_update_by_c3}) ` : ''}: Approved After Verification  ${i.admin_update_datetime_c3 ? `At: ${formatDateTime(i.admin_update_datetime_c3).date}` : ''}`}
+                </span> */}
+                    <br />
+                </>) : (
+                    <>
+                        <span
+
+                            className="request-status ">
+                            Admin3  Step was skipped
+                        </span >
+                        <br />
+                    </>
+                )}
+                {approval_stages_data != null && approval_stages_data != undefined && approval_stages_data.payment_settlement ? (<>
+                    <span
+                        request-status={i.account_status_b}
+                        className="request-status "
+                        style={{ cursor: "help" }}
+                        title={`Transaction/Cheque No.:\n${i.account_status_b !== "pending" ? i.settlement_transaction_id : null}`}
+                    >
+
+                        {i.account_status_b === "pending" ? (
+                            "-"
+                        ) : i.account_status_b === "rejected" ? (
+                            `Final Rejection Reason: ${i.account2_rejection_reason}`
+                        ) : (
+                            <>
+                                {`Final1${i.final_update_by ? ` (${i.final_update_by_name})` : ''}: Approved And Settled `}
+                                {i.final_update_datetime ? `At: ${formatDateTime(i.final_update_datetime).date} ` : ''}
+                                {i.settlement_bill ? (
+                                    <a
+                                        title="View Settlement Bill"
+                                        className="modal-button-black"
+                                        href={i.settlement_bill}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View
+                                    </a>
+                                ) : "No Proof Attached"}
+                            </>
+                        )}
+
+
+                        {/* {console.log(i.settlement_bill, 'settlememnt bill')} */}
+                    </span>
+                </>) : (
+                    <>
+                        <span
+
+                            className="request-status ">
+                            Account2  Step was skipped
+                        </span >
+                        <br />
+                    </>
+                )}
+
+
+            </td>
+        </>
+    )
+}
+
+// allows one empty
+const DateRangePicker = ({ startDate, endDate, onChange, placeHolder1, placeHolder2 }) => {
+    const [dates, setDates] = useState([null, null]);
+
+    useEffect(() => {
+        const start = startDate && startDate !== "null" ? dayjs(startDate) : null;
+        const end = endDate && endDate !== "null" ? dayjs(endDate) : null;
+        setDates([start, end]);
+    }, [startDate, endDate]);
+
+    const handleCalendarChange = (values) => {
+        if (!values) return;
+        setDates(values);
+
+        const start = values[0] ? values[0].format("YYYY-MM-DD") : null;
+        const end = values[1] ? values[1].format("YYYY-MM-DD") : null;
+
+        onChange(start, end);
+    };
+
+    const handleChange = (values) => {
+        if (!values || values.length === 0) {
+            setDates([null, null]);
+            onChange(null, null);
+        }
+    };
+
+    return (
+        <Space direction="vertical" size={12} style={{ color: "#707070" }}>
+            <RangePicker
+                value={dates}
+                placeholder={[placeHolder1, placeHolder2]}
+                onCalendarChange={handleCalendarChange} // partial selection
+                onChange={handleChange} // full clear or both selected
+                className="custom-range-picker"
+            />
+        </Space>
+    );
+};
+
+const DoubleDateRangePicker = ({ startDate, endDate, onChange, placeHolder1, placeHolder2 }) => {
+    const [start, setStart] = useState(null);
+    const [end, setEnd] = useState(null);
+
+    // Sync with incoming props
+    useEffect(() => {
+        setStart(startDate && startDate !== "null" ? dayjs(startDate) : null);
+        setEnd(endDate && endDate !== "null" ? dayjs(endDate) : null);
+    }, [startDate, endDate]);
+
+    const handleStartChange = (value) => {
+        setStart(value);
+        onChange(
+            value ? value.format("YYYY-MM-DD") : null,
+            end ? end.format("YYYY-MM-DD") : null
+        );
+    };
+
+    const handleEndChange = (value) => {
+        setEnd(value);
+        onChange(
+            start ? start.format("YYYY-MM-DD") : null,
+            value ? value.format("YYYY-MM-DD") : null
+        );
+    };
+
+    return (
+        <Space>
+            <DatePicker
+                value={start}
+                placeholder={placeHolder1}
+                onChange={handleStartChange}
+                className="custom-date-picker"
+            />
+            <DatePicker
+                value={end}
+                placeholder={placeHolder2}
+                onChange={handleEndChange}
+                className="custom-date-picker"
+            />
+        </Space>
+    );
+};
+
+// Not tested
+const MonthRangePicker = ({ startDate, endDate, onChange, placeHolder1, placeHolder2 }) => {
+    const [dates, setDates] = useState([null, null]);
+
+    useEffect(() => {
+        const start = startDate && startDate !== "null" ? dayjs(startDate) : null;
+        const end = endDate && endDate !== "null" ? dayjs(endDate) : null;
+        setDates([start, end]);
+    }, [startDate, endDate]);
+
+    const handleCalendarChange = (values) => {
+        if (!values) return;
+        setDates(values);
+
+        const start = values[0] ? values[0].format("YYYY-MM") : null;
+        const end = values[1] ? values[1].format("YYYY-MM") : null;
+
+        onChange(start, end);
+    };
+
+    const handleChange = (values) => {
+        if (!values || values.length === 0) {
+            setDates([null, null]);
+            onChange(null, null);
+        }
+    };
+
+    return (
+        <div className='salary-history-data-type-toggle'>
+            <Space direction="vertical" size={12} style={{ color: "#707070" }}>
+                <RangePicker
+                    picker="month"
+                    value={dates}
+                    placeholder={[placeHolder1, placeHolder2]}
+                    onCalendarChange={handleCalendarChange}
+                    onChange={handleChange}
+                    className="custom-range-picker"
+                />
+            </Space>
+        </div>
+    );
+};
+
+// Not tested
+const DoubleMonthRangePicker = ({ startDate, endDate, onChange, placeHolder1, placeHolder2 }) => {
+    const [start, setStart] = useState(null);
+    const [end, setEnd] = useState(null);
+
+    // Sync with incoming props
+    useEffect(() => {
+        setStart(startDate && startDate !== "null" ? dayjs(startDate) : null);
+        setEnd(endDate && endDate !== "null" ? dayjs(endDate) : null);
+    }, [startDate, endDate]);
+
+    const handleStartChange = (value) => {
+        setStart(value);
+        onChange(
+            value ? value.format("YYYY-MM") : null,
+            end ? end.format("YYYY-MM") : null
+        );
+    };
+
+    const handleEndChange = (value) => {
+        setEnd(value);
+        onChange(
+            start ? start.format("YYYY-MM") : null,
+            value ? value.format("YYYY-MM") : null
+        );
+    };
+
+    return (
+        <Space>
+            <DatePicker
+                picker="month"
+                value={start}
+                placeholder={placeHolder1}
+                onChange={handleStartChange}
+                className="custom-date-picker"
+            />
+            <DatePicker
+                picker="month"
+                value={end}
+                placeholder={placeHolder2}
+                onChange={handleEndChange}
+                className="custom-date-picker"
+            />
+        </Space>
+    );
+};
+
+const DownloadBulkDocumentsAsZip = ({ emp_code, emp_name, employeeDocuments, document_list, doc_name_key, doc_file_key, downloadBlueButton = false }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState();
+    const [show, setShow] = useState(false);
+    const [documentList, setDocumentList] = useState([]);
+    const handleShow = () => {
+        setDocumentList(document_list);
+        setShow(true);
+    }
+    const handleClose = () => {
+        setShow(false);
+    }
+
+    const fetchAndZipFiles = async () => {
+        setLoading(true); // loading logic
+        const loadingToastId = toast.loading("Loading: Please wait..."); // toast logic
+        setError("");
+
+        try {
+            // Step 1: Fetch the API response
+
+            const apiResponse = documentList; // Assuming API response is JSON
+            // const files = apiResponse.flatMap((data) => data.documents);
+            const files = apiResponse;
+
+            if (files.length === 0) {
+                setError("No documents found in the API response.");
+                setLoading(false);
+                return;
+            }
+
+            // Step 3: Initialize JSZip
+            const zip = new JSZip();
+
+            // Step 4: Fetch each document and add it to the ZIP
+            const filePromises = files.map(async (file) => {
+                try {
+                    const fileUrl = file[doc_file_key];
+                    const finalUrl = fileUrl.startsWith("http") ? fileUrl : `${IMAGE_URL}${fileUrl}`;
+
+                    const fileResponse = await axios.get(finalUrl, {
+                        responseType: "blob",
+                    });
+
+                    // Extract the extension from the URL or Content-Type header
+                    let extension = "";
+                    const urlParts = finalUrl.split(".");
+                    if (urlParts.length > 1) {
+                        extension = urlParts[urlParts.length - 1].split("?")[0]; // handles URLs with query params
+                    }
+
+                    // Fallback to "file" if name is missing
+                    const baseFileName = file[doc_name_key] || "file";
+
+                    const fileName = `${baseFileName}.${extension || "bin"}`; // fallback to .bin
+
+                    // const fileName = `${file[doc_name_key]}.pdf`;
+                    zip.file(fileName, fileResponse.data);
+                } catch (err) {
+                    console.error(`Failed to download: ${file[doc_name_key]}`, err);
+                }
+            });
+
+            await Promise.all(filePromises);
+
+            // Step 5: Generate and save the ZIP file
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            saveAs(zipBlob, `${emp_code}-${emp_name}-Documents.zip`);
+
+
+            // Close the modal and show success toast
+            handleClose();
+            toast.dismiss(loadingToastId);
+            toast.success("Documents downloaded successfully!");
+        } catch (err) {
+            console.error("Error fetching data or downloading files:", err);
+            setError("Failed to process the request. Please try again.");
+        } finally {
+            setLoading(false);
+            toast.dismiss(loadingToastId);
+        }
+    };
+
+    return (
+        <>
+
+            <button
+                title="Download All Documents"
+                onClick={handleShow}
+                className={` model-button-black flex-row justify-evenly model-button-black-p ${downloadBlueButton ? 'model-button-blue-p ' : 'model-button'}`}
+            >
+                <Download color={downloadBlueButton ? 'blue' : 'black'} />
+            </button>
+            <Modal
+                show={show}
+                onHide={handleClose}
+                dialogClassName="request-leave"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Download Documents</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div>
+                        <div>
+                            <table className="table-css">
+                                <thead>
+                                    <tr className="custom-table-head-tr">
+                                        <th className="align-left">S. No.</th>
+                                        <th className="align-center">Name</th>
+                                        <th className="align-center">File</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {documentList.map((i, docIndex) => {
+                                        return (
+                                            <React.Fragment key={docIndex}>
+                                                <tr className="custom-table-head-td">
+                                                    <td className="align-left">{docIndex + 1}</td>
+                                                    <td className="align-center">{(i[doc_name_key] || i?.doc_name) ? (i[doc_name_key] || i?.doc_name) : '-'}</td>
+                                                    { }
+                                                    <td className="align-center">
+                                                        {(i?.doc_file || i[doc_file_key]) ? (
+                                                            i?.doc_file ? (
+                                                                Object.keys(i?.doc_file).length > 0 ? (
+                                                                    (() => {
+                                                                        const fileSrc =
+                                                                            typeof i.doc_file === "string" && i.doc_file.startsWith("http")
+                                                                                ? i.doc_file
+                                                                                : `${IMAGE_URL}${i.doc_file}`;
+
+                                                                        return (
+                                                                            <a href={fileSrc} target="_blank" rel="noopener noreferrer">
+                                                                                <AttachmentIcon source={fileSrc} />
+                                                                            </a>
+                                                                        );
+                                                                    })()
+                                                                ) : (
+                                                                    "Document Not Attached"
+                                                                )
+                                                            ) : i[doc_file_key] ? (
+                                                                (() => {
+                                                                    const fileSrc = i[doc_file_key].startsWith("http")
+                                                                        ? i[doc_file_key]
+                                                                        : `${IMAGE_URL}${i[doc_file_key]}`;
+                                                                    return (
+                                                                        <a href={fileSrc} target="_blank" rel="noopener noreferrer">
+                                                                            <AttachmentIcon source={fileSrc} />
+                                                                        </a>
+                                                                    );
+                                                                })()
+                                                            ) : (
+                                                                "Document Not Attached"
+                                                            )
+                                                        ) : (
+                                                            "Document Not Attached"
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            </React.Fragment>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className='button-models' >
+                            <button
+                                className="model-button   model-button-cancel font-weight500"
+                                onClick={handleClose}
+                            >
+                                Cancel
+                            </button>
+                            <button onClick={fetchAndZipFiles} disabled={loading} className="model-button   font-weight500    model-button-submit">
+                                {loading ? "Downloading..." :
+                                    <><Download /> Documents</>
+                                }
+                            </button>
+                        </div>
+                        {error && <p style={{ color: "red" }}>{error}</p>}
+                    </div>
+                </Modal.Body>
+            </Modal>
+            <ToastContainer
+                position="top-center"
+                autoClose={1000}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+            />
+        </>
+    );
+};
+
 const getNumberSuffix = (number) => {
     const mod100 = number % 100;
     if (mod100 >= 11 && mod100 <= 13) {
@@ -804,51 +1561,6 @@ const CustomTooltipOld = ({ children, tooltipContent, position = 'top', customSt
 
     )
 }
-
-const UserDefaultLogo = ({ user, customStyleforParent, customStyleforChild }) => {
-    if (!user) {
-        const randomColor = getRandomColor("default");
-        return (
-            <div
-                className="circle"
-                style={{ backgroundColor: randomColor.light }}
-            ></div>
-        );
-    }
-
-    const hasProfilePic = user?.profilepic;
-    const initials = getInitials(user?.name || '');
-    const { light: backgroundColor, dark: textColor } = getRandomColor(user.name || "#f6f7f9");
-
-    return (
-        <div className={`${customStyleforParent}`}>
-
-            {hasProfilePic ? (
-                <img
-                    src={`${IMAGE_URL}${user.profilepic}`}
-                    alt={user.name || 'User'}
-                    className={`${customStyleforChild} circle`}
-                    style={{ borderRadius: '50%', objectFit: 'cover', width: '100%', height: '100%' }}
-                />
-            ) : (
-                <div
-                    className={`${customStyleforChild} circle`}
-                    style={{
-                        backgroundColor: backgroundColor,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: textColor,
-                        height: '100%',
-                        width: '100%'
-                    }}
-                >
-                    {initials}
-                </div>
-            )}
-        </div>
-    );
-};
 
 const CustomTooltip = ({
     children,
@@ -1025,6 +1737,9 @@ const CustomImageModal = ({ customStyle, children }) => {
 };
 
 
+
+
+
 const UserProfileModal = ({
     code,
     name,
@@ -1034,7 +1749,7 @@ const UserProfileModal = ({
     if (!code && !name) return null;
 
     return (
-        <div className="d-flex align-items-center gap-2 flex flex-col">
+        <div className="d-flex align-items-center gap-2 flex-column">
             <CustomImageModal customStyle>
                 {profilePic ? (
                     <img
@@ -1392,16 +2107,17 @@ function ReorderList(prevItems, index, newPosition, key) {
     return sorted;
 }
 
+
 const getFileNameFromUrl = (url) => {
     const urlParts = url.split("/");
     return urlParts[urlParts.length - 1].split("?")[0];
 };
 
+
 const isValidTwoDecimalNumber = (value) => {
     const regex = /^\d*\.?\d{0,2}$/;
     return regex.test(value) || value === "";
 };
-
 const truncateToTwoDecimals = (value) => {
     if (!value) return value;
     const num = parseFloat(value);
@@ -1499,6 +2215,8 @@ const formatCurrency = (amount) => {
 
 
 export {
+    handleErrorToast,
+    handleAllError,
     getMonthName,
     formatMonthYear,
     getMonthNameFromDate,
@@ -1516,11 +2234,24 @@ export {
     sortProjects,
     customSortByKey,
     downloadAsExcel,
+    inputMinLimit,
+    inputMaxLimit,
     getFileNameFromLink,
     ViewFile,
     ViewOtherFile,
     ViewChatImageorFile,
     ViewEmployeeList,
+    ShowBannerPopup,
+    ViewImprestRequestDates,
+    ViewImprestRequestStatus,
+
+    DateRangePicker,
+    DoubleDateRangePicker,
+
+    MonthRangePicker,
+    DoubleMonthRangePicker,
+
+    DownloadBulkDocumentsAsZip,
     getNumberSuffix,
     // generateCustomFileName,
     generateCustomFileForUpload,
