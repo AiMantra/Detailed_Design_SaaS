@@ -41,6 +41,7 @@ import {
   DownloadCloudIcon,
   EllipsisVertical,
   Pencil,
+  UserStar,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
@@ -61,8 +62,9 @@ import TaskPicker from "../tasks/TaskPicker";
 import LoadingModal from "../../components/modals/LoadingModal";
 import { SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
 import { saveDailyWorkLog } from "../tasks/taskSlice";
-import { CustomImageModal } from "../../utils/CustomFunctions";
+import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
+import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 
 const ProjectList = () => {
   const navigate = useNavigate();
@@ -828,7 +830,7 @@ const ProjectList = () => {
   };
 
   const handleEditProject = (projectid) => {
-    navigate("/projectsupdate/" + projectid)
+    navigate("/project/update/" + projectid)
   }
 
   function formatNumber(value) {
@@ -1753,7 +1755,7 @@ const ProjectList = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/projects/create")}
+                  onClick={() => navigate("/project/create")}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all flex items-center gap-2"
                 >
                   <Plus size={20} />
@@ -1786,7 +1788,7 @@ const ProjectList = () => {
                 </p>
                 {isAdmin && (
                   <button
-                    onClick={() => navigate("/projects/create")}
+                    onClick={() => navigate("/project/create")}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:shadow-xl transition-all inline-flex items-center gap-2 text-lg"
                   >
                     <Plus size={24} /> Create New Project
@@ -1907,7 +1909,7 @@ const ProjectList = () => {
                             </div>
 
                             {/* 🔹 Key Info Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-blue-50 rounded-lg">
                                   <Calendar
@@ -1996,7 +1998,7 @@ const ProjectList = () => {
                               </div> */}
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-indigo-50 rounded-lg">
-                                  <UserCheck
+                                  <UserStar
                                     size={16}
                                     className="text-indigo-600"
                                   />
@@ -2008,6 +2010,60 @@ const ProjectList = () => {
                                   <p className="text-sm font-semibold">
                                     {project?.client_detail?.client_name ||
                                       getClientName(project)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <div className="p-2 bg-indigo-50 rounded-lg">
+                                  <UserCog
+                                    size={16}
+                                    className="text-indigo-600"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">
+                                    Assigned To
+                                  </p>
+
+                                  <p className="text-sm font-semibold">
+                                    {project?.assigned_to?.length > 0 ? (() => {
+                                      const assigned = project.assigned_to;
+                                      const count = assigned.length;
+
+                                      // Tooltip content (full list)
+                                      const tooltipContent = (
+                                        <div className="bg-white shadow-lg rounded-md p-2 text-xs text-gray-700">
+                                          {assigned.map((name, i) => (
+                                            <p key={i}>{name}</p>
+                                          ))}
+                                        </div>
+                                      );
+
+                                      // Case 1: Only 1
+                                      if (count === 1) {
+                                        return assigned[0];
+                                      }
+
+                                      // Case 2: 2 users → show both
+                                      if (count === 2) {
+                                        return assigned.join(", ");
+                                      }
+
+                                      // Case 3: More than 2
+                                      return (
+                                        <CustomTooltip tooltipContent={tooltipContent}>
+                                          <span>
+                                            {assigned[0]}, {assigned[1]}{" "}
+                                            <span className="text-blue-600">
+                                              and {count - 2} more
+                                            </span>
+                                          </span>
+                                        </CustomTooltip>
+                                      );
+                                    })() : (
+                                      "Not Assigned"
+                                    )}
                                   </p>
                                 </div>
                               </div>
@@ -2140,7 +2196,7 @@ const ProjectList = () => {
                                       onClick={() => {
                                         handleEditProject(projectId);
                                       }}
-                                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 w-full"
+                                      className="flex items-center gap-3 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 w-full"
                                     >
                                       <Pencil size={16} />
                                       <span>Edit Project</span>
@@ -2501,6 +2557,43 @@ const ProjectList = () => {
                                         </span>
                                       </div>
                                     )}
+
+                                    {/* {
+                                      !loadingProjectDetails[projectId] && expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 &&
+                                      <div className=" bg-gray-50 rounded-xl p-4">
+                                        <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
+                                          <UserCog size={18} className="text-blue-600" />
+                                          Assigned Personnel
+                                        </h4>
+                                        <div className="flex flex-row gap-4 flex-wrap">
+                                          {expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 && (
+                                            expandedProjectDetails[projectId]?.assigned_to_detail?.map((data, index) =>
+                                              <div key={index} className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                                  {data?.profilepic ? (
+                                                    <CustomImageModal customStyle>
+                                                      <img
+                                                        src={`${IMAGE_URL}${data?.profilepic}`}
+                                                        alt={data?.name}
+                                                        className=" rounded-full object-cover"
+                                                      />
+                                                    </CustomImageModal>
+                                                  ) : (
+                                                    <div >
+                                                      {data?.name?.charAt(0)}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                <div>
+                                                  <p className="text-sm font-medium text-gray-800">{data?.name}</p>
+                                                  <p className="text-xs text-gray-500">{expandedProjectDetails[projectId]?.assigned_to_detail?.length > 1 ? "Project CO-Owner" : "Project Owner"}</p>
+                                                </div>
+                                              </div>
+                                            )
+                                          )}
+                                        </div>
+                                      </div>
+                                    } */}
                                   </div>
                                 </div>
                               </div>
@@ -2804,26 +2897,14 @@ const ProjectList = () => {
                                                                             {/* 🔵 SUBMISSION ROW */}
                                                                             <tr
                                                                               id={`subactivity-row-${sub.id}`}
-                                                                              className="border-t  text-[12px]"
+                                                                              className="border-t text-[12px]"
                                                                               key={sub?.id}
+                                                                              onClick={() => {
+                                                                                if (sub.work_summary?.users?.length > 0) {
+                                                                                  setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                                                                                }
+                                                                              }}
                                                                             >
-                                                                              {/* 
-                                                                          <td rowSpan="2" className="px-2 text-center align-center">
-                                                                            {
-                                                                              sub.work_summary?.users.length > 0 || worklogreturned
-                                                                                ?.filter((d) => d.id == sub.id).length > 0 ? (
-                                                                                <button
-                                                                                  onClick={() =>
-                                                                                    setExpandedRow(
-                                                                                      expandedRow === sub.id ? null : sub.id
-                                                                                    )
-                                                                                  }
-                                                                                >
-                                                                                  {expandedRow === sub.id ? "−" : "+"}
-                                                                                </button>
-                                                                              ) : ""}
-                                                                          </td> */}
-
                                                                               <td rowSpan="2" className="px-2 text-center align-middle">
                                                                                 {(sub.work_summary?.users?.length > 0) ? (
                                                                                   <motion.button
@@ -3223,13 +3304,214 @@ const ProjectList = () => {
                                                                         } */}
 
 
-                                                                            {/* 🔽 EXPAND ROW - Minimalist Version */}
                                                                             {expandedRow === sub.id && (
+                                                                              <tr className="bg-gray-50/80">
+                                                                                <td colSpan="13" className="px-4 py-4">
+                                                                                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+
+                                                                                    {/* Header */}
+                                                                                    <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 flex justify-between items-center">
+                                                                                      <div className="flex items-center gap-2">
+                                                                                        <div className="p-1.5 bg-blue-100 rounded-lg">
+                                                                                          <Clock size={16} className="text-blue-600" />
+                                                                                        </div>
+                                                                                        <span className="text-sm font-semibold text-gray-700">Time Logs</span>
+                                                                                        <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
+                                                                                          {sub.work_summary?.users?.length || 0} contributors
+                                                                                        </span>
+                                                                                      </div>
+                                                                                      <div className="flex items-center gap-2">
+                                                                                        <div className="text-xs text-gray-500">Total Hours:</div>
+                                                                                        <div className="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                                                                                          {formatDuration(sub.work_summary?.total_hours || "00:00:00")}
+                                                                                        </div>
+                                                                                      </div>
+                                                                                    </div>
+
+                                                                                    {/* User Summary Cards */}
+                                                                                    {sub.work_summary?.users?.length > 0 && (
+                                                                                      <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                                                                                        <div className="flex flex-wrap gap-3">
+                                                                                          {sub.work_summary.users.map((userLog, i) => (
+                                                                                            <div
+                                                                                              key={i}
+                                                                                              className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                                                                                            >
+                                                                                              {userLog.profilepic ? (
+                                                                                                <CustomImageModal customStyle>
+                                                                                                  <img
+                                                                                                    src={`${IMAGE_URL}${userLog.profilepic}`}
+                                                                                                    alt={userLog.name}
+                                                                                                    className="w-8 h-8 rounded-full object-cover"
+                                                                                                  />
+                                                                                                </CustomImageModal>
+                                                                                              ) : (
+                                                                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm">
+                                                                                                  {userLog.name?.charAt(0)?.toUpperCase()}
+                                                                                                </div>
+                                                                                              )}
+                                                                                              <div>
+                                                                                                <p className="text-sm font-medium text-gray-800">{userLog.name}</p>
+                                                                                                <div className="flex items-center gap-2 text-xs">
+                                                                                                  <span className="text-gray-400">
+                                                                                                    {userLog.days_worked} day{userLog.days_worked !== 1 ? 's' : ''}
+                                                                                                  </span>
+                                                                                                  <span className="text-gray-300">•</span>
+                                                                                                  <span className="font-semibold text-blue-600">
+                                                                                                    {formatDuration(userLog.total_time_spent)}
+                                                                                                  </span>
+                                                                                                </div>
+                                                                                              </div>
+                                                                                            </div>
+                                                                                          ))}
+                                                                                        </div>
+                                                                                      </div>
+                                                                                    )}
+
+                                                                                    {/* Detailed Daily Logs - With Date-wise breakdown */}
+                                                                                    <div className="max-h-[400px] overflow-y-auto">
+                                                                                      {sub.work_summary?.users?.length > 0 ? (
+                                                                                        <div className="divide-y divide-gray-100">
+                                                                                          {sub.work_summary.users.map((userLog, userIdx) => (
+                                                                                            <div key={userIdx} className="bg-white">
+
+                                                                                              {/* User Header for daily logs */}
+                                                                                              <div className="px-5 py-2 bg-gray-50 flex items-center gap-2 sticky top-0 z-10">
+                                                                                                {/* <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
+                                                                                                  {userLog.name?.charAt(0)?.toUpperCase()}
+                                                                                                </div> */}
+                                                                                                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                                                                                  {userLog.profilepic ? (
+                                                                                                    <CustomImageModal customStyle>
+                                                                                                      <img
+                                                                                                        src={`${IMAGE_URL}${userLog.profilepic}`}
+                                                                                                        alt={userLog.name}
+                                                                                                        className="w-6 h-6 rounded-full object-cover"
+                                                                                                      />
+                                                                                                    </CustomImageModal>
+                                                                                                  ) : (
+                                                                                                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
+                                                                                                      {userLog.name?.charAt(0)?.toUpperCase()}
+                                                                                                    </div>
+                                                                                                  )}
+                                                                                                </div>
+                                                                                                <span className="text-xs font-medium text-gray-600">{userLog.name}</span>
+                                                                                                <div className="flex gap-1 ml-auto text-xs text-gray-400">
+                                                                                                  <span className="text-xs text-gray-500">
+                                                                                                    Total: {formatDuration(userLog.total_time_spent)}
+                                                                                                  </span>
+                                                                                                  <span className="text-xs text-gray-400">
+                                                                                                    (
+                                                                                                    {userLog.days_worked} day{userLog.days_worked !== 1 ? 's' : ''}
+                                                                                                    )
+                                                                                                  </span>
+                                                                                                </div>
+                                                                                              </div>
+
+                                                                                              {/* Date-wise logs for this user */}
+                                                                                              <div className="px-5 py-3 space-y-3">
+                                                                                                {userLog.date_wise?.map((dayLog, dayIdx) => (
+                                                                                                  <div key={dayIdx} className="border-l-2 border-blue-200 pl-3">
+                                                                                                    {/* Date Header */}
+                                                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                                                      <Calendar size={12} className="text-gray-400" />
+                                                                                                      <span className="text-xs font-medium text-gray-500">
+                                                                                                        {new Date(dayLog.date).toLocaleDateString('en-IN', {
+                                                                                                          weekday: 'short',
+                                                                                                          year: 'numeric',
+                                                                                                          month: 'short',
+                                                                                                          day: 'numeric'
+                                                                                                        })}
+                                                                                                      </span>
+                                                                                                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                                                                        {formatDuration(dayLog.total_time_spent)}
+                                                                                                      </span>
+                                                                                                    </div>
+
+                                                                                                    {/* Log entries for this date */}
+                                                                                                    <div className="space-y-2 ml-2">
+                                                                                                      {dayLog.logs?.map((log, logIdx) => (
+                                                                                                        <div
+                                                                                                          key={logIdx}
+                                                                                                          className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                                                                                                        >
+                                                                                                          <div className="flex justify-between items-start">
+                                                                                                            <div className="flex-1">
+                                                                                                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                                                                                {log.work_type && (
+                                                                                                                  <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
+                                                                                                                    {log.work_type}
+                                                                                                                  </span>
+                                                                                                                )}
+                                                                                                                {log.description && (
+                                                                                                                  <p className="text-sm text-gray-600 leading-relaxed">
+                                                                                                                    {log.description}
+                                                                                                                  </p>
+                                                                                                                )}
+                                                                                                              </div>
+                                                                                                              {!log.description && !log.work_type && (
+                                                                                                                <p className="text-sm text-gray-400 italic">
+                                                                                                                  No description provided
+                                                                                                                </p>
+                                                                                                              )}
+                                                                                                            </div>
+                                                                                                            <div className="ml-3">
+                                                                                                              <span
+                                                                                                                className="text-xs font-mono font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded whitespace-nowrap"
+                                                                                                                title={formatDurationDetailed(log.time_spent)}
+                                                                                                              >
+                                                                                                                {formatDuration(log.time_spent)}
+                                                                                                              </span>
+                                                                                                            </div>
+                                                                                                          </div>
+                                                                                                        </div>
+                                                                                                      ))}
+                                                                                                    </div>
+                                                                                                  </div>
+                                                                                                ))}
+
+                                                                                                {/* Show if user has no date-wise logs but has total time */}
+                                                                                                {(!userLog.date_wise || userLog.date_wise.length === 0) && userLog.total_time_spent !== "00:00:00" && (
+                                                                                                  <div className="text-sm text-gray-500 italic ml-2">
+                                                                                                    No detailed logs available for this user
+                                                                                                  </div>
+                                                                                                )}
+                                                                                              </div>
+                                                                                            </div>
+                                                                                          ))}
+                                                                                        </div>
+                                                                                      ) : (
+                                                                                        <div className="px-5 py-12 text-center">
+                                                                                          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                                                                                            <Clock size={24} className="text-gray-400" />
+                                                                                          </div>
+                                                                                          <p className="text-sm text-gray-400">No time logs recorded yet</p>
+                                                                                          <p className="text-xs text-gray-300 mt-1">Time logs will appear here once team members log their work hours</p>
+                                                                                        </div>
+                                                                                      )}
+                                                                                    </div>
+
+                                                                                    {/* Collapse Button */}
+                                                                                    <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100 flex justify-center">
+                                                                                      <button
+                                                                                        onClick={() => setExpandedRow(null)}
+                                                                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+                                                                                      >
+                                                                                        <ChevronUp size={14} />
+                                                                                        Collapse
+                                                                                      </button>
+                                                                                    </div>
+                                                                                  </div>
+                                                                                </td>
+                                                                              </tr>
+                                                                            )}
+
+                                                                            {/* 🔽 EXPAND ROW - Minimalist Version */}
+                                                                            {/* {expandedRow === sub.id && (
                                                                               <tr className="bg-gray-50/80">
                                                                                 <td colSpan="13" className="px-4 py-4">
                                                                                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
 
-                                                                                    {/* Header */}
                                                                                     <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                                                                                       <div className="flex items-center gap-2">
                                                                                         <Clock size={16} className="text-blue-500" />
@@ -3240,7 +3522,6 @@ const ProjectList = () => {
                                                                                       </span>
                                                                                     </div>
 
-                                                                                    {/* Time Log Entries */}
                                                                                     <div className="divide-y divide-gray-100">
                                                                                       {sub.work_summary?.users?.length > 0 ? (
                                                                                         sub.work_summary.users.map((log, i) => (
@@ -3266,7 +3547,6 @@ const ProjectList = () => {
                                                                                       )}
                                                                                     </div>
 
-                                                                                    {/* Collapse Button */}
                                                                                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
                                                                                       <button
                                                                                         onClick={() => setExpandedRow(null)}
@@ -3279,7 +3559,7 @@ const ProjectList = () => {
                                                                                   </div>
                                                                                 </td>
                                                                               </tr>
-                                                                            )}
+                                                                            )} */}
                                                                           </>
                                                                         );
                                                                       })}
@@ -3308,7 +3588,7 @@ const ProjectList = () => {
                                 !loadingProjectDetails[projectId] && expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 &&
                                 <div className="mt-6 bg-gray-50 rounded-xl p-4">
                                   <h4 className="font-semibold mb-3 text-gray-800 flex items-center gap-2">
-                                    <UserCheck size={18} className="text-blue-600" />
+                                    <UserCog size={18} className="text-blue-600" />
                                     Assigned Personnel
                                   </h4>
                                   <div className="flex flex-row gap-4 flex-wrap">
@@ -3322,7 +3602,7 @@ const ProjectList = () => {
                                                 <img
                                                   src={`${IMAGE_URL}${data?.profilepic}`}
                                                   alt={data?.name}
-                                                  className=" rounded-full object-cover"
+                                                  className="w-10 h-10 rounded-full object-cover"
                                                 />
                                               </CustomImageModal>
                                             ) : (

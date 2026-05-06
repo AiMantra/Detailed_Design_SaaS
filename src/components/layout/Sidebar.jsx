@@ -22,7 +22,9 @@ import {
   Briefcase,
   Users,
   Clock,
-  Settings2
+  Settings2,
+  ChartArea,
+  ChartBar
 } from "lucide-react";
 
 import logo from "../../assets/aimantra.png";
@@ -90,20 +92,21 @@ const Sidebar = () => {
     //   description: "Submitted Task",
     // },
     {
-      name: "Employee Report",
-      icon: CheckCircle,
-      path: "/employee-report",
-      roles: ["TL"],
-      badge: null,
-      description: "Employee Report",
-    },
-    {
       name: "Project Report",
-      icon: CheckCircle,
+      icon: ChartArea,
       path: "/project-report",
       roles: ["TL"],
       badge: null,
       description: "Project Report",
+    },
+
+    {
+      name: "Employee Report",
+      icon: ChartBar,
+      path: "/employee-report",
+      roles: ["TL"],
+      badge: null,
+      description: "Employee Report",
     },
     {
       name: "Settings",

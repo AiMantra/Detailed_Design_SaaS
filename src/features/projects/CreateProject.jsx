@@ -404,18 +404,21 @@ const CreateProject = () => {
     if (numValue > 100) {
       dispatch(
         showSnackbar({
-          message: "Weightage cannot exceed 100%",
+          message: `Weightage cannot exceed 100%. Current: ${numValue}%, Resetting to 0%`,
           type: "error",
-        }),
+        })
       );
-      handleSubActivityPlannedQtyChange(subid, "approvalpayment", 0);
+      // Reset just this sub-activity's payments to 0
       handleSubActivityPlannedQtyChange(subid, "subpayment", 0);
+      handleSubActivityPlannedQtyChange(subid, "approvalpayment", 0);
       return;
     }
-    setActivityWeightages((prev) => ({
-      ...prev,
-      [activityId]: numValue,
-    }));
+    else {
+      setActivityWeightages((prev) => ({
+        ...prev,
+        [activityId]: numValue,
+      }));
+    }
   };
 
   const handleSubActivitySelection = (activityId, subId, checked) => {
@@ -425,6 +428,28 @@ const CreateProject = () => {
         activitySubs.add(subId);
       } else {
         activitySubs.delete(subId);
+      }
+
+      const newSelectedSubs = Array.from(activitySubs);
+
+      // Recalculate weightage for this activity based on selected sub-activities
+      const activityObj = getAllActivities().find(a => a.id === activityId);
+      if (activityObj) {
+        let totalWeightage = 0;
+
+        newSelectedSubs.forEach(selectedSubId => {
+          const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+          if (subObj) {
+            const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+            const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+            totalWeightage += submissionPayment + approvalPayment;
+          }
+        });
+
+        setActivityWeightages(prev => ({
+          ...prev,
+          [activityId]: totalWeightage
+        }));
       }
 
       return {
@@ -439,20 +464,36 @@ const CreateProject = () => {
 
     if (!activityObj) return;
 
+    let newSelectedSubs = [];
+
     if (selectAll) {
       // Select all sub-activities
-      const allSubIds = activityObj.subActivities.map((sub) => sub.id);
-      setSelectedSubActivities((prev) => ({
-        ...prev,
-        [activityId]: allSubIds,
-      }));
+      newSelectedSubs = activityObj.subActivities.map((sub) => sub.id);
     } else {
       // Unselect all sub-activities
-      setSelectedSubActivities((prev) => ({
-        ...prev,
-        [activityId]: [],
-      }));
+      newSelectedSubs = [];
     }
+
+    // Recalculate weightage for this activity
+    let totalWeightage = 0;
+    newSelectedSubs.forEach(selectedSubId => {
+      const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+      if (subObj) {
+        const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+        const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+        totalWeightage += submissionPayment + approvalPayment;
+      }
+    });
+
+    setActivityWeightages(prev => ({
+      ...prev,
+      [activityId]: totalWeightage
+    }));
+
+    setSelectedSubActivities((prev) => ({
+      ...prev,
+      [activityId]: newSelectedSubs,
+    }));
   };
 
   const getSelectAllStatus = (activityId) => {
@@ -534,6 +575,36 @@ const CreateProject = () => {
         ...prev,
         [`${subId}_${field}`]: finalValue,
       }));
+
+      // Recalculate weightage for the activity containing this sub-activity
+      // Find which activity contains this subId
+      const allActivities = getAllActivities();
+      for (const activity of allActivities) {
+        const subExists = activity.subActivities.some(s => s.id === subId);
+        if (subExists) {
+          // Check if this sub-activity is selected
+          const selectedSubs = selectedSubActivities[activity.id] || [];
+          if (selectedSubs.includes(subId)) {
+            let totalWeightage = 0;
+            selectedSubs.forEach(selectedSubId => {
+              const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+              if (subObj) {
+                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                totalWeightage += submissionPayment + approvalPayment;
+              }
+            });
+            console.log(`Recalculated weightage for activity ${activity.id}: ${totalWeightage}%`);
+            setActivityWeightages(prev => ({
+              ...prev,
+              [activity.id]: totalWeightage
+            }));
+          }
+          break;
+        }
+      }
+
+
     } else if (field === "quantity") {
       const numValue = parseFloat(value) || 0;
       setSubActivityPlannedQtys((prev) => ({
@@ -605,7 +676,7 @@ const CreateProject = () => {
     try {
       // Try to add via API
       const result = await dispatch(
-        createCompany({ name: trimmedName, gst_no: trimmedgst, created_by: sessionStorage.getItem('emp_code')}),
+        createCompany({ name: trimmedName, gst_no: trimmedgst, created_by: sessionStorage.getItem('emp_code') }),
       ).unwrap();
       dispatch(
         showSnackbar({
@@ -1263,6 +1334,24 @@ const CreateProject = () => {
       [activityId]: [...(prev[activityId] || []), ...newSubIds],
     }));
 
+    const activityObj = getAllActivities().find(a => a.id === activityId);
+    if (activityObj) {
+      const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
+      let totalWeightage = 0;
+      updatedSelectedSubs.forEach(selectedSubId => {
+        const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+        if (subObj) {
+          const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+          const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+          totalWeightage += submissionPayment + approvalPayment;
+        }
+      });
+      setActivityWeightages(prev => ({
+        ...prev,
+        [activityId]: totalWeightage
+      }));
+    }
+
     // Scroll to the newly added sub-activity
     setTimeout(() => {
       const lastSubElement = document.getElementById(`sub-${lastSubId}`);
@@ -1408,70 +1497,42 @@ const CreateProject = () => {
 
     if (!subToDelete) return;
 
-    if (
-      window.confirm(
-        `Are you sure you want to remove sub-activity "${subToDelete.subactivity_name}"?`,
-      )
-    ) {
-      const templateIndex = templatesActivities.findIndex(
-        (act) => act.id === activityId,
-      );
+    if (window.confirm(`Are you sure you want to remove sub-activity "${subToDelete.subactivity_name}"?`)) {
+      const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
 
       let updatedSubActivities;
 
       if (templateIndex !== -1) {
-        // Get current sub-activities and filter out the deleted one
-        updatedSubActivities = templatesActivities[
-          templateIndex
-        ].subActivities.filter((sub) => sub.id !== subId);
-
-        // Reassign sorting_var values based on new order
-        const reassignedSubActivities = updatedSubActivities.map(
-          (sub, idx) => ({
-            ...sub,
-            sorting_var: idx + 1,
-          }),
-        );
+        updatedSubActivities = templatesActivities[templateIndex].subActivities.filter((sub) => sub.id !== subId);
+        const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
+          ...sub,
+          sorting_var: idx + 1,
+        }));
 
         setTemplateActivities((prev) =>
           prev.map((act) => {
             if (act.id === activityId) {
-              return {
-                ...act,
-                subActivities: reassignedSubActivities,
-              };
+              return { ...act, subActivities: reassignedSubActivities };
             }
             return act;
-          }),
+          })
         );
       } else {
-        // Get current sub-activities from custom activities
-        const customActivity = customActivities.find(
-          (act) => act.id === activityId,
-        );
+        const customActivity = customActivities.find((act) => act.id === activityId);
         if (customActivity) {
-          updatedSubActivities = customActivity.subActivities.filter(
-            (sub) => sub.id !== subId,
-          );
-
-          // Reassign sorting_var values based on new order
-          const reassignedSubActivities = updatedSubActivities.map(
-            (sub, idx) => ({
-              ...sub,
-              sorting_var: idx + 1,
-            }),
-          );
+          updatedSubActivities = customActivity.subActivities.filter((sub) => sub.id !== subId);
+          const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
+            ...sub,
+            sorting_var: idx + 1,
+          }));
 
           setCustomActivities((prev) =>
             prev.map((act) => {
               if (act.id === activityId) {
-                return {
-                  ...act,
-                  subActivities: reassignedSubActivities,
-                };
+                return { ...act, subActivities: reassignedSubActivities };
               }
               return act;
-            }),
+            })
           );
         }
       }
@@ -1489,19 +1550,35 @@ const CreateProject = () => {
       });
       setSubActivityPlannedQtys(newQtys);
 
-      if (selectedSubActivities[activityId]) {
-        setSelectedSubActivities((prev) => ({
-          ...prev,
-          [activityId]: prev[activityId].filter((id) => id !== subId),
-        }));
-      }
+      // IMPORTANT: Update selectedSubActivities first, then recalculate weightage
+      setSelectedSubActivities((prev) => {
+        const updatedSelectedSubs = (prev[activityId] || []).filter((id) => id !== subId);
 
-      dispatch(
-        showSnackbar({
-          message: "Sub-activity deleted successfully",
-          type: "success",
-        }),
-      );
+        // Recalculate weightage for this activity using the UPDATED list
+        const activityObj = getAllActivities().find(a => a.id === activityId);
+        if (activityObj) {
+          let totalWeightage = 0;
+          updatedSelectedSubs.forEach(selectedSubId => {
+            const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+            if (subObj) {
+              const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+              const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+              totalWeightage += submissionPayment + approvalPayment;
+            }
+          });
+          setActivityWeightages(prevWeightages => ({
+            ...prevWeightages,
+            [activityId]: totalWeightage
+          }));
+        }
+
+        return {
+          ...prev,
+          [activityId]: updatedSelectedSubs,
+        };
+      });
+
+      dispatch(showSnackbar({ message: "Sub-activity deleted successfully", type: "success" }));
     }
   };
 
@@ -2702,6 +2779,7 @@ const CreateProject = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Add Activity Modal - Original */}
       <AnimatePresence>
         {showAddActivityModal && (
@@ -4065,13 +4143,13 @@ const CreateProject = () => {
                     </option>
                   ))}
                 </select>
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setShowAddCompanyModal(true)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors z-10"
                 >
                   <Plus size={14} />
-                </button>
+                </button> */}
               </div>
             </div>
             {form.company && (
