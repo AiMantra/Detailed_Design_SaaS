@@ -2329,9 +2329,10 @@ const UpdateProject = () => {
                                 type="date"
                                 name="loa_date"
                                 value={form.loa_date}
-                                onChange={handleChange}
+                                // onChange={handleChange}
+                                disabled
                                 max={form.completion_date}
-                                className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
                         </div>
@@ -2345,8 +2346,9 @@ const UpdateProject = () => {
                                 name="completion_date"
                                 min={form.loa_date}
                                 value={form.completion_date}
-                                onChange={handleChange}
-                                className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                // onChange={handleChange}
+                                disabled
+                                className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
                         </div>
