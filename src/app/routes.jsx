@@ -23,6 +23,8 @@ import TlProjectList from "../features/projects/Tlprojects";
 import SubmittedTasks from "../features/tasks/SubmittedTask";
 import EmployeeReport from "../features/projects/empreport";
 import SettingsComponent from "../features/setupsettings/settings";
+import ProjectReport from "../features/projects/projectreport";
+import UpdateProject from "../features/projects/updateProject";
 
 export default function AppRoutes() {
   return (
@@ -113,6 +115,11 @@ export default function AppRoutes() {
             <CreateProject />
           </ProtectedRoute>
         } />
+        <Route path="/projectsupdate/:projectId" element={
+          <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
+            <UpdateProject />
+          </ProtectedRoute>
+        } />
         {/* Common routes*/}
         <Route path="/daily-logs" element={
           <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
@@ -161,6 +168,11 @@ export default function AppRoutes() {
         <Route path="/employee-report" element={
           <ProtectedRoute allowedRoles={["TL"]}>
             <EmployeeReport />
+          </ProtectedRoute>
+        } />
+        <Route path="/project-report" element={
+          <ProtectedRoute allowedRoles={["TL"]}>
+            <ProjectReport />
           </ProtectedRoute>
         } />
       </Route>

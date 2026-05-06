@@ -97,14 +97,22 @@ const Sidebar = () => {
       badge: null,
       description: "Employee Report",
     },
-    // {
-    //   name: "Settings",
-    //   icon: Settings2,
-    //   path: "/settings",
-    //   roles: ["ACCOUNT"],
-    //   badge: null,
-    //   description: "Settings",
-    // },
+    {
+      name: "Project Report",
+      icon: CheckCircle,
+      path: "/project-report",
+      roles: ["TL"],
+      badge: null,
+      description: "Project Report",
+    },
+    {
+      name: "Settings",
+      icon: Settings2,
+      path: "/settings",
+      roles: ["ACCOUNT"],
+      badge: null,
+      description: "Settings",
+    },
 
     // My Tasks - For users to manage picked tasks
     {
@@ -213,7 +221,7 @@ const Sidebar = () => {
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Daily Logs",
+      "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs",
       // "settings"
     ].includes(item.name)
   );

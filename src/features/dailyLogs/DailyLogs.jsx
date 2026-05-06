@@ -339,9 +339,9 @@ const DailyLogs = () => {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Daily Logs Management
           </h1>
-          <p className="text-gray-500 mt-2">
+          {/* <p className="text-gray-500 mt-2">
             Total: {filteredLogs.length} logs
-          </p>
+          </p> */}
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">

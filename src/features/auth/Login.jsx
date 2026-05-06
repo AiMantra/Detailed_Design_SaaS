@@ -83,7 +83,7 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const role = localStorage.getItem('userOriginalRole');
+      const role = sessionStorage.getItem('hrms_role');
       if (role === "HOD" || role === "ReportingHead") {
         navigate('/tl-projects');
       } else {

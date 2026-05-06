@@ -8,7 +8,7 @@ import { activityService } from '../../services/activityService';
 import { subActivityService } from '../../services/subActivityService';
 import { projectService } from '../../services/projectService';
 import { projectWorkSummaryService } from '../../services/projectWorkSummaryService';
-import { activityTemplateService } from '../../services/activityTemplateService';
+import { stagesTemplateService } from '../../services/stagesTemplateService';
 
 
 const initialState = {
@@ -17,7 +17,7 @@ const initialState = {
   sectors: [],
   clients: [],
   reportingHeads: [],
-  activityTemplates: [],
+  stageTemplates: [],
   activities: [],
   subActivities: [],
   projectWorkSummary: null,
@@ -41,7 +41,6 @@ export const fetchProjectWorkSummary = createAsyncThunk(
     }
   }
 );
-
 
 // export const fetchuserbyactivityWorkSummary = createAsyncThunk(
 //   'api/employee-work-summary',
@@ -154,6 +153,30 @@ export const createSector = createAsyncThunk(
   }
 );
 
+export const updateSector = createAsyncThunk(
+  'api/updateSector',
+  async ({ sectorId, sectorData }, { rejectWithValue }) => {
+    try {
+      const response = await sectorService.updateSector(sectorId, sectorData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const deleteSector = createAsyncThunk(
+  'api/deleteSector',
+  async (sectorId, { rejectWithValue }) => {
+    try {
+      await sectorService.deleteSector(sectorId);
+      return sectorId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 // ============ CLIENT THUNKS ============
 export const fetchClients = createAsyncThunk(
   'api/fetchClients',
@@ -179,6 +202,30 @@ export const createClient = createAsyncThunk(
   }
 );
 
+export const updateClient = createAsyncThunk(
+  'api/updateClient',
+  async ({ clientId, clientData }, { rejectWithValue }) => {
+    try {
+      const response = await clientService.updateClient(clientId, clientData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const deleteClient = createAsyncThunk(
+  'api/deleteClient',
+  async (clientId, { rejectWithValue }) => {
+    try {
+      await clientService.deleteClient(clientId);
+      return clientId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 // ============ Reporting Head (From HRMS) THUNKS ============
 export const fetchReportingHeads = createAsyncThunk(
   // 'wfm/ourcompanyuserlessdetail/null/null/',
@@ -193,12 +240,12 @@ export const fetchReportingHeads = createAsyncThunk(
   }
 );
 
-// ============ ACTIVITY THUNKS ============
-export const fetchActivityTemplate = createAsyncThunk(
-  'api/fetchActivityTemplate',
+// ============ Stage Template THUNKS ============
+export const fetchStageTemplate = createAsyncThunk(
+  'api/fetchStageTemplate',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await activityTemplateService.getActivityTemplates();
+      const response = await stagesTemplateService.getStageTemplates();
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -206,11 +253,11 @@ export const fetchActivityTemplate = createAsyncThunk(
   }
 );
 
-export const createActivityTemplate = createAsyncThunk(
-  'api/createActivityTemplate',
-  async (activityTemplateData, { rejectWithValue }) => {
+export const createStageTemplate = createAsyncThunk(
+  'api/createStageTemplate',
+  async (stageTemplateData, { rejectWithValue }) => {
     try {
-      const response = await activityTemplateService.createActivityTemplate(activityTemplateData);
+      const response = await stagesTemplateService.createStageTemplate(stageTemplateData);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -218,11 +265,11 @@ export const createActivityTemplate = createAsyncThunk(
   }
 );
 
-export const createActivityTemplateBulk = createAsyncThunk(
-  'api/createActivityTemplateBulk',
-  async (activityTemplateData, { rejectWithValue }) => {
+export const createStageTemplateBulk = createAsyncThunk(
+  'api/createStageTemplateBulk',
+  async (stageTemplateData, { rejectWithValue }) => {
     try {
-      const response = await activityTemplateService.createActivityTemplateBulk(activityTemplateData);
+      const response = await stagesTemplateService.createStageTemplateBulk(stageTemplateData);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -516,11 +563,11 @@ const updateItemInArray = (array, updatedItem, key = 'id') => {
 // ==================== ACTIVITY TEMPLATES API ====================
 
 // Fetch all activity templates
-export const fetchActivityTemplates = createAsyncThunk(
-  "api/fetchActivityTemplates",
+export const fetchStageTemplates = createAsyncThunk(
+  "api/fetchStageTemplates",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await activityTemplateService.getActivityTemplates();
+      const response = await stageTemplateService.getStageTemplates();
       return response;
       // const response = await axios.get(
       //   `${API_BASE_URL}/detaildesign/activity-template/`,
@@ -534,10 +581,9 @@ export const fetchActivityTemplates = createAsyncThunk(
 );
 
 
-
 // Update activity template with subactivities
-export const updateActivityTemplate = createAsyncThunk(
-  "api/updateActivityTemplate",
+export const updateStageTemplate = createAsyncThunk(
+  "api/updateStageTemplate",
   async ({ id, data }, { rejectWithValue }) => {
     try {
       // Format the data according to the API structure
@@ -545,12 +591,12 @@ export const updateActivityTemplate = createAsyncThunk(
         activity_name: data.activity_name,
         sorting_var: data.sorting_var,
         template_description: data.template_description,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        weightage: data.weightage,
-        company: data.company,
-        sector: data.sector,
-        subactivities: data.subactivities || []
+        // start_date: data.start_date,
+        // end_date: data.end_date,
+        // weightage: data.weightage,
+        // company: data.company,
+        // sector: data.sector,
+        // subactivities: data.subactivities || []
       };
 
       const response = await axios.put(
@@ -566,8 +612,8 @@ export const updateActivityTemplate = createAsyncThunk(
 );
 
 // Delete activity template
-export const deleteActivityTemplate = createAsyncThunk(
-  "api/deleteActivityTemplate",
+export const deleteStageTemplate = createAsyncThunk(
+  "api/deleteStageTemplate",
   async (id, { rejectWithValue }) => {
     try {
       await axios.delete(
@@ -640,8 +686,8 @@ const apiSlice = createSlice({
     clearProjectDetails: (state) => {
       state.projectDetails = null;
     },
-    clearActivityTemplates: (state) => {
-      state.activityTemplates = [];
+    clearStageTemplates: (state) => {
+      state.stageTemplates = [];
     },
     clearActivities: (state) => {
       state.activities = [];
@@ -754,23 +800,23 @@ const apiSlice = createSlice({
       })
 
       // ============ ACTIVITY TEMPLATE ============
-      .addCase(fetchActivityTemplate.pending, (state) => {
+      .addCase(fetchStageTemplate.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchActivityTemplate.fulfilled, (state, action) => {
+      .addCase(fetchStageTemplate.fulfilled, (state, action) => {
         state.loading = false;
-        state.activityTemplates = Array.isArray(action.payload) ? action.payload : [];
+        state.stageTemplates = Array.isArray(action.payload) ? action.payload : [];
       })
-      .addCase(fetchActivityTemplate.rejected, (state, action) => {
+      .addCase(fetchStageTemplate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(createActivityTemplate.fulfilled, (state, action) => {
-        addUniqueItems(state.activityTemplates, action.payload);
+      .addCase(createStageTemplate.fulfilled, (state, action) => {
+        addUniqueItems(state.stageTemplates, action.payload);
       })
-      .addCase(createActivityTemplateBulk.fulfilled, (state, action) => {
-        addUniqueItems(state.activityTemplates, action.payload);
+      .addCase(createStageTemplateBulk.fulfilled, (state, action) => {
+        addUniqueItems(state.stageTemplates, action.payload);
       })
 
       // ============ ACTIVITIES ============
@@ -892,81 +938,81 @@ const apiSlice = createSlice({
 
       // >>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<< //
       // Fetch Activity Templates
-    .addCase(fetchActivityTemplates.pending, (state) => {
+      .addCase(fetchStageTemplates.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-    .addCase(fetchActivityTemplates.fulfilled, (state, action) => {
-      state.loading = false;
-      state.activityTemplates = action.payload;
-    })
-    .addCase(fetchActivityTemplates.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    })
-   
-    // Update Activity Template
-    .addCase(updateActivityTemplate.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(updateActivityTemplate.fulfilled, (state, action) => {
-      state.loading = false;
-      const index = state.activityTemplates.findIndex(
-        (item) => item.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.activityTemplates[index] = action.payload;
-      }
-    })
-    .addCase(updateActivityTemplate.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    })
-    // Delete Activity Template
-    .addCase(deleteActivityTemplate.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(deleteActivityTemplate.fulfilled, (state, action) => {
-      state.loading = false;
-      state.activityTemplates = state.activityTemplates.filter(
-        (item) => item.id !== action.payload
-      );
-    })
-    .addCase(deleteActivityTemplate.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    })
-    
-   
-    
-    // Update Sub-activity
-    .addCase(updateSubActivity.fulfilled, (state, action) => {
-      // Find and update the sub-activity
-      state.activityTemplates.forEach((activity) => {
-        if (activity.subactivities) {
-          const index = activity.subactivities.findIndex(
-            (sub) => sub.id === action.payload.id
-          );
-          if (index !== -1) {
-            activity.subactivities[index] = action.payload;
+      .addCase(fetchStageTemplates.fulfilled, (state, action) => {
+        state.loading = false;
+        state.stageTemplates = action.payload;
+      })
+      .addCase(fetchStageTemplates.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Update Activity Template
+      .addCase(updateStageTemplate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateStageTemplate.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.stageTemplates.findIndex(
+          (item) => item.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.stageTemplates[index] = action.payload;
+        }
+      })
+      .addCase(updateStageTemplate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Delete Activity Template
+      .addCase(deleteStageTemplate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteStageTemplate.fulfilled, (state, action) => {
+        state.loading = false;
+        state.stageTemplates = state.stageTemplates.filter(
+          (item) => item.id !== action.payload
+        );
+      })
+      .addCase(deleteStageTemplate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+
+
+      // Update Sub-activity
+      .addCase(updateSubActivity.fulfilled, (state, action) => {
+        // Find and update the sub-activity
+        state.stageTemplates.forEach((activity) => {
+          if (activity.subactivities) {
+            const index = activity.subactivities.findIndex(
+              (sub) => sub.id === action.payload.id
+            );
+            if (index !== -1) {
+              activity.subactivities[index] = action.payload;
+            }
           }
-        }
+        });
+      })
+      // Delete Sub-activity
+      .addCase(deleteSubActivity.fulfilled, (state, action) => {
+        // Remove the sub-activity from its parent activity
+        state.stageTemplates.forEach((activity) => {
+          if (activity.subactivities) {
+            activity.subactivities = activity.subactivities.filter(
+              (sub) => sub.id !== action.payload
+            );
+          }
+        });
       });
-    })
-    // Delete Sub-activity
-    .addCase(deleteSubActivity.fulfilled, (state, action) => {
-      // Remove the sub-activity from its parent activity
-      state.activityTemplates.forEach((activity) => {
-        if (activity.subactivities) {
-          activity.subactivities = activity.subactivities.filter(
-            (sub) => sub.id !== action.payload
-          );
-        }
-      });
-    });
-},
+  },
 });
 
 export const { clearError, clearProjects, clearActivities, clearSubActivities } = apiSlice.actions;
