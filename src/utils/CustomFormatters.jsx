@@ -191,7 +191,7 @@ const newformatDateTime = (datetimeStr) => {
   });
 };
 
-const formatDateTimeDifference = (diffMs) => {
+export const formatDateTimeDifference = (diffMs) => {
   const absDiff = Math.abs(diffMs);
 
   const days = Math.floor(absDiff / (24 * 60 * 60 * 1000));
@@ -206,4 +206,53 @@ const formatDateTimeDifference = (diffMs) => {
   return parts.join(', ');
 };
 
-export { formatDate, formatDateDDMMYYYY, formattedDate, datearray, formattedDateLong, formattedDateNoYear, formatDateTime, formatDateTimeDifference }
+// Helper function to convert time string to total seconds for accurate calculations
+export const timeToSeconds = (timeString) => {
+  if (!timeString || timeString === "00:00:00") return 0;
+  const parts = timeString.split(":");
+  const hours = parseInt(parts[0]) || 0;
+  const minutes = parseInt(parts[1]) || 0;
+  const seconds = parseInt(parts[2]) || 0;
+  return hours * 3600 + minutes * 60 + seconds;
+};
+
+// Helper function to format seconds to readable format
+export const formatSecondsToDuration = (totalSeconds) => {
+  if (!totalSeconds || totalSeconds === 0) return "0h";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (seconds > 0 && hours === 0 && minutes === 0) return `${seconds}s`;
+  if (minutes === 0 && seconds === 0) return `${hours}h`;
+  if (hours === 0 && seconds === 0) return `${minutes}m`;
+  if (hours === 0) return `${minutes}m ${seconds}s`;
+  if (minutes === 0 && seconds === 0) return `${hours}h`;
+  if (seconds === 0) return `${hours}h ${minutes}m`;
+  return `${hours}h ${minutes}m ${seconds}s`;
+};
+
+export const formatDuration = (timeString) => {
+  if (!timeString || timeString === "00:00:00") return "0h";
+  const seconds = timeToSeconds(timeString);
+  return formatSecondsToDuration(seconds);
+};
+
+export const formatDurationDetailed = (timeString) => {
+  if (!timeString || timeString === "00:00:00") return "0 hours";
+  const parts = timeString.split(":");
+  const hours = parseInt(parts[0]) || 0;
+  const minutes = parseInt(parts[1]) || 0;
+  const seconds = parseInt(parts[2]) || 0;
+
+  const parts_array = [];
+  if (hours > 0) parts_array.push(`${hours} hour${hours > 1 ? "s" : ""}`);
+  if (minutes > 0)
+    parts_array.push(`${minutes} minute${minutes > 1 ? "s" : ""}`);
+  if (seconds > 0)
+    parts_array.push(`${seconds} second${seconds > 1 ? "s" : ""}`);
+
+  return parts_array.join(" ") || "0 hours";
+};
+
+export { formatDate, formatDateDDMMYYYY, formattedDate, datearray, formattedDateLong, formattedDateNoYear, formatDateTime }

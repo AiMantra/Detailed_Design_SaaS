@@ -110,12 +110,12 @@ export default function AppRoutes() {
 
         {/* "ACCOUNT", "ADMIN" */}
 
-        <Route path="/projects/create" element={
+        <Route path="/project/create" element={
           <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
             <CreateProject />
           </ProtectedRoute>
         } />
-        <Route path="/projectsupdate/:projectId" element={
+        <Route path="/project/update/:projectId" element={
           <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
             <UpdateProject />
           </ProtectedRoute>

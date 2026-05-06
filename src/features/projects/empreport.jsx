@@ -53,13 +53,42 @@ const TeamLeaderReport = () => {
         await dispatch(fetchAllEmployeesReport(user?.emp_code));
     };
 
-    const formatDuration = (timeString) => {
-        if (!timeString || timeString === '00:00:00') return '0h';
+    // 🔹 Helper: Convert "HH:MM:SS" or "HH:MM" → total seconds
+    const timeToSeconds = (timeString) => {
+        if (!timeString || timeString === '00:00:00' || timeString === '0:00:00') return 0;
         const parts = timeString.split(':');
-        const hours = parseInt(parts[0]);
-        const minutes = parseInt(parts[1]);
-        if (minutes === 0) return `${hours}h`;
-        return `${hours}h ${minutes}m`;
+        if (parts.length === 3) {
+            const hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            const seconds = parseInt(parts[2]) || 0;
+            return hours * 3600 + minutes * 60 + seconds;
+        } else if (parts.length === 2) {
+            const hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            return hours * 3600 + minutes * 60;
+        }
+        return 0;
+    };
+
+    // 🔹 Helper: total seconds → "Xh Ym" or just "Xh" if minutes=0
+    const formatDuration = (totalSeconds) => {
+        if (!totalSeconds || totalSeconds === 0) return '0h';
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (minutes === 0 && seconds === 0) return `${hours}h`;
+        if (seconds === 0) return `${hours}h ${minutes}m`;
+        return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
+    // 🔹 Helper: total seconds → "HH:MM:SS" (for displaying in some places if needed)
+    const secondsToHHMMSS = (totalSeconds) => {
+        if (!totalSeconds || totalSeconds === 0) return '00:00:00';
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
     const formatDate = (dateString) => {
@@ -75,7 +104,7 @@ const TeamLeaderReport = () => {
         }
     };
 
-    // Transform API data - FIXED to handle the actual API structure
+    // Transform API data - FIXED to handle the actual API structure with proper time accumulation
     const transformedData = useMemo(() => {
         if (!allEmployeesReport?.projects || allEmployeesReport.projects.length === 0) {
             return {
@@ -96,7 +125,7 @@ const TeamLeaderReport = () => {
                     employeesMap.set(user.emp_code, {
                         emp_code: user.emp_code,
                         name: user.name,
-                        total_hours: user?.total_time_spent,
+                        total_seconds: 0,      // store in seconds for precision
                         total_tasks: 0,
                         approved_tasks: 0,
                         submitted_tasks: 0,
@@ -108,31 +137,31 @@ const TeamLeaderReport = () => {
                 }
 
                 const employee = employeesMap.get(user.emp_code);
+                let userTotalSeconds = 0;
                 let userTotalTasks = 0;
                 let userApprovedTasks = 0;
                 let userSubmittedTasks = 0;
                 let userInprogressTasks = 0;
                 let userRejectedTasks = 0;
-                let userTotalHours = 0;
 
                 const userProject = {
                     project_id: project.project_id,
                     project_name: project.project_name,
-                    total_time_spent: user.total_time_spent,
-                    activities: user.activities?.map(activity => ({
-                        activity_id: activity.activity_id,
-                        activity_name: activity.activity_name,
-                        total_time_spent: activity.total_time_spent,
-                        subactivities: activity.subactivities?.map(sub => {
+                    total_seconds: 0,
+                    activities: user.activities?.map(activity => {
+                        let activityTotalSeconds = 0;
+                        const subactivities = activity.subactivities?.map(sub => {
+                            const subSeconds = timeToSeconds(sub.total_time_spent);
+                            activityTotalSeconds += subSeconds;
+                            userTotalSeconds += subSeconds;
                             userTotalTasks++;
+
                             if (sub.status === 'Approved') userApprovedTasks++;
                             if (sub.status === 'Submitted') userSubmittedTasks++;
                             if (sub.status === 'Inprogress') userInprogressTasks++;
                             if (sub.status === 'Rejected') userRejectedTasks++;
 
-                            const hours = parseInt(sub.total_time_spent?.split(':')[0] || 0);
-                            userTotalHours += hours;
-
+                            // Collect working days from date_wise
                             sub.date_wise?.forEach(dateLog => {
                                 if (dateLog.date) {
                                     employee.working_days.add(dateLog.date);
@@ -143,15 +172,24 @@ const TeamLeaderReport = () => {
                                 subactivity_id: sub.subactivity_id,
                                 subactivity_name: sub.subactivity_name,
                                 status: sub.status,
+                                total_seconds: subSeconds,
                                 total_time_spent: sub.total_time_spent,
                                 date_wise: sub.date_wise || []
                             };
-                        })
-                    }))
+                        }) || [];
+
+                        return {
+                            activity_id: activity.activity_id,
+                            activity_name: activity.activity_name,
+                            total_seconds: activityTotalSeconds,
+                            subactivities: subactivities
+                        };
+                    }) || []
                 };
 
+                userProject.total_seconds = userProject.activities.reduce((sum, act) => sum + act.total_seconds, 0);
                 employee.projects.push(userProject);
-                employee.total_hours += userTotalHours;
+                employee.total_seconds += userTotalSeconds;
                 employee.total_tasks += userTotalTasks;
                 employee.approved_tasks += userApprovedTasks;
                 employee.submitted_tasks += userSubmittedTasks;
@@ -162,48 +200,31 @@ const TeamLeaderReport = () => {
 
         const employees = Array.from(employeesMap.values()).map(emp => ({
             ...emp,
-            working_days: emp.working_days.size
+            working_days: emp.working_days.size,
+            // Convert seconds to display format for initial load
+            total_hours_display: formatDuration(emp.total_seconds)
         }));
 
-        const totalHours = employees.reduce((sum, emp) => sum + emp.total_hours, 0);
+        const totalSecondsAll = employees.reduce((sum, emp) => sum + emp.total_seconds, 0);
         const allProjects = projects.map(project => ({
             project_id: project.project_id,
             project_name: project.project_name,
             total_users: project.users?.length || 0,
-            total_hours: project.users?.reduce((sum, user) => {
-                const hours = parseInt(user.total_time_spent?.split(':')[0] || 0);
-                return sum + hours;
+            total_seconds: project.users?.reduce((sum, user) => {
+                return sum + timeToSeconds(user.total_time_spent);
             }, 0)
         }));
 
         return {
             employees,
-            totalHours,
+            totalSeconds: totalSecondsAll,
             totalProjects: projects.length,
             projectsInfo: allProjects,
             allProjects
         };
     }, [allEmployeesReport]);
 
-    // 🔹 helper: HH:MM:SS → seconds
-    const timeToSeconds = (time) => {
-        if (!time) return 0;
-        const [h = 0, m = 0, s = 0] = time.split(":").map(Number);
-        return h * 3600 + m * 60 + s;
-    };
-
-    // 🔹 helper: seconds → HH:MM:SS
-    const secondsToTime = (totalSeconds) => {
-        const h = Math.floor(totalSeconds / 3600);
-        const m = Math.floor((totalSeconds % 3600) / 60);
-        const s = totalSeconds % 60;
-
-        return `${h.toString().padStart(2, "0")}:${m
-            .toString()
-            .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    };
-
-    // Filter employees based on all filters - ENSURES data shows ONLY according to selected filters
+    // Filter employees based on all filters
     const filteredEmployees = useMemo(() => {
         if (!transformedData.employees.length) return [];
 
@@ -222,7 +243,7 @@ const TeamLeaderReport = () => {
             filtered = filtered.filter(emp => emp.emp_code === selectedEmployee);
         }
 
-        // 3. Filter by specific project - CRITICAL: Only shows data for selected project
+        // 3. Filter by specific project
         if (selectedProject !== 'all') {
             filtered = filtered.map(emp => ({
                 ...emp,
@@ -244,9 +265,8 @@ const TeamLeaderReport = () => {
             })).filter(emp => emp.projects.length > 0);
         }
 
-        // Recalculate totals for filtered data and add total_projects count
+        // Recalculate totals for filtered data
         filtered = filtered.map(emp => {
-
             let totalSeconds = 0;
             let totalTasks = 0;
             let approvedTasks = 0;
@@ -254,13 +274,10 @@ const TeamLeaderReport = () => {
             let inprogressTasks = 0;
             let rejectedTasks = 0;
             const workingDays = new Set();
-
-            // Get unique project IDs for this employee
             const uniqueProjectIds = new Set();
 
             emp.projects.forEach(project => {
                 uniqueProjectIds.add(project.project_id);
-
                 project.activities.forEach(activity => {
                     activity.subactivities.forEach(sub => {
                         totalTasks++;
@@ -269,8 +286,7 @@ const TeamLeaderReport = () => {
                         if (sub.status === 'Inprogress') inprogressTasks++;
                         if (sub.status === 'Rejected') rejectedTasks++;
 
-                        totalSeconds += timeToSeconds(sub.total_time_spent);
-
+                        totalSeconds += sub.total_seconds;
 
                         sub.date_wise?.forEach(dateLog => {
                             if (dateLog.date) workingDays.add(dateLog.date);
@@ -281,14 +297,16 @@ const TeamLeaderReport = () => {
 
             return {
                 ...emp,
-                total_projects: uniqueProjectIds.size, // Add total projects count for this user
-                total_hours: (totalSeconds / 3600).toFixed(2)?.replace(".", ":"),
+                total_projects: uniqueProjectIds.size,
+                total_seconds_filtered: totalSeconds,
+                total_hours_display: formatDuration(totalSeconds),
                 total_tasks: totalTasks,
                 approved_tasks: approvedTasks,
                 submitted_tasks: submittedTasks,
                 inprogress_tasks: inprogressTasks,
                 rejected_tasks: rejectedTasks,
-                working_days: workingDays.size
+                working_days: workingDays.size,
+                projects_filtered: emp.projects // keep original filtered projects
             };
         });
 
@@ -301,8 +319,8 @@ const TeamLeaderReport = () => {
                     bVal = b.name || '';
                     break;
                 case 'total_hours':
-                    aVal = a.total_hours || 0;
-                    bVal = b.total_hours || 0;
+                    aVal = a.total_seconds_filtered || 0;
+                    bVal = b.total_seconds_filtered || 0;
                     break;
                 case 'total_tasks':
                     aVal = a.total_tasks || 0;
@@ -328,7 +346,7 @@ const TeamLeaderReport = () => {
             return {
                 totalEmployees: 0,
                 totalProjects: 0,
-                totalHours: 0,
+                totalSeconds: 0,
                 totalTasks: 0,
                 approvedTasks: 0,
                 submittedTasks: 0,
@@ -337,7 +355,7 @@ const TeamLeaderReport = () => {
             };
         }
 
-        let totalHoursadded = 0;
+        let totalSeconds = 0;
         let totalTasks = 0;
         let approvedTasks = 0;
         let submittedTasks = 0;
@@ -346,14 +364,14 @@ const TeamLeaderReport = () => {
         const uniqueProjects = new Set();
 
         filteredEmployees.forEach(emp => {
-            totalHoursadded += timeToSeconds(emp.total_hours || 0);
+            totalSeconds += emp.total_seconds_filtered || 0;
             totalTasks += emp.total_tasks || 0;
             approvedTasks += emp.approved_tasks || 0;
             submittedTasks += emp.submitted_tasks || 0;
             inprogressTasks += emp.inprogress_tasks || 0;
             rejectedTasks += emp.rejected_tasks || 0;
 
-            emp.projects?.forEach(project => {
+            emp.projects_filtered?.forEach(project => {
                 uniqueProjects.add(project.project_id);
             });
         });
@@ -361,7 +379,8 @@ const TeamLeaderReport = () => {
         return {
             totalEmployees: filteredEmployees.length,
             totalProjects: uniqueProjects.size,
-            totalHours: (totalHoursadded / 3600).toFixed(2).replace(".", ":"),
+            totalSeconds,
+            totalHoursDisplay: formatDuration(totalSeconds),
             totalTasks,
             approvedTasks,
             submittedTasks,
@@ -517,7 +536,7 @@ const TeamLeaderReport = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Total Hours</p>
-                            <p className="text-3xl font-bold text-gray-800">{filteredStats.totalHours}</p>
+                            <p className="text-3xl font-bold text-gray-800">{filteredStats.totalHoursDisplay}</p>
                         </div>
                         <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                             <Timer size={24} className="text-green-600" />
@@ -657,9 +676,7 @@ const TeamLeaderReport = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                {/* Modern Stats Display */}
                                                 <div className="space-y-2">
-                                                    {/* Projects & Tasks Row */}
                                                     <div className="flex items-center gap-3 justify-evenly">
                                                         <div className="flex items-center gap-1">
                                                             <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -682,7 +699,6 @@ const TeamLeaderReport = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Status Progress Bar */}
                                                     <div className="space-y-1">
                                                         <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-100">
                                                             {employee.approved_tasks > 0 && (
@@ -699,7 +715,6 @@ const TeamLeaderReport = () => {
                                                             )}
                                                         </div>
 
-                                                        {/* Status Legend */}
                                                         <div className="flex items-center justify-between text-xs">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="flex items-center gap-1">
@@ -728,7 +743,7 @@ const TeamLeaderReport = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <p className="font-semibold text-blue-600">{employee.total_hours || 0}h</p>
+                                                <p className="font-semibold text-blue-600">{employee.total_hours_display}</p>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <p className="text-gray-700">{employee.working_days || 0} days</p>
@@ -744,7 +759,7 @@ const TeamLeaderReport = () => {
                                             </td>
                                         </tr>
 
-                                        {/* Expanded Details - Shows ONLY filtered projects */}
+                                        {/* Expanded Details */}
                                         {isExpanded && (
                                             <tr className="bg-gray-50">
                                                 <td colSpan="5" className="px-4 py-4">
@@ -759,90 +774,96 @@ const TeamLeaderReport = () => {
                                                             )}
                                                         </h4>
 
-                                                        {employee.projects?.map((project) => (
-                                                            <div key={project.project_id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                                                                <div className="flex justify-between items-center p-4 bg-gray-50">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Briefcase size={16} className="text-purple-500" />
-                                                                        <h5 className="font-semibold text-gray-700">{project.project_name}</h5>
+                                                        {employee.projects_filtered?.map((project) => {
+                                                            const projectTotalSeconds = project.activities.reduce((sum, act) => sum + act.total_seconds, 0);
+                                                            return (
+                                                                <div key={project.project_id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                                                                    <div className="flex justify-between items-center p-4 bg-gray-50">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Briefcase size={16} className="text-purple-500" />
+                                                                            <h5 className="font-semibold text-gray-700">{project.project_name}</h5>
+                                                                        </div>
+                                                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                                                            Total: {formatDuration(projectTotalSeconds)}
+                                                                        </span>
                                                                     </div>
-                                                                    <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                                        Total: {formatDuration(project.total_time_spent)}
-                                                                    </span>
-                                                                </div>
 
-                                                                <div className="p-4 space-y-3">
-                                                                    {project.activities?.map((activity) => (
-                                                                        <div key={activity.activity_id} className="ml-4 border border-gray-100 rounded-lg overflow-hidden">
-                                                                            <div className="flex justify-between items-center p-3 bg-gray-50/50">
-                                                                                <h6 className="font-medium text-gray-600 text-sm">{activity.activity_name}</h6>
-                                                                                <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                                                                                    {formatDuration(activity.total_time_spent)}
-                                                                                </span>
-                                                                            </div>
+                                                                    <div className="p-4 space-y-3">
+                                                                        {project.activities?.map((activity) => (
+                                                                            <div key={activity.activity_id} className="ml-4 border border-gray-100 rounded-lg overflow-hidden">
+                                                                                <div className="flex justify-between items-center p-3 bg-gray-50/50">
+                                                                                    <h6 className="font-medium text-gray-600 text-sm">{activity.activity_name}</h6>
+                                                                                    <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                                                                                        {formatDuration(activity.total_seconds)}
+                                                                                    </span>
+                                                                                </div>
 
-                                                                            <div className="p-3 space-y-2">
-                                                                                {activity.subactivities?.map((sub) => {
-                                                                                    const isSubExpanded = expandedSubActivity === `${employee.emp_code}-${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`;
+                                                                                <div className="p-3 space-y-2">
+                                                                                    {activity.subactivities?.map((sub) => {
+                                                                                        const isSubExpanded = expandedSubActivity === `${employee.emp_code}-${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`;
 
-                                                                                    return (
-                                                                                        <div key={sub.subactivity_id} className="border border-gray-100 rounded-lg overflow-hidden">
-                                                                                            <div
-                                                                                                className="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-50 transition-colors"
-                                                                                                onClick={() => setExpandedSubActivity(isSubExpanded ? null : `${employee.emp_code}-${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`)}
-                                                                                            >
-                                                                                                <div className="flex items-center gap-2 flex-1">
-                                                                                                    {isSubExpanded ? <ChevronDown size={12} className="text-gray-500" /> : <ChevronRight size={12} className="text-gray-500" />}
-                                                                                                    <span className="text-sm text-gray-700">{sub.subactivity_name}</span>
-                                                                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${sub.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                                                                                                        sub.status === 'Submitted' ? 'bg-blue-100 text-blue-700' :
-                                                                                                            sub.status === 'Inprogress' ? 'bg-yellow-100 text-yellow-700' :
-                                                                                                                sub.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                                                                                                                    'bg-gray-100 text-gray-700'
-                                                                                                        }`}>
-                                                                                                        {sub.status}
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                                <span className="text-sm font-medium text-blue-600">{formatDuration(sub.total_time_spent)}</span>
-                                                                                            </div>
-
-                                                                                            {isSubExpanded && sub.date_wise && sub.date_wise.length > 0 && (
-                                                                                                <div className="border-t border-gray-100 p-3 bg-gray-50/30">
-                                                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                                                        <CalendarDays size={12} className="text-gray-500" />
-                                                                                                        <span className="text-xs font-medium text-gray-600">Date-wise Breakdown</span>
+                                                                                        return (
+                                                                                            <div key={sub.subactivity_id} className="border border-gray-100 rounded-lg overflow-hidden">
+                                                                                                <div
+                                                                                                    className="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                                                                    onClick={() => setExpandedSubActivity(isSubExpanded ? null : `${employee.emp_code}-${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`)}
+                                                                                                >
+                                                                                                    <div className="flex items-center gap-2 flex-1">
+                                                                                                        {isSubExpanded ? <ChevronDown size={12} className="text-gray-500" /> : <ChevronRight size={12} className="text-gray-500" />}
+                                                                                                        <span className="text-sm text-gray-700">{sub.subactivity_name}</span>
+                                                                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${sub.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                                                                            sub.status === 'Submitted' ? 'bg-blue-100 text-blue-700' :
+                                                                                                                sub.status === 'Inprogress' ? 'bg-yellow-100 text-yellow-700' :
+                                                                                                                    sub.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                                                                                                        'bg-gray-100 text-gray-700'
+                                                                                                            }`}>
+                                                                                                            {sub.status}
+                                                                                                        </span>
                                                                                                     </div>
-                                                                                                    <div className="space-y-1">
-                                                                                                        {sub.date_wise.map((dateLog, idx) => (
-                                                                                                            <div key={idx} className="flex justify-between items-center p-2 bg-white rounded border border-gray-100">
-                                                                                                                <div className="flex items-center gap-2">
-                                                                                                                    <CalendarDays size={12} className="text-gray-400" />
-                                                                                                                    <span className="text-sm text-gray-700">{formatDate(dateLog.date)}</span>
-                                                                                                                </div>
-                                                                                                                <div className="flex items-center gap-2">
-                                                                                                                    <Clock size={12} className="text-gray-400" />
-                                                                                                                    <span className="text-sm font-medium text-blue-600">{formatDuration(dateLog.time_spent)}</span>
-                                                                                                                </div>
+                                                                                                    <span className="text-sm font-medium text-blue-600">{formatDuration(sub.total_seconds)}</span>
+                                                                                                </div>
+
+                                                                                                {isSubExpanded && sub.date_wise && sub.date_wise.length > 0 && (
+                                                                                                    <div className="border-t border-gray-100 p-3 bg-gray-50/30">
+                                                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                                                            <CalendarDays size={12} className="text-gray-500" />
+                                                                                                            <span className="text-xs font-medium text-gray-600">Date-wise Breakdown</span>
+                                                                                                        </div>
+                                                                                                        <div className="space-y-1">
+                                                                                                            {sub.date_wise.map((dateLog, idx) => {
+                                                                                                                const logSeconds = timeToSeconds(dateLog.time_spent);
+                                                                                                                return (
+                                                                                                                    <div key={idx} className="flex justify-between items-center p-2 bg-white rounded border border-gray-100">
+                                                                                                                        <div className="flex items-center gap-2">
+                                                                                                                            <CalendarDays size={12} className="text-gray-400" />
+                                                                                                                            <span className="text-sm text-gray-700">{formatDate(dateLog.date)}</span>
+                                                                                                                        </div>
+                                                                                                                        <div className="flex items-center gap-2">
+                                                                                                                            <Clock size={12} className="text-gray-400" />
+                                                                                                                            <span className="text-sm font-medium text-blue-600">{formatDuration(logSeconds)}</span>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                );
+                                                                                                            })}
+                                                                                                            <div className="flex justify-between items-center p-2 bg-blue-50 rounded border border-blue-100 mt-2">
+                                                                                                                <span className="text-xs font-medium text-blue-700">Total Time:</span>
+                                                                                                                <span className="text-sm font-bold text-blue-700">{formatDuration(sub.total_seconds)}</span>
                                                                                                             </div>
-                                                                                                        ))}
-                                                                                                        <div className="flex justify-between items-center p-2 bg-blue-50 rounded border border-blue-100 mt-2">
-                                                                                                            <span className="text-xs font-medium text-blue-700">Total Time:</span>
-                                                                                                            <span className="text-sm font-bold text-blue-700">{formatDuration(sub.total_time_spent)}</span>
                                                                                                         </div>
                                                                                                     </div>
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    );
-                                                                                })}
+                                                                                                )}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    ))}
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
 
-                                                        {employee.projects?.length === 0 && (
+                                                        {(!employee.projects_filtered || employee.projects_filtered.length === 0) && (
                                                             <div className="text-center py-8 text-gray-500">
                                                                 No tasks found for this employee with the current filters.
                                                             </div>

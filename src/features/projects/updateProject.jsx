@@ -553,6 +553,29 @@ const UpdateProject = () => {
                 activitySubs.delete(subId);
             }
 
+
+            const newSelectedSubs = Array.from(activitySubs);
+
+            // Recalculate weightage for this activity based on selected sub-activities
+            const activityObj = getAllActivities().find(a => a.id === activityId);
+            if (activityObj) {
+                let totalWeightage = 0;
+
+                newSelectedSubs.forEach(selectedSubId => {
+                    const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+                    if (subObj) {
+                        const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                        const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                        totalWeightage += submissionPayment + approvalPayment;
+                    }
+                });
+
+                setActivityWeightages(prev => ({
+                    ...prev,
+                    [activityId]: totalWeightage
+                }));
+            }
+
             return {
                 ...prev,
                 [activityId]: Array.from(activitySubs),
@@ -565,18 +588,36 @@ const UpdateProject = () => {
 
         if (!activityObj) return;
 
+        let newSelectedSubs = [];
+
         if (selectAll) {
-            const allSubIds = activityObj.subActivities.map((sub) => sub.id);
-            setSelectedSubActivities((prev) => ({
-                ...prev,
-                [activityId]: allSubIds,
-            }));
+            // Select all sub-activities
+            newSelectedSubs = activityObj.subActivities.map((sub) => sub.id);
         } else {
-            setSelectedSubActivities((prev) => ({
-                ...prev,
-                [activityId]: [],
-            }));
+            // Unselect all sub-activities
+            newSelectedSubs = [];
         }
+
+        // Recalculate weightage for this activity
+        let totalWeightage = 0;
+        newSelectedSubs.forEach(selectedSubId => {
+            const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+            if (subObj) {
+                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                totalWeightage += submissionPayment + approvalPayment;
+            }
+        });
+
+        setActivityWeightages(prev => ({
+            ...prev,
+            [activityId]: totalWeightage
+        }));
+
+        setSelectedSubActivities((prev) => ({
+            ...prev,
+            [activityId]: newSelectedSubs,
+        }));
     };
 
     const getSelectAllStatus = (activityId) => {
@@ -618,6 +659,32 @@ const UpdateProject = () => {
                 ...prev,
                 [`${subId}_${field}`]: finalValue,
             }));
+
+            // Recalculate weightage for the activity containing this sub-activity
+            const allActivities = getAllActivities();
+            for (const activity of allActivities) {
+                const subExists = activity.subActivities.some(s => s.id === subId);
+                if (subExists) {
+                    const selectedSubs = selectedSubActivities[activity.id] || [];
+                    if (selectedSubs.includes(subId)) {
+                        let totalWeightage = 0;
+                        selectedSubs.forEach(selectedSubId => {
+                            const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                            if (subObj) {
+                                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                                totalWeightage += submissionPayment + approvalPayment;
+                            }
+                        });
+                        setActivityWeightages(prev => ({
+                            ...prev,
+                            [activity.id]: totalWeightage
+                        }));
+                    }
+                    break;
+                }
+            }
+
         } else if (field === "quantity") {
             const numValue = parseFloat(value) || 0;
             setSubActivityPlannedQtys((prev) => ({
@@ -764,6 +831,7 @@ const UpdateProject = () => {
         }
         const newActivity = {
             id: `custom-${Date.now()}`,
+            sorting_var: customActivities.length + templatesActivities.length + 1,
             activity_name: newActivityName,
             subActivities: [],
             isCustom: true,
@@ -788,7 +856,7 @@ const UpdateProject = () => {
         if (newSubActivity.activityType === "single") {
             newSubs = [
                 {
-                    id: `custom-sub-${Date.now()}`,
+                    // id: `custom-sub-${Date.now()}`,
                     sorting_var: null,
                     subactivity_name: newSubActivity.subactivity_name,
                     unit: newSubActivity.unit,
@@ -828,7 +896,7 @@ const UpdateProject = () => {
                 for (let i = 0; i < count; i++) {
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
-                        id: `custom-sub-${Date.now()}-${i}`,
+                        // id: `custom-sub-${Date.now()}-${i}`,
                         sorting_var: null,
                         subactivity_name: newSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: newSubActivity.unit,
@@ -864,7 +932,7 @@ const UpdateProject = () => {
                     }
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
-                        id: `custom-sub-${Date.now()}-${i}`,
+                        // id: `custom-sub-${Date.now()}-${i}`,
                         sorting_var: null,
                         subactivity_name: newSubActivity.subactivity_name,
                         unit: newSubActivity.unit,
@@ -990,7 +1058,7 @@ const UpdateProject = () => {
         if (cloningSubActivity.activityType === "single") {
             newSubs = [
                 {
-                    id: `custom-sub-${Date.now()}`,
+                    // id: `custom-sub-${Date.now()}`,
                     sorting_var: null,
                     subactivity_name: cloningSubActivity.subactivity_name,
                     unit: cloningSubActivity.unit,
@@ -1025,7 +1093,7 @@ const UpdateProject = () => {
                 for (let i = 0; i < count; i++) {
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
-                        id: `custom-sub-${Date.now()}-${i}`,
+                        // id: `custom-sub-${Date.now()}-${i}`,
                         sorting_var: null,
                         subactivity_name: cloningSubActivity.subactivity_name,
                         unit: cloningSubActivity.unit,
@@ -1056,7 +1124,7 @@ const UpdateProject = () => {
                     }
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
-                        id: `custom-sub-${Date.now()}-${i}`,
+                        // id: `custom-sub-${Date.now()}-${i}`,
                         sorting_var: null,
                         subactivity_name: cloningSubActivity.subactivity_name,
                         unit: cloningSubActivity.unit,
@@ -1126,6 +1194,25 @@ const UpdateProject = () => {
             ...prev,
             [activityId]: [...(prev[activityId] || []), ...newSubIds],
         }));
+
+        // Recalculate weightage for this activity
+        const activityObj = getAllActivities().find(a => a.id === activityId);
+        if (activityObj) {
+            const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
+            let totalWeightage = 0;
+            updatedSelectedSubs.forEach(selectedSubId => {
+                const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+                if (subObj) {
+                    const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                    const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                    totalWeightage += submissionPayment + approvalPayment;
+                }
+            });
+            setActivityWeightages(prev => ({
+                ...prev,
+                [activityId]: totalWeightage
+            }));
+        }
 
         setTimeout(() => {
             const lastSubElement = document.getElementById(`sub-${lastSubId}`);
@@ -1281,6 +1368,25 @@ const UpdateProject = () => {
                 setSelectedSubActivities((prev) => ({
                     ...prev,
                     [activityId]: prev[activityId].filter((id) => id !== subId),
+                }));
+            }
+
+            // Recalculate weightage for this activity
+            const activityObj = getAllActivities().find(a => a.id === activityId);
+            if (activityObj) {
+                const remainingSelectedSubs = selectedSubActivities[activityId] || [];
+                let totalWeightage = 0;
+                remainingSelectedSubs.forEach(selectedSubId => {
+                    const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+                    if (subObj) {
+                        const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                        const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                        totalWeightage += submissionPayment + approvalPayment;
+                    }
+                });
+                setActivityWeightages(prev => ({
+                    ...prev,
+                    [activityId]: totalWeightage
                 }));
             }
 
@@ -1573,6 +1679,9 @@ const UpdateProject = () => {
                 const weightage = activityWeightages[activityId] || 0;
                 const activitySortingVar = activityObj?.sorting_var || 0;
 
+                // Check if this is a new custom activity (starts with 'custom-')
+                const isNewActivity = activityId.toString().startsWith('custom-');
+
                 const selectedSubs = selectedSubActivities[activityId] || [];
 
                 const subactivities = selectedSubs.map((subId) => {
@@ -1589,8 +1698,11 @@ const UpdateProject = () => {
                     const isStatusBased = unit === "status";
                     const subSortingVar = subObj?.sorting_var || 0;
 
+                    const isNewSub = subId.toString().startsWith('custom-sub-');
+
                     return {
-                        id: subId,
+                        // id: subId,
+                        ...(isNewSub ? {} : { id: subId }),
                         subactivity_name: subObj?.subactivity_name || String(subId),
                         description: description,
                         total_quantity: isStatusBased ? 1 : plannedQty,
@@ -1605,7 +1717,8 @@ const UpdateProject = () => {
                 });
 
                 return {
-                    id: activityId,
+                    // id: activityId,
+                    ...(isNewActivity ? {} : { id: activityId }),
                     activity_name: activityObj?.activity_name,
                     start_date: dates.startDate,
                     end_date: dates.endDate,
@@ -1664,7 +1777,12 @@ const UpdateProject = () => {
                     type: "success",
                 })
             );
+
+            const refreshedProject = await dispatch(fetchProjectDetails(projectId)).unwrap();
+            setProjectData(refreshedProject);
+
             // navigate("/all-projects");
+            setTimeout(() => navigate("/all-projects"), 2000);
         } catch (error) {
             console.error("Project update error:", error);
             dispatch(
@@ -1836,6 +1954,1486 @@ const UpdateProject = () => {
                     </div>
                 </div>
             )}
+
+
+            {/* Add Client Modal */}
+            <AnimatePresence>
+                {showAddClientModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => closeModal(setShowAddClientModal)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 40 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="text-xl font-bold mb-6">Add New Client</h3>
+
+                            {/* Company Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="Client Code (e.g., P0001)"
+                                    className="p-3 border rounded-xl"
+                                    value={newClient.code}
+                                    onChange={(e) =>
+                                        setNewClient({ ...newClient, code: e.target.value })
+                                    }
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Client Name"
+                                    className="p-3 border rounded-xl"
+                                    value={newClient.client_name}
+                                    onChange={(e) =>
+                                        setNewClient({ ...newClient, client_name: e.target.value })
+                                    }
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="PAN Number"
+                                    className="p-3 border rounded-xl"
+                                    maxLength={10}
+                                    value={newClient.pan_no}
+                                    onChange={(e) =>
+                                        setNewClient({ ...newClient, pan_no: e.target.value })
+                                    }
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Contact Number"
+                                    className="p-3 border rounded-xl"
+                                    value={newClient.contact}
+                                    onChange={(e) =>
+                                        setNewClient({ ...newClient, contact: e.target.value })
+                                    }
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Address"
+                                    className="p-3 border rounded-xl"
+                                    value={newClient.address}
+                                    onChange={(e) =>
+                                        setNewClient({ ...newClient, address: e.target.value })
+                                    }
+                                />
+                                <select
+                                    className="p-3 border rounded-xl"
+                                    value={newClient.status}
+                                    onChange={(e) =>
+                                        setNewClient({ ...newClient, status: e.target.value })
+                                    }
+                                >
+                                    <option>Active</option>
+                                    <option>Inactive</option>
+                                </select>
+                            </div>
+
+                            {/* Branch Section */}
+                            <div className="mt-6">
+                                <h4 className="font-semibold mb-3">Branches</h4>
+
+                                {branches.map((branch, index) => (
+                                    <div
+                                        key={index}
+                                        className="border rounded-xl p-4 mb-4 bg-gray-50"
+                                    >
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Branch Name"
+                                                value={branch.name}
+                                                onChange={(e) =>
+                                                    handleBranchChange(index, "name", e.target.value)
+                                                }
+                                                className="p-2 border rounded-lg"
+                                            />
+
+                                            <input
+                                                type="text"
+                                                placeholder="GST Number"
+                                                value={branch.gst}
+                                                onChange={(e) =>
+                                                    handleBranchChange(index, "gst", e.target.value)
+                                                }
+                                                className="p-2 border rounded-lg"
+                                            />
+
+                                            <input
+                                                type="text"
+                                                placeholder="State"
+                                                value={branch.state}
+                                                onChange={(e) =>
+                                                    handleBranchChange(index, "state", e.target.value)
+                                                }
+                                                className="p-2 border rounded-lg"
+                                            />
+
+                                            <select
+                                                value={branch.status}
+                                                onChange={(e) =>
+                                                    handleBranchChange(index, "status", e.target.value)
+                                                }
+                                                className="p-2 border rounded-lg"
+                                            >
+                                                <option>Active</option>
+                                                <option>Inactive</option>
+                                            </select>
+                                        </div>
+
+                                        {index > 0 && (
+                                            <div className="flex justify-end mt-2">
+                                                <button
+                                                    onClick={() => removeBranch(index)}
+                                                    className="text-red-500 text-sm"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                <button
+                                    onClick={addBranch}
+                                    className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+                                >
+                                    + Add Branch
+                                </button>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
+                                    onClick={() => closeModal(setShowAddClientModal)}
+                                    className="px-4 py-2 border rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleAddClient}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                                >
+                                    Save Client
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Company Modal */}
+            <AnimatePresence>
+                {showAddCompanyModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowAddCompanyModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-6 max-w-md w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="text-lg md:text-xl font-bold mb-4">
+                                Add New Company
+                            </h3>
+                            <input
+                                type="text"
+                                placeholder="Enter company name"
+                                value={newCompany?.name}
+                                onChange={(e) =>
+                                    setNewCompany({ ...newCompany, name: e.target.value })
+                                }
+                                className="w-full p-3 border rounded-xl text-sm md:text-base mb-4"
+                                autoFocus
+                            />
+                            <input
+                                type="text"
+                                placeholder="Enter company PAN No."
+                                value={newCompany?.pan_no}
+                                onChange={(e) =>
+                                    setNewCompany({ ...newCompany, pan_no: e.target.value })
+                                }
+                                className="w-full p-3 border rounded-xl text-sm md:text-base mb-4"
+                                autoFocus
+                            />
+                            <input
+                                type="text"
+                                placeholder="Enter company GST No."
+                                value={newCompany?.gst_no}
+                                onChange={(e) =>
+                                    setNewCompany({ ...newCompany, gst_no: e.target.value })
+                                }
+                                className="w-full p-3 border rounded-xl text-sm md:text-base mb-4"
+                                autoFocus
+                            />
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddCompanyModal(false)}
+                                    className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm md:text-base"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAddCompany}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
+                                >
+                                    Add Company
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Add Activity Modal - Original */}
+            <AnimatePresence>
+                {showAddActivityModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => closeModal(setShowAddActivityModal)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <form onSubmit={handleAddActivity}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg md:text-xl font-bold">
+                                        Add New Activity
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeModal(setShowAddActivityModal);
+                                            setNewActivityName("");
+                                        }}
+                                        className="p-1 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Enter activity name"
+                                    value={newActivityName}
+                                    onChange={(e) => setNewActivityName(e.target.value)}
+                                    className="w-full p-2.5 md:p-3 border rounded-xl text-sm md:text-base mb-4"
+                                    autoFocus
+                                />
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeModal(setShowAddActivityModal);
+                                            setNewActivityName("");
+                                        }}
+                                        className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm md:text-base"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
+                                    >
+                                        Add Activity
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Add Sub-Activity Modal - Original */}
+            <AnimatePresence>
+                {showAddSubActivityModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => closeModal(setShowAddSubActivityModal)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <form onSubmit={handleAddSubActivity}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg md:text-xl font-bold">
+                                        Add Sub-Activity
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeModal(setShowAddSubActivityModal);
+                                            setNewSubActivity({
+                                                subactivity_name: "",
+                                                unit: "Km",
+                                                chainage_start: "",
+                                                covered_area: "",
+                                                chainage_quantity: "",
+                                                activityType: "single",
+                                                lengthType: "same", // 'same' or 'different'
+                                                chainageLengths: [],
+                                            });
+                                        }}
+                                        className="p-1 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3 md:space-y-4">
+                                    {/* Activity Name Display */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Activity:{" "}
+                                            <span className="text-blue-600">
+                                                {
+                                                    getAllActivities().find(
+                                                        (a) => a.id === selectedActivityForSub,
+                                                    )?.activity_name
+                                                }
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    {/* Activity Type Toggle */}
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setNewSubActivity({
+                                                    ...newSubActivity,
+                                                    activityType: "single",
+                                                    lengthType: "same",
+                                                    chainageLengths: [],
+                                                })
+                                            }
+                                            className={`flex-1 px-4 py-2 rounded-lg transition-all ${newSubActivity.activityType === "single"
+                                                ? "bg-blue-500 text-white shadow-md"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                }`}
+                                        >
+                                            Single
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setNewSubActivity({
+                                                    ...newSubActivity,
+                                                    activityType: "multiple",
+                                                    lengthType: "same",
+                                                    chainageLengths: [],
+                                                })
+                                            }
+                                            className={`flex-1 px-4 py-2 rounded-lg transition-all ${newSubActivity.activityType === "multiple"
+                                                ? "bg-blue-500 text-white shadow-md"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                }`}
+                                        >
+                                            Multiple
+                                        </button>
+                                    </div>
+
+                                    {/* Common Fields */}
+                                    <input
+                                        type="text"
+                                        placeholder="Sub-activity name *"
+                                        value={newSubActivity.subactivity_name}
+                                        onChange={(e) =>
+                                            setNewSubActivity({
+                                                ...newSubActivity,
+                                                subactivity_name: e.target.value,
+                                            })
+                                        }
+                                        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                        required
+                                    />
+
+                                    <select
+                                        value={newSubActivity.unit}
+                                        onChange={(e) =>
+                                            setNewSubActivity({
+                                                ...newSubActivity,
+                                                unit: e.target.value,
+                                            })
+                                        }
+                                        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                    >
+                                        {UNIT_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* Multiple Chainage Fields */}
+                                    {newSubActivity.activityType === "multiple" && (
+                                        <div className="space-y-4 border-t pt-4">
+                                            {/* Start Chainage */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Start Chainage *
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={newSubActivity.chainage_start}
+                                                    onChange={(e) =>
+                                                        setNewSubActivity({
+                                                            ...newSubActivity,
+                                                            chainage_start: e.target.value,
+                                                        })
+                                                    }
+                                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+
+                                            {/* Quantity */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Number of Chainages *
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="Enter quantity"
+                                                    value={newSubActivity.chainage_quantity}
+                                                    onChange={(e) => {
+                                                        const qty = e.target.value;
+                                                        setNewSubActivity({
+                                                            ...newSubActivity,
+                                                            chainage_quantity: qty,
+                                                            chainageLengths: new Array(Number(qty)).fill(""),
+                                                        });
+                                                    }}
+                                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+
+                                            {/* Length Type Selection */}
+                                            {newSubActivity.chainage_quantity &&
+                                                Number(newSubActivity.chainage_quantity) > 0 && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Length Type
+                                                        </label>
+                                                        <div className="flex gap-4">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setNewSubActivity({
+                                                                        ...newSubActivity,
+                                                                        lengthType: "same",
+                                                                        chainageLengths: [],
+                                                                    })
+                                                                }
+                                                                className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${newSubActivity.lengthType === "same"
+                                                                    ? "bg-blue-500 text-white"
+                                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                                    }`}
+                                                            >
+                                                                Same Length
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setNewSubActivity({
+                                                                        ...newSubActivity,
+                                                                        lengthType: "different",
+                                                                        chainageLengths: new Array(
+                                                                            Number(newSubActivity.chainage_quantity),
+                                                                        ).fill(""),
+                                                                    })
+                                                                }
+                                                                className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${newSubActivity.lengthType === "different"
+                                                                    ? "bg-blue-500 text-white"
+                                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                                    }`}
+                                                            >
+                                                                Different Lengths
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                            {/* Same Length Input */}
+                                            {newSubActivity.lengthType === "same" &&
+                                                newSubActivity.chainage_quantity && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Chainage Length *
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder="Enter length"
+                                                            value={newSubActivity.covered_area}
+                                                            onChange={(e) =>
+                                                                setNewSubActivity({
+                                                                    ...newSubActivity,
+                                                                    covered_area: e.target.value,
+                                                                })
+                                                            }
+                                                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                            {/* Different Lengths - Table Preview */}
+                                            {newSubActivity.lengthType === "different" &&
+                                                newSubActivity.chainage_quantity && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Chainage Lengths *
+                                                        </label>
+                                                        <div className="border rounded-xl overflow-hidden">
+                                                            <div className="bg-gray-50 px-3 py-2 border-b">
+                                                                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
+                                                                    <div className="col-span-2">S.No.</div>
+                                                                    <div className="col-span-5">
+                                                                        Start Chainage
+                                                                    </div>
+                                                                    <div className="col-span-5">Length (km)</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="max-h-64 overflow-y-auto">
+                                                                {Array.from({
+                                                                    length: Number(
+                                                                        newSubActivity.chainage_quantity,
+                                                                    ),
+                                                                }).map((_, idx) => {
+                                                                    const startValue =
+                                                                        idx === 0
+                                                                            ? Number(newSubActivity.chainage_start) ||
+                                                                            0
+                                                                            : (() => {
+                                                                                let sum =
+                                                                                    Number(
+                                                                                        newSubActivity.chainage_start,
+                                                                                    ) || 0;
+                                                                                for (let i = 0; i < idx; i++) {
+                                                                                    sum +=
+                                                                                        Number(
+                                                                                            newSubActivity.chainageLengths[
+                                                                                            i
+                                                                                            ],
+                                                                                        ) || 0;
+                                                                                }
+                                                                                return sum;
+                                                                            })();
+
+                                                                    return (
+                                                                        <div
+                                                                            key={idx}
+                                                                            className="grid grid-cols-12 gap-2 p-2 border-b last:border-b-0 items-center"
+                                                                        >
+                                                                            <div className="col-span-2 text-sm text-gray-600">
+                                                                                {idx + 1}
+                                                                            </div>
+                                                                            <div className="col-span-5 text-sm text-gray-600">
+                                                                                {startValue.toFixed(2)}
+                                                                            </div>
+                                                                            <div className="col-span-5">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    placeholder="Length"
+                                                                                    value={
+                                                                                        newSubActivity.chainageLengths[
+                                                                                        idx
+                                                                                        ] || ""
+                                                                                    }
+                                                                                    onChange={(e) => {
+                                                                                        const newLengths = [
+                                                                                            ...newSubActivity.chainageLengths,
+                                                                                        ];
+                                                                                        newLengths[idx] = e.target.value;
+                                                                                        setNewSubActivity({
+                                                                                            ...newSubActivity,
+                                                                                            chainageLengths: newLengths,
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                        {/* Preview End Chainage */}
+                                                        <div className="mt-2 text-right text-xs text-gray-500">
+                                                            Final Chainage:{" "}
+                                                            {(() => {
+                                                                let total =
+                                                                    Number(newSubActivity.chainage_start) || 0;
+                                                                newSubActivity.chainageLengths.forEach(
+                                                                    (len) => {
+                                                                        total += Number(len) || 0;
+                                                                    },
+                                                                );
+                                                                return total.toFixed(2);
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                            {/* Preview for Same Length */}
+                                            {newSubActivity.lengthType === "same" &&
+                                                newSubActivity.chainage_quantity &&
+                                                newSubActivity.covered_area && (
+                                                    <div className="bg-blue-50 rounded-xl p-3">
+                                                        <p className="text-xs font-medium text-blue-700 mb-2">
+                                                            Preview:
+                                                        </p>
+                                                        <div className="space-y-1 text-xs text-gray-600">
+                                                            {Array.from({
+                                                                length: Math.min(
+                                                                    Number(newSubActivity.chainage_quantity),
+                                                                    5,
+                                                                ),
+                                                            }).map((_, idx) => {
+                                                                const start =
+                                                                    idx === 0
+                                                                        ? Number(newSubActivity.chainage_start) || 0
+                                                                        : (Number(newSubActivity.chainage_start) ||
+                                                                            0) +
+                                                                        idx *
+                                                                        (Number(newSubActivity.covered_area) ||
+                                                                            0);
+                                                                const end =
+                                                                    start +
+                                                                    (Number(newSubActivity.covered_area) || 0);
+                                                                return (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className="flex justify-between"
+                                                                    >
+                                                                        <span>Chainage {idx + 1}:</span>
+                                                                        <span>
+                                                                            {start.toFixed(2)} km → {end.toFixed(2)}{" "}
+                                                                            km
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {Number(newSubActivity.chainage_quantity) > 5 && (
+                                                                <div className="text-gray-400 text-center pt-1">
+                                                                    +{" "}
+                                                                    {Number(newSubActivity.chainage_quantity) - 5}{" "}
+                                                                    more chainages
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeModal(setShowAddSubActivityModal);
+                                            setNewSubActivity({
+                                                subactivity_name: "",
+                                                unit: "Km",
+                                                chainage_start: "",
+                                                covered_area: "",
+                                                chainage_quantity: "",
+                                                activityType: "single",
+                                                lengthType: "same", // 'same' or 'different'
+                                                chainageLengths: [],
+                                            });
+                                        }}
+                                        className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Add Sub-Activity
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Clone Sub-Activity Modal */}
+            <AnimatePresence>
+                {showCloneSubActivityModal && cloningSubActivity && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowCloneSubActivityModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <form onSubmit={handleCloneSubActivitySubmit}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg md:text-xl font-bold">
+                                        Add Similar Sub-Activity
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCloneSubActivityModal(false)}
+                                        className="p-1 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3 md:space-y-4">
+                                    {/* Activity Name Display */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Activity:{" "}
+                                            <span className="text-blue-600">
+                                                {
+                                                    getAllActivities().find(
+                                                        (a) => a.id === cloningSubActivity.activityId,
+                                                    )?.activity_name
+                                                }
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    {/* Activity Type Toggle - Editable */}
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setCloningSubActivity({
+                                                    ...cloningSubActivity,
+                                                    activityType: "single",
+                                                    lengthType: "same",
+                                                    chainageLengths: [],
+                                                })
+                                            }
+                                            className={`flex-1 px-4 py-2 rounded-lg transition-all ${cloningSubActivity.activityType === "single"
+                                                ? "bg-blue-500 text-white shadow-md"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                }`}
+                                        >
+                                            Single
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setCloningSubActivity({
+                                                    ...cloningSubActivity,
+                                                    activityType: "multiple",
+                                                    lengthType: "same",
+                                                    chainageLengths: [],
+                                                })
+                                            }
+                                            className={`flex-1 px-4 py-2 rounded-lg transition-all ${cloningSubActivity.activityType === "multiple"
+                                                ? "bg-blue-500 text-white shadow-md"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                }`}
+                                        >
+                                            Multiple
+                                        </button>
+                                    </div>
+
+                                    {/* Sub-Activity Name - READ ONLY */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Sub-Activity Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={cloningSubActivity.subactivity_name}
+                                            disabled
+                                            className="w-full p-3 border rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
+                                        />
+                                    </div>
+
+                                    {/* Unit - READ ONLY */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Unit *
+                                        </label>
+                                        <select
+                                            value={cloningSubActivity.unit}
+                                            disabled
+                                            className="w-full p-3 border rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
+                                        >
+                                            {UNIT_OPTIONS.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Multiple Chainage Fields - Fully Editable */}
+                                    {cloningSubActivity.activityType === "multiple" && (
+                                        <div className="space-y-4 border-t pt-4">
+                                            {/* Start Chainage */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Start Chainage *
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={cloningSubActivity.chainage_start}
+                                                    onChange={(e) =>
+                                                        setCloningSubActivity({
+                                                            ...cloningSubActivity,
+                                                            chainage_start: e.target.value,
+                                                        })
+                                                    }
+                                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+
+                                            {/* Quantity */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Number of Chainages *
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="Enter quantity"
+                                                    value={cloningSubActivity.chainage_quantity}
+                                                    onChange={(e) => {
+                                                        const qty = e.target.value;
+                                                        setCloningSubActivity({
+                                                            ...cloningSubActivity,
+                                                            chainage_quantity: qty,
+                                                            chainageLengths: new Array(Number(qty)).fill(""),
+                                                        });
+                                                    }}
+                                                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+
+                                            {/* Length Type Selection */}
+                                            {cloningSubActivity.chainage_quantity &&
+                                                Number(cloningSubActivity.chainage_quantity) > 0 && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Length Type
+                                                        </label>
+                                                        <div className="flex gap-4">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setCloningSubActivity({
+                                                                        ...cloningSubActivity,
+                                                                        lengthType: "same",
+                                                                        chainageLengths: [],
+                                                                    })
+                                                                }
+                                                                className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${cloningSubActivity.lengthType === "same"
+                                                                    ? "bg-blue-500 text-white"
+                                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                                    }`}
+                                                            >
+                                                                Same Length
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setCloningSubActivity({
+                                                                        ...cloningSubActivity,
+                                                                        lengthType: "different",
+                                                                        chainageLengths: new Array(
+                                                                            Number(
+                                                                                cloningSubActivity.chainage_quantity,
+                                                                            ),
+                                                                        ).fill(""),
+                                                                    })
+                                                                }
+                                                                className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${cloningSubActivity.lengthType === "different"
+                                                                    ? "bg-blue-500 text-white"
+                                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                                    }`}
+                                                            >
+                                                                Different Lengths
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                            {/* Same Length Input */}
+                                            {cloningSubActivity.lengthType === "same" &&
+                                                cloningSubActivity.chainage_quantity && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Chainage Length *
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            placeholder="Enter length"
+                                                            value={cloningSubActivity.covered_area}
+                                                            onChange={(e) =>
+                                                                setCloningSubActivity({
+                                                                    ...cloningSubActivity,
+                                                                    covered_area: e.target.value,
+                                                                })
+                                                            }
+                                                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                            {/* Different Lengths - Table Preview */}
+                                            {cloningSubActivity.lengthType === "different" &&
+                                                cloningSubActivity.chainage_quantity && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Chainage Lengths *
+                                                        </label>
+                                                        <div className="border rounded-xl overflow-hidden">
+                                                            <div className="bg-gray-50 px-3 py-2 border-b">
+                                                                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
+                                                                    <div className="col-span-2">S.No.</div>
+                                                                    <div className="col-span-5">
+                                                                        Start Chainage
+                                                                    </div>
+                                                                    <div className="col-span-5">Length (km)</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="max-h-64 overflow-y-auto">
+                                                                {Array.from({
+                                                                    length: Number(
+                                                                        cloningSubActivity.chainage_quantity,
+                                                                    ),
+                                                                }).map((_, idx) => {
+                                                                    const startValue =
+                                                                        idx === 0
+                                                                            ? Number(
+                                                                                cloningSubActivity.chainage_start,
+                                                                            ) || 0
+                                                                            : (() => {
+                                                                                let sum =
+                                                                                    Number(
+                                                                                        cloningSubActivity.chainage_start,
+                                                                                    ) || 0;
+                                                                                for (let i = 0; i < idx; i++) {
+                                                                                    sum +=
+                                                                                        Number(
+                                                                                            cloningSubActivity
+                                                                                                .chainageLengths[i],
+                                                                                        ) || 0;
+                                                                                }
+                                                                                return sum;
+                                                                            })();
+
+                                                                    return (
+                                                                        <div
+                                                                            key={idx}
+                                                                            className="grid grid-cols-12 gap-2 p-2 border-b last:border-b-0 items-center"
+                                                                        >
+                                                                            <div className="col-span-2 text-sm text-gray-600">
+                                                                                {idx + 1}
+                                                                            </div>
+                                                                            <div className="col-span-5 text-sm text-gray-600">
+                                                                                {startValue.toFixed(2)}
+                                                                            </div>
+                                                                            <div className="col-span-5">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    placeholder="Length"
+                                                                                    value={
+                                                                                        cloningSubActivity.chainageLengths[
+                                                                                        idx
+                                                                                        ] || ""
+                                                                                    }
+                                                                                    onChange={(e) => {
+                                                                                        const newLengths = [
+                                                                                            ...cloningSubActivity.chainageLengths,
+                                                                                        ];
+                                                                                        newLengths[idx] = e.target.value;
+                                                                                        setCloningSubActivity({
+                                                                                            ...cloningSubActivity,
+                                                                                            chainageLengths: newLengths,
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                        {/* Preview End Chainage */}
+                                                        <div className="mt-2 text-right text-xs text-gray-500">
+                                                            Final Chainage:{" "}
+                                                            {(() => {
+                                                                let total =
+                                                                    Number(cloningSubActivity.chainage_start) ||
+                                                                    0;
+                                                                cloningSubActivity.chainageLengths.forEach(
+                                                                    (len) => {
+                                                                        total += Number(len) || 0;
+                                                                    },
+                                                                );
+                                                                return total.toFixed(2);
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                            {/* Preview for Same Length */}
+                                            {cloningSubActivity.lengthType === "same" &&
+                                                cloningSubActivity.chainage_quantity &&
+                                                cloningSubActivity.covered_area && (
+                                                    <div className="bg-blue-50 rounded-xl p-3">
+                                                        <p className="text-xs font-medium text-blue-700 mb-2">
+                                                            Preview:
+                                                        </p>
+                                                        <div className="space-y-1 text-xs text-gray-600">
+                                                            {Array.from({
+                                                                length: Math.min(
+                                                                    Number(cloningSubActivity.chainage_quantity),
+                                                                    5,
+                                                                ),
+                                                            }).map((_, idx) => {
+                                                                const start =
+                                                                    idx === 0
+                                                                        ? Number(
+                                                                            cloningSubActivity.chainage_start,
+                                                                        ) || 0
+                                                                        : (Number(
+                                                                            cloningSubActivity.chainage_start,
+                                                                        ) || 0) +
+                                                                        idx *
+                                                                        (Number(
+                                                                            cloningSubActivity.covered_area,
+                                                                        ) || 0);
+                                                                const end =
+                                                                    start +
+                                                                    (Number(cloningSubActivity.covered_area) ||
+                                                                        0);
+                                                                return (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className="flex justify-between"
+                                                                    >
+                                                                        <span>Chainage {idx + 1}:</span>
+                                                                        <span>
+                                                                            {start.toFixed(2)} km → {end.toFixed(2)}{" "}
+                                                                            km
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {Number(cloningSubActivity.chainage_quantity) >
+                                                                5 && (
+                                                                    <div className="text-gray-400 text-center pt-1">
+                                                                        +{" "}
+                                                                        {Number(
+                                                                            cloningSubActivity.chainage_quantity,
+                                                                        ) - 5}{" "}
+                                                                        more chainages
+                                                                    </div>
+                                                                )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCloneSubActivityModal(false)}
+                                        className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Add Sub-Activity
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Activity Stage Modal */}
+            <AnimatePresence>
+                {editingActivityStage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setEditingActivityStage(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg md:text-xl font-bold">
+                                    Edit Activity Sequence
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingActivityStage(null)}
+                                    className="p-1 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Activity
+                                    </label>
+                                    <p className="text-gray-600 bg-gray-50 p-2 rounded-lg">
+                                        {getAllActivities()
+                                            .find(a => a.id === editingActivityStage.activityId)
+                                            ?.activity_name}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Sequence Order *
+                                    </label>
+                                    <select
+                                        value={editingActivityStage.currentStage || 1}
+                                        onChange={(e) => {
+                                            const newStage = parseInt(e.target.value);
+                                            handleActivityOrderChange(editingActivityStage.activityId, newStage);
+                                        }}
+                                        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                    >
+                                        {getAvailableStagesForActivity(editingActivityStage.activityId).map(stage => (
+                                            <option key={stage} value={stage}>
+                                                {stage}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {/* <p className="text-xs text-gray-500 mt-1">
+                                Stages must be unique across all activities in the project
+                              </p> */}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingActivityStage(null)}
+                                    className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Stage Modal */}
+            <AnimatePresence>
+                {editingStage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setEditingStage(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg md:text-xl font-bold">
+                                    Edit Stage Number
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingStage(null)}
+                                    className="p-1 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Sub-Activity
+                                    </label>
+                                    <p className="text-gray-600 bg-gray-50 p-2 rounded-lg">
+                                        {getAllActivities()
+                                            .find(a => a.id === editingStage.activityId)
+                                            ?.subActivities.find(s => s.id === editingStage.subId)
+                                            ?.subactivity_name}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Stage Number *
+                                    </label>
+                                    <select
+                                        value={editingStage.currentStage || 1}
+                                        onChange={(e) => {
+                                            const newStage = parseInt(e.target.value);
+                                            handleStageChange(editingStage.activityId, editingStage.subId, newStage);
+                                        }}
+                                        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                    >
+                                        {getAvailableStagesForSubactivity(editingStage.activityId, editingStage.subId).map(stage => (
+                                            <option key={stage} value={stage}>
+                                                Stage {stage}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Stages must be unique across all sub-activities in the project
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingStage(null)}
+                                    className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Sub-Activity Modal */}
+            <AnimatePresence>
+                {showEditSubActivityModal && editingSubActivity && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowEditSubActivityModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <form onSubmit={handleUpdateSubActivity}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg md:text-xl font-bold">
+                                        Edit Sub-Activity
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditSubActivityModal(false)}
+                                        className="p-1 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <div className="space-y-3 md:space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Activity:{" "}
+                                            <span className="text-blue-600">
+                                                {
+                                                    getAllActivities().find(
+                                                        (a) => a.id === editingSubActivity.activityId,
+                                                    )?.activity_name
+                                                }
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex gap-4 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setEditingSubActivity({
+                                                    ...editingSubActivity,
+                                                    activityType: "single",
+                                                })
+                                            }
+                                            className={`px-4 py-2 rounded-lg ${editingSubActivity.activityType === "single"
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-gray-200"
+                                                }`}
+                                        >
+                                            Single
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setEditingSubActivity({
+                                                    ...editingSubActivity,
+                                                    activityType: "multiple",
+                                                })
+                                            }
+                                            className={`px-4 py-2 rounded-lg ${editingSubActivity.activityType === "multiple"
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-gray-200"
+                                                }`}
+                                        >
+                                            Multiple
+                                        </button>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        placeholder="Sub-activity name"
+                                        value={editingSubActivity.subactivity_name}
+                                        onChange={(e) =>
+                                            setEditingSubActivity({
+                                                ...editingSubActivity,
+                                                subactivity_name: e.target.value,
+                                            })
+                                        }
+                                        className="w-full p-2.5 border rounded-xl text-sm"
+                                        required
+                                    />
+
+                                    <select
+                                        value={editingSubActivity.unit}
+                                        onChange={(e) =>
+                                            setEditingSubActivity({
+                                                ...editingSubActivity,
+                                                unit: e.target.value,
+                                            })
+                                        }
+                                        className="w-full p-2.5 border rounded-xl text-sm"
+                                    >
+                                        {UNIT_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {editingSubActivity.activityType === "multiple" && (
+                                        <>
+                                            <input
+                                                type="text"
+                                                placeholder="Start Chainage"
+                                                value={editingSubActivity.chainage_start}
+                                                onChange={(e) =>
+                                                    setEditingSubActivity({
+                                                        ...editingSubActivity,
+                                                        chainage_start: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full p-2.5 border rounded-xl text-sm"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Chainage Length"
+                                                value={editingSubActivity.covered_area}
+                                                onChange={(e) =>
+                                                    setEditingSubActivity({
+                                                        ...editingSubActivity,
+                                                        covered_area: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full p-2.5 border rounded-xl text-sm"
+                                            />
+                                            <input
+                                                type="number"
+                                                placeholder="Quantity"
+                                                value={editingSubActivity.chainage_quantity}
+                                                onChange={(e) =>
+                                                    setEditingSubActivity({
+                                                        ...editingSubActivity,
+                                                        chainage_quantity: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full p-2.5 border rounded-xl text-sm"
+                                            />
+                                        </>
+                                    )}
+                                </div>
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditSubActivityModal(false)}
+                                        className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Update Sub-Activity
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Header with Mobile Step Indicator */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -2454,14 +4052,14 @@ const UpdateProject = () => {
                             <span className="text-xs md:text-sm font-normal text-gray-500">({selectedActivities.length} selected)</span>
                             {isMobile && <span className="text-xs text-gray-500 ml-auto">Step 3/3</span>}
                         </h3>
-                        {/* <button
+                        <button
                             type="button"
                             onClick={() => setShowAddActivityModal(true)}
                             className="w-full sm:w-auto bg-blue-600 text-white px-3 md:px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm"
                         >
                             <Plus size={16} />
                             Add New Activity
-                        </button> */}
+                        </button>
                     </div>
 
                     {selectedActivities.length > 0 && (
@@ -2511,6 +4109,12 @@ const UpdateProject = () => {
                                                     });
                                                 } else {
                                                     setSelectedActivities((prev) => [...prev, activity.id]);
+
+                                                    // Initialize weightage for the activity
+                                                    setActivityWeightages((prev) => ({
+                                                        ...prev,
+                                                        [activity.id]: 0
+                                                    }));
                                                 }
                                             }}
                                             className={`cursor-pointer p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all shadow-sm ${isSelected
@@ -2687,7 +4291,7 @@ const UpdateProject = () => {
                                                                 </div>
                                                             </div>
 
-                                                            {/* <div className="flex justify-between items-center mb-2">
+                                                            <div className="flex justify-between items-center mb-2">
                                                                 <h6 className="font-medium text-gray-700 text-xs md:text-sm">Sub-Activities:</h6>
                                                                 <button
                                                                     type="button"
@@ -2700,7 +4304,7 @@ const UpdateProject = () => {
                                                                     <Plus size={12} />
                                                                     Add New Sub-Activity
                                                                 </button>
-                                                            </div> */}
+                                                            </div>
 
                                                             <div className="space-y-2 md:space-y-3">
                                                                 {activityObj?.subActivities.length > 0 && (
@@ -2813,7 +4417,7 @@ const UpdateProject = () => {
                                                                                             )}
                                                                                         </div>
 
-                                                                                        {/* <div className="flex items-center gap-1">
+                                                                                        <div className="flex items-center gap-1">
                                                                                             <button
                                                                                                 type="button"
                                                                                                 onClick={() => handleCloneSubActivity(activityId, sub.id)}
@@ -2831,7 +4435,7 @@ const UpdateProject = () => {
                                                                                                     <X size={14} />
                                                                                                 </button>
                                                                                             )}
-                                                                                        </div> */}
+                                                                                        </div>
                                                                                     </div>
 
                                                                                     {isSelected && (
