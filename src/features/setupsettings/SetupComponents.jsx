@@ -1092,8 +1092,12 @@ export const AddSectorButton = ({ onSuccess, loadData, sectors, BasicButtonView 
     };
 
     const resetForm = (e) => {
-        e.preventDefault();  // Prevent default button behavior
-        e.stopPropagation(); // Stop event from bubbling up to parent elements
+        if (e && e.preventDefault) {
+            e.preventDefault();  // Only call if event exists and has preventDefault
+        }
+        if (e && e.stopPropagation) {
+            e.stopPropagation(); // Only call if event exists and has stopPropagation
+        }
 
         setFormData({ name: "", unit: "", created_by: sessionStorage.getItem('emp_code') });
         setWorkTypes([]);
@@ -1240,6 +1244,22 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
         return [];
     });
 
+    const handleClose = () => {
+        resetForm();
+        setShowModal(false)
+    };
+
+    const handleShow = (e) => {
+        e.preventDefault();
+
+        if (sector?.stage_work_types) {
+            setWorkTypes(sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
+        } else {
+            setWorkTypes([]);
+        }
+        setShowModal(true);
+    }
+
     const handleFormChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
@@ -1288,8 +1308,7 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
             })).unwrap();
 
             dispatch(showSnackbar({ message: "Sector updated successfully", type: "success" }));
-            setShowModal(false);
-            resetForm();
+            handleClose();
             if (onSuccess) onSuccess();
             if (loadData) loadData();
         } catch (error) {
@@ -1302,7 +1321,7 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
     return (
         <>
             <button
-                onClick={() => setShowModal(true)}
+                onClick={handleShow}
                 className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
                 title="Edit Sector"
             >
@@ -1311,7 +1330,7 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
 
             <SectorModalContent
                 isOpen={showModal}
-                onClose={() => { setShowModal(false); resetForm(); }}
+                onClose={handleClose}
                 onSubmit={handleSubmit}
                 editingSector={sector}
                 formData={formData}
@@ -1581,6 +1600,14 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
             newErrors.client_name = "Client name should only contain letters, spaces, hyphens, and apostrophes (max 50 characters)";
         }
 
+        // Client validations using centralized functions
+        if (!formData.client_code?.trim()) {
+            newErrors.client_code = "Client Code is required";
+        }
+        // else Code (!validateName(formData.client_code)) {
+        //     newErrors.client_code = "Client Code should only contain letters, spaces, hyphens, and apostrophes (max 50 characters)";
+        // }
+
         if (!formData.pan_no?.trim()) {
             newErrors.pan_no = "PAN number is required";
         } else if (!validatePAN(formData.pan_no)) {
@@ -1703,14 +1730,14 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                 <div>
                                     <div className="flex flex-row gap-1">
                                         <label className="text-sm font-medium text-gray-700 mb-1 block">
-                                            Client Code
+                                            Client Code<span className="text-red-500">*</span>
                                         </label>
-                                        <p className="text-xs text-gray-400 mt-1">Optional unique identifier</p>
+                                        <p className="text-xs text-gray-400 mt-1">Unique identifier</p>
                                     </div>
                                     <input
                                         type="text"
                                         placeholder="Unique Client Code (e.g., P0001)"
-                                        className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none uppercase"
+                                        className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                         value={formData.client_code}
                                         onChange={(e) => handleFormChange("client_code", e.target.value)}
                                         maxLength={20}
@@ -1744,7 +1771,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                     <input
                                         type="text"
                                         placeholder="Enter PAN number"
-                                        className={`w-full p-3 border ${errors.pan_no ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none uppercase`}
+                                        className={`w-full p-3 border ${errors.pan_no ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
                                         value={formData.pan_no}
                                         onChange={(e) => handleFormChange("pan_no", e.target.value)}
                                         maxLength={10}
@@ -1833,7 +1860,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-xs font-medium text-gray-700 mb-1 block">
-                                                        Branch Name *
+                                                        Branch Name<span className="text-red-500">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -1848,9 +1875,12 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-700 mb-1 block">
-                                                        GST Number *
-                                                    </label>
+                                                    <div className="flex flex-row gap-1">
+                                                        <label className="text-xs font-medium text-gray-700 mb-1 block">
+                                                            GST Number<span className="text-red-500">*</span>
+                                                        </label>
+                                                        <p className="text-xs text-gray-400 ">Format: 22AAAAA0000A1Z</p>
+                                                    </div>
                                                     <input
                                                         type="text"
                                                         placeholder="Enter GST Number"
@@ -1866,7 +1896,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-medium text-gray-700 mb-1 block">
-                                                        State *
+                                                        State<span className="text-red-500">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -1882,7 +1912,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-medium text-gray-700 mb-1 block">
-                                                        Status *
+                                                        Status<span className="text-red-500">*</span>
                                                     </label>
                                                     <select
                                                         className="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none w-full"

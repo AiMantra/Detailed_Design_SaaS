@@ -84,7 +84,7 @@ export const fetchUserWorkSummary = createAsyncThunk(
 // Save daily work log directly (no picking required)
 export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
-  async ({ projectId, subActivityId, date, startTime, endTime, note, status }, { getState, rejectWithValue }) => {
+  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status }, { getState, rejectWithValue }) => {
     try {
       const userUUID = getEmpCode();
 
@@ -125,6 +125,7 @@ export const saveDailyWorkLog = createAsyncThunk(
         start_time: startDateTime,
         end_time: endDateTime,
         duration: durationSeconds,
+        work_type: work_type,
         note: note || (status === 'WORKED' ? `Worked on task` : `No work done`)
       };
 

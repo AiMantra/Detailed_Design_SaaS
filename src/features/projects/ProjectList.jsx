@@ -105,6 +105,7 @@ const ProjectList = () => {
     date: new Date().toISOString().split('T')[0],
     startTime: '',
     endTime: '',
+    work_type: '',
     description: ''
   });
 
@@ -572,6 +573,14 @@ const ProjectList = () => {
       return;
     }
 
+    if (!timeLogData.work_type) {
+      dispatch(showSnackbar({
+        message: 'Please Select Work Type',
+        type: 'error'
+      }));
+      return;
+    }
+
     setIsSaving(true);
     try {
       await dispatch(saveDailyWorkLog({
@@ -580,6 +589,7 @@ const ProjectList = () => {
         date: timeLogData.date,
         startTime: timeLogData.startTime,
         endTime: timeLogData.endTime,
+        work_type: timeLogData.work_type,
         note: timeLogData.description,
         status: 'WORKED'
       })).unwrap();
@@ -594,6 +604,7 @@ const ProjectList = () => {
         date: timeLogData.date,
         startTime: timeLogData.startTime,
         endTime: timeLogData.endTime,
+        work_type: timeLogData.work_type,
         description: timeLogData.description
       };
       setWorkLogReturned((prev) => [...prev, mixedData]);
@@ -604,6 +615,7 @@ const ProjectList = () => {
         date: new Date().toISOString().split('T')[0],
         startTime: '',
         endTime: '',
+        work_type: '',
         description: ''
       });
 
@@ -1071,6 +1083,36 @@ const ProjectList = () => {
                   )}
                 </div>
               )}
+
+              {/* Work Type Dropdown - Dynamic from sector_detail.stage_work_types */}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Work Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={timeLogData.work_type || ""}
+                  onChange={(e) =>
+                    setTimeLogData({ ...timeLogData, work_type: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select work type</option>
+                  {/* You need to get the current project's sector_detail.stage_work_types */}
+                  {(() => {
+                    const workTypes = selectedTaskfortimelog.stage_work_types || [];
+                    if (workTypes.length > 0) {
+                      return workTypes.map((workType) => (
+                        <option key={workType.id} value={workType.id}>
+                          {workType.name}
+                        </option>
+                      ));
+                    } else {
+                      return <option value="" disabled>No work types available for this sector</option>;
+                    }
+                  })()}
+                </select>
+              </div>
 
               {/* Description */}
               <div className="mb-5">
@@ -2982,12 +3024,14 @@ const ProjectList = () => {
                                                                                     <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
                                                                                       disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
                                                                                       onClick={() => {
+
+
                                                                                         setSelectedTaskfortimelog({
                                                                                           id: sub.id,
                                                                                           project_id: project.id || project.project_id,
                                                                                           subactivity_name: sub.subactivity_name,
-                                                                                          project_name:
-                                                                                            project.shortName || project.short_name,
+                                                                                          project_name: project.shortName || project.short_name,
+                                                                                          stage_work_types: expandedProjectDetails[projectId].sector_detail?.stage_work_types || []
                                                                                         });
 
                                                                                         setTimeLogData({

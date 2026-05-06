@@ -39,7 +39,8 @@ const ActivityTable = ({ refreshKey }) => {
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
+        // hidden: { y: 20, opacity: 0 },
+        hidden: { y: 0, opacity: 1 },
         visible: { y: 0, opacity: 1, transition: { type: "spring", damping: 15, stiffness: 100 } }
     };
 
@@ -340,7 +341,7 @@ const CompaniesTable = ({ refreshKey }) => {
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
+        hidden: { y: 0, opacity: 1 },
         visible: { y: 0, opacity: 1 }
     };
 
@@ -479,7 +480,7 @@ const SectorsTableBackup = ({ refreshKey }) => {
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
+        hidden: { y: 0, opacity: 1 },
         visible: { y: 0, opacity: 1 }
     };
 
@@ -637,7 +638,8 @@ const SectorsTable = ({ refreshKey }) => {
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
+        // hidden: { y: 20, opacity: 0 },
+        hidden: { y: 0, opacity: 1 },
         visible: { y: 0, opacity: 1 }
     };
 
@@ -867,13 +869,13 @@ const SectorsTable = ({ refreshKey }) => {
                                                                 loadData={loadData}
                                                             />
                                                             {/* View Details Button - Always visible */}
-                                                            <ViewTimeStampDetailsButton
+                                                            {/* <ViewTimeStampDetailsButton
                                                                 data={metadata}
                                                                 title="Sector Details"
                                                                 className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600"
                                                             >
                                                                 <FileClock size={18} />
-                                                            </ViewTimeStampDetailsButton>
+                                                            </ViewTimeStampDetailsButton> */}
                                                         </div>
                                                     </td>
                                                 </motion.tr>
@@ -935,7 +937,7 @@ const ClientsTable = ({ refreshKey }) => {
     };
 
     const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
+        hidden: { y: 0, opacity: 1 },
         visible: { y: 0, opacity: 1 }
     };
 
