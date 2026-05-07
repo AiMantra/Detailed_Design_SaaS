@@ -1698,7 +1698,7 @@ const UpdateProject = () => {
                     const isStatusBased = unit === "status";
                     const subSortingVar = subObj?.sorting_var || 0;
 
-                    const isNewSub = subId.toString().startsWith('custom-sub-');
+                    const isNewSub = subId?.toString().startsWith('custom-sub-');
 
                     return {
                         // id: subId,
@@ -3604,7 +3604,6 @@ const UpdateProject = () => {
                             <label className="text-xs text-gray-500">Client *</label>
                             <div className="relative" ref={clientDropdownRef} onClick={(e) => e.stopPropagation()}>
                                 <Handshake className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-
                                 <input
                                     type="text"
                                     value={clientSearch}
@@ -3612,6 +3611,10 @@ const UpdateProject = () => {
                                     onFocus={() => setShowClientDropdown(true)}
                                     onChange={(e) => {
                                         setClientSearch(e.target.value);
+                                        setForm(prev => ({
+                                            ...prev,
+                                            clientbranch: ''
+                                        }));
                                         setShowClientDropdown(true);
                                     }}
                                     className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
@@ -3628,35 +3631,116 @@ const UpdateProject = () => {
                                     <Plus size={14} />
                                 </button> */}
 
+                                {/* Clear button */}
+                                {form.client && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setForm({
+                                                ...form,
+                                                client: '',
+                                                clientbranch: ''
+                                            });
+                                            setClientSearch('');
+                                            setShowClientDropdown(true);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                        title="Clear client"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
+                                {/* Dropdown with sorting and highlighting */}
                                 {showClientDropdown && (
-                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                        {(clientSearch
-                                            ? clients.filter((c) => c.client_name?.toLowerCase().includes(clientSearch?.toLowerCase()))
-                                            : clients
-                                        ).length > 0 ? (
-                                            (clientSearch
-                                                ? clients.filter((c) => c.client_name?.toLowerCase().includes(clientSearch?.toLowerCase()))
-                                                : clients
-                                            ).map((client) => (
-                                                <div
-                                                    key={client.id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setForm({
-                                                            ...form,
-                                                            client: client.id,
-                                                        });
-                                                        setClientSearch(`${client.client_name} - ${client.client_code || "N/A"}`);
-                                                        setShowClientDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    {client.client_name} - {client.client_code || "N/A"}
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                        }
+                                        }
+                                    >
+                                        {clientSearch && clients.filter(c =>
+                                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
+                                        ).length > 0 && (
+                                                <div className="px-3 py-2 border-t border-gray-100 text-xs text-gray-400 bg-gray-50">
+                                                    Showing {clients.filter(c =>
+                                                        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
+                                                    ).length} of {clients.length} clients
                                                 </div>
-                                            ))
+                                            )}
+                                        {clients.length > 0 ? (
+                                            [...clients].sort((a, b) => {
+                                                const aName = a.client_name || '';
+                                                const bName = b.client_name || '';
+                                                const searchTerm = clientSearch?.toLowerCase() || '';
+
+                                                const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
+                                                const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+
+                                                // Matching items come first
+                                                if (aMatches && !bMatches) return -1;
+                                                if (!aMatches && bMatches) return 1;
+
+                                                // For items with same match status, sort alphabetically
+                                                return aName.localeCompare(bName);
+                                            })
+                                                .map((client) => {
+                                                    const clientName = client.client_name || '';
+                                                    const clientCode = client.client_code || "N/A";
+                                                    const searchTerm = clientSearch?.toLowerCase() || '';
+                                                    const isMatching = searchTerm && clientName.toLowerCase().includes(searchTerm);
+
+                                                    // Function to highlight matching text
+                                                    const getHighlightedText = (text, highlight) => {
+                                                        if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
+                                                            return text;
+                                                        }
+
+                                                        const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                                                        const parts = text.split(regex);
+
+                                                        return parts.map((part, i) =>
+                                                            regex.test(part) ?
+                                                                <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
+                                                                part
+                                                        );
+                                                    };
+
+                                                    return (
+                                                        <div
+                                                            key={client.id}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setForm({
+                                                                    ...form,
+                                                                    client: client.id,
+                                                                    clientbranch: ''
+                                                                });
+                                                                setClientSearch(`${clientName} - ${clientCode}`);
+                                                                setShowClientDropdown(false);
+                                                            }}
+                                                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
+                                                                }`}
+                                                        >
+                                                            <div>
+                                                                {getHighlightedText(clientName, clientSearch)} - {clientCode}
+                                                            </div>
+                                                            {isMatching && (
+                                                                <div className="text-xs text-green-600 mt-0.5">
+                                                                    Press Enter to select
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
                                         ) : (
-                                            <div className="px-3 py-2 text-gray-400 text-sm">No Matching Clients</div>
+                                            <div className="px-3 py-2 text-gray-400 text-sm">
+                                                No Clients Available
+                                            </div>
                                         )}
+
                                     </div>
                                 )}
                             </div>
