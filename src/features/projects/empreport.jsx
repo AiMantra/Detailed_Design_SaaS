@@ -132,7 +132,8 @@ const TeamLeaderReport = () => {
                         inprogress_tasks: 0,
                         rejected_tasks: 0,
                         working_days: new Set(),
-                        projects: []
+                        projects: [],
+                        uniqueSubactivities: new Set() // Track unique subactivities per employee
                     });
                 }
 
@@ -155,6 +156,10 @@ const TeamLeaderReport = () => {
                             activityTotalSeconds += subSeconds;
                             userTotalSeconds += subSeconds;
                             userTotalTasks++;
+
+                            // Track unique subactivity
+                            const subKey = `${project.project_id}-${activity.activity_id}-${sub.subactivity_id}`;
+                            employee.uniqueSubactivities.add(subKey);
 
                             if (sub.status === 'Approved') userApprovedTasks++;
                             if (sub.status === 'Submitted') userSubmittedTasks++;
@@ -190,7 +195,7 @@ const TeamLeaderReport = () => {
                 userProject.total_seconds = userProject.activities.reduce((sum, act) => sum + act.total_seconds, 0);
                 employee.projects.push(userProject);
                 employee.total_seconds += userTotalSeconds;
-                employee.total_tasks += userTotalTasks;
+                employee.total_tasks = employee.uniqueSubactivities.size; // Use unique count
                 employee.approved_tasks += userApprovedTasks;
                 employee.submitted_tasks += userSubmittedTasks;
                 employee.inprogress_tasks += userInprogressTasks;
@@ -201,8 +206,8 @@ const TeamLeaderReport = () => {
         const employees = Array.from(employeesMap.values()).map(emp => ({
             ...emp,
             working_days: emp.working_days.size,
-            // Convert seconds to display format for initial load
-            total_hours_display: formatDuration(emp.total_seconds)
+            total_hours_display: formatDuration(emp.total_seconds),
+            uniqueSubactivities: undefined
         }));
 
         const totalSecondsAll = employees.reduce((sum, emp) => sum + emp.total_seconds, 0);
@@ -544,7 +549,7 @@ const TeamLeaderReport = () => {
                     </div>
                 </div>
                 <div className="bg-white rounded-xl p-5 shadow-md">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between cursor-help" title='Seprate Task Based on Employee Logs'>
                         <div>
                             <p className="text-sm text-gray-500 mb-1">Total Tasks</p>
                             <p className="text-3xl font-bold text-gray-800">{filteredStats.totalTasks}</p>
@@ -663,7 +668,10 @@ const TeamLeaderReport = () => {
 
                                 return (
                                     <Fragment key={employee.emp_code}>
-                                        <tr className="hover:bg-gray-50 transition-colors">
+                                        <tr
+                                            className="cursor-pointer hover:bg-gray-50 transition-colors"
+                                            onClick={() => setExpandedEmployee(isExpanded ? null : employee.emp_code)}
+                                        >
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -832,16 +840,49 @@ const TeamLeaderReport = () => {
                                                                                                         <div className="space-y-1">
                                                                                                             {sub.date_wise.map((dateLog, idx) => {
                                                                                                                 const logSeconds = timeToSeconds(dateLog.time_spent);
+                                                                                                                const totalLogSeconds = dateLog.logs?.reduce((total, log) => {
+                                                                                                                    return total + timeToSeconds(log.time_spent);
+                                                                                                                }, 0) || 0;
+
                                                                                                                 return (
-                                                                                                                    <div key={idx} className="flex justify-between items-center p-2 bg-white rounded border border-gray-100">
-                                                                                                                        <div className="flex items-center gap-2">
-                                                                                                                            <CalendarDays size={12} className="text-gray-400" />
-                                                                                                                            <span className="text-sm text-gray-700">{formatDate(dateLog.date)}</span>
+                                                                                                                    <div key={idx} className="border border-gray-100 rounded-lg overflow-hidden">
+                                                                                                                        {/* Date header */}
+                                                                                                                        <div className="flex justify-between items-center p-2 bg-white">
+                                                                                                                            <div className="flex items-center gap-2">
+                                                                                                                                <CalendarDays size={12} className="text-gray-400" />
+                                                                                                                                <span className="text-sm font-medium text-gray-700">
+                                                                                                                                    {formatDate(dateLog.date)}
+                                                                                                                                </span>
+                                                                                                                            </div>
+                                                                                                                            <div className="flex items-center gap-2">
+                                                                                                                                <Clock size={12} className="text-gray-400" />
+                                                                                                                                <span className="text-sm font-semibold text-blue-600">
+                                                                                                                                    {formatDuration(timeToSeconds(dateLog.total_time_spent))}
+                                                                                                                                </span>
+                                                                                                                            </div>
                                                                                                                         </div>
-                                                                                                                        <div className="flex items-center gap-2">
-                                                                                                                            <Clock size={12} className="text-gray-400" />
-                                                                                                                            <span className="text-sm font-medium text-blue-600">{formatDuration(logSeconds)}</span>
-                                                                                                                        </div>
+
+                                                                                                                        {/* Individual logs for this date */}
+                                                                                                                        {dateLog.logs && dateLog.logs.length > 0 && (
+                                                                                                                            <div className="border-t border-gray-100 bg-gray-50/50 p-2 space-y-1">
+                                                                                                                                {dateLog.logs.map((log, logIdx) => (
+                                                                                                                                    <div key={logIdx} className="flex justify-between items-center text-xs">
+                                                                                                                                        <div className="flex gap-1">
+                                                                                                                                            {log.work_type && (
+                                                                                                                                                <span className="text-gray-400">({log.work_type})</span>
+                                                                                                                                            )}
+                                                                                                                                            {log.description && (
+                                                                                                                                                <span className="text-gray-600">{log.description}</span>
+                                                                                                                                            )}
+                                                                                                                                        </div>
+                                                                                                                                        <span className="font-mono text-gray-700 ml-2">
+                                                                                                                                            {formatDuration(timeToSeconds(log.time_spent))}
+                                                                                                                                            {/* {((log.time_spent))} */}
+                                                                                                                                        </span>
+                                                                                                                                    </div>
+                                                                                                                                ))}
+                                                                                                                            </div>
+                                                                                                                        )}
                                                                                                                     </div>
                                                                                                                 );
                                                                                                             })}

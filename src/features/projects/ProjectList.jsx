@@ -1672,6 +1672,8 @@ const ProjectList = () => {
                 <p className="text-sm opacity-90">Completed</p>
               </motion.div>
 
+              {/* <hr /> */}
+
               {/* Critical - Warning/Urgent */}
               <motion.div
                 variants={itemVariants}

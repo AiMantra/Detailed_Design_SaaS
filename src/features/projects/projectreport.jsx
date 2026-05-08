@@ -31,6 +31,11 @@ import {
     Download,
     Maximize2,
     Minimize2,
+    PauseCircle,
+    CheckCheck,
+    Clipboard,
+    ClipboardList,
+    ClipboardCheck,
 } from "lucide-react";
 import { fetchProjectReport } from "../tasks/taskSlice";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
@@ -141,12 +146,22 @@ const ProjectReport = () => {
                     totalEmployees: 0,
                     totalHours: 0,
                     totalTasks: 0,
+                    // statusBreakdown: {
+                    //     Approved: 0,
+                    //     Submitted: 0,
+                    //     Inprogress: 0,
+                    //     Rejected: 0,
+                    // },
                     statusBreakdown: {
-                        Approved: 0,
-                        Submitted: 0,
+                        Pending: 0,
                         Inprogress: 0,
+                        Submitted: 0,
                         Rejected: 0,
-                    },
+                        Approved: 0,
+                        Completed: 0,
+                        OnHold: 0,
+                    }
+
                 },
                 allEmployees: [],
                 allActivities: [],
@@ -157,22 +172,43 @@ const ProjectReport = () => {
         const allEmployeesMap = new Map();
         let totalHoursInSeconds = 0;
         let totalTasks = 0;
+
+        // const globalStatusCount = {
+        //     Approved: 0,
+        //     Submitted: 0,
+        //     Inprogress: 0,
+        //     Rejected: 0,
+        // };
         const globalStatusCount = {
-            Approved: 0,
-            Submitted: 0,
+            Pending: 0,
             Inprogress: 0,
+            Submitted: 0,
             Rejected: 0,
+            Approved: 0,
+            Completed: 0,
+            OnHold: 0,
         };
 
         const processedProjects = projects.map((project) => {
             let projectTotalSeconds = 0;
             let projectTotalTasks = 0;
+            // const projectStatusCount = {
+            //     Approved: 0,
+            //     Submitted: 0,
+            //     Inprogress: 0,
+            //     Rejected: 0,
+            // };
             const projectStatusCount = {
-                Approved: 0,
-                Submitted: 0,
+                Pending: 0,
                 Inprogress: 0,
+                Submitted: 0,
                 Rejected: 0,
+                Approved: 0,
+                Completed: 0,
+                OnHold: 0,
             };
+
+
             const projectEmployeesMap = new Map();
 
             const processedActivities = (project.activities || []).map((activity) => {
@@ -189,12 +225,12 @@ const ProjectReport = () => {
                             subTotalSeconds += userSeconds;
                             projectTotalSeconds += userSeconds;
                             totalHoursInSeconds += userSeconds;
-                            projectTotalTasks++;
-                            totalTasks++;
-                            projectStatusCount[sub.status] =
-                                (projectStatusCount[sub.status] || 0) + 1;
-                            globalStatusCount[sub.status] =
-                                (globalStatusCount[sub.status] || 0) + 1;
+                            // projectTotalTasks++;
+                            // totalTasks++;
+                            // projectStatusCount[sub.status] =
+                            //     (projectStatusCount[sub.status] || 0) + 1;
+                            // globalStatusCount[sub.status] =
+                            //     (globalStatusCount[sub.status] || 0) + 1;
 
                             // Track employees globally
                             if (!allEmployeesMap.has(user.emp_code)) {
@@ -204,12 +240,22 @@ const ProjectReport = () => {
                                     total_hours_in_seconds: 0,
                                     total_tasks: 0,
                                     projects: new Set(),
+                                    // statusBreakdown: {
+                                    //     Approved: 0,
+                                    //     Submitted: 0,
+                                    //     Inprogress: 0,
+                                    //     Rejected: 0,
+                                    // },
                                     statusBreakdown: {
-                                        Approved: 0,
-                                        Submitted: 0,
+                                        Pending: 0,
                                         Inprogress: 0,
+                                        Submitted: 0,
                                         Rejected: 0,
-                                    },
+                                        Approved: 0,
+                                        Completed: 0,
+                                        OnHold: 0,
+                                    }
+
                                 });
                             }
                             const globalEmp = allEmployeesMap.get(user.emp_code);
@@ -256,6 +302,12 @@ const ProjectReport = () => {
 
                         activityTotalSeconds += subTotalSeconds;
 
+                        projectTotalTasks++;
+                        totalTasks++;
+
+                        projectStatusCount[sub.status] = (projectStatusCount[sub.status] || 0) + 1;
+                        globalStatusCount[sub.status] = (globalStatusCount[sub.status] || 0) + 1;
+
                         return {
                             subactivity_id: sub.subactivity_id,
                             subactivity_name: sub.subactivity_name,
@@ -277,20 +329,30 @@ const ProjectReport = () => {
                     total_hours_in_seconds: activityTotalSeconds,
                     total_hours_formatted: formatSecondsToDuration(activityTotalSeconds),
                     subactivities: processedSubactivities,
+                    // statusCount: {
+                    //     Approved: processedSubactivities.filter(
+                    //         (s) => s.status === "Approved",
+                    //     ).length,
+                    //     Submitted: processedSubactivities.filter(
+                    //         (s) => s.status === "Submitted",
+                    //     ).length,
+                    //     Inprogress: processedSubactivities.filter(
+                    //         (s) => s.status === "Inprogress",
+                    //     ).length,
+                    //     Rejected: processedSubactivities.filter(
+                    //         (s) => s.status === "Rejected",
+                    //     ).length,
+                    // },
+
                     statusCount: {
-                        Approved: processedSubactivities.filter(
-                            (s) => s.status === "Approved",
-                        ).length,
-                        Submitted: processedSubactivities.filter(
-                            (s) => s.status === "Submitted",
-                        ).length,
-                        Inprogress: processedSubactivities.filter(
-                            (s) => s.status === "Inprogress",
-                        ).length,
-                        Rejected: processedSubactivities.filter(
-                            (s) => s.status === "Rejected",
-                        ).length,
-                    },
+                        Pending: processedSubactivities.filter((s) => s.status === "Pending").length,
+                        Inprogress: processedSubactivities.filter((s) => s.status === "Inprogress").length,
+                        Submitted: processedSubactivities.filter((s) => s.status === "Submitted").length,
+                        Rejected: processedSubactivities.filter((s) => s.status === "Rejected").length,
+                        Approved: processedSubactivities.filter((s) => s.status === "Approved").length,
+                        Completed: processedSubactivities.filter((s) => s.status === "Completed").length,
+                        OnHold: processedSubactivities.filter((s) => s.status === "OnHold").length,
+                    }
                 };
             });
 
@@ -428,21 +490,39 @@ const ProjectReport = () => {
         let filteredTotalSeconds = 0;
         let filteredTotalTasks = 0;
         const filteredStatusBreakdown = {
-            Approved: 0,
-            Submitted: 0,
+            // Approved: 0,
+            // Submitted: 0,
+            // Inprogress: 0,
+            // Rejected: 0,
+            Pending: 0,
             Inprogress: 0,
+            Submitted: 0,
             Rejected: 0,
+            Approved: 0,
+            Completed: 0,
+            OnHold: 0,
         };
+
+        // filteredProjects.forEach((project) => {
+        //     filteredTotalSeconds += project.total_hours_in_seconds;
+        //     filteredTotalTasks += project.total_tasks;
+        //     filteredStatusBreakdown.Approved += project.statusBreakdown.Approved;
+        //     filteredStatusBreakdown.Submitted += project.statusBreakdown.Submitted;
+        //     filteredStatusBreakdown.Inprogress += project.statusBreakdown.Inprogress;
+        //     filteredStatusBreakdown.Rejected += project.statusBreakdown.Rejected;
+        // });
 
         filteredProjects.forEach((project) => {
             filteredTotalSeconds += project.total_hours_in_seconds;
             filteredTotalTasks += project.total_tasks;
-            filteredStatusBreakdown.Approved += project.statusBreakdown.Approved;
-            filteredStatusBreakdown.Submitted += project.statusBreakdown.Submitted;
-            filteredStatusBreakdown.Inprogress += project.statusBreakdown.Inprogress;
-            filteredStatusBreakdown.Rejected += project.statusBreakdown.Rejected;
+            filteredStatusBreakdown.Pending += project.statusBreakdown.Pending || 0;
+            filteredStatusBreakdown.Inprogress += project.statusBreakdown.Inprogress || 0;
+            filteredStatusBreakdown.Submitted += project.statusBreakdown.Submitted || 0;
+            filteredStatusBreakdown.Rejected += project.statusBreakdown.Rejected || 0;
+            filteredStatusBreakdown.Approved += project.statusBreakdown.Approved || 0;
+            filteredStatusBreakdown.Completed += project.statusBreakdown.Completed || 0;
+            filteredStatusBreakdown.OnHold += project.statusBreakdown.OnHold || 0;
         });
-
         return {
             projects: filteredProjects,
             filteredStats: {
@@ -478,6 +558,21 @@ const ProjectReport = () => {
         selectedStatus !== "all" ||
         selectedEmployee !== "all";
 
+    // const getStatusColor = (status) => {
+    //     switch (status) {
+    //         case "Approved":
+    //             return "bg-green-100 text-green-800 border-green-200";
+    //         case "Submitted":
+    //             return "bg-blue-100 text-blue-800 border-blue-200";
+    //         case "Inprogress":
+    //             return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    //         case "Rejected":
+    //             return "bg-red-100 text-red-800 border-red-200";
+    //         default:
+    //             return "bg-gray-100 text-gray-800 border-gray-200";
+    //     }
+    // };
+
     const getStatusColor = (status) => {
         switch (status) {
             case "Approved":
@@ -488,10 +583,31 @@ const ProjectReport = () => {
                 return "bg-yellow-100 text-yellow-800 border-yellow-200";
             case "Rejected":
                 return "bg-red-100 text-red-800 border-red-200";
+            case "Completed":
+                return "bg-emerald-100 text-emerald-800 border-emerald-200";
+            case "Pending":
+                return "bg-gray-100 text-gray-800 border-gray-200";
+            case "OnHold":
+                return "bg-orange-100 text-orange-800 border-orange-200";
             default:
                 return "bg-gray-100 text-gray-800 border-gray-200";
         }
     };
+
+    // const getStatusIcon = (status) => {
+    //     switch (status) {
+    //         case "Approved":
+    //             return <CheckCircle size={14} className="text-green-600" />;
+    //         case "Submitted":
+    //             return <FileText size={14} className="text-blue-600" />;
+    //         case "Inprogress":
+    //             return <Activity size={14} className="text-yellow-600" />;
+    //         case "Rejected":
+    //             return <XCircle size={14} className="text-red-600" />;
+    //         default:
+    //             return null;
+    //     }
+    // };
 
     const getStatusIcon = (status) => {
         switch (status) {
@@ -503,6 +619,12 @@ const ProjectReport = () => {
                 return <Activity size={14} className="text-yellow-600" />;
             case "Rejected":
                 return <XCircle size={14} className="text-red-600" />;
+            case "Completed":
+                return <CheckCheck size={14} className="text-emerald-600" />;
+            case "Pending":
+                return <Clock size={14} className="text-gray-600" />;
+            case "OnHold":
+                return <PauseCircle size={14} className="text-orange-600" />;
             default:
                 return null;
         }
@@ -702,7 +824,7 @@ const ProjectReport = () => {
                                         : reportData.totalStats.totalTasks}
                                 </p>
                                 <p className="text-xs text-gray-400 mt-1">
-                                    Sub-activities completed
+                                    Sub-activities Performed
                                 </p>
                             </div>
                             <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center">
@@ -712,8 +834,200 @@ const ProjectReport = () => {
                     </motion.div>
                 </div>
 
+                {/* Status Distribution Cards - All 7 Statuses */}
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                    {/* <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-700 font-medium">Pending</p>
+                                <p className="text-2xl font-bold text-gray-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Pending || 0
+                                        : reportData.totalStats.statusBreakdown.Pending || 0}
+                                </p>
+                            </div>
+                            <Clock size={28} className="text-gray-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gray-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Pending || 0
+                                        : reportData.totalStats.statusBreakdown.Pending || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div> */}
+
+                    <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-yellow-700 font-medium">In Progress</p>
+                                <p className="text-2xl font-bold text-yellow-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Inprogress || 0
+                                        : reportData.totalStats.statusBreakdown.Inprogress || 0}
+                                </p>
+                            </div>
+                            <Activity size={28} className="text-yellow-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-yellow-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-yellow-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Inprogress || 0
+                                        : reportData.totalStats.statusBreakdown.Inprogress || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-blue-700 font-medium">Submitted</p>
+                                <p className="text-2xl font-bold text-blue-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Submitted || 0
+                                        : reportData.totalStats.statusBreakdown.Submitted || 0}
+                                </p>
+                            </div>
+                            <ClipboardList size={28} className="text-blue-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-blue-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Submitted || 0
+                                        : reportData.totalStats.statusBreakdown.Submitted || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-green-700 font-medium">Approved</p>
+                                <p className="text-2xl font-bold text-green-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Approved || 0
+                                        : reportData.totalStats.statusBreakdown.Approved || 0}
+                                </p>
+                            </div>
+                            <CheckCircle size={28} className="text-green-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-green-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-green-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Approved || 0
+                                        : reportData.totalStats.statusBreakdown.Approved || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-violet-50 to-violet-100 rounded-xl p-4 border border-violet-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-violet-700 font-medium">Completed</p>
+                                <p className="text-2xl font-bold text-violet-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Completed || 0
+                                        : reportData.totalStats.statusBreakdown.Completed || 0}
+                                </p>
+                            </div>
+                            <CheckCheck size={28} className="text-violet-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-violet-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-violet-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Completed || 0
+                                        : reportData.totalStats.statusBreakdown.Completed || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-red-700 font-medium">Rejected</p>
+                                <p className="text-2xl font-bold text-red-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Rejected || 0
+                                        : reportData.totalStats.statusBreakdown.Rejected || 0}
+                                </p>
+                            </div>
+                            <XCircle size={28} className="text-red-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-red-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-red-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.Rejected || 0
+                                        : reportData.totalStats.statusBreakdown.Rejected || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-orange-700 font-medium">On Hold</p>
+                                <p className="text-2xl font-bold text-orange-800">
+                                    {hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.OnHold || 0
+                                        : reportData.totalStats.statusBreakdown.OnHold || 0}
+                                </p>
+                            </div>
+                            <PauseCircle size={28} className="text-orange-600" />
+                        </div>
+                        <div className="mt-2 h-1.5 bg-orange-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-orange-500 rounded-full"
+                                style={{
+                                    width: `${((hasActiveFilters
+                                        ? filteredData.filteredStats.statusBreakdown.OnHold || 0
+                                        : reportData.totalStats.statusBreakdown.OnHold || 0) /
+                                        (hasActiveFilters
+                                            ? filteredData.filteredStats.totalTasks
+                                            : reportData.totalStats.totalTasks)) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div> */}
+                </div>
+
                 {/* Status Distribution Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
                         <div className="flex items-center justify-between">
                             <div>
@@ -831,7 +1145,7 @@ const ProjectReport = () => {
                             />
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Filters Bar */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 mb-6">
@@ -883,12 +1197,17 @@ const ProjectReport = () => {
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
                             className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
+
                         >
                             <option value="all">🎯 All Status</option>
                             <option value="Approved">✅ Approved</option>
                             <option value="Submitted">📤 Submitted</option>
                             <option value="Inprogress">⏳ In Progress</option>
                             <option value="Rejected">❌ Rejected</option>
+
+                            {/* <option value="Completed">✨ Completed</option>
+                            <option value="Pending">🕐 Pending</option>
+                            <option value="OnHold">⏸ On Hold</option> */}
                         </select>
                     </div>
                 </div>
@@ -961,7 +1280,7 @@ const ProjectReport = () => {
                                                     {project.total_hours_formatted} total hours
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                    <FileText size={14} className="text-blue-500" />
+                                                    <ClipboardList size={14} className="text-blue-500" />
                                                     {project.total_tasks} total tasks
                                                 </span>
                                                 <span className="flex items-center gap-1">
@@ -975,7 +1294,7 @@ const ProjectReport = () => {
                                             {/* Quick Stats Circles */}
                                             <div className="flex gap-3">
                                                 {project.statusBreakdown.Approved > 0 && (
-                                                    <div className="text-center">
+                                                    <div className="text-center" title={`${project.statusBreakdown.Approved} Approved Task(s)`}>
                                                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                                             <CheckCircle
                                                                 size={18}
@@ -988,9 +1307,9 @@ const ProjectReport = () => {
                                                     </div>
                                                 )}
                                                 {project.statusBreakdown.Submitted > 0 && (
-                                                    <div className="text-center">
-                                                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                            <FileText size={18} className="text-blue-600" />
+                                                    <div className="text-center" title={`${project.statusBreakdown.Submitted} Submitted Task(s)`}>
+                                                        <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center">
+                                                            <CheckCheck size={18} className="text-violet-600" />
                                                         </div>
                                                         <p className="text-xs font-medium text-gray-600 mt-1">
                                                             {project.statusBreakdown.Submitted}
@@ -998,7 +1317,7 @@ const ProjectReport = () => {
                                                     </div>
                                                 )}
                                                 {project.statusBreakdown.Inprogress > 0 && (
-                                                    <div className="text-center">
+                                                    <div className="text-center" title={`${project.statusBreakdown.Inprogress} InProgress Task(s)`}>
                                                         <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
                                                             <Activity size={18} className="text-yellow-600" />
                                                         </div>
@@ -1080,17 +1399,17 @@ const ProjectReport = () => {
                                                                     <div className="flex items-center gap-4">
                                                                         <div className="flex gap-2">
                                                                             {activity.statusCount.Approved > 0 && (
-                                                                                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg">
+                                                                                <span title={`${activity.statusCount.Approved} Approved Task(s)`} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg">
                                                                                     ✓ {activity.statusCount.Approved}
                                                                                 </span>
                                                                             )}
                                                                             {activity.statusCount.Submitted > 0 && (
-                                                                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
+                                                                                <span title={`${activity.statusCount.Submitted} Submitted Task(s)`} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
                                                                                     📤 {activity.statusCount.Submitted}
                                                                                 </span>
                                                                             )}
                                                                             {activity.statusCount.Inprogress > 0 && (
-                                                                                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">
+                                                                                <span title={`${activity.statusCount.Inprogress} InProgress Task(s)`} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">
                                                                                     ⏳ {activity.statusCount.Inprogress}
                                                                                 </span>
                                                                             )}

@@ -604,6 +604,24 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
         pan_no: company?.pan_no || "",
     });
 
+
+    const handleShow = (e) => {
+        e.preventDefault();
+
+        setFormData({
+            name: company?.name || "",
+            gst_no: company?.gst_no || "",
+            pan_no: company?.pan_no || "",
+        });
+
+        setShowModal(true);
+    }
+
+    const handleClose = () => {
+        resetForm();
+        setShowModal(false)
+    };
+
     const handleFormChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
@@ -674,8 +692,7 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
                     type: "success",
                 }),
             );
-            setShowModal(false);
-            resetForm();
+            handleClose();
             if (onSuccess) onSuccess();
             if (loadData) loadData();
         } catch (error) {
@@ -693,7 +710,7 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
     return (
         <>
             <button
-                onClick={() => setShowModal(true)}
+                onClick={handleShow}
                 className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
                 title="Edit Company"
             >
@@ -702,10 +719,7 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
 
             <CompanyModalContent
                 isOpen={showModal}
-                onClose={() => {
-                    setShowModal(false);
-                    resetForm();
-                }}
+                onClose={handleClose}
                 onSubmit={handleSubmit}
                 editingCompany={company}
                 formData={formData}
@@ -1244,13 +1258,15 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
         return [];
     });
 
-    const handleClose = () => {
-        resetForm();
-        setShowModal(false)
-    };
-
     const handleShow = (e) => {
         e.preventDefault();
+
+        setFormData({
+            id: sector?.id || "",
+            name: sector?.name || "",
+            unit: sector?.unit || "",
+            updated_by: sessionStorage.getItem('emp_code')
+        });
 
         if (sector?.stage_work_types) {
             setWorkTypes(sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
@@ -1259,6 +1275,11 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
         }
         setShowModal(true);
     }
+
+    const handleClose = () => {
+        resetForm();
+        setShowModal(false)
+    };
 
     const handleFormChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -2570,16 +2591,10 @@ const SubActivityModalContent = ({
     title,
 }) => {
     const unitOptions = [
-        "Kilometer",
-        "Meter",
-        "Square Meter",
-        "Cubic Meter",
-        "Numbers",
-        "Lump Sum",
         "Percentage",
+        "Kilometer",
+        "Numbers",
         "Status",
-        "Hour",
-        "Day",
     ];
 
     return (

@@ -553,12 +553,12 @@ const UpdateProject = () => {
                 activitySubs.delete(subId);
             }
 
-
             const newSelectedSubs = Array.from(activitySubs);
 
             // Recalculate weightage for this activity based on selected sub-activities
             const activityObj = getAllActivities().find(a => a.id === activityId);
-            if (activityObj) {
+            // if (activityObj) {
+            if (activityObj && selectedActivities.includes(activityId)) {
                 let totalWeightage = 0;
 
                 newSelectedSubs.forEach(selectedSubId => {
@@ -665,21 +665,27 @@ const UpdateProject = () => {
             for (const activity of allActivities) {
                 const subExists = activity.subActivities.some(s => s.id === subId);
                 if (subExists) {
-                    const selectedSubs = selectedSubActivities[activity.id] || [];
-                    if (selectedSubs.includes(subId)) {
-                        let totalWeightage = 0;
-                        selectedSubs.forEach(selectedSubId => {
-                            const subObj = activity.subActivities.find(s => s.id === selectedSubId);
-                            if (subObj) {
-                                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-                                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-                                totalWeightage += submissionPayment + approvalPayment;
-                            }
-                        });
-                        setActivityWeightages(prev => ({
-                            ...prev,
-                            [activity.id]: totalWeightage
-                        }));
+                    // Check if this activity is selected
+                    const isActivitySelected = selectedActivities.includes(activity.id);
+                    if (isActivitySelected) {
+                        // Check if this sub-activity is selected
+                        const selectedSubs = selectedSubActivities[activity.id] || [];
+                        if (selectedSubs.includes(subId)) {
+                            let totalWeightage = 0;
+                            selectedSubs.forEach(selectedSubId => {
+                                const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                                if (subObj) {
+                                    const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                                    const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                                    totalWeightage += submissionPayment + approvalPayment;
+                                }
+                            });
+                            console.log(`Recalculated weightage for activity ${activity.id}: ${totalWeightage}%`);
+                            setActivityWeightages(prev => ({
+                                ...prev,
+                                [activity.id]: totalWeightage
+                            }));
+                        }
                     }
                     break;
                 }
@@ -1030,19 +1036,34 @@ const UpdateProject = () => {
         const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
         if (subObj) {
-            setCloningSubActivity({
+            // Preserve ALL properties for multiple sub-activities
+            const cloneData = {
                 activityId,
                 sourceSubId: subId,
                 subactivity_name: subObj.subactivity_name,
                 unit: subObj.unit,
-                activityType: subObj.activityType || "single",
-                chainage_start: subObj.chainage_start || "",
-                covered_area: subObj.covered_area || "",
-                chainage_quantity: subObj.chainage_quantity || "",
-                lengthType: subObj.lengthType || "same",
-                chainageLengths: subObj.chainageLengths || [],
+                activityType: subObj.activityType || (subObj.chainage_start ? "multiple" : "single"),
                 isCustom: true,
-            });
+            };
+
+            // Only add chainage properties if it's a multiple type
+            if (cloneData.activityType === "multiple") {
+                cloneData.chainage_start = subObj.chainage_start || "";
+                cloneData.covered_area = subObj.covered_area || "";
+                cloneData.chainage_quantity = subObj.chainage_quantity || "";
+                cloneData.lengthType = subObj.lengthType || "same";
+                // Make sure to properly copy chainageLengths array
+                cloneData.chainageLengths = subObj.chainageLengths ? [...subObj.chainageLengths] : [];
+            } else {
+                // For single type, set default values
+                cloneData.chainage_start = "";
+                cloneData.covered_area = "";
+                cloneData.chainage_quantity = "";
+                cloneData.lengthType = "same";
+                cloneData.chainageLengths = [];
+            }
+
+            setCloningSubActivity(cloneData);
             setShowCloneSubActivityModal(true);
         }
     };
@@ -1648,8 +1669,19 @@ const UpdateProject = () => {
             if (!selectedSubs.length) {
                 return showError(`Please select at least one sub-activity for ${activityLabel}`);
             }
+
+            // Check unit selection for each selected sub-activity
+            for (const subId of selectedSubs) {
+                const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+                if (subObj && (!subObj.unit || subObj.unit === "")) {
+                    return showError(
+                        `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
+                    );
+                }
+            }
         }
 
+        // 🔹 Global Date Validation
         if (!validateDates()) {
             return false;
         }
@@ -2007,6 +2039,7 @@ const UpdateProject = () => {
                                 />
                                 <input
                                     type="number"
+                                    onWheel={(e) => e.target.blur()}
                                     placeholder="Contact Number"
                                     className="p-3 border rounded-xl"
                                     value={newClient.contact}
@@ -2402,6 +2435,7 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
+                                                    onWheel={(e) => e.target.blur()}
                                                     step="0.01"
                                                     placeholder="0.00"
                                                     value={newSubActivity.chainage_start}
@@ -2422,6 +2456,7 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
+                                                    onWheel={(e) => e.target.blur()}
                                                     min="1"
                                                     placeholder="Enter quantity"
                                                     value={newSubActivity.chainage_quantity}
@@ -2492,6 +2527,7 @@ const UpdateProject = () => {
                                                         </label>
                                                         <input
                                                             type="number"
+                                                            onWheel={(e) => e.target.blur()}
                                                             step="0.01"
                                                             placeholder="Enter length"
                                                             value={newSubActivity.covered_area}
@@ -2563,6 +2599,7 @@ const UpdateProject = () => {
                                                                             <div className="col-span-5">
                                                                                 <input
                                                                                     type="number"
+                                                                                    onWheel={(e) => e.target.blur()}
                                                                                     step="0.01"
                                                                                     placeholder="Length"
                                                                                     value={
@@ -2796,6 +2833,7 @@ const UpdateProject = () => {
                                         <select
                                             value={cloningSubActivity.unit}
                                             disabled
+                                            required
                                             className="w-full p-3 border rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
                                         >
                                             {UNIT_OPTIONS.map((option) => (
@@ -2816,9 +2854,10 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
+                                                    onWheel={(e) => e.target.blur()}
                                                     step="0.01"
                                                     placeholder="0.00"
-                                                    value={cloningSubActivity.chainage_start}
+                                                    value={cloningSubActivity.chainage_start || ""}
                                                     onChange={(e) =>
                                                         setCloningSubActivity({
                                                             ...cloningSubActivity,
@@ -2836,15 +2875,16 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
+                                                    onWheel={(e) => e.target.blur()}
                                                     min="1"
                                                     placeholder="Enter quantity"
-                                                    value={cloningSubActivity.chainage_quantity}
+                                                    value={cloningSubActivity.chainage_quantity || ""}
                                                     onChange={(e) => {
                                                         const qty = e.target.value;
                                                         setCloningSubActivity({
                                                             ...cloningSubActivity,
                                                             chainage_quantity: qty,
-                                                            chainageLengths: new Array(Number(qty)).fill(""),
+                                                            chainageLengths: qty ? new Array(Number(qty)).fill("") : [],
                                                         });
                                                     }}
                                                     className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
@@ -2908,6 +2948,7 @@ const UpdateProject = () => {
                                                         </label>
                                                         <input
                                                             type="number"
+                                                            onWheel={(e) => e.target.blur()}
                                                             step="0.01"
                                                             placeholder="Enter length"
                                                             value={cloningSubActivity.covered_area}
@@ -2979,6 +3020,7 @@ const UpdateProject = () => {
                                                                             <div className="col-span-5">
                                                                                 <input
                                                                                     type="number"
+                                                                                    onWheel={(e) => e.target.blur()}
                                                                                     step="0.01"
                                                                                     placeholder="Length"
                                                                                     value={
@@ -3401,6 +3443,7 @@ const UpdateProject = () => {
                                             />
                                             <input
                                                 type="number"
+                                                onWheel={(e) => e.target.blur()}
                                                 placeholder="Quantity"
                                                 value={editingSubActivity.chainage_quantity}
                                                 onChange={(e) =>
@@ -3956,6 +3999,7 @@ const UpdateProject = () => {
                                 <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="number"
+                                    onWheel={(e) => e.target.blur()}
                                     name="total_length"
                                     step="0.01"
                                     value={form.total_length}
@@ -3974,6 +4018,7 @@ const UpdateProject = () => {
                                 <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="number"
+                                    onWheel={(e) => e.target.blur()}
                                     name="workorder_Amount"
                                     value={form.workorder_Amount}
                                     onChange={handleChange}
@@ -3989,6 +4034,7 @@ const UpdateProject = () => {
                                 <BadgePercent className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="number"
+                                    onWheel={(e) => e.target.blur()}
                                     name="igst_percentage"
                                     step="0.1"
                                     min="0"
@@ -4186,7 +4232,15 @@ const UpdateProject = () => {
                                                         delete newState[activity.id];
                                                         return newState;
                                                     });
-                                                    setActivityDates((prev) => {
+
+                                                    // setActivityDates((prev) => {
+                                                    //     const newState = { ...prev };
+                                                    //     delete newState[activity.id];
+                                                    //     return newState;
+                                                    // });
+
+                                                    // Clear selected sub-activities for this activity
+                                                    setSelectedSubActivities((prev) => {
                                                         const newState = { ...prev };
                                                         delete newState[activity.id];
                                                         return newState;
@@ -4194,11 +4248,29 @@ const UpdateProject = () => {
                                                 } else {
                                                     setSelectedActivities((prev) => [...prev, activity.id]);
 
-                                                    // Initialize weightage for the activity
+                                                    // Auto-select ALL sub-activities when adding activity
+                                                    const allSubIds = activity.subActivities.map((sub) => sub.id);
                                                     setActivityWeightages((prev) => ({
                                                         ...prev,
-                                                        [activity.id]: 0
+                                                        [activity.id]: allSubIds,
                                                     }));
+
+                                                    // Recalculate weightage for this activity based on all selected sub-activities
+                                                    let totalWeightage = 0;
+                                                    allSubIds.forEach(selectedSubId => {
+                                                        const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                                                        if (subObj) {
+                                                            const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                                                            const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                                                            totalWeightage += submissionPayment + approvalPayment;
+                                                        }
+                                                    });
+
+                                                    setActivityWeightages(prev => ({
+                                                        ...prev,
+                                                        [activity.id]: totalWeightage
+                                                    }));
+
                                                 }
                                             }}
                                             className={`cursor-pointer p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all shadow-sm ${isSelected
@@ -4338,6 +4410,7 @@ const UpdateProject = () => {
                                                                 <div className="relative">
                                                                     <input
                                                                         type="number"
+                                                                        onWheel={(e) => e.target.blur()}
                                                                         min="0"
                                                                         max="100"
                                                                         step="0.1"
@@ -4547,6 +4620,7 @@ const UpdateProject = () => {
                                                                                                         <label className="block text-[10px] text-gray-500 mb-1">Planned Quantity</label>
                                                                                                         <input
                                                                                                             type="number"
+                                                                                                            onWheel={(e) => e.target.blur()}
                                                                                                             min="0"
                                                                                                             step="0.01"
                                                                                                             value={subActivityPlannedQtys[`${sub.id}_quantity`] || ""}
@@ -4563,6 +4637,7 @@ const UpdateProject = () => {
                                                                                                         <div className="relative">
                                                                                                             <input
                                                                                                                 type="number"
+                                                                                                                onWheel={(e) => e.target.blur()}
                                                                                                                 min="0"
                                                                                                                 step="0.01"
                                                                                                                 value={subActivityPlannedQtys[`${sub.id}_subpayment`] || ""}
@@ -4592,6 +4667,7 @@ const UpdateProject = () => {
                                                                                                         <div className="relative">
                                                                                                             <input
                                                                                                                 type="number"
+                                                                                                                onWheel={(e) => e.target.blur()}
                                                                                                                 min="0"
                                                                                                                 step="0.01"
                                                                                                                 value={subActivityPlannedQtys[`${sub.id}_approvalpayment`] || ""}
