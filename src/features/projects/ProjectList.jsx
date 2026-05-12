@@ -1203,7 +1203,7 @@ const ProjectList = () => {
               {/* HEADER */}
               <div className="flex justify-between items-center mb-5">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  📎 Submit Work Proof
+                  📎 {proofData?.to_status === "Raised" ? 'Raise' : 'Receive'} Invoice
                 </h3>
                 <button
                   onClick={() => {
@@ -3103,9 +3103,8 @@ const ProjectList = () => {
 
                                                                                   <td rowSpan="2" className={"text-right px-2 py-2 "}>
                                                                                     <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
-                                                                                      disabled={changeStatus == "Submitted" || changeStatus == "Approved"}
+                                                                                      disabled={changeStatus == "Submitted" || changeStatus == "Approved" || changeStatus == "Completed"}
                                                                                       onClick={() => {
-
 
                                                                                         setSelectedTaskfortimelog({
                                                                                           id: sub.id,
@@ -3310,7 +3309,8 @@ const ProjectList = () => {
                                                                                   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
 
                                                                                     {/* Header */}
-                                                                                    <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 flex justify-between items-center">
+                                                                                    {/* <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 flex justify-between items-center"> */}
+                                                                                    <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 flex gap-2 items-center">
                                                                                       <div className="flex items-center gap-2">
                                                                                         <div className="p-1.5 bg-blue-100 rounded-lg">
                                                                                           <Clock size={16} className="text-blue-600" />
@@ -3320,6 +3320,7 @@ const ProjectList = () => {
                                                                                           {sub.work_summary?.users?.length || 0} contributors
                                                                                         </span>
                                                                                       </div>
+                                                                                      <hr className='w-1.5' />
                                                                                       <div className="flex items-center gap-2">
                                                                                         <div className="text-xs text-gray-500">Total Hours:</div>
                                                                                         <div className="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
@@ -3396,7 +3397,8 @@ const ProjectList = () => {
                                                                                                   )}
                                                                                                 </div>
                                                                                                 <span className="text-xs font-medium text-gray-600">{userLog.name}</span>
-                                                                                                <div className="flex gap-1 ml-auto text-xs text-gray-400">
+                                                                                                <hr className='w-1.5' />
+                                                                                                <div className="flex gap-1  text-xs text-gray-400">
                                                                                                   <span className="text-xs text-gray-500">
                                                                                                     Total: {formatDuration(userLog.total_time_spent)}
                                                                                                   </span>

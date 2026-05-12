@@ -869,13 +869,13 @@ const SectorsTable = ({ refreshKey }) => {
                                                                 loadData={loadData}
                                                             />
                                                             {/* View Details Button - Always visible */}
-                                                            {/* <ViewTimeStampDetailsButton
+                                                            <ViewTimeStampDetailsButton
                                                                 data={metadata}
                                                                 title="Sector Details"
                                                                 className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600"
                                                             >
                                                                 <FileClock size={18} />
-                                                            </ViewTimeStampDetailsButton> */}
+                                                            </ViewTimeStampDetailsButton>
                                                         </div>
                                                     </td>
                                                 </motion.tr>

@@ -62,7 +62,7 @@ const SettingsComponentDisplay = () => {
         { id: "companies", label: "Companies", icon: Building2, comingSoon: false },
         { id: "sectors", label: "Sectors", icon: TrendingUp, comingSoon: false },
         { id: "clients", label: "Client Management", icon: Users, comingSoon: false },
-        { id: "activities", label: "Activities & Sub-Activities Template", icon: Layers, comingSoon: true },
+        { id: "activities", label: "Activities & Sub-Activities Template", icon: Layers, comingSoon: false },
         // { id: "users", label: "User Management", icon: Users, comingSoon: true }
     ];
 
@@ -159,11 +159,6 @@ const SettingsComponentDisplay = () => {
                                     <p className="text-gray-500">This section is under development</p>
                                 </motion.div>
                             )}
-                            {activeTab === "activities" && (
-                                <ActivityTable
-                                    refreshKey={refreshKey}
-                                />
-                            )}
                             {activeTab === "companies" && (
                                 <CompaniesTable
                                     refreshKey={refreshKey}
@@ -176,6 +171,11 @@ const SettingsComponentDisplay = () => {
                             )}
                             {activeTab === "clients" && (
                                 <ClientsTable
+                                    refreshKey={refreshKey}
+                                />
+                            )}
+                            {activeTab === "activities" && (
+                                <ActivityTable
                                     refreshKey={refreshKey}
                                 />
                             )}

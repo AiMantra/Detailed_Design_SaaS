@@ -19,6 +19,8 @@ import { logout } from "../../features/auth/authSlice";
 import { motion, AnimatePresence } from "framer-motion";
 import DevRoleSwitcher from "../DevRoleSwitcher";
 import NotificationsModal from "./Notifications";
+import { CustomImageModal } from "../../utils/CustomFunctions";
+import { IMAGE_URL } from "../../services/api";
 
 const ThemeToggle = () => {
   const dispatch = useDispatch();
@@ -231,7 +233,19 @@ const UserDropdown = () => {
       >
         <div className="relative">
           <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-md">
-            {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            {user?.profilepic ? (
+              <CustomImageModal customStyle>
+                <img
+                  src={`${IMAGE_URL}${user?.profilepic}`}
+                  alt={user.name}
+                  className="w-7 h-7 md:w-8 md:h-8 rounded-lg object-cover"
+                />
+              </CustomImageModal>
+            ) : (
+              <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-xs font-medium">
+                {user.name?.charAt(0)?.toUpperCase()}
+              </div>
+            )}
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
         </div>
@@ -266,7 +280,20 @@ const UserDropdown = () => {
             <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded-lg flex items-center justify-center text-white font-bold text-sm md:text-base backdrop-blur-sm">
-                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                  {/* {user?.name?.charAt(0)?.toUpperCase() || "U"} */}
+                  {user?.profilepic ? (
+                    <CustomImageModal customStyle>
+                      <img
+                        src={`${IMAGE_URL}${user?.profilepic}`}
+                        alt={user.name}
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-lg object-cover"
+                      />
+                    </CustomImageModal>
+                  ) : (
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center text-xs font-medium">
+                      {user.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div className="text-white flex-1">
                   <p className="font-semibold text-xs md:text-sm">{user?.name || "User"}</p>

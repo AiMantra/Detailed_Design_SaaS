@@ -123,9 +123,17 @@ const CreateProject = () => {
   const [clientSearch, setClientSearch] = useState("");
   const [reportingHeadSearch, setReportingHeadSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showClientCode, setClientCode] = useState("");
   const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
   const clientDropdownRef = useRef(null);
   const ReportingHeadsDropdownRef = useRef(null);
+
+  const [companySearch, setCompanySearch] = useState("");
+  const [sectorSearch, setSectorSearch] = useState("");
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showSectorDropdown, setShowSectorDropdown] = useState(false);
+  const companyDropdownRef = useRef(null);
+  const sectorDropdownRef = useRef(null);
 
   const [calculatedGST, setCalculatedGST] = useState({
     igst: 0,
@@ -346,6 +354,18 @@ const CreateProject = () => {
         !ReportingHeadsDropdownRef.current.contains(event.target)
       ) {
         setShowSupervisorDropdown(false);
+      }
+      if (
+        companyDropdownRef.current &&
+        !companyDropdownRef.current.contains(event.target)
+      ) {
+        setShowCompanyDropdown(false);
+      }
+      if (
+        sectorDropdownRef.current &&
+        !sectorDropdownRef.current.contains(event.target)
+      ) {
+        setShowSectorDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -4039,7 +4059,8 @@ const CreateProject = () => {
           </div>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+      {/* <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8"> */}
+      <form className="space-y-6 md:space-y-8">
         {/* Step 1: Basic Information */}
         <motion.div
           initial={false}
@@ -4126,6 +4147,159 @@ const CreateProject = () => {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Company *</label>
+              <div className="relative" ref={companyDropdownRef}>
+                <Building2
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
+
+                <input
+                  type="text"
+                  value={companySearch || (form.company ? companies.find(c => c.name === form.company)?.name : "")}
+                  placeholder="Select Company"
+                  onFocus={() => {
+                    // if (!form.company) {
+                    setShowCompanyDropdown(true);
+                    // }
+                  }}
+                  onChange={(e) => {
+                    setCompanySearch(e.target.value);
+                    // if (!form.company) {
+                    setShowCompanyDropdown(true);
+                    // }
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
+
+                {/* Clear button */}
+                {form.company && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setForm({
+                        ...form,
+                        company: ''
+                      });
+                      setCompanySearch('');
+                      setShowCompanyDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                    title="Clear company"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+
+                {/* Plus button for adding new company */}
+                {/* <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAddCompanyModal(true);
+                  }}
+                  className="absolute right-12 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                >
+                  <Plus size={14} />
+                </button> */}
+
+                {/* Dropdown with sorting and highlighting */}
+                {showCompanyDropdown && (
+                  <div
+                    className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault();
+                    }}
+                  >
+                    {companySearch && companies.filter(c =>
+                      c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                    ).length > 0 && (
+                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                          Showing {companies.filter(c =>
+                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                          ).length} of {companies.length} companies
+                        </div>
+                      )}
+
+                    {companies.length > 0 ? (
+                      [...companies].sort((a, b) => {
+                        const aName = a.name || '';
+                        const bName = b.name || '';
+                        const searchTerm = companySearch?.toLowerCase() || '';
+
+                        const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
+                        const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+
+                        // Matching items come first
+                        if (aMatches && !bMatches) return -1;
+                        if (!aMatches && bMatches) return 1;
+
+                        // For items with same match status, sort alphabetically
+                        return aName.localeCompare(bName);
+                      }).map((company) => {
+                        const companyName = company.name || '';
+                        const searchTerm = companySearch?.toLowerCase() || '';
+                        const isMatching = searchTerm && companyName.toLowerCase().includes(searchTerm);
+
+                        // Function to highlight matching text
+                        const getHighlightedText = (text, highlight) => {
+                          if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
+                            return text;
+                          }
+
+                          const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                          const parts = text.split(regex);
+
+                          return parts.map((part, i) =>
+                            regex.test(part) ?
+                              <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
+                              part
+                          );
+                        };
+
+                        return (
+                          <div
+                            key={company.id}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setForm({
+                                ...form,
+                                company: company.name
+                              });
+                              setCompanySearch(company.name);
+                              setShowCompanyDropdown(false);
+                            }}
+                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
+                              }`}
+                          >
+                            <div>
+                              {getHighlightedText(companyName, companySearch)}
+                              {company.gst_no && (
+                                <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>
+                              )}
+                            </div>
+                            {isMatching && (
+                              <div className="text-xs text-green-600 mt-0.5">
+                                Click to select
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="px-3 py-2 text-gray-400 text-sm">
+                        No companies available
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Company *</label>
               <div className="relative">
                 <Building2
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -4144,15 +4318,15 @@ const CreateProject = () => {
                     </option>
                   ))}
                 </select>
-                {/* <button
+                <button
                   type="button"
                   onClick={() => setShowAddCompanyModal(true)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors z-10"
                 >
                   <Plus size={14} />
-                </button> */}
+                </button>
               </div>
-            </div>
+            </div> */}
             {form.company && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-500">Company GST</label>
@@ -4165,9 +4339,12 @@ const CreateProject = () => {
                     type="text"
                     name="gst_no"
                     disabled
+                    // value={
+                    //   companies.filter((data) => data?.name == form.company)[0]
+                    //     ?.gst_no
+                    // }
                     value={
-                      companies.filter((data) => data?.name == form.company)[0]
-                        ?.gst_no
+                      companies.find((data) => data?.name == form.company)?.gst_no || ""
                     }
                     onChange={handleChange}
                     className="cursor-not-allowed w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
@@ -4176,26 +4353,27 @@ const CreateProject = () => {
               </div>
             )}
 
+            {/* Sector Field */}
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Sector *</label>
-              <div className="relative">
+              <div className="relative" ref={sectorDropdownRef}>
                 <Factory
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={16}
                 />
-                <select
-                  name="sector"
-                  value={form.sector}
-                  onChange={handleChange}
-                  className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                >
-                  <option value="">Select Sector</option>
-                  {sectorsList.map((sector, i) => (
-                    <option key={i} value={sector?.name}>
-                      {sector?.name}
-                    </option>
-                  ))}
-                </select>
+
+                <input
+                  type="text"
+                  value={sectorSearch || (form.sector ? form.sector : "")}
+                  placeholder="Select Sector"
+                  onFocus={() => setShowSectorDropdown(true)}
+
+                  onChange={(e) => {
+                    setSectorSearch(e.target.value);
+                    setShowSectorDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
                 {/* <button
                     type="button"
                     onClick={() => setShowAdvancedSectorModal(true)}
@@ -4208,11 +4386,140 @@ const CreateProject = () => {
                   loadData={loadSectorsData}
                   sectors={sectors}
                   BasicButtonView={true} /> */}
+
+                {/* Clear button */}
+                {form.sector && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setForm({
+                        ...form,
+                        sector: ''
+                      });
+                      setSectorSearch('');
+                      setShowSectorDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                    title="Clear sector"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+
+                {/* Plus button for adding new sector */}
+                {/* <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAddSectorModal(true);
+                  }}
+                  className="absolute right-12 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                >
+                  <Plus size={14} />
+                </button> */}
+
+                {/* Dropdown with sorting and highlighting */}
+                {showSectorDropdown && (
+                  <div
+                    className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                  >
+                    {sectorSearch && sectorsList.filter(s =>
+                      s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                    ).length > 0 && (
+                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                          Showing {sectorsList.filter(s =>
+                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                          ).length} of {sectorsList.length} sectors
+                        </div>
+                      )}
+
+                    {sectorsList.length > 0 ? (
+                      [...sectorsList].sort((a, b) => {
+                        const aName = a.name || '';
+                        const bName = b.name || '';
+                        const searchTerm = sectorSearch?.toLowerCase() || '';
+
+                        const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
+                        const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+
+                        // Matching items come first
+                        if (aMatches && !bMatches) return -1;
+                        if (!aMatches && bMatches) return 1;
+
+                        // For items with same match status, sort alphabetically
+                        return aName.localeCompare(bName);
+                      }).map((sector) => {
+                        const sectorName = sector.name || '';
+                        const sectorUnit = sector.unit || '';
+                        const searchTerm = sectorSearch?.toLowerCase() || '';
+                        const isMatching = searchTerm && sectorName.toLowerCase().includes(searchTerm);
+
+                        // Function to highlight matching text
+                        const getHighlightedText = (text, highlight) => {
+                          if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
+                            return text;
+                          }
+
+                          const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                          const parts = text.split(regex);
+
+                          return parts.map((part, i) =>
+                            regex.test(part) ?
+                              <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
+                              part
+                          );
+                        };
+
+                        return (
+                          <div
+                            key={sector.id || sector.name}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setForm({
+                                ...form,
+                                sector: sector.name
+                              });
+                              setSectorSearch(sector.name);
+                              setShowSectorDropdown(false);
+                            }}
+                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
+                              }`}
+                          >
+                            <div>
+                              {getHighlightedText(sectorName, sectorSearch)}
+                              {sectorUnit && (
+                                <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})</span>
+                              )}
+                            </div>
+                            {isMatching && (
+                              <div className="text-xs text-green-600 mt-0.5">
+                                Click to select
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="px-3 py-2 text-gray-400 text-sm">
+                        No sectors available
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Client *</label>
+              <div className="flex justify-between">
+                <label className="text-xs text-gray-500">Client *</label>
+                {/* <label className="text-xs text-gray-500">{showClientCode ? `Code: ${showClientCode}` : ''}</label> */}
+              </div>
               <div
                 className="relative"
                 ref={clientDropdownRef}
@@ -4263,6 +4570,7 @@ const CreateProject = () => {
                         clientbranch: ''
                       });
                       setClientSearch('');
+                      setClientCode('');
                       setShowClientDropdown(true);
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
@@ -4278,40 +4586,64 @@ const CreateProject = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                    }
-                    }
+                    }}
                   >
-                    {clientSearch && clients.filter(c =>
-                      c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
-                    ).length > 0 && (
-                        <div className="px-3 py-2 border-t border-gray-100 text-xs text-gray-400 bg-gray-50">
-                          Showing {clients.filter(c =>
-                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
-                          ).length} of {clients.length} clients
+                    {clientSearch && (() => {
+                      const matchingCount = clients.filter(c =>
+                        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
+                      ).length;
+
+                      return matchingCount > 0 ? (
+                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                          Showing {matchingCount} of {clients.length} clients
                         </div>
-                      )}
+                      ) : null;
+                    })()}
 
                     {clients.length > 0 ? (
                       [...clients].sort((a, b) => {
-                        const aName = a.client_name || '';
-                        const bName = b.client_name || '';
                         const searchTerm = clientSearch?.toLowerCase() || '';
 
-                        const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                        const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+                        const aName = a.client_name || '';
+                        const aCode = a.client_code || '';
+                        const bName = b.client_name || '';
+                        const bCode = b.client_code || '';
+
+                        // Check matches for both name and code
+                        const aNameMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
+                        const aCodeMatches = searchTerm && aCode.toLowerCase().includes(searchTerm);
+                        const bNameMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+                        const bCodeMatches = searchTerm && bCode.toLowerCase().includes(searchTerm);
+
+                        const aMatches = aNameMatches || aCodeMatches;
+                        const bMatches = bNameMatches || bCodeMatches;
 
                         // Matching items come first
                         if (aMatches && !bMatches) return -1;
                         if (!aMatches && bMatches) return 1;
 
-                        // For items with same match status, sort alphabetically
+                        // If both match or both don't match, prioritize code matches over name matches
+                        if (aMatches && bMatches) {
+                          // If one matches by code and the other only by name, code match comes first
+                          if (aCodeMatches && !bCodeMatches) return -1;
+                          if (!aCodeMatches && bCodeMatches) return 1;
+                        }
+
+                        // For items with same match status, sort alphabetically by name
                         return aName.localeCompare(bName);
                       })
                         .map((client) => {
                           const clientName = client.client_name || '';
-                          const clientCode = client.client_code || "N/A";
+                          const clientCode = client.client_code || "";
                           const searchTerm = clientSearch?.toLowerCase() || '';
-                          const isMatching = searchTerm && clientName.toLowerCase().includes(searchTerm);
+                          const displayText = `${clientName} - ${clientCode}`;
+
+                          // const isMatching = searchTerm && (clientName.toLowerCase().includes(searchTerm) || clientCode.toLowerCase().includes(searchTerm));
+                          const isMatching = searchTerm && (
+                            clientName.toLowerCase().includes(searchTerm) ||
+                            clientCode.toLowerCase().includes(searchTerm)
+                          );
 
                           // Function to highlight matching text
                           const getHighlightedText = (text, highlight) => {
@@ -4341,13 +4673,17 @@ const CreateProject = () => {
                                   clientbranch: ''
                                 });
                                 setClientSearch(`${clientName} - ${clientCode}`);
+                                // setClientSearch(clientName);
+                                setClientCode(clientCode);
                                 setShowClientDropdown(false);
                               }}
                               className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
                                 }`}
                             >
                               <div>
-                                {getHighlightedText(clientName, clientSearch)} - {clientCode}
+                                {/* {getHighlightedText(clientName, clientSearch)} - {clientCode} */}
+                                {/* {getHighlightedText(`${clientName} - ${clientCode}`, clientSearch)} - {clientCode} */}
+                                {getHighlightedText(`${clientName} - ${clientCode}`, clientSearch)}
                               </div>
                               {isMatching && (
                                 <div className="text-xs text-green-600 mt-0.5">
@@ -6057,7 +6393,8 @@ const CreateProject = () => {
                 Previous
               </button>
               <button
-                type="submit"
+                // type="button"
+                onClick={handleSubmit}
                 disabled={isSubmitting}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -6079,8 +6416,9 @@ const CreateProject = () => {
         {!isMobile && (
           <div className="flex justify-center">
             <button
-              type="submit"
+              type="button"
               disabled={isSubmitting}
+              onClick={handleSubmit}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 md:px-16 py-4 md:py-5 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-bold text-base md:text-xl flex items-center gap-2 md:gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (

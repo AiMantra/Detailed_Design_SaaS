@@ -405,7 +405,7 @@ const CompanyModalContent = ({
                                     maxLength={15}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none "
                                 />
-                                <p className="text-xs text-gray-400 mt-1 text-left">Format: 22AAAAA0000A1Z</p>
+                                <p className="text-xs text-gray-400 mt-1 text-left">Format: 22AAAAA0000A1Z5</p>
                             </div>
 
                             <div>
@@ -515,7 +515,7 @@ export const AddCompanyButton = ({ onSuccess, loadData, companies }) => {
 
         if (!validateGST(trimmedgst)) {
             dispatch(showSnackbar({
-                message: "Invalid GST number format. Format: 22AAAAA0000A1Z",
+                message: "Invalid GST number format. Format: 22AAAAA0000A1Z5",
                 type: "error",
             }));
             return;
@@ -655,7 +655,7 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
 
         if (!validateGST(trimmedgst)) {
             dispatch(showSnackbar({
-                message: "Invalid GST number format. Format: 22AAAAA0000A1Z",
+                message: "Invalid GST number format. Format: 22AAAAA0000A1Z5",
                 type: "error",
             }));
             return;
@@ -890,7 +890,8 @@ const SectorModalContent = ({
     const unitOptions = [
         { value: 'length', label: 'Length' },
         { value: 'area', label: 'Area' },
-        { value: 'quantity', label: 'Quantity' }
+        { value: 'quantity', label: 'Quantity' },
+        // { value: 'numbers', label: 'Numbers' }
     ];
 
     const [showWorkTypeModal, setShowWorkTypeModal] = useState(false);
@@ -1289,7 +1290,14 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
         }
 
         // Validate work types
-        const validWorkTypes = workTypes.filter(wt => wt.name?.trim());
+        // const validWorkTypes = workTypes.filter(wt => wt.name?.trim());
+        const validWorkTypes = workTypes
+            .filter(wt => wt.name?.trim())
+            .map(wt => ({
+                ...wt,
+                created_by: sessionStorage.getItem('emp_code'),
+
+            }));
         // if (validWorkTypes.length0 === 0) {
         //     dispatch(showSnackbar({ message: "At least one work type is required", type: "error" }));
         //     return;
@@ -1879,7 +1887,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                                                         <label className="text-xs font-medium text-gray-700 mb-1 block">
                                                             GST Number<span className="text-red-500">*</span>
                                                         </label>
-                                                        <p className="text-xs text-gray-400 ">Format: 22AAAAA0000A1Z</p>
+                                                        <p className="text-xs text-gray-400 ">Format: 22AAAAA0000A1Z5</p>
                                                     </div>
                                                     <input
                                                         type="text"

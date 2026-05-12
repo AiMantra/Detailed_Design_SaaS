@@ -1028,7 +1028,7 @@ const CustomImageModal = ({ customStyle, children }) => {
 const UserProfileModal = ({
     code,
     name,
-    profilePic,
+    profilepic,
     dateText,
 }) => {
     if (!code && !name) return null;
@@ -1036,15 +1036,15 @@ const UserProfileModal = ({
     return (
         <div className="d-flex align-items-center gap-2 flex flex-col">
             <CustomImageModal customStyle>
-                {profilePic ? (
+                {profilepic ? (
                     <img
-                        src={`${IMAGE_URL}${profilePic}`}
+                        src={`${IMAGE_URL}${profilepic}`}
                         alt="profile"
                         className="profile-img"
                     />
                 ) : (
                     <UserDefaultLogo
-                        user={{ name, profilepic: profilePic }}
+                        user={{ name, profilepic: profilepic }}
                         customStyleforParent="reqOutDuty-default-logo-dashboard"
                         customStyleforChild="small-profile"
                     />

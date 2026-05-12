@@ -104,7 +104,7 @@ export const loginUser = createAsyncThunk(
           originalRole: payload?.role || '',
           department: payload_a?.department_name || '',
           company: payload_a?.division_name || '',
-          profilePic: payload_a?.profilepic || '',
+          profilepic: payload_a?.profilepic || '',
           isReportingHead: payload_a?.is_reporthead || false,
           designation: payload_a?.designation_name || '',
         },
@@ -160,7 +160,7 @@ const loadUserFromStorage = () => {
         originalRole: sessionStorage.getItem('hrms_role') || '',
         department: sessionStorage.getItem('department') || '',
         company: sessionStorage.getItem('company') || '',
-        profilePic: sessionStorage.getItem('profilepic') || '',
+        profilepic: sessionStorage.getItem('profilepic') || '',
         isReportingHead: sessionStorage.getItem('is_rh') === 'true',
         designation: sessionStorage.getItem('designation') || '',
       },
@@ -211,7 +211,7 @@ const authSlice = createSlice({
         state.user = { ...state.user, ...action.payload };
 
         if (action.payload.name) sessionStorage.setItem('userName', action.payload.name);
-        if (action.payload.profilePic) sessionStorage.setItem('profilepic', action.payload.profilePic);
+        if (action.payload.profilepic) sessionStorage.setItem('profilepic', action.payload.profilepic);
         if (action.payload.role) sessionStorage.setItem('userRole', action.payload.role);
       }
     },

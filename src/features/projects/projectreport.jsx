@@ -488,6 +488,12 @@ const ProjectReport = () => {
                 return "bg-yellow-100 text-yellow-800 border-yellow-200";
             case "Rejected":
                 return "bg-red-100 text-red-800 border-red-200";
+            case "Completed":
+                return "bg-violet-100 text-violet-800 border-violet-200";
+            case "Pending":
+                return "bg-gray-100 text-gray-800 border-gray-200";
+            case "OnHold":
+                return "bg-orange-100 text-orange-800 border-orange-200";
             default:
                 return "bg-gray-100 text-gray-800 border-gray-200";
         }
@@ -503,6 +509,12 @@ const ProjectReport = () => {
                 return <Activity size={14} className="text-yellow-600" />;
             case "Rejected":
                 return <XCircle size={14} className="text-red-600" />;
+            case "Completed":
+                return <CheckCheck size={14} className="text-violet-600" />;
+            case "Pending":
+                return <Clock size={14} className="text-gray-600" />;
+            case "OnHold":
+                return <PauseCircle size={14} className="text-orange-600" />;
             default:
                 return null;
         }
@@ -974,6 +986,18 @@ const ProjectReport = () => {
                                         <div className="flex items-center gap-4">
                                             {/* Quick Stats Circles */}
                                             <div className="flex gap-3">
+                                                {/* {console.log('project', project)}
+                                                {console.log('project.statusBreakdown', project.statusBreakdown)} */}
+                                                {project.statusBreakdown.Completed > 0 && (
+                                                    <div className="text-center" title={`${project.statusBreakdown.Completed} Completed Task(s)`}>
+                                                        <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center">
+                                                            <CheckCheck size={18} className="text-violet-600" />
+                                                        </div>
+                                                        <p className="text-xs font-medium text-gray-600 mt-1">
+                                                            {project.statusBreakdown.Completed}
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 {project.statusBreakdown.Approved > 0 && (
                                                     <div className="text-center">
                                                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -988,9 +1012,9 @@ const ProjectReport = () => {
                                                     </div>
                                                 )}
                                                 {project.statusBreakdown.Submitted > 0 && (
-                                                    <div className="text-center">
+                                                    <div className="text-center" title={`${project.statusBreakdown.Submitted} Submitted Task(s)`}>
                                                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                            <FileText size={18} className="text-blue-600" />
+                                                            <ClipboardList size={18} className="text-blue-600" />
                                                         </div>
                                                         <p className="text-xs font-medium text-gray-600 mt-1">
                                                             {project.statusBreakdown.Submitted}
@@ -1004,6 +1028,16 @@ const ProjectReport = () => {
                                                         </div>
                                                         <p className="text-xs font-medium text-gray-600 mt-1">
                                                             {project.statusBreakdown.Inprogress}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {project.statusBreakdown.Rejected > 0 && (
+                                                    <div className="text-center" title={`${project.statusBreakdown.Rejected} Rejected Task(s)`}>
+                                                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                                            <XCircle size={18} className="text-red-600" />
+                                                        </div>
+                                                        <p className="text-xs font-medium text-gray-600 mt-1">
+                                                            {project.statusBreakdown.Rejected}
                                                         </p>
                                                     </div>
                                                 )}
@@ -1079,19 +1113,54 @@ const ProjectReport = () => {
                                                                     </div>
                                                                     <div className="flex items-center gap-4">
                                                                         <div className="flex gap-2">
+                                                                            {activity.statusCount.Completed > 0 && (
+                                                                                <span title={`${activity.statusCount.Completed} Completed Task(s)`} className="flex gap-1 text-xs px-2 py-1 bg-violet-100 text-violet-700 rounded-lg">
+                                                                                    <CheckCheck
+                                                                                        size={14}
+                                                                                        className="text-violet-600"
+                                                                                    />
+                                                                                    {/* ✓✓ */}
+                                                                                    {activity.statusCount.Completed}
+                                                                                </span>
+                                                                            )}
                                                                             {activity.statusCount.Approved > 0 && (
-                                                                                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg">
-                                                                                    ✓ {activity.statusCount.Approved}
+                                                                                <span title={`${activity.statusCount.Approved} Approved Task(s)`} className="flex gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg">
+                                                                                    <CheckCircle
+                                                                                        size={14}
+                                                                                        className="text-green-600"
+                                                                                    />
+                                                                                    {/* ✓ */}
+                                                                                    {activity.statusCount.Approved}
                                                                                 </span>
                                                                             )}
                                                                             {activity.statusCount.Submitted > 0 && (
-                                                                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
-                                                                                    📤 {activity.statusCount.Submitted}
+                                                                                <span title={`${activity.statusCount.Submitted} Submitted Task(s)`} className="flex gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
+                                                                                    <ClipboardList
+                                                                                        size={14}
+                                                                                        className="text-blue-600"
+                                                                                    />
+                                                                                    {/* 📤 */}
+                                                                                    {activity.statusCount.Submitted}
                                                                                 </span>
                                                                             )}
                                                                             {activity.statusCount.Inprogress > 0 && (
-                                                                                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">
-                                                                                    ⏳ {activity.statusCount.Inprogress}
+                                                                                <span title={`${activity.statusCount.Inprogress} InProgress Task(s)`} className="flex gap-1 text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">
+                                                                                    <CheckCircle
+                                                                                        size={14}
+                                                                                        className="text-yellow-600"
+                                                                                    />
+                                                                                    {/* ⏳ */}
+                                                                                    {activity.statusCount.Inprogress}
+                                                                                </span>
+                                                                            )}
+                                                                            {activity.statusCount.Rejected > 0 && (
+                                                                                <span title={`${activity.statusCount.Rejected} Rejected Task(s)`} className="flex gap-1 text-xs px-2 py-1 bg-red-100 text-red-700 rounded-lg">
+                                                                                    <XCircle
+                                                                                        size={14}
+                                                                                        className="text-red-600"
+                                                                                    />
+                                                                                    {/* ⏳ */}
+                                                                                    {activity.statusCount.Rejected}
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -1136,7 +1205,21 @@ const ProjectReport = () => {
                                                                                                         >
                                                                                                             <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
                                                                                                                 <span className="text-xs font-medium text-purple-600">
-                                                                                                                    {user.name.charAt(0)}
+                                                                                                                    {/* {user.name.charAt(0)} */}
+                                                                                                                    {user.profilepic ? (
+                                                                                                                        <CustomImageModal customStyle>
+                                                                                                                            <img
+                                                                                                                                src={`${IMAGE_URL}${user.profilepic}`}
+                                                                                                                                alt={user.name}
+                                                                                                                                className="w-6 h-6 rounded-full object-cover"
+                                                                                                                            />
+                                                                                                                        </CustomImageModal>
+                                                                                                                    ) : (
+                                                                                                                        // <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
+                                                                                                                        <div>
+                                                                                                                            {user.name?.charAt(0)?.toUpperCase()}
+                                                                                                                        </div>
+                                                                                                                    )}
                                                                                                                 </span>
                                                                                                             </div>
                                                                                                             <span className="text-sm">
@@ -1184,10 +1267,10 @@ const ProjectReport = () => {
                                                                                                                 </span>
                                                                                                             </div>
                                                                                                             <div className="flex flex-row gap-2">
-                                                                                                                <p className="text-gray-700 text-sm">
+                                                                                                                <p className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
+                                                                                                                    {/* <p className="text-gray-700 text-sm"> */}
                                                                                                                     {log.work_type ||
                                                                                                                         "No work type provided"}{" "}
-                                                                                                                    -
                                                                                                                 </p>
                                                                                                                 <p className="text-gray-700 text-sm">
                                                                                                                     {log.description ||
@@ -1230,7 +1313,20 @@ const ProjectReport = () => {
                                                                 >
                                                                     <div className="flex items-center gap-2">
                                                                         <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                                                            {emp.name.charAt(0)}
+                                                                            {emp.profilepic ? (
+                                                                                <CustomImageModal customStyle>
+                                                                                    <img
+                                                                                        src={`${IMAGE_URL}${emp.profilepic}`}
+                                                                                        alt={emp.name}
+                                                                                        className="w-8 h-8 rounded-full object-cover"
+                                                                                    />
+                                                                                </CustomImageModal>
+                                                                            ) : (
+                                                                                <div>
+                                                                                    {emp.name?.charAt(0)?.toUpperCase()}
+                                                                                </div>
+                                                                            )}
+                                                                            {/* {emp.name.charAt(0)} */}
                                                                         </div>
                                                                         <div>
                                                                             <p className="font-medium text-gray-800 text-sm">
