@@ -379,6 +379,58 @@ const CompaniesTable = ({ refreshKey }) => {
     const handleRefresh = () => {
         loadData();
     };
+    const prepareMetadata = (company) => {
+        return {
+            id: company.id,
+            name: company.name,
+            created_at: company.created_at,
+            created_by: company.created_by,
+            created_by_details: company.created_by_details,
+            updated_at: company.updated_at,
+            updated_by: company.updated_by,
+            updated_by_details: company.updated_by_details,
+            deleted_at: company.deleted_at,
+            deleted_by: company.deleted_by,
+            deleted_by_details: company.deleted_by_details,
+            // customSections: [
+            //     {
+            //         icon: Layers,
+            //         title: "Work Types",
+            //         content: (
+            //             <div className="flex flex-wrap gap-2">
+            //                 {company.stage_work_types?.length > 0 ? (
+            //                     company.stage_work_types.map((wt, idx) => (
+            //                         <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
+            //                             {wt.name}
+            //                         </span>
+            //                     ))
+            //                 ) : (
+            //                     <p className="text-gray-400 text-sm">No work types assigned</p>
+            //                 )}
+            //             </div>
+            //         )
+            //     },
+            //     {
+            //         icon: Building2,
+            //         title: "Basic Information",
+            //         content: (
+            //             <div className="grid grid-cols-2 gap-2 text-sm">
+            //                 <div>
+            //                     <span className="text-gray-500">Unit Type:</span>
+            //                     <span className="ml-2 font-medium">{getUnitDisplayName(company.unit)}</span>
+            //                 </div>
+            //                 <div>
+            //                     <span className="text-gray-500">Status:</span>
+            //                     <span className={`ml-2 font-medium ${company.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
+            //                         {sector.is_deleted ? 'Deleted' : 'Active'}
+            //                     </span>
+            //                 </div>
+            //             </div>
+            //         )
+            //     }
+            // ]
+        };
+    };
 
     return (
         <>
@@ -422,42 +474,52 @@ const CompaniesTable = ({ refreshKey }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredCompanies.map((company, index) => (
-                                        <motion.tr
-                                            key={company.id}
-                                            variants={itemVariants}
-                                            className="border-t border-gray-200 hover:bg-gray-50 transition"
-                                        >
-                                            <td className="px-4 py-3 font-medium text-gray-800 max-w-[5vw] break-words">
-                                                {company.name}
-                                            </td>
-                                            <td className="px-4 py-3 ">
-                                                <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-mono">
-                                                    {company.gst_no || '-'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-mono">
-                                                    {company.pan_no || '-'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <EditCompanyButton
-                                                        company={company}
-                                                        onSuccess={handleRefresh}
-                                                        loadData={loadData}
-                                                        companies={filteredCompanies}
-                                                    />
-                                                    <DeleteCompanyButton
-                                                        company={company}
-                                                        onSuccess={handleRefresh}
-                                                        loadData={loadData}
-                                                    />
-                                                </div>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
+                                    {filteredCompanies.map((company, index) => {
+                                        const metadata = prepareMetadata(company);
+                                        return (
+                                            <motion.tr
+                                                key={company.id}
+                                                variants={itemVariants}
+                                                className="border-t border-gray-200 hover:bg-gray-50 transition"
+                                            >
+                                                <td className="px-4 py-3 font-medium text-gray-800 max-w-[5vw] break-words">
+                                                    {company.name}
+                                                </td>
+                                                <td className="px-4 py-3 ">
+                                                    <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-mono">
+                                                        {company.gst_no || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-mono">
+                                                        {company.pan_no || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <EditCompanyButton
+                                                            company={company}
+                                                            onSuccess={handleRefresh}
+                                                            loadData={loadData}
+                                                            companies={filteredCompanies}
+                                                        />
+                                                        <DeleteCompanyButton
+                                                            company={company}
+                                                            onSuccess={handleRefresh}
+                                                            loadData={loadData}
+                                                        />
+                                                        <ViewTimeStampDetailsButton
+                                                            data={company}
+                                                            title="Company Details"
+                                                            className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600"
+                                                        >
+                                                            <FileClock size={18} />
+                                                        </ViewTimeStampDetailsButton>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>)
+                                    }
+                                    )}
                                 </tbody>
                             </table>
                         </div>

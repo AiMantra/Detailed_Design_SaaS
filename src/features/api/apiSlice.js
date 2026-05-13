@@ -93,9 +93,9 @@ export const updateCompany = createAsyncThunk(
 
 export const deleteCompany = createAsyncThunk(
   'api/deleteCompany',
-  async (companyId, { rejectWithValue }) => {
+  async ({ companyId, DeleteBY }, { rejectWithValue }) => {
     try {
-      await companyService.deleteCompany(companyId);
+      await companyService.deleteCompany(companyId, DeleteBY);
       return companyId;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -167,9 +167,9 @@ export const updateSector = createAsyncThunk(
 
 export const deleteSector = createAsyncThunk(
   'api/deleteSector',
-  async (sectorId, { rejectWithValue }) => {
+  async ({ sectorId, DeleteBY }, { rejectWithValue }) => {
     try {
-      await sectorService.deleteSector(sectorId);
+      await sectorService.deleteSector(sectorId, DeleteBY);
       return sectorId;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -216,10 +216,11 @@ export const updateClient = createAsyncThunk(
 
 export const deleteClient = createAsyncThunk(
   'api/deleteClient',
-  async (clientId, { rejectWithValue }) => {
+  async ({ clientId, DeleteBY }, { rejectWithValue }) => {
+    console.log(clientId, DeleteBY, 'client')
     try {
-      await clientService.deleteClient(clientId);
-      return clientId;
+      await clientService.deleteClient(clientId, DeleteBY);
+      return clientId, DeleteBY;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }

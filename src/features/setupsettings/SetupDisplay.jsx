@@ -62,7 +62,7 @@ const SettingsComponentDisplay = () => {
         { id: "companies", label: "Companies", icon: Building2, comingSoon: false },
         { id: "sectors", label: "Sectors", icon: TrendingUp, comingSoon: false },
         { id: "clients", label: "Client Management", icon: Users, comingSoon: false },
-        { id: "activities", label: "Activities & Sub-Activities Template", icon: Layers, comingSoon: false },
+        { id: "activities", label: "Activities & Sub-Activities Template", icon: Layers, comingSoon: true },
         // { id: "users", label: "User Management", icon: Users, comingSoon: true }
     ];
 

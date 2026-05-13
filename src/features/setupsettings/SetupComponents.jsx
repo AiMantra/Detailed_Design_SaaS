@@ -602,6 +602,7 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
         name: company?.name || "",
         gst_no: company?.gst_no || "",
         pan_no: company?.pan_no || "",
+        updated_by: sessionStorage.getItem('emp_code')
     });
 
     const handleFormChange = (field, value) => {
@@ -722,11 +723,12 @@ export const DeleteCompanyButton = ({ company, onSuccess, loadData }) => {
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
-
+    const DeleteBY = sessionStorage.getItem('emp_code')
     const handleDelete = async () => {
+        const companyId = sector.id
         setLoading(true);
         try {
-            await dispatch(deleteCompany(company.id)).unwrap();
+            await dispatch(deleteCompany({ companyId, DeleteBY })).unwrap();
             dispatch(
                 showSnackbar({
                     message: "Company deleted successfully",
@@ -1361,13 +1363,15 @@ export const DeleteSectorButton = ({ sector, onSuccess, loadData }) => {
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const DeleteBY = sessionStorage.getItem('emp_code')
 
     const handleDelete = async () => {
         console.log('sectorId', sector.id)
         // console.log(sector.id)
+        const sectorId = sector.id
         setLoading(true);
         try {
-            await dispatch(deleteSector(sector.id)).unwrap();
+            await dispatch(deleteSector({ sectorId, DeleteBY })).unwrap();
             dispatch(
                 showSnackbar({
                     message: "Sector deleted successfully",
@@ -1430,7 +1434,9 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
         pan_no: "",
         phone: "",
         address: "",
-        status: "active"
+        status: "active",
+        created_by: "",
+        updated_by: '',
     });
 
     // Initialize form data when editing
@@ -1442,7 +1448,9 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                 pan_no: clientToEdit.pan_no || "",
                 phone: clientToEdit.phone || "",
                 address: clientToEdit.address || "",
-                status: clientToEdit.status || "active"
+                status: clientToEdit.status || "active",
+                created_by: sessionStorage.getItem('emp_code'),
+                updated_by: sessionStorage.getItem('emp_code'),
             });
 
             // Ensure branches have the correct structure
@@ -1473,7 +1481,9 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
             pan_no: "",
             phone: "",
             address: "",
-            status: "active"
+            status: "active",
+            created_by: sessionStorage.getItem('emp_code'),
+            updated_by: ''
         });
         // setBranches([]);
         setBranches([{ name: "", gst: "", state: "", status: "Active" }]);
@@ -2036,14 +2046,18 @@ export const EditClientButton = ({ client, onSuccess, loadData }) => {
 
 // Delete Client Button
 export const DeleteClientButton = ({ client, onSuccess, loadData }) => {
+
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const DeleteBY = sessionStorage.getItem('emp_code')
 
     const handleDelete = async () => {
+        console.log(client.id, 'client', client)
+        const clientId = client.id
         setLoading(true);
         try {
-            await dispatch(deleteClient(client.id)).unwrap();
+            await dispatch(deleteClient({ clientId, DeleteBY })).unwrap();
             dispatch(showSnackbar({ message: "Client deleted successfully", type: "success" }));
             if (onSuccess) onSuccess();
             if (loadData) loadData();
@@ -2299,6 +2313,7 @@ export const AddActivityButton = ({ onSuccess, loadData }) => {
                     activity_name: activityName,
                     sorting_var: formData.sorting_var || "1",
                     template_description: formData.template_description,
+                    created_by: sessionStorage.getItem('emp_code'),
                     // start_date: formData.start_date || null,
                     // end_date: formData.end_date || null,
                     // weightage: formData.weightage || null,
@@ -2454,6 +2469,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
                         activity_name: formData.activity_name,
                         sorting_var: formData.sorting_var || "1",
                         template_description: formData.template_description,
+                        updated_by: sessionStorage.getItem('emp_code')
                     },
                 }),
             ).unwrap();
@@ -2775,6 +2791,7 @@ export const AddSubActivityButton = ({
         length_exist: true,
         submission_exist: true,
         approval_exist: true,
+        created_by: sessionStorage.getItem('emp_code')
         // range: "",
         // range_no: "",
     });
