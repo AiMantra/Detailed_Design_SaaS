@@ -57,9 +57,9 @@ export const fetchProjectWorkSummary = createAsyncThunk(
 // ============ COMPANY THUNKS ============
 export const fetchCompanies = createAsyncThunk(
   'api/fetchCompanies',
-  async (_, { rejectWithValue }) => {
+  async (is_deleted = false, { rejectWithValue }) => {
     try {
-      const response = await companyService.getCompanies();
+      const response = await companyService.getCompanies(is_deleted);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -131,9 +131,9 @@ export const createSubCompany = createAsyncThunk(
 // ============ SECTOR THUNKS ============
 export const fetchSectors = createAsyncThunk(
   'api/fetchSectors',
-  async (_, { rejectWithValue }) => {
+  async (is_deleted = false, { rejectWithValue }) => {
     try {
-      const response = await sectorService.getSectors();
+      const response = await sectorService.getSectors(is_deleted);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -180,9 +180,9 @@ export const deleteSector = createAsyncThunk(
 // ============ CLIENT THUNKS ============
 export const fetchClients = createAsyncThunk(
   'api/fetchClients',
-  async (_, { rejectWithValue }) => {
+  async (is_deleted = false, { rejectWithValue }) => {
     try {
-      const response = await clientService.getClients();
+      const response = await clientService.getClients(is_deleted);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

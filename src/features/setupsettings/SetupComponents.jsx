@@ -115,7 +115,6 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confi
 // Reusable Metadata Viewer Component
 export const TimeStampDataViewer = ({ isOpen, onClose, data, title = "Record Details" }) => {
     if (!data) return null;
-
     const {
         // Common fields
         id,
@@ -171,7 +170,6 @@ export const TimeStampDataViewer = ({ isOpen, onClose, data, title = "Record Det
 
         const user = userDetails || (userId ? { name: userId } : null);
         if (!user) return null;
-
         const colorClasses = {
             blue: "bg-blue-100 text-blue-600 border-blue-200",
             green: "bg-green-100 text-green-600 border-green-200",
@@ -208,7 +206,7 @@ export const TimeStampDataViewer = ({ isOpen, onClose, data, title = "Record Det
                                 </span>
                             </div>
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                             <div className="text-sm font-medium text-gray-700">
                                 {getDisplayName(user)}
                             </div>
@@ -323,7 +321,7 @@ export const ViewTimeStampDetailsButton = ({ data, title, children, className = 
             <button
                 onClick={() => setShowModal(true)}
                 className={className}
-                title="View Details"
+                title="View Time Log"
             >
                 {children || <Eye size={18} />}
             </button>
@@ -472,6 +470,7 @@ export const AddCompanyButton = ({ onSuccess, loadData, companies }) => {
             name: "",
             gst_no: "",
             pan_no: "",
+            created_by: sessionStorage.getItem('emp_code')
         });
     };
 
@@ -614,6 +613,7 @@ export const EditCompanyButton = ({ company, onSuccess, loadData, companies }) =
             name: company?.name || "",
             gst_no: company?.gst_no || "",
             pan_no: company?.pan_no || "",
+            updated_by: sessionStorage.getItem('emp_code')
         });
     };
 
@@ -725,7 +725,7 @@ export const DeleteCompanyButton = ({ company, onSuccess, loadData }) => {
     const [showConfirm, setShowConfirm] = useState(false);
     const DeleteBY = sessionStorage.getItem('emp_code')
     const handleDelete = async () => {
-        const companyId = sector.id
+        const companyId = company.id
         setLoading(true);
         try {
             await dispatch(deleteCompany({ companyId, DeleteBY })).unwrap();
@@ -1154,7 +1154,7 @@ export const AddSectorButton = ({ onSuccess, loadData, sectors, BasicButtonView 
                 name: formData.name,
                 unit: formData.unit,
                 created_by: formData.created_by,
-                stage_work_types: validWorkTypes
+                sector_work_types: validWorkTypes
             })).unwrap();
 
             dispatch(showSnackbar({ message: "Sector created successfully", type: "success" }));
@@ -1240,9 +1240,9 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
         updated_by: sessionStorage.getItem('emp_code')
     });
     const [workTypes, setWorkTypes] = useState(() => {
-        // Initialize from existing stage_work_types
-        if (sector?.stage_work_types && Array.isArray(sector.stage_work_types)) {
-            return sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') }));
+        // Initialize from existing sector_work_types
+        if (sector?.sector_work_types && Array.isArray(sector.sector_work_types)) {
+            return sector.sector_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') }));
         }
         return [];
     });
@@ -1255,8 +1255,8 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
     const handleShow = (e) => {
         e.preventDefault();
 
-        if (sector?.stage_work_types) {
-            setWorkTypes(sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
+        if (sector?.sector_work_types) {
+            setWorkTypes(sector.sector_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
         } else {
             setWorkTypes([]);
         }
@@ -1274,8 +1274,8 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
             unit: sector?.unit || "",
             updated_by: sessionStorage.getItem('emp_code')
         });
-        if (sector?.stage_work_types) {
-            setWorkTypes(sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
+        if (sector?.sector_work_types) {
+            setWorkTypes(sector.sector_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
         } else {
             setWorkTypes([]);
         }
@@ -1313,7 +1313,7 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
                     name: formData.name,
                     unit: formData.unit,
                     updated_by: formData.updated_by,
-                    stage_work_types: validWorkTypes
+                    sector_work_types: validWorkTypes
                 }
             })).unwrap();
 
@@ -1435,7 +1435,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
         phone: "",
         address: "",
         status: "active",
-        created_by: "",
+        created_by: '',
         updated_by: '',
     });
 
@@ -1449,7 +1449,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
                 phone: clientToEdit.phone || "",
                 address: clientToEdit.address || "",
                 status: clientToEdit.status || "active",
-                created_by: sessionStorage.getItem('emp_code'),
+                // created_by: sessionStorage.getItem('emp_code'),
                 updated_by: sessionStorage.getItem('emp_code'),
             });
 
@@ -1483,7 +1483,6 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
             address: "",
             status: "active",
             created_by: sessionStorage.getItem('emp_code'),
-            updated_by: ''
         });
         // setBranches([]);
         setBranches([{ name: "", gst: "", state: "", status: "Active" }]);

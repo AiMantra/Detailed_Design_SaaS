@@ -1086,7 +1086,7 @@ const ProjectList = () => {
                 </div>
               )}
 
-              {/* Work Type Dropdown - Dynamic from sector_detail.stage_work_types */}
+              {/* Work Type Dropdown - Dynamic from sector_detail.sector_work_types */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                   Work Type <span className="text-red-500">*</span>
@@ -1100,9 +1100,9 @@ const ProjectList = () => {
                   required
                 >
                   <option value="">Select work type</option>
-                  {/* You need to get the current project's sector_detail.stage_work_types */}
+                  {/* You need to get the current project's sector_detail.sector_work_types */}
                   {(() => {
-                    const workTypes = selectedTaskfortimelog.stage_work_types || [];
+                    const workTypes = selectedTaskfortimelog.sector_work_types || [];
                     if (workTypes.length > 0) {
                       return workTypes.map((workType) => (
                         <option key={workType.id} value={workType.id}>
@@ -3111,7 +3111,7 @@ const ProjectList = () => {
                                                                                           project_id: project.id || project.project_id,
                                                                                           subactivity_name: sub.subactivity_name,
                                                                                           project_name: project.shortName || project.short_name,
-                                                                                          stage_work_types: expandedProjectDetails[projectId].sector_detail?.stage_work_types || []
+                                                                                          sector_work_types: expandedProjectDetails[projectId].sector_detail?.sector_work_types || []
                                                                                         });
 
                                                                                         setTimeLogData({

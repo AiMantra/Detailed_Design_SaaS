@@ -1,10 +1,10 @@
 import api from './api';
 
 export const clientService = {
-  
-  getClients: async () => {
+
+  getClients: async (is_deleted = false) => {
     try {
-      const response = await api.get('/client/');
+      const response = await api.get(`/client/?is_deleted=${is_deleted}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching clients:', error);
@@ -12,7 +12,7 @@ export const clientService = {
     }
   },
 
-  
+
   getClient: async (clientId) => {
     try {
       const response = await api.get(`/client/${clientId}/`);
@@ -23,7 +23,7 @@ export const clientService = {
     }
   },
 
-  
+
   createClient: async (clientData) => {
     try {
       const response = await api.post('/client/', clientData);
@@ -34,7 +34,7 @@ export const clientService = {
     }
   },
 
-  
+
   updateClient: async (clientId, clientData) => {
     try {
       const response = await api.put(`/client/${clientId}/`, clientData);
@@ -45,10 +45,15 @@ export const clientService = {
     }
   },
 
-  
-  deleteClient: async (clientId) => {
+
+  deleteClient: async (clientId, DeleteBY) => {
+    const payload = {
+      deleted_by: DeleteBY
+    }
     try {
-      const response = await api.delete(`/client/${clientId}/`);
+      const response = await api.delete(`/client/${clientId}/`, {
+        data: payload
+      });
       return response.data;
     } catch (error) {
       console.error('Error deleting client:', error);
