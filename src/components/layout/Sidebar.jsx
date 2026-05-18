@@ -345,7 +345,7 @@ const Sidebar = () => {
                 </div>
                 <div className="min-w-0">
                   <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent block leading-tight">
-                    Detailed Design
+                    Time Sheet
                   </span>
                   {/* <span className="block text-[10px] text-gray-500">Enterprise Suite</span> */}
                 </div>

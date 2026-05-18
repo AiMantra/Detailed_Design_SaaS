@@ -98,7 +98,7 @@ const Layout = () => {
     if (path.includes("/all-projects")) return "All Projects";
     if (path.includes("/my-tasks")) return "My Tasks";
     if (path.includes("/my-picked-projects")) return "Project Details";
-    return "Detailed Design";
+    return "Time Sheet";
   };
 
   const getMarginLeft = () => {

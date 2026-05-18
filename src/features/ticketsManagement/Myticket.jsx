@@ -1,0 +1,305 @@
+// MyTickets.jsx
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
+import {
+    Eye,
+    Search,
+    X,
+    Loader2,
+    ChevronLeft,
+    ChevronRight,
+    MessageCircle,
+    Clock,
+    CheckCircle,
+    Plus
+} from 'lucide-react';
+import { fetchMyTickets, filterMyTickets, resetFilters, setSelectedStatus } from './ticketSlice';
+import { TicketChatModal } from '../../components/modals/TicketChatModal';
+
+const StatusBadge = ({ status }) => {
+    const config = {
+        pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
+        completed: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
+        inprocess: { bg: 'bg-blue-100', text: 'text-blue-800', icon: Loader2 }
+    };
+    const { bg, text, icon: Icon } = config[status] || config.pending;
+
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${bg} ${text}`}>
+            <Icon size={12} />
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+    );
+};
+
+const PriorityBadge = ({ priority }) => {
+    const config = {
+        1: { bg: 'bg-red-100', text: 'text-red-800', label: 'High' },
+        2: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Medium' },
+        3: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Low' }
+    };
+    const { bg, text, label } = config[priority] || config[3];
+
+    return (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${bg} ${text}`}>
+            {label}
+        </span>
+    );
+};
+
+export const MyTickets = ({ onRaiseTicket }) => {
+    const dispatch = useDispatch();
+    const { filteredMyTickets, loading, myTicketsStats, selectedStatus } = useSelector((state) => state.tickets);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [showChatModal, setShowChatModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Fetch tickets when status changes
+    useEffect(() => {
+        dispatch(fetchMyTickets(selectedStatus));
+    }, [dispatch, selectedStatus]);
+
+    // Apply filters when search or date range changes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            dispatch(filterMyTickets({ searchTerm, startDate, endDate }));
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [dispatch, searchTerm, startDate, endDate]);
+
+    const handleStatusFilter = (status) => {
+        setSelectedStatus(status);
+        setCurrentPage(1);
+    };
+
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setStartDate('');
+        setEndDate('');
+        dispatch(resetFilters());
+    };
+
+    const paginatedTickets = filteredMyTickets.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const totalPages = Math.ceil(filteredMyTickets.length / itemsPerPage);
+
+    // Status tabs with counts
+    const statusTabs = [
+        { value: 'null', label: 'All', count: myTicketsStats.total },
+        { value: 'pending', label: 'Pending', count: myTicketsStats.pending },
+        { value: 'completed', label: 'Completed', count: myTicketsStats.completed }
+    ];
+
+    const formatDate = (date) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return '-';
+        return `${d.getDate()} ${d.toLocaleString('default', { month: 'long' })} ${d.getFullYear()}`;
+    };
+
+    return (
+        <div className="space-y-4">
+            {/* Status Tabs */}
+            <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+                {statusTabs.map((tab) => (
+                    <button
+                        key={tab.value}
+                        onClick={() => handleStatusFilter(tab.value)}
+                        className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${selectedStatus === tab.value
+                                ? 'border-b-2 border-blue-600 text-blue-600'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        {tab.label}
+                        {tab.count > 0 && (
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                {tab.count}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Header Actions */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1 max-w-md relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search by title or description..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                </div>
+
+                <button
+                    onClick={onRaiseTicket}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                    <Plus size={16} />
+                    Raise New Ticket
+                </button>
+            </div>
+
+            {/* Date Filters */}
+            <div className="flex flex-wrap gap-3 items-center bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">From:</span>
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">To:</span>
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                {(searchTerm || startDate || endDate) && (
+                    <button
+                        onClick={handleClearFilters}
+                        className="text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
+                    >
+                        <X size={14} />
+                        Clear Filters
+                    </button>
+                )}
+            </div>
+
+            {/* Tickets Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center">
+                                        <Loader2 className="animate-spin mx-auto text-blue-600" size={32} />
+                                        <p className="mt-2 text-gray-500">Loading tickets...</p>
+                                    </td>
+                                </tr>
+                            ) : paginatedTickets.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                        No tickets found
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedTickets.map((ticket, index) => (
+                                    <motion.tr
+                                        key={ticket.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="hover:bg-gray-50 transition-colors"
+                                    >
+                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                                                {ticket.title}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div
+                                                className="text-sm text-gray-500 max-w-md line-clamp-2"
+                                                dangerouslySetInnerHTML={{ __html: ticket.description }}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                            {formatDate(ticket.assign_date)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <PriorityBadge priority={ticket.priority} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={ticket.status} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedTicket(ticket);
+                                                        setShowChatModal(true);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title="View Chat"
+                                                >
+                                                    <MessageCircle size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </motion.tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex justify-between items-center px-6 py-3 border-t border-gray-200">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft size={16} />
+                            Previous
+                        </button>
+                        <span className="text-sm text-gray-600">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Chat Modal */}
+            {showChatModal && selectedTicket && (
+                <TicketChatModal
+                    ticket={selectedTicket}
+                    onClose={() => {
+                        setShowChatModal(false);
+                        setSelectedTicket(null);
+                    }}
+                />
+            )}
+        </div>
+    );
+};

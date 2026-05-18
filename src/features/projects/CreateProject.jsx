@@ -1028,6 +1028,11 @@ const CreateProject = () => {
             lengthType: "different",
             lengthIndex: i,
             isCustom: true,
+            approval_exist: true,
+            chainage_exist: true,
+            length_exist: true,
+            planned_quantity_exist: true,
+            submission_exist: true,
           });
           currentStart = currentEnd;
         }
@@ -1164,6 +1169,12 @@ const CreateProject = () => {
         lengthType: subObj.lengthType || "same",
         chainageLengths: subObj.chainageLengths || [],
         isCustom: true,
+
+        approval_exist: subObj.approval_exist || '',
+        length_exist: subObj.length_exist || '',
+        submission_exist: subObj.submission_exist || ''
+
+
       });
       setShowCloneSubActivityModal(true);
     }
@@ -1178,22 +1189,33 @@ const CreateProject = () => {
     let newSubs = [];
 
     if (cloningSubActivity.activityType === "single") {
+      console.log(cloningSubActivity, 'subactivity')
+      const numberclone = (cloningSubActivity?.sorting_var || 0) + 1;
+
       newSubs = [
         {
           id: `custom-sub-${Date.now()}`,
           sorting_var: null,
-          subactivity_name: cloningSubActivity.subactivity_name,
+          subactivity_name: `${cloningSubActivity.subactivity_name} ${numberclone}`,
           unit: cloningSubActivity.unit,
           activityType: cloningSubActivity.activityType,
           chainage_start: null,
+          planned_quantity_exist: true,
           chainage_end: null,
           covered_area: null,
+          chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : false,
           chainage_quantity: null,
           lengthType: "same",
           chainageLengths: [],
           isCustom: true,
+          approval_exist: cloningSubActivity.approval_exist || '',
+          length_exist: cloningSubActivity.length_exist || '',
+          submission_exist: cloningSubActivity.submission_exist || '',
+
         },
       ];
+
+      console.log(newSubs, 'new subss')
     } else {
       const start = Number(cloningSubActivity.chainage_start) || 0;
       const count = Number(cloningSubActivity.chainage_quantity) || 0;
@@ -1234,11 +1256,17 @@ const CreateProject = () => {
             chainage_end: currentEnd,
             covered_area: covered,
             chainage_quantity: count,
+            planned_quantity_exist: true,
+            chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
             activityType: cloningSubActivity.activityType,
             lengthType: "same",
             chainageLengths: [],
             lengthIndex: i,
             isCustom: true,
+            approval_exist: cloningSubActivity.approval_exist || '',
+            length_exist: cloningSubActivity.length_exist || '',
+            submission_exist: cloningSubActivity.submission_exist || '',
+
           });
           currentStart = currentEnd;
         }
@@ -1277,9 +1305,15 @@ const CreateProject = () => {
             chainage_quantity: count,
             activityType: cloningSubActivity.activityType,
             chainageLengths: lengths,
+            planned_quantity_exist: true,
+            chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
             lengthType: "different",
             lengthIndex: i,
             isCustom: true,
+            approval_exist: cloningSubActivity.approval_exist || '',
+            length_exist: cloningSubActivity.length_exist || '',
+            submission_exist: cloningSubActivity.submission_exist || '',
+
           });
           currentStart = currentEnd;
         }
@@ -1930,12 +1964,12 @@ const CreateProject = () => {
     if (!form.project_code) missingFields.push("Project Code");
     if (!form.project_name) missingFields.push("Project Name");
     if (!form.short_name) missingFields.push("Short Name");
-    if (!form.company) missingFields.push("Please select a Company");
-    if (!form.sector) missingFields.push("Sector");
+    // if (!form.company) missingFields.push("Please select a Company");
+    // if (!form.sector) missingFields.push("Sector");
     if (!form.workorder_Amount) missingFields.push("Workorder Amount");
     if (!form.location) missingFields.push("Work location");
     if (!form.workorder_document) missingFields.push("Workorder Document");
-    if (!form.clientbranch) missingFields.push("Please select a Client & branch");
+    // if (!form.clientbranch) missingFields.push("Please select a Client & branch");
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
     if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
     if (!selectedActivities.length) missingFields.push("Please select at least one activity");
@@ -2538,7 +2572,7 @@ const CreateProject = () => {
     console.log("=================");
   };
 
-
+  const [showAllFields, setShowAllFields] = useState({});
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -3310,6 +3344,7 @@ const CreateProject = () => {
               className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
+              {console.log(cloningSubActivity, 'cloningsub')}
               <form onSubmit={handleCloneSubActivitySubmit}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg md:text-xl font-bold">
@@ -4158,15 +4193,45 @@ const CreateProject = () => {
                   value={companySearch || (form.company ? companies.find(c => c.name === form.company)?.name : "")}
                   placeholder="Select Company"
                   onFocus={() => {
-                    // if (!form.company) {
-                    setShowCompanyDropdown(true);
-                    // }
+                    if (!form.company) {
+                      setShowCompanyDropdown(true);
+                    } else {
+                      setShowCompanyDropdown(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      const matchedCompany = companies.find(
+                        (c) =>
+                          c.name?.trim().toLowerCase().includes(
+                            companySearch?.trim().toLowerCase()
+                          )
+                      );
+
+                      if (!matchedCompany) {
+                        setCompanySearch("");
+                        setForm({
+                          ...form,
+                          company: "",
+                        });
+                        setShowCompanyDropdown(false);
+                      }
+
+
+                    }, 200);
                   }}
                   onChange={(e) => {
                     setCompanySearch(e.target.value);
-                    // if (!form.company) {
-                    setShowCompanyDropdown(true);
-                    // }
+                    if (!form.company) {
+                      setShowCompanyDropdown(true);
+                    } else {
+                      setForm({
+                        ...form,
+                        company: ''
+                      });
+                      setCompanySearch('');
+                      setShowCompanyDropdown(false);
+                    }
                   }}
                   className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
@@ -4208,91 +4273,153 @@ const CreateProject = () => {
                   <div
                     className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                     onClick={(e) => {
-                      e.stopPropagation()
+                      e.stopPropagation();
                       e.preventDefault();
                     }}
                   >
-                    {companySearch && companies.filter(c =>
-                      c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                    ).length > 0 && (
-                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                          Showing {companies.filter(c =>
-                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                          ).length} of {companies.length} companies
-                        </div>
-                      )}
+                    {(() => {
+                      const filteredCompanies = companies.filter((c) =>
+                        c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                      );
 
-                    {companies.length > 0 ? (
-                      [...companies].sort((a, b) => {
-                        const aName = a.name || '';
-                        const bName = b.name || '';
-                        const searchTerm = companySearch?.toLowerCase() || '';
-
-                        const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                        const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
-
-                        // Matching items come first
-                        if (aMatches && !bMatches) return -1;
-                        if (!aMatches && bMatches) return 1;
-
-                        // For items with same match status, sort alphabetically
-                        return aName.localeCompare(bName);
-                      }).map((company) => {
-                        const companyName = company.name || '';
-                        const searchTerm = companySearch?.toLowerCase() || '';
-                        const isMatching = searchTerm && companyName.toLowerCase().includes(searchTerm);
-
-                        // Function to highlight matching text
-                        const getHighlightedText = (text, highlight) => {
-                          if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                            return text;
-                          }
-
-                          const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                          const parts = text.split(regex);
-
-                          return parts.map((part, i) =>
-                            regex.test(part) ?
-                              <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                              part
-                          );
-                        };
+                      // Auto close dropdown if no match found
+                      if (companySearch && filteredCompanies.length === 0) {
+                        setTimeout(() => setShowCompanyDropdown(false), 0);
 
                         return (
-                          <div
-                            key={company.id}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setForm({
-                                ...form,
-                                company: company.name
-                              });
-                              setCompanySearch(company.name);
-                              setShowCompanyDropdown(false);
-                            }}
-                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                              }`}
-                          >
-                            <div>
-                              {getHighlightedText(companyName, companySearch)}
-                              {company.gst_no && (
-                                <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>
-                              )}
-                            </div>
-                            {isMatching && (
-                              <div className="text-xs text-green-600 mt-0.5">
-                                Click to select
-                              </div>
-                            )}
+                          <div className="px-3 py-2 text-gray-400 text-sm">
+                            No matching companies
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="px-3 py-2 text-gray-400 text-sm">
-                        No companies available
-                      </div>
-                    )}
+                      }
+
+                      return (
+                        <>
+                          {companySearch && filteredCompanies.length > 0 && (
+                            <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                              Showing {filteredCompanies.length} of {companies.length} companies
+                            </div>
+                          )}
+
+                          {filteredCompanies.length > 0 ? (
+                            [...filteredCompanies]
+                              .sort((a, b) => {
+                                const aName = a.name || "";
+                                const bName = b.name || "";
+                                const searchTerm = companySearch?.toLowerCase() || "";
+
+                                const aMatches =
+                                  searchTerm &&
+                                  aName.toLowerCase().includes(searchTerm);
+
+                                const bMatches =
+                                  searchTerm &&
+                                  bName.toLowerCase().includes(searchTerm);
+
+                                // Matching items first
+                                if (aMatches && !bMatches) return -1;
+                                if (!aMatches && bMatches) return 1;
+
+                                return aName.localeCompare(bName);
+                              })
+                              .map((company) => {
+                                const companyName = company.name || "";
+                                const searchTerm =
+                                  companySearch?.toLowerCase() || "";
+
+                                const isMatching =
+                                  searchTerm &&
+                                  companyName
+                                    .toLowerCase()
+                                    .includes(searchTerm);
+
+                                // Highlight matching text
+                                const getHighlightedText = (
+                                  text,
+                                  highlight,
+                                ) => {
+                                  if (
+                                    !highlight ||
+                                    !text
+                                      .toLowerCase()
+                                      .includes(highlight.toLowerCase())
+                                  ) {
+                                    return text;
+                                  }
+
+                                  const regex = new RegExp(
+                                    `(${highlight.replace(
+                                      /[.*+?^${}()|[\]\\]/g,
+                                      "\\$&",
+                                    )})`,
+                                    "gi",
+                                  );
+
+                                  const parts = text.split(regex);
+
+                                  return parts.map((part, i) =>
+                                    regex.test(part) ? (
+                                      <span
+                                        key={i}
+                                        className="bg-yellow-200 font-semibold"
+                                      >
+                                        {part}
+                                      </span>
+                                    ) : (
+                                      part
+                                    ),
+                                  );
+                                };
+
+                                return (
+                                  <div
+                                    key={company.id}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+
+                                      setForm({
+                                        ...form,
+                                        company: company.name,
+                                      });
+
+                                      setCompanySearch(company.name);
+                                      setShowCompanyDropdown(false);
+                                    }}
+                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
+                                      ? "bg-yellow-50/50"
+                                      : ""
+                                      }`}
+                                  >
+                                    <div>
+                                      {getHighlightedText(
+                                        companyName,
+                                        companySearch,
+                                      )}
+
+                                      {company.gst_no && (
+                                        <span className="text-xs text-gray-400 ml-2">
+                                          (GST: {company.gst_no})
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {isMatching && (
+                                      <div className="text-xs text-green-600 mt-0.5">
+                                        Click to select
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                          ) : (
+                            <div className="px-3 py-2 text-gray-400 text-sm">
+                              No companies available
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -4366,11 +4493,48 @@ const CreateProject = () => {
                   type="text"
                   value={sectorSearch || (form.sector ? form.sector : "")}
                   placeholder="Select Sector"
-                  onFocus={() => setShowSectorDropdown(true)}
+                  onFocus={() => {
+                    if (!form.sector) {
+                      setShowSectorDropdown(true)
+                    } else {
+                      setShowSectorDropdown(false)
+                    }
+
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      const matchedSector = sectorsList.find(
+                        (s) =>
+                          s.name?.trim().toLowerCase().includes(
+                            sectorSearch?.trim().toLowerCase()
+                          )
+                      );
+
+                      if (!matchedSector) {
+                        setSectorSearch("");
+                        setForm({
+                          ...form,
+                          sector: "",
+                        });
+                      }
+
+                      setShowSectorDropdown(false);
+                    }, 200);
+                  }}
 
                   onChange={(e) => {
-                    setSectorSearch(e.target.value);
-                    setShowSectorDropdown(true);
+                    if (!form.sector) {
+                      setSectorSearch(e.target.value);
+                      setShowSectorDropdown(true);
+                    } else {
+                      setForm({
+                        ...form,
+                        sector: ''
+                      });
+                      setSectorSearch('');
+                      setShowSectorDropdown(false);
+                    }
+
                   }}
                   className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
@@ -4428,88 +4592,154 @@ const CreateProject = () => {
                       e.preventDefault();
                     }}
                   >
-                    {sectorSearch && sectorsList.filter(s =>
-                      s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                    ).length > 0 && (
-                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                          Showing {sectorsList.filter(s =>
-                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                          ).length} of {sectorsList.length} sectors
-                        </div>
-                      )}
+                    {(() => {
+                      const filteredSectors = sectorsList.filter((s) =>
+                        s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                      );
 
-                    {sectorsList.length > 0 ? (
-                      [...sectorsList].sort((a, b) => {
-                        const aName = a.name || '';
-                        const bName = b.name || '';
-                        const searchTerm = sectorSearch?.toLowerCase() || '';
-
-                        const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                        const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
-
-                        // Matching items come first
-                        if (aMatches && !bMatches) return -1;
-                        if (!aMatches && bMatches) return 1;
-
-                        // For items with same match status, sort alphabetically
-                        return aName.localeCompare(bName);
-                      }).map((sector) => {
-                        const sectorName = sector.name || '';
-                        const sectorUnit = sector.unit || '';
-                        const searchTerm = sectorSearch?.toLowerCase() || '';
-                        const isMatching = searchTerm && sectorName.toLowerCase().includes(searchTerm);
-
-                        // Function to highlight matching text
-                        const getHighlightedText = (text, highlight) => {
-                          if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                            return text;
-                          }
-
-                          const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                          const parts = text.split(regex);
-
-                          return parts.map((part, i) =>
-                            regex.test(part) ?
-                              <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                              part
-                          );
-                        };
+                      // Auto close dropdown if no match found
+                      if (sectorSearch && filteredSectors.length === 0) {
+                        setTimeout(() => setShowSectorDropdown(false), 0);
 
                         return (
-                          <div
-                            key={sector.id || sector.name}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setForm({
-                                ...form,
-                                sector: sector.name
-                              });
-                              setSectorSearch(sector.name);
-                              setShowSectorDropdown(false);
-                            }}
-                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                              }`}
-                          >
-                            <div>
-                              {getHighlightedText(sectorName, sectorSearch)}
-                              {sectorUnit && (
-                                <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})</span>
-                              )}
-                            </div>
-                            {isMatching && (
-                              <div className="text-xs text-green-600 mt-0.5">
-                                Click to select
-                              </div>
-                            )}
+                          <div className="px-3 py-2 text-gray-400 text-sm">
+                            No matching sectors
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="px-3 py-2 text-gray-400 text-sm">
-                        No sectors available
-                      </div>
-                    )}
+                      }
+
+                      return (
+                        <>
+                          {sectorSearch && filteredSectors.length > 0 && (
+                            <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                              Showing {filteredSectors.length} of {sectorsList.length} sectors
+                            </div>
+                          )}
+
+                          {filteredSectors.length > 0 ? (
+                            [...filteredSectors]
+                              .sort((a, b) => {
+                                const aName = a.name || "";
+                                const bName = b.name || "";
+                                const searchTerm = sectorSearch?.toLowerCase() || "";
+
+                                const aMatches =
+                                  searchTerm &&
+                                  aName.toLowerCase().includes(searchTerm);
+
+                                const bMatches =
+                                  searchTerm &&
+                                  bName.toLowerCase().includes(searchTerm);
+
+                                // Matching items first
+                                if (aMatches && !bMatches) return -1;
+                                if (!aMatches && bMatches) return 1;
+
+                                return aName.localeCompare(bName);
+                              })
+                              .map((sector) => {
+                                const sectorName = sector.name || "";
+                                const sectorUnit = sector.unit || "";
+                                const searchTerm =
+                                  sectorSearch?.toLowerCase() || "";
+
+                                const isMatching =
+                                  searchTerm &&
+                                  sectorName
+                                    .toLowerCase()
+                                    .includes(searchTerm);
+
+                                // Highlight matching text
+                                const getHighlightedText = (
+                                  text,
+                                  highlight,
+                                ) => {
+                                  if (
+                                    !highlight ||
+                                    !text
+                                      .toLowerCase()
+                                      .includes(highlight.toLowerCase())
+                                  ) {
+                                    return text;
+                                  }
+
+                                  const regex = new RegExp(
+                                    `(${highlight.replace(
+                                      /[.*+?^${}()|[\]\\]/g,
+                                      "\\$&",
+                                    )})`,
+                                    "gi",
+                                  );
+
+                                  const parts = text.split(regex);
+
+                                  return parts.map((part, i) =>
+                                    regex.test(part) ? (
+                                      <span
+                                        key={i}
+                                        className="bg-yellow-200 font-semibold"
+                                      >
+                                        {part}
+                                      </span>
+                                    ) : (
+                                      part
+                                    ),
+                                  );
+                                };
+
+                                return (
+                                  <div
+                                    key={sector.id || sector.name}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+
+                                      setForm({
+                                        ...form,
+                                        sector: sector.name,
+                                      });
+
+                                      setSectorSearch(sector.name);
+                                      setShowSectorDropdown(false);
+                                    }}
+                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
+                                      ? "bg-yellow-50/50"
+                                      : ""
+                                      }`}
+                                  >
+                                    <div>
+                                      {getHighlightedText(
+                                        sectorName,
+                                        sectorSearch,
+                                      )}
+
+                                      {sectorUnit && (
+                                        <span className="text-xs text-gray-400 ml-2">
+                                          (Unit:{" "}
+                                          {SECTOR_UNIT_MAPPING[
+                                            sectorUnit
+                                          ] || sectorUnit}
+                                          )
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {isMatching && (
+                                      <div className="text-xs text-green-600 mt-0.5">
+                                        Click to select
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                          ) : (
+                            <div className="px-3 py-2 text-gray-400 text-sm">
+                              No sectors available
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -4542,6 +4772,32 @@ const CreateProject = () => {
                       clientbranch: ''
                     }));
                     setShowClientDropdown(true);
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      const matchedClient = clients.find(
+                        (c) =>
+                          c.client_name?.trim().toLowerCase().includes(
+                            clientSearch?.trim().toLowerCase()
+                          ) ||
+                          c.client_code?.trim().toLowerCase().includes(
+                            clientSearch?.trim().toLowerCase()
+                          )
+                      );
+
+                      if (!matchedClient) {
+                        setClientSearch("");
+                        setClientCode("");
+
+                        setForm({
+                          ...form,
+                          client: "",
+                          clientbranch: "",
+                        });
+                      }
+
+                      setShowClientDropdown(false);
+                    }, 200);
                   }}
                   className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
@@ -4582,122 +4838,199 @@ const CreateProject = () => {
 
                 {/* Dropdown with sorting and highlighting */}
                 {showClientDropdown && (
-                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                  <div
+                    className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
                     }}
                   >
-                    {clientSearch && (() => {
-                      const matchingCount = clients.filter(c =>
-                        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                        c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
-                      ).length;
+                    {(() => {
+                      const filteredClients = clients.filter(
+                        (c) =>
+                          c.client_name
+                            ?.toLowerCase()
+                            .includes(clientSearch.toLowerCase()) ||
+                          c.client_code
+                            ?.toLowerCase()
+                            .includes(clientSearch.toLowerCase()),
+                      );
 
-                      return matchingCount > 0 ? (
-                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                          Showing {matchingCount} of {clients.length} clients
-                        </div>
-                      ) : null;
-                    })()}
+                      // Auto close dropdown if no match found
+                      if (clientSearch && filteredClients.length === 0) {
+                        setTimeout(() => setShowClientDropdown(false), 0);
 
-                    {clients.length > 0 ? (
-                      [...clients].sort((a, b) => {
-                        const searchTerm = clientSearch?.toLowerCase() || '';
+                        return (
+                          <div className="px-3 py-2 text-gray-400 text-sm">
+                            No matching clients
+                          </div>
+                        );
+                      }
 
-                        const aName = a.client_name || '';
-                        const aCode = a.client_code || '';
-                        const bName = b.client_name || '';
-                        const bCode = b.client_code || '';
-
-                        // Check matches for both name and code
-                        const aNameMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                        const aCodeMatches = searchTerm && aCode.toLowerCase().includes(searchTerm);
-                        const bNameMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
-                        const bCodeMatches = searchTerm && bCode.toLowerCase().includes(searchTerm);
-
-                        const aMatches = aNameMatches || aCodeMatches;
-                        const bMatches = bNameMatches || bCodeMatches;
-
-                        // Matching items come first
-                        if (aMatches && !bMatches) return -1;
-                        if (!aMatches && bMatches) return 1;
-
-                        // If both match or both don't match, prioritize code matches over name matches
-                        if (aMatches && bMatches) {
-                          // If one matches by code and the other only by name, code match comes first
-                          if (aCodeMatches && !bCodeMatches) return -1;
-                          if (!aCodeMatches && bCodeMatches) return 1;
-                        }
-
-                        // For items with same match status, sort alphabetically by name
-                        return aName.localeCompare(bName);
-                      })
-                        .map((client) => {
-                          const clientName = client.client_name || '';
-                          const clientCode = client.client_code || "";
-                          const searchTerm = clientSearch?.toLowerCase() || '';
-                          const displayText = `${clientName} - ${clientCode}`;
-
-                          // const isMatching = searchTerm && (clientName.toLowerCase().includes(searchTerm) || clientCode.toLowerCase().includes(searchTerm));
-                          const isMatching = searchTerm && (
-                            clientName.toLowerCase().includes(searchTerm) ||
-                            clientCode.toLowerCase().includes(searchTerm)
-                          );
-
-                          // Function to highlight matching text
-                          const getHighlightedText = (text, highlight) => {
-                            if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                              return text;
-                            }
-
-                            const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                            const parts = text.split(regex);
-
-                            return parts.map((part, i) =>
-                              regex.test(part) ?
-                                <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                                part
-                            );
-                          };
-
-                          return (
-                            <div
-                              key={client.id}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setForm({
-                                  ...form,
-                                  client: client.id,
-                                  clientbranch: ''
-                                });
-                                setClientSearch(`${clientName} - ${clientCode}`);
-                                // setClientSearch(clientName);
-                                setClientCode(clientCode);
-                                setShowClientDropdown(false);
-                              }}
-                              className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                                }`}
-                            >
-                              <div>
-                                {/* {getHighlightedText(clientName, clientSearch)} - {clientCode} */}
-                                {/* {getHighlightedText(`${clientName} - ${clientCode}`, clientSearch)} - {clientCode} */}
-                                {getHighlightedText(`${clientName} - ${clientCode}`, clientSearch)}
-                              </div>
-                              {isMatching && (
-                                <div className="text-xs text-green-600 mt-0.5">
-                                  Press Enter to select
-                                </div>
-                              )}
+                      return (
+                        <>
+                          {clientSearch && filteredClients.length > 0 && (
+                            <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                              Showing {filteredClients.length} of{" "}
+                              {clients.length} clients
                             </div>
-                          );
-                        })
-                    ) : (
-                      <div className="px-3 py-2 text-gray-400 text-sm">
-                        No Clients Available
-                      </div>
-                    )}
+                          )}
+
+                          {filteredClients.length > 0 ? (
+                            [...filteredClients]
+                              .sort((a, b) => {
+                                const searchTerm =
+                                  clientSearch?.toLowerCase() || "";
+
+                                const aName = a.client_name || "";
+                                const aCode = a.client_code || "";
+                                const bName = b.client_name || "";
+                                const bCode = b.client_code || "";
+
+                                // Match checks
+                                const aNameMatches =
+                                  searchTerm &&
+                                  aName.toLowerCase().includes(searchTerm);
+
+                                const aCodeMatches =
+                                  searchTerm &&
+                                  aCode.toLowerCase().includes(searchTerm);
+
+                                const bNameMatches =
+                                  searchTerm &&
+                                  bName.toLowerCase().includes(searchTerm);
+
+                                const bCodeMatches =
+                                  searchTerm &&
+                                  bCode.toLowerCase().includes(searchTerm);
+
+                                const aMatches =
+                                  aNameMatches || aCodeMatches;
+
+                                const bMatches =
+                                  bNameMatches || bCodeMatches;
+
+                                // Matching first
+                                if (aMatches && !bMatches) return -1;
+                                if (!aMatches && bMatches) return 1;
+
+                                // Code match priority
+                                if (aMatches && bMatches) {
+                                  if (aCodeMatches && !bCodeMatches)
+                                    return -1;
+
+                                  if (!aCodeMatches && bCodeMatches)
+                                    return 1;
+                                }
+
+                                return aName.localeCompare(bName);
+                              })
+                              .map((client) => {
+                                const clientName =
+                                  client.client_name || "";
+
+                                const clientCode =
+                                  client.client_code || "";
+
+                                const searchTerm =
+                                  clientSearch?.toLowerCase() || "";
+
+                                const isMatching =
+                                  searchTerm &&
+                                  (clientName
+                                    .toLowerCase()
+                                    .includes(searchTerm) ||
+                                    clientCode
+                                      .toLowerCase()
+                                      .includes(searchTerm));
+
+                                // Highlight matching text
+                                const getHighlightedText = (
+                                  text,
+                                  highlight,
+                                ) => {
+                                  if (
+                                    !highlight ||
+                                    !text
+                                      .toLowerCase()
+                                      .includes(highlight.toLowerCase())
+                                  ) {
+                                    return text;
+                                  }
+
+                                  const regex = new RegExp(
+                                    `(${highlight.replace(
+                                      /[.*+?^${}()|[\]\\]/g,
+                                      "\\$&",
+                                    )})`,
+                                    "gi",
+                                  );
+
+                                  const parts = text.split(regex);
+
+                                  return parts.map((part, i) =>
+                                    regex.test(part) ? (
+                                      <span
+                                        key={i}
+                                        className="bg-yellow-200 font-semibold"
+                                      >
+                                        {part}
+                                      </span>
+                                    ) : (
+                                      part
+                                    ),
+                                  );
+                                };
+
+                                return (
+                                  <div
+                                    key={client.id}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+
+                                      setForm({
+                                        ...form,
+                                        client: client.id,
+                                        clientbranch: "",
+                                      });
+
+                                      setClientSearch(
+                                        `${clientName} - ${clientCode}`,
+                                      );
+
+                                      setClientCode(clientCode);
+
+                                      setShowClientDropdown(false);
+                                    }}
+                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
+                                      ? "bg-yellow-50/50"
+                                      : ""
+                                      }`}
+                                  >
+                                    <div>
+                                      {getHighlightedText(
+                                        `${clientName} - ${clientCode}`,
+                                        clientSearch,
+                                      )}
+                                    </div>
+
+                                    {isMatching && (
+                                      <div className="text-xs text-green-600 mt-0.5">
+                                        Press Enter to select
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                          ) : (
+                            <div className="px-3 py-2 text-gray-400 text-sm">
+                              No Clients Available
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -5133,7 +5466,9 @@ const CreateProject = () => {
                 name="loa_date"
                 value={form.loa_date}
                 onChange={handleChange}
-                max={form.completion_date}
+                min="1000-01-01"
+                max={form.completion_date || "9999-12-31"}
+                // max={form.completion_date}
                 className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -5147,7 +5482,9 @@ const CreateProject = () => {
                 type="date"
                 name="completion_date"
                 min={form.loa_date}
-                value={form.completion_date}
+                // min=
+                max={"9999-12-31"}
+                // value={form.completion_date}
                 onChange={handleChange}
                 className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 required
@@ -5671,7 +6008,7 @@ const CreateProject = () => {
 
                                 {(() => {
                                   const grouped = {};
-
+                                  { console.log(activityObj?.subActivities, 'subactivities') }
                                   activityObj?.subActivities.forEach(
                                     (sub, idx) => {
                                       if (!grouped[sub.subactivity_name]) {
@@ -5699,6 +6036,7 @@ const CreateProject = () => {
                                         sub.id,
                                       );
                                       const key = `${activityId}_${sub.id}`;
+                                      console.log(key, 'keyyy')
                                       // const key = `${activityId}_${sub.subactivity_name}`;
                                       // const key2 = `${sub?.id}_${sub.subactivity_name}`;
                                       const currentUnit =
@@ -5712,6 +6050,7 @@ const CreateProject = () => {
                                           id={`sub-${sub.id}`}
                                           className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
                                         >
+
                                           <div className="flex items-center justify-between mb-2">
                                             {/* <div className="flex items-center gap-2">
                                               <input
@@ -5820,6 +6159,26 @@ const CreateProject = () => {
                                                 <Copy size={14} />
                                               </button>
 
+
+                                              <div className="flex items-center gap-2 mr-2">
+                                                <label className="text-[10px] text-gray-600 flex items-center gap-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={showAllFields[key] || false}
+                                                    onChange={(e) =>
+                                                      setShowAllFields((prev) => ({
+                                                        ...prev,
+                                                        [key]: e.target.checked,
+                                                      }))
+                                                    }
+                                                    className="w-3 h-3"
+                                                  />
+                                                  Show All
+                                                </label>
+                                                {console.log(showAllFields[key], '')}
+
+
+                                              </div>
                                               {/* Edit Button */}
                                               {/* <button
                                                 type="button"
@@ -5879,7 +6238,7 @@ const CreateProject = () => {
                                                     )}
                                                   </select>
                                                 </div>
-                                                {currentUnit !== "status" && sub?.planned_quantity_exist && (
+                                                {currentUnit !== "status" && (sub?.planned_quantity_exist || showAllFields[key]) && (
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Planned Quantity
@@ -5908,57 +6267,49 @@ const CreateProject = () => {
                                                   </div>
                                                 )}
 
-                                                {sub?.chainage_exist && <div>
-                                                  <div className="grid grid-cols-1 gap-1 col-span-3">
-                                                    <div>
-                                                      <div className="flex flex-row justify-between items-center">
-                                                        <label className="block text-[10px] text-gray-500 mb-1">
-                                                          Chainage Start
-                                                        </label>
-                                                        {currentUnit ===
-                                                          "status" && (
-                                                            // <div className="col-span-3">
-                                                            //   <div className="text-[10px] text-blue-600 bg-blue-50 p-1 rounded flex items-center gap-1">
-                                                            //     <Info size={10} />
-                                                            //     Status-based - no quantity needed
-                                                            //   </div>
-                                                            // </div>
-                                                            <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
-                                                              <Info size={10} />
-                                                              Status-based - no
-                                                              quantity needed
-                                                            </div>
-                                                          )}
+                                                {(sub?.chainage_exist || showAllFields[key]) &&
+                                                  <div>
+                                                    <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                      <div>
+                                                        <div className="flex flex-row justify-between items-center">
+                                                          <label className="block text-[10px] text-gray-500 mb-1">
+                                                            Chainage Start
+                                                          </label>
+                                                          {currentUnit ===
+                                                            "status" && (
+                                                              // <div className="col-span-3">
+                                                              //   <div className="text-[10px] text-blue-600 bg-blue-50 p-1 rounded flex items-center gap-1">
+                                                              //     <Info size={10} />
+                                                              //     Status-based - no quantity needed
+                                                              //   </div>
+                                                              // </div>
+                                                              <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
+                                                                <Info size={10} />
+                                                                Status-based - no
+                                                                quantity needed
+                                                              </div>
+                                                            )}
+                                                        </div>
+
+                                                        <input
+                                                          type="number"
+                                                          min="0"
+                                                          step="0.01"
+                                                          defaultValue={
+                                                            sub.chainage_start ||
+                                                            ""
+                                                          } // Read from sub object directly
+                                                          // disabled // Make it read-only as it's calculated
+                                                          onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
+                                                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
+                                                          placeholder="001"
+                                                        />
                                                       </div>
-                                                      {/* <input
-                                                      type="number"
-                                                      min="0"
-                                                      step="0.01"
-                                                      // value={subActivityPlannedQtys[(key2 + "_chainagestart")] || ''}
-                                                      value={subActivityPlannedQtys[`${sub.id}_chainagestart`] || ''}
-                                                      // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_chainagestart"), e.target.value)}
-                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
-                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                      placeholder="001"
-                                                    /> */}
-                                                      <input
-                                                        type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        defaultValue={
-                                                          sub.chainage_start ||
-                                                          ""
-                                                        } // Read from sub object directly
-                                                        // disabled // Make it read-only as it's calculated
-                                                        onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
-                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
-                                                        placeholder="001"
-                                                      />
                                                     </div>
                                                   </div>
-                                                </div>}
+                                                }
 
-                                                {sub?.length_exist &&
+                                                {(sub?.length_exist || showAllFields[key]) &&
                                                   <div>
                                                     <div className="grid grid-cols-1 gap-1 col-span-3">
                                                       <div>
@@ -6073,7 +6424,7 @@ const CreateProject = () => {
                                                       </div>
                                                     </div>
                                                   </div>}
-                                                {sub?.submission_exist &&
+                                                {(sub?.submission_exist || showAllFields[key]) &&
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Submission Payment (%)
@@ -6119,7 +6470,7 @@ const CreateProject = () => {
                                                     </div>
                                                   </div>}
 
-                                                {sub?.approval_exist &&
+                                                {(sub?.approval_exist || showAllFields[key]) &&
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Approval Payment (%)

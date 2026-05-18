@@ -1106,63 +1106,148 @@ const UpdateProject = () => {
                 return;
             }
 
-            let currentStart = start;
+            let currentStart = Number(start);
 
             if (cloningSubActivity.lengthType === "same") {
                 const covered = Number(cloningSubActivity.covered_area) || 0;
+
                 if (!covered) {
-                    dispatch(showSnackbar({ message: "Please enter Chainage Length", type: "error" }));
+                    dispatch(
+                        showSnackbar({
+                            message: "Please enter Chainage Length",
+                            type: "error",
+                        })
+                    );
                     return;
                 }
 
                 for (let i = 0; i < count; i++) {
-                    const currentEnd = Number((currentStart + covered).toFixed(2));
+
+                    // same chainage logic as your working test(1), test(2)
+                    const chainageStart = Number(currentStart.toFixed(2));
+                    const currentEnd = Number(
+                        (chainageStart + covered).toFixed(2)
+                    );
+
                     newSubs.push({
                         // id: `custom-sub-${Date.now()}-${i}`,
                         sorting_var: null,
-                        subactivity_name: cloningSubActivity.subactivity_name,
+
+                        // same naming pattern
+                        subactivity_name:
+                            cloningSubActivity.subactivity_name +
+                            ` (${i + 1})`,
+
                         unit: cloningSubActivity.unit,
-                        chainage_start: currentStart,
+
+                        // updated chainage logic
+                        chainage_start: chainageStart,
                         chainage_end: currentEnd,
+
                         covered_area: covered,
                         chainage_quantity: count,
+
                         activityType: cloningSubActivity.activityType,
                         lengthType: "same",
                         chainageLengths: [],
                         lengthIndex: i,
                         isCustom: true,
+                        chainage_exist: cloningSubActivity.chainage_exist || true,
+
+                        // keep flags same as existing structure
+                        approval_exist:
+                            cloningSubActivity.approval_exist || true,
+
+                        // chainage_exist:
+                        //     cloningSubActivity.chainage_exist ?? true,
+
+                        length_exist:
+                            cloningSubActivity.length_exist || true,
+
+                        planned_quantity_exist:
+                            cloningSubActivity.planned_quantity_exist || true,
+
+                        submission_exist:
+                            cloningSubActivity.submission_exist || true,
                     });
+
+                    // next start
                     currentStart = currentEnd;
                 }
             } else {
+
                 const lengths = cloningSubActivity.chainageLengths;
+
                 if (lengths.length !== count) {
-                    dispatch(showSnackbar({ message: `Please enter lengths for all ${count} chainages`, type: "error" }));
+                    dispatch(
+                        showSnackbar({
+                            message: `Please enter lengths for all ${count} chainages`,
+                            type: "error",
+                        })
+                    );
                     return;
                 }
 
                 for (let i = 0; i < count; i++) {
+
                     const covered = Number(lengths[i]) || 0;
+
                     if (!covered) {
-                        dispatch(showSnackbar({ message: `Please enter valid length for chainage ${i + 1}`, type: "error" }));
+                        dispatch(
+                            showSnackbar({
+                                message: `Please enter valid length for chainage ${i + 1}`,
+                                type: "error",
+                            })
+                        );
                         return;
                     }
-                    const currentEnd = Number((currentStart + covered).toFixed(2));
+
+                    // same chainage logic
+                    const chainageStart = Number(currentStart.toFixed(2));
+                    const currentEnd = Number(
+                        (chainageStart + covered).toFixed(2)
+                    );
+
                     newSubs.push({
                         // id: `custom-sub-${Date.now()}-${i}`,
                         sorting_var: null,
-                        subactivity_name: cloningSubActivity.subactivity_name,
+
+                        // same naming pattern
+                        subactivity_name:
+                            cloningSubActivity.subactivity_name +
+                            ` (${i + 1})`,
+
                         unit: cloningSubActivity.unit,
-                        chainage_start: currentStart,
+
+                        chainage_start: chainageStart,
                         chainage_end: currentEnd,
+
                         covered_area: covered,
                         chainage_quantity: count,
+
                         activityType: cloningSubActivity.activityType,
                         chainageLengths: lengths,
                         lengthType: "different",
                         lengthIndex: i,
                         isCustom: true,
+
+                        approval_exist:
+                            cloningSubActivity.approval_exist || true,
+
+                        chainage_exist:
+                            cloningSubActivity.chainage_exist ?? true,
+
+                        length_exist:
+                            cloningSubActivity.length_exist || true,
+
+                        planned_quantity_exist:
+                            cloningSubActivity.planned_quantity_exist || true,
+
+                        submission_exist:
+                            cloningSubActivity.submission_exist || true,
                     });
+
+                    // next start
                     currentStart = currentEnd;
                 }
             }
@@ -1778,7 +1863,11 @@ const UpdateProject = () => {
                 project_confirmation_date: form.project_confirmation_date || null,
                 sector: sectorsMap[form.sector] || null,
                 client: form.client || null,
+                // workorder_document: form.workorder_document ? form.workorder_document : form.existing_workorder_document,
                 activities: activitiesPayload,
+                ...(form.workorder_document && {
+                    workorder_document: form.workorder_document
+                })
             };
 
             // // Add to FormData for file upload
@@ -1807,7 +1896,7 @@ const UpdateProject = () => {
             setProjectData(refreshedProject);
 
             // navigate("/all-projects");
-            setTimeout(() => navigate("/all-projects"), 2000);
+            // setTimeout(() => navigate("/all-projects"), 2000);
         } catch (error) {
             console.error("Project update error:", error);
             dispatch(
@@ -1950,7 +2039,7 @@ const UpdateProject = () => {
             recalculateActivityStages();
         }
     }, [selectedActivities, recalculateActivityStages]);
-
+    const [showAllFields, setShowAllFields] = useState({});
     if (isLoadingProject || !projectData) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -3568,15 +3657,45 @@ const UpdateProject = () => {
                                     value={companySearch || (form.company ? companies.find(c => c.name === form.company)?.name : "")}
                                     placeholder="Select Company"
                                     onFocus={() => {
-                                        // if (!form.company) {
-                                        setShowCompanyDropdown(true);
-                                        // }
+                                        if (!form.company) {
+                                            setShowCompanyDropdown(true);
+                                        } else {
+                                            setShowCompanyDropdown(false)
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        setTimeout(() => {
+                                            const matchedCompany = companies.find(
+                                                (c) =>
+                                                    c.name?.trim().toLowerCase().includes(
+                                                        companySearch?.trim().toLowerCase()
+                                                    )
+                                            );
+
+                                            if (!matchedCompany) {
+                                                setCompanySearch("");
+                                                setForm({
+                                                    ...form,
+                                                    company: "",
+                                                });
+                                                setShowCompanyDropdown(false);
+                                            }
+
+
+                                        }, 200);
                                     }}
                                     onChange={(e) => {
                                         setCompanySearch(e.target.value);
-                                        // if (!form.company) {
-                                        setShowCompanyDropdown(true);
-                                        // }
+                                        if (!form.company) {
+                                            setShowCompanyDropdown(true);
+                                        } else {
+                                            setForm({
+                                                ...form,
+                                                company: ''
+                                            });
+                                            setCompanySearch('');
+                                            setShowCompanyDropdown(false);
+                                        }
                                     }}
                                     className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 />
@@ -3618,91 +3737,153 @@ const UpdateProject = () => {
                                     <div
                                         className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                                         onClick={(e) => {
-                                            e.stopPropagation()
+                                            e.stopPropagation();
                                             e.preventDefault();
                                         }}
                                     >
-                                        {companySearch && companies.filter(c =>
-                                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                                        ).length > 0 && (
-                                                <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                    Showing {companies.filter(c =>
-                                                        c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                                                    ).length} of {companies.length} companies
-                                                </div>
-                                            )}
+                                        {(() => {
+                                            const filteredCompanies = companies.filter((c) =>
+                                                c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                                            );
 
-                                        {companies.length > 0 ? (
-                                            [...companies].sort((a, b) => {
-                                                const aName = a.name || '';
-                                                const bName = b.name || '';
-                                                const searchTerm = companySearch?.toLowerCase() || '';
-
-                                                const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                                                const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
-
-                                                // Matching items come first
-                                                if (aMatches && !bMatches) return -1;
-                                                if (!aMatches && bMatches) return 1;
-
-                                                // For items with same match status, sort alphabetically
-                                                return aName.localeCompare(bName);
-                                            }).map((company) => {
-                                                const companyName = company.name || '';
-                                                const searchTerm = companySearch?.toLowerCase() || '';
-                                                const isMatching = searchTerm && companyName.toLowerCase().includes(searchTerm);
-
-                                                // Function to highlight matching text
-                                                const getHighlightedText = (text, highlight) => {
-                                                    if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                                                        return text;
-                                                    }
-
-                                                    const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                                    const parts = text.split(regex);
-
-                                                    return parts.map((part, i) =>
-                                                        regex.test(part) ?
-                                                            <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                                                            part
-                                                    );
-                                                };
+                                            // Auto close dropdown if no match found
+                                            if (companySearch && filteredCompanies.length === 0) {
+                                                setTimeout(() => setShowCompanyDropdown(false), 0);
 
                                                 return (
-                                                    <div
-                                                        key={company.id}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setForm({
-                                                                ...form,
-                                                                company: company.name
-                                                            });
-                                                            setCompanySearch(company.name);
-                                                            setShowCompanyDropdown(false);
-                                                        }}
-                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                                                            }`}
-                                                    >
-                                                        <div>
-                                                            {getHighlightedText(companyName, companySearch)}
-                                                            {company.gst_no && (
-                                                                <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>
-                                                            )}
-                                                        </div>
-                                                        {isMatching && (
-                                                            <div className="text-xs text-green-600 mt-0.5">
-                                                                Click to select
-                                                            </div>
-                                                        )}
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching companies
                                                     </div>
                                                 );
-                                            })
-                                        ) : (
-                                            <div className="px-3 py-2 text-gray-400 text-sm">
-                                                No companies available
-                                            </div>
-                                        )}
+                                            }
+
+                                            return (
+                                                <>
+                                                    {companySearch && filteredCompanies.length > 0 && (
+                                                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                                                            Showing {filteredCompanies.length} of {companies.length} companies
+                                                        </div>
+                                                    )}
+
+                                                    {filteredCompanies.length > 0 ? (
+                                                        [...filteredCompanies]
+                                                            .sort((a, b) => {
+                                                                const aName = a.name || "";
+                                                                const bName = b.name || "";
+                                                                const searchTerm = companySearch?.toLowerCase() || "";
+
+                                                                const aMatches =
+                                                                    searchTerm &&
+                                                                    aName.toLowerCase().includes(searchTerm);
+
+                                                                const bMatches =
+                                                                    searchTerm &&
+                                                                    bName.toLowerCase().includes(searchTerm);
+
+                                                                // Matching items first
+                                                                if (aMatches && !bMatches) return -1;
+                                                                if (!aMatches && bMatches) return 1;
+
+                                                                return aName.localeCompare(bName);
+                                                            })
+                                                            .map((company) => {
+                                                                const companyName = company.name || "";
+                                                                const searchTerm =
+                                                                    companySearch?.toLowerCase() || "";
+
+                                                                const isMatching =
+                                                                    searchTerm &&
+                                                                    companyName
+                                                                        .toLowerCase()
+                                                                        .includes(searchTerm);
+
+                                                                // Highlight matching text
+                                                                const getHighlightedText = (
+                                                                    text,
+                                                                    highlight,
+                                                                ) => {
+                                                                    if (
+                                                                        !highlight ||
+                                                                        !text
+                                                                            .toLowerCase()
+                                                                            .includes(highlight.toLowerCase())
+                                                                    ) {
+                                                                        return text;
+                                                                    }
+
+                                                                    const regex = new RegExp(
+                                                                        `(${highlight.replace(
+                                                                            /[.*+?^${}()|[\]\\]/g,
+                                                                            "\\$&",
+                                                                        )})`,
+                                                                        "gi",
+                                                                    );
+
+                                                                    const parts = text.split(regex);
+
+                                                                    return parts.map((part, i) =>
+                                                                        regex.test(part) ? (
+                                                                            <span
+                                                                                key={i}
+                                                                                className="bg-yellow-200 font-semibold"
+                                                                            >
+                                                                                {part}
+                                                                            </span>
+                                                                        ) : (
+                                                                            part
+                                                                        ),
+                                                                    );
+                                                                };
+
+                                                                return (
+                                                                    <div
+                                                                        key={company.id}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+
+                                                                            setForm({
+                                                                                ...form,
+                                                                                company: company.name,
+                                                                            });
+
+                                                                            setCompanySearch(company.name);
+                                                                            setShowCompanyDropdown(false);
+                                                                        }}
+                                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
+                                                                                ? "bg-yellow-50/50"
+                                                                                : ""
+                                                                            }`}
+                                                                    >
+                                                                        <div>
+                                                                            {getHighlightedText(
+                                                                                companyName,
+                                                                                companySearch,
+                                                                            )}
+
+                                                                            {company.gst_no && (
+                                                                                <span className="text-xs text-gray-400 ml-2">
+                                                                                    (GST: {company.gst_no})
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {isMatching && (
+                                                                            <div className="text-xs text-green-600 mt-0.5">
+                                                                                Click to select
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-400 text-sm">
+                                                            No companies available
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -3737,11 +3918,52 @@ const UpdateProject = () => {
                                     type="text"
                                     value={sectorSearch || (form.sector ? form.sector : "")}
                                     placeholder="Select Sector"
-                                    onFocus={() => setShowSectorDropdown(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => {
+                                            const matchedSector = sectorsList.find(
+                                                (s) =>
+                                                    s.name?.trim().toLowerCase().includes(
+                                                        sectorSearch?.trim().toLowerCase()
+                                                    )
+                                            );
+
+                                            if (!matchedSector) {
+                                                setSectorSearch("");
+                                                setForm({
+                                                    ...form,
+                                                    sector: "",
+                                                });
+                                            }
+
+                                            setShowSectorDropdown(false);
+                                        }, 200);
+                                    }}
+                                    onFocus={() => {
+                                        if (!form.sector) {
+
+                                            setShowSectorDropdown(true);
+                                        } else {
+
+                                            setShowSectorDropdown(false);
+                                        }
+                                    }
+
+
+                                    }
 
                                     onChange={(e) => {
-                                        setSectorSearch(e.target.value);
-                                        setShowSectorDropdown(true);
+                                        if (!form.sector) {
+                                            setSectorSearch(e.target.value);
+                                            setShowSectorDropdown(true);
+                                        } else {
+                                            setForm({
+                                                ...form,
+                                                sector: ''
+                                            });
+                                            setSectorSearch('');
+                                            setShowSectorDropdown(false);
+                                        }
+
                                     }}
                                     className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 />
@@ -3799,88 +4021,154 @@ const UpdateProject = () => {
                                             e.preventDefault();
                                         }}
                                     >
-                                        {sectorSearch && sectorsList.filter(s =>
-                                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                                        ).length > 0 && (
-                                                <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                    Showing {sectorsList.filter(s =>
-                                                        s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                                                    ).length} of {sectorsList.length} sectors
-                                                </div>
-                                            )}
+                                        {(() => {
+                                            const filteredSectors = sectorsList.filter((s) =>
+                                                s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                                            );
 
-                                        {sectorsList.length > 0 ? (
-                                            [...sectorsList].sort((a, b) => {
-                                                const aName = a.name || '';
-                                                const bName = b.name || '';
-                                                const searchTerm = sectorSearch?.toLowerCase() || '';
-
-                                                const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                                                const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
-
-                                                // Matching items come first
-                                                if (aMatches && !bMatches) return -1;
-                                                if (!aMatches && bMatches) return 1;
-
-                                                // For items with same match status, sort alphabetically
-                                                return aName.localeCompare(bName);
-                                            }).map((sector) => {
-                                                const sectorName = sector.name || '';
-                                                const sectorUnit = sector.unit || '';
-                                                const searchTerm = sectorSearch?.toLowerCase() || '';
-                                                const isMatching = searchTerm && sectorName.toLowerCase().includes(searchTerm);
-
-                                                // Function to highlight matching text
-                                                const getHighlightedText = (text, highlight) => {
-                                                    if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                                                        return text;
-                                                    }
-
-                                                    const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                                    const parts = text.split(regex);
-
-                                                    return parts.map((part, i) =>
-                                                        regex.test(part) ?
-                                                            <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                                                            part
-                                                    );
-                                                };
+                                            // Auto close dropdown if no match found
+                                            if (sectorSearch && filteredSectors.length === 0) {
+                                                setTimeout(() => setShowSectorDropdown(false), 0);
 
                                                 return (
-                                                    <div
-                                                        key={sector.id || sector.name}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setForm({
-                                                                ...form,
-                                                                sector: sector.name
-                                                            });
-                                                            setSectorSearch(sector.name);
-                                                            setShowSectorDropdown(false);
-                                                        }}
-                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                                                            }`}
-                                                    >
-                                                        <div>
-                                                            {getHighlightedText(sectorName, sectorSearch)}
-                                                            {sectorUnit && (
-                                                                <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})</span>
-                                                            )}
-                                                        </div>
-                                                        {isMatching && (
-                                                            <div className="text-xs text-green-600 mt-0.5">
-                                                                Click to select
-                                                            </div>
-                                                        )}
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching sectors
                                                     </div>
                                                 );
-                                            })
-                                        ) : (
-                                            <div className="px-3 py-2 text-gray-400 text-sm">
-                                                No sectors available
-                                            </div>
-                                        )}
+                                            }
+
+                                            return (
+                                                <>
+                                                    {sectorSearch && filteredSectors.length > 0 && (
+                                                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                                                            Showing {filteredSectors.length} of {sectorsList.length} sectors
+                                                        </div>
+                                                    )}
+
+                                                    {filteredSectors.length > 0 ? (
+                                                        [...filteredSectors]
+                                                            .sort((a, b) => {
+                                                                const aName = a.name || "";
+                                                                const bName = b.name || "";
+                                                                const searchTerm = sectorSearch?.toLowerCase() || "";
+
+                                                                const aMatches =
+                                                                    searchTerm &&
+                                                                    aName.toLowerCase().includes(searchTerm);
+
+                                                                const bMatches =
+                                                                    searchTerm &&
+                                                                    bName.toLowerCase().includes(searchTerm);
+
+                                                                // Matching items first
+                                                                if (aMatches && !bMatches) return -1;
+                                                                if (!aMatches && bMatches) return 1;
+
+                                                                return aName.localeCompare(bName);
+                                                            })
+                                                            .map((sector) => {
+                                                                const sectorName = sector.name || "";
+                                                                const sectorUnit = sector.unit || "";
+                                                                const searchTerm =
+                                                                    sectorSearch?.toLowerCase() || "";
+
+                                                                const isMatching =
+                                                                    searchTerm &&
+                                                                    sectorName
+                                                                        .toLowerCase()
+                                                                        .includes(searchTerm);
+
+                                                                // Highlight matching text
+                                                                const getHighlightedText = (
+                                                                    text,
+                                                                    highlight,
+                                                                ) => {
+                                                                    if (
+                                                                        !highlight ||
+                                                                        !text
+                                                                            .toLowerCase()
+                                                                            .includes(highlight.toLowerCase())
+                                                                    ) {
+                                                                        return text;
+                                                                    }
+
+                                                                    const regex = new RegExp(
+                                                                        `(${highlight.replace(
+                                                                            /[.*+?^${}()|[\]\\]/g,
+                                                                            "\\$&",
+                                                                        )})`,
+                                                                        "gi",
+                                                                    );
+
+                                                                    const parts = text.split(regex);
+
+                                                                    return parts.map((part, i) =>
+                                                                        regex.test(part) ? (
+                                                                            <span
+                                                                                key={i}
+                                                                                className="bg-yellow-200 font-semibold"
+                                                                            >
+                                                                                {part}
+                                                                            </span>
+                                                                        ) : (
+                                                                            part
+                                                                        ),
+                                                                    );
+                                                                };
+
+                                                                return (
+                                                                    <div
+                                                                        key={sector.id || sector.name}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+
+                                                                            setForm({
+                                                                                ...form,
+                                                                                sector: sector.name,
+                                                                            });
+
+                                                                            setSectorSearch(sector.name);
+                                                                            setShowSectorDropdown(false);
+                                                                        }}
+                                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
+                                                                            ? "bg-yellow-50/50"
+                                                                            : ""
+                                                                            }`}
+                                                                    >
+                                                                        <div>
+                                                                            {getHighlightedText(
+                                                                                sectorName,
+                                                                                sectorSearch,
+                                                                            )}
+
+                                                                            {sectorUnit && (
+                                                                                <span className="text-xs text-gray-400 ml-2">
+                                                                                    (Unit:{" "}
+                                                                                    {SECTOR_UNIT_MAPPING[
+                                                                                        sectorUnit
+                                                                                    ] || sectorUnit}
+                                                                                    )
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {isMatching && (
+                                                                            <div className="text-xs text-green-600 mt-0.5">
+                                                                                Click to select
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-400 text-sm">
+                                                            No sectors available
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -3909,6 +4197,32 @@ const UpdateProject = () => {
                                             clientbranch: ''
                                         }));
                                         setShowClientDropdown(true);
+                                    }}
+                                    onBlur={() => {
+                                        setTimeout(() => {
+                                            const matchedClient = clients.find(
+                                                (c) =>
+                                                    c.client_name?.trim().toLowerCase().includes(
+                                                        clientSearch?.trim().toLowerCase()
+                                                    ) ||
+                                                    c.client_code?.trim().toLowerCase().includes(
+                                                        clientSearch?.trim().toLowerCase()
+                                                    )
+                                            );
+
+                                            if (!matchedClient) {
+                                                setClientSearch("");
+                                                setClientCode("");
+
+                                                setForm({
+                                                    ...form,
+                                                    client: "",
+                                                    clientbranch: "",
+                                                });
+                                            }
+
+                                            setShowClientDropdown(false);
+                                        }, 200);
                                     }}
                                     className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 />
@@ -3947,122 +4261,199 @@ const UpdateProject = () => {
                                 )}
                                 {/* Dropdown with sorting and highlighting */}
                                 {showClientDropdown && (
-                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                                    <div
+                                        className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             e.preventDefault();
                                         }}
                                     >
-                                        {clientSearch && (() => {
-                                            const matchingCount = clients.filter(c =>
-                                                c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                                c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
-                                            ).length;
+                                        {(() => {
+                                            const filteredClients = clients.filter(
+                                                (c) =>
+                                                    c.client_name
+                                                        ?.toLowerCase()
+                                                        .includes(clientSearch.toLowerCase()) ||
+                                                    c.client_code
+                                                        ?.toLowerCase()
+                                                        .includes(clientSearch.toLowerCase()),
+                                            );
 
-                                            return matchingCount > 0 ? (
-                                                <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                    Showing {matchingCount} of {clients.length} clients
-                                                </div>
-                                            ) : null;
-                                        })()}
+                                            // Auto close dropdown if no match found
+                                            if (clientSearch && filteredClients.length === 0) {
+                                                setTimeout(() => setShowClientDropdown(false), 0);
 
-                                        {clients.length > 0 ? (
-                                            [...clients].sort((a, b) => {
-                                                const searchTerm = clientSearch?.toLowerCase() || '';
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching clients
+                                                    </div>
+                                                );
+                                            }
 
-                                                const aName = a.client_name || '';
-                                                const aCode = a.client_code || '';
-                                                const bName = b.client_name || '';
-                                                const bCode = b.client_code || '';
-
-                                                // Check matches for both name and code
-                                                const aNameMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                                                const aCodeMatches = searchTerm && aCode.toLowerCase().includes(searchTerm);
-                                                const bNameMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
-                                                const bCodeMatches = searchTerm && bCode.toLowerCase().includes(searchTerm);
-
-                                                const aMatches = aNameMatches || aCodeMatches;
-                                                const bMatches = bNameMatches || bCodeMatches;
-
-                                                // Matching items come first
-                                                if (aMatches && !bMatches) return -1;
-                                                if (!aMatches && bMatches) return 1;
-
-                                                // If both match or both don't match, prioritize code matches over name matches
-                                                if (aMatches && bMatches) {
-                                                    // If one matches by code and the other only by name, code match comes first
-                                                    if (aCodeMatches && !bCodeMatches) return -1;
-                                                    if (!aCodeMatches && bCodeMatches) return 1;
-                                                }
-
-                                                // For items with same match status, sort alphabetically by name
-                                                return aName.localeCompare(bName);
-                                            })
-                                                .map((client) => {
-                                                    const clientName = client.client_name || '';
-                                                    const clientCode = client.client_code || "";
-                                                    const searchTerm = clientSearch?.toLowerCase() || '';
-                                                    const displayText = `${clientName} - ${clientCode}`;
-
-                                                    // const isMatching = searchTerm && (clientName.toLowerCase().includes(searchTerm) || clientCode.toLowerCase().includes(searchTerm));
-                                                    const isMatching = searchTerm && (
-                                                        clientName.toLowerCase().includes(searchTerm) ||
-                                                        clientCode.toLowerCase().includes(searchTerm)
-                                                    );
-
-                                                    // Function to highlight matching text
-                                                    const getHighlightedText = (text, highlight) => {
-                                                        if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                                                            return text;
-                                                        }
-
-                                                        const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                                        const parts = text.split(regex);
-
-                                                        return parts.map((part, i) =>
-                                                            regex.test(part) ?
-                                                                <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                                                                part
-                                                        );
-                                                    };
-
-                                                    return (
-                                                        <div
-                                                            key={client.id}
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setForm({
-                                                                    ...form,
-                                                                    client: client.id,
-                                                                    clientbranch: ''
-                                                                });
-                                                                setClientSearch(`${clientName} - ${clientCode}`);
-                                                                // setClientSearch(clientName);
-                                                                setClientCode(clientCode);
-                                                                setShowClientDropdown(false);
-                                                            }}
-                                                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                                                                }`}
-                                                        >
-                                                            <div>
-                                                                {/* {getHighlightedText(clientName, clientSearch)} - {clientCode} */}
-                                                                {/* {getHighlightedText(`${clientName} - ${clientCode}`, clientSearch)} - {clientCode} */}
-                                                                {getHighlightedText(`${clientName} - ${clientCode}`, clientSearch)}
-                                                            </div>
-                                                            {isMatching && (
-                                                                <div className="text-xs text-green-600 mt-0.5">
-                                                                    Press Enter to select
-                                                                </div>
-                                                            )}
+                                            return (
+                                                <>
+                                                    {clientSearch && filteredClients.length > 0 && (
+                                                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
+                                                            Showing {filteredClients.length} of{" "}
+                                                            {clients.length} clients
                                                         </div>
-                                                    );
-                                                })
-                                        ) : (
-                                            <div className="px-3 py-2 text-gray-400 text-sm">
-                                                No Clients Available
-                                            </div>
-                                        )}
+                                                    )}
+
+                                                    {filteredClients.length > 0 ? (
+                                                        [...filteredClients]
+                                                            .sort((a, b) => {
+                                                                const searchTerm =
+                                                                    clientSearch?.toLowerCase() || "";
+
+                                                                const aName = a.client_name || "";
+                                                                const aCode = a.client_code || "";
+                                                                const bName = b.client_name || "";
+                                                                const bCode = b.client_code || "";
+
+                                                                // Match checks
+                                                                const aNameMatches =
+                                                                    searchTerm &&
+                                                                    aName.toLowerCase().includes(searchTerm);
+
+                                                                const aCodeMatches =
+                                                                    searchTerm &&
+                                                                    aCode.toLowerCase().includes(searchTerm);
+
+                                                                const bNameMatches =
+                                                                    searchTerm &&
+                                                                    bName.toLowerCase().includes(searchTerm);
+
+                                                                const bCodeMatches =
+                                                                    searchTerm &&
+                                                                    bCode.toLowerCase().includes(searchTerm);
+
+                                                                const aMatches =
+                                                                    aNameMatches || aCodeMatches;
+
+                                                                const bMatches =
+                                                                    bNameMatches || bCodeMatches;
+
+                                                                // Matching first
+                                                                if (aMatches && !bMatches) return -1;
+                                                                if (!aMatches && bMatches) return 1;
+
+                                                                // Code match priority
+                                                                if (aMatches && bMatches) {
+                                                                    if (aCodeMatches && !bCodeMatches)
+                                                                        return -1;
+
+                                                                    if (!aCodeMatches && bCodeMatches)
+                                                                        return 1;
+                                                                }
+
+                                                                return aName.localeCompare(bName);
+                                                            })
+                                                            .map((client) => {
+                                                                const clientName =
+                                                                    client.client_name || "";
+
+                                                                const clientCode =
+                                                                    client.client_code || "";
+
+                                                                const searchTerm =
+                                                                    clientSearch?.toLowerCase() || "";
+
+                                                                const isMatching =
+                                                                    searchTerm &&
+                                                                    (clientName
+                                                                        .toLowerCase()
+                                                                        .includes(searchTerm) ||
+                                                                        clientCode
+                                                                            .toLowerCase()
+                                                                            .includes(searchTerm));
+
+                                                                // Highlight matching text
+                                                                const getHighlightedText = (
+                                                                    text,
+                                                                    highlight,
+                                                                ) => {
+                                                                    if (
+                                                                        !highlight ||
+                                                                        !text
+                                                                            .toLowerCase()
+                                                                            .includes(highlight.toLowerCase())
+                                                                    ) {
+                                                                        return text;
+                                                                    }
+
+                                                                    const regex = new RegExp(
+                                                                        `(${highlight.replace(
+                                                                            /[.*+?^${}()|[\]\\]/g,
+                                                                            "\\$&",
+                                                                        )})`,
+                                                                        "gi",
+                                                                    );
+
+                                                                    const parts = text.split(regex);
+
+                                                                    return parts.map((part, i) =>
+                                                                        regex.test(part) ? (
+                                                                            <span
+                                                                                key={i}
+                                                                                className="bg-yellow-200 font-semibold"
+                                                                            >
+                                                                                {part}
+                                                                            </span>
+                                                                        ) : (
+                                                                            part
+                                                                        ),
+                                                                    );
+                                                                };
+
+                                                                return (
+                                                                    <div
+                                                                        key={client.id}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+
+                                                                            setForm({
+                                                                                ...form,
+                                                                                client: client.id,
+                                                                                clientbranch: "",
+                                                                            });
+
+                                                                            setClientSearch(
+                                                                                `${clientName} - ${clientCode}`,
+                                                                            );
+
+                                                                            setClientCode(clientCode);
+
+                                                                            setShowClientDropdown(false);
+                                                                        }}
+                                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
+                                                                            ? "bg-yellow-50/50"
+                                                                            : ""
+                                                                            }`}
+                                                                    >
+                                                                        <div>
+                                                                            {getHighlightedText(
+                                                                                `${clientName} - ${clientCode}`,
+                                                                                clientSearch,
+                                                                            )}
+                                                                        </div>
+
+                                                                        {isMatching && (
+                                                                            <div className="text-xs text-green-600 mt-0.5">
+                                                                                Press Enter to select
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-400 text-sm">
+                                                            No Clients Available
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -4333,9 +4724,11 @@ const UpdateProject = () => {
                                 type="date"
                                 name="loa_date"
                                 value={form.loa_date}
+                                min="1000-01-01"
+                                max={form.completion_date || "9999-12-31"}
                                 // onChange={handleChange}
                                 disabled
-                                max={form.completion_date}
+                                // max={form.completion_date}
                                 className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
@@ -4351,6 +4744,8 @@ const UpdateProject = () => {
                                 min={form.loa_date}
                                 value={form.completion_date}
                                 // onChange={handleChange}
+
+                                max={"9999-12-31"}
                                 disabled
                                 className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
@@ -4585,458 +4980,974 @@ const UpdateProject = () => {
                                     <Calendar size={16} className="text-blue-600" />
                                     Configure Activities
                                 </h4>
-                                {selectedActivities
-                                    .map((id) => getAllActivities().find((a) => a.id === id))
-                                    .filter(Boolean)
-                                    .sort((a, b) => parseInt(a.sorting_var, 10) - parseInt(b.sorting_var, 10))
-                                    .map((activityData) => {
-                                        const activityObj = getAllActivities().find((a) => a.id === activityData?.id);
-                                        let activityId = activityData?.id;
-                                        if (!activityObj) return null;
-                                        const isExpanded = expandedActivity === activityId;
-                                        const selectedSubs = selectedSubActivities[activityId] || [];
+                                {selectedActivities.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        className="space-y-3 md:space-y-4"
+                                    >
+                                        <h4 className="font-semibold text-gray-700 text-sm md:text-base flex items-center gap-2">
+                                            <Calendar size={16} className="text-blue-600" />
+                                            Configure Activities
+                                        </h4>
+                                        {selectedActivities
+                                            .map((id) => getAllActivities().find((a) => a.id === id))
+                                            .filter(Boolean)
+                                            .sort(
+                                                (a, b) =>
+                                                    parseInt(a.sorting_var, 10) - parseInt(b.sorting_var, 10),
+                                            )
+                                            .map((activityData) => {
+                                                const activityObj = getAllActivities().find(
+                                                    (a) => a.id === activityData?.id,
+                                                );
+                                                let activityId = activityData?.id;
+                                                if (!activityObj) return null;
+                                                const isExpanded = expandedActivity === activityId;
+                                                const selectedSubs =
+                                                    selectedSubActivities[activityId] || [];
 
-                                        return (
-                                            <motion.div
-                                                key={`config-${activityId}`}
-                                                layout
-                                                className="border border-gray-200 rounded-xl md:rounded-2xl overflow-hidden bg-gray-50"
-                                            >
-                                                <div
-                                                    onClick={() => setExpandedActivity(isExpanded ? null : activityId)}
-                                                    className="flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-                                                >
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isExpanded ? "bg-blue-600" : "bg-gray-400"}`} />
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setEditingActivityStage({
-                                                                    activityId: activityId,
-                                                                    currentStage: activityObj.sorting_var || 0,
-                                                                });
-                                                            }}
-                                                            className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
-                                                            title="Edit Activity Stage"
+                                                return (
+                                                    <motion.div
+                                                        key={`config-${activityId}`}
+                                                        layout
+                                                        className="border border-gray-200 rounded-xl md:rounded-2xl overflow-hidden bg-gray-50"
+                                                    >
+                                                        <div
+                                                            onClick={() =>
+                                                                setExpandedActivity(isExpanded ? null : activityId)
+                                                            }
+                                                            className="flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                                                         >
-                                                            <Edit3 size={12} />
-                                                            <span>Activity {activityObj.sorting_var || "?"}</span>
-                                                        </button>
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div
+                                                                    className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isExpanded ? "bg-blue-600" : "bg-gray-400"}`}
+                                                                />
 
-                                                        <h5 className="font-medium md:font-semibold text-gray-800 text-sm md:text-base truncate">
-                                                            {activityObj.activity_name}
-                                                        </h5>
-
-                                                        <span className="text-[10px] md:text-xs bg-blue-100 text-blue-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
-                                                            {selectedSubs.length}/{activityObj?.subActivities.length || 0} selected
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 md:gap-3 ml-2">
-                                                        {activityDates[activityId]?.startDate && activityDates[activityId]?.endDate && (
-                                                            <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
-                                                                {new Date(activityDates[activityId].startDate).toLocaleDateString()} →{" "}
-                                                                {new Date(activityDates[activityId].endDate).toLocaleDateString()}
-                                                            </div>
-                                                        )}
-                                                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                                    </div>
-                                                </div>
-
-                                                <AnimatePresence>
-                                                    {isExpanded && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            className="border-t border-gray-200 bg-white p-3 md:p-4"
-                                                        >
-                                                            <div className="mb-3 md:mb-4 cursor-not-allowed">
-                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                                    Activity Weightage (% of total project) *
-                                                                </label>
-                                                                <div className="relative">
-                                                                    <input
-                                                                        type="number"
-                                                                        min="0"
-                                                                        max="100"
-                                                                        step="0.1"
-                                                                        value={activityWeightages[activityId]?.toFixed(2) || ""}
-                                                                        disabled
-                                                                        className="cursor-not-allowed w-full px-3 py-1.5 md:py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8"
-                                                                        placeholder="Weightage as per SubActivities"
-                                                                    />
-                                                                    <Percent size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
-                                                                <div className="space-y-1">
-                                                                    <label className="text-xs font-medium text-gray-600">Start Date *</label>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={activityDates[activityId]?.startDate || ""}
-                                                                        min={form.loa_date}
-                                                                        max={activityDates[activityId]?.endDate || form.completion_date}
-                                                                        onChange={(e) => handleActivityDateChange(activityId, "startDate", e.target.value)}
-                                                                        className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <label className="text-xs font-medium text-gray-600">End Date *</label>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={activityDates[activityId]?.endDate || ""}
-                                                                        min={activityDates[activityId]?.startDate || form.loa_date}
-                                                                        max={form.completion_date}
-                                                                        onChange={(e) => handleActivityDateChange(activityId, "endDate", e.target.value)}
-                                                                        className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <h6 className="font-medium text-gray-700 text-xs md:text-sm">Sub-Activities:</h6>
+                                                                {/* Activity Stage Edit Button */}
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => {
-                                                                        setSelectedActivityForSub(activityId);
-                                                                        setShowAddSubActivityModal(true);
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setEditingActivityStage({
+                                                                            activityId: activityId,
+                                                                            currentStage: activityObj.sorting_var || 0
+                                                                        });
                                                                     }}
-                                                                    className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-xs"
+                                                                    className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
+                                                                    title="Edit Activity Stage"
                                                                 >
-                                                                    <Plus size={12} />
-                                                                    Add New Sub-Activity
+                                                                    <Edit3 size={12} />
+                                                                    <span>Activity {activityObj.sorting_var || '?'}</span>
                                                                 </button>
+
+                                                                <h5 className="font-medium md:font-semibold text-gray-800 text-sm md:text-base truncate">
+                                                                    {/* {activityObj.sorting_var}. */}
+                                                                    {activityObj.activity_name}
+                                                                </h5>
+
+                                                                {/* {isCustom && (
+                                                           <span className="text-[10px] md:text-xs bg-yellow-100 text-yellow-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                             Custom
+                                                           </span>
+                                                         )} */}
+                                                                <span className="text-[10px] md:text-xs bg-blue-100 text-blue-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                                    {selectedSubs.length}/
+                                                                    {activityObj?.subActivities.length || 0} selected
+                                                                </span>
                                                             </div>
 
-                                                            <div className="space-y-2 md:space-y-3">
-                                                                {activityObj?.subActivities.length > 0 && (
-                                                                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={getSelectAllStatus(activityId).isAllSelected}
-                                                                                ref={(el) => {
-                                                                                    if (el) {
-                                                                                        el.indeterminate = getSelectAllStatus(activityId).isIndeterminate;
-                                                                                    }
-                                                                                }}
-                                                                                onChange={(e) => handleSelectAllSubActivities(activityId, e.target.checked)}
-                                                                                className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                            />
-                                                                            <span className="text-xs font-medium text-gray-500">
-                                                                                {selectedSubs.length} of {activityObj.subActivities.length} selected
-                                                                            </span>
+                                                            <div className="flex items-center gap-2 md:gap-3 ml-2">
+                                                                {activityDates[activityId]?.startDate &&
+                                                                    activityDates[activityId]?.endDate && (
+                                                                        <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
+                                                                            {new Date(
+                                                                                activityDates[activityId].startDate,
+                                                                            ).toLocaleDateString()}{" "}
+                                                                            →{" "}
+                                                                            {new Date(
+                                                                                activityDates[activityId].endDate,
+                                                                            ).toLocaleDateString()}
                                                                         </div>
-                                                                        <div className="flex gap-2">
-                                                                            {!getSelectAllStatus(activityId).isAllSelected ? (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleSelectAllSubActivities(activityId, true)}
-                                                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                                                                >
-                                                                                    Select All
-                                                                                </button>
-                                                                            ) : (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleSelectAllSubActivities(activityId, false)}
-                                                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                                                                >
-                                                                                    Unselect All
-                                                                                </button>
-                                                                            )}
+                                                                    )}
+                                                                {isExpanded ? (
+                                                                    <ChevronUp size={16} />
+                                                                ) : (
+                                                                    <ChevronDown size={16} />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <AnimatePresence>
+                                                            {isExpanded && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    className="border-t border-gray-200 bg-white p-3 md:p-4"
+                                                                >
+                                                                    <div className="mb-3 md:mb-4 cursor-not-allowed">
+                                                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                            Activity Weightage (% of total project) *
+                                                                        </label>
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                max="100"
+                                                                                step="0.1"
+                                                                                value={
+                                                                                    activityWeightages[activityId]?.toFixed(
+                                                                                        2,
+                                                                                    ) || ""
+                                                                                }
+                                                                                disabled
+                                                                                className="cursor-not-allowed w-full px-3 py-1.5 md:py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8"
+                                                                                placeholder="Weightage as per SubActivities"
+                                                                            />
+                                                                            <Percent
+                                                                                size={14}
+                                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                                            />
                                                                         </div>
                                                                     </div>
-                                                                )}
+                                                                    <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-xs font-medium text-gray-600">
+                                                                                Start Date *
+                                                                            </label>
+                                                                            <input
+                                                                                type="date"
+                                                                                value={
+                                                                                    activityDates[activityId]?.startDate || ""
+                                                                                }
+                                                                                min={form.loa_date}
+                                                                                max={activityDates[activityId]?.endDate || form.completion_date}
+                                                                                onChange={(e) =>
+                                                                                    handleActivityDateChange(
+                                                                                        activityId,
+                                                                                        "startDate",
+                                                                                        e.target.value,
+                                                                                    )
+                                                                                }
+                                                                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-xs font-medium text-gray-600">
+                                                                                End Date *
+                                                                            </label>
+                                                                            <input
+                                                                                type="date"
+                                                                                value={
+                                                                                    activityDates[activityId]?.endDate || ""
+                                                                                }
+                                                                                min={activityDates[activityId]?.startDate || form.loa_date}
+                                                                                max={form.completion_date}
+                                                                                onChange={(e) =>
+                                                                                    handleActivityDateChange(
+                                                                                        activityId,
+                                                                                        "endDate",
+                                                                                        e.target.value,
+                                                                                    )
+                                                                                }
+                                                                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <h6 className="font-medium text-gray-700 text-xs md:text-sm">
+                                                                            Sub-Activities:
+                                                                        </h6>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSelectedActivityForSub(activityId);
+                                                                                setShowAddSubActivityModal(true);
+                                                                            }}
+                                                                            className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-xs"
+                                                                        >
+                                                                            <Plus size={12} />
+                                                                            Add New Sub-Activity
+                                                                        </button>
+                                                                    </div>
 
-                                                                {(() => {
-                                                                    const grouped = {};
+                                                                    <div className="space-y-2 md:space-y-3">
+                                                                        {activityObj?.subActivities.length > 0 && (
+                                                                            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={
+                                                                                            getSelectAllStatus(activityId)
+                                                                                                .isAllSelected
+                                                                                        }
+                                                                                        ref={(el) => {
+                                                                                            if (el) {
+                                                                                                el.indeterminate =
+                                                                                                    getSelectAllStatus(
+                                                                                                        activityId,
+                                                                                                    ).isIndeterminate;
+                                                                                            }
+                                                                                        }}
+                                                                                        onChange={(e) =>
+                                                                                            handleSelectAllSubActivities(
+                                                                                                activityId,
+                                                                                                e.target.checked,
+                                                                                            )
+                                                                                        }
+                                                                                        className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                                                    />
+                                                                                    <span className="text-xs font-medium text-gray-500">
+                                                                                        {selectedSubs.length} of{" "}
+                                                                                        {activityObj.subActivities.length}{" "}
+                                                                                        selected
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                    {!getSelectAllStatus(activityId)
+                                                                                        .isAllSelected ? (
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() =>
+                                                                                                handleSelectAllSubActivities(
+                                                                                                    activityId,
+                                                                                                    true,
+                                                                                                )
+                                                                                            }
+                                                                                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                                                        >
+                                                                                            Select All
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        // <span className="text-gray-300">|</span>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() =>
+                                                                                                handleSelectAllSubActivities(
+                                                                                                    activityId,
+                                                                                                    false,
+                                                                                                )
+                                                                                            }
+                                                                                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                                                        >
+                                                                                            Unselect All
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
 
-                                                                    activityObj?.subActivities.forEach((sub, idx) => {
-                                                                        if (!grouped[sub.subactivity_name]) {
-                                                                            grouped[sub.subactivity_name] = [];
-                                                                        }
-                                                                        grouped[sub.subactivity_name].push({ ...sub, originalIndex: idx });
-                                                                    });
+                                                                        {(() => {
+                                                                            const grouped = {};
+                                                                            { console.log(activityObj?.subActivities, 'subactivities') }
+                                                                            activityObj?.subActivities.forEach(
+                                                                                (sub, idx) => {
+                                                                                    if (!grouped[sub.subactivity_name]) {
+                                                                                        grouped[sub.subactivity_name] = [];
+                                                                                    }
+                                                                                    grouped[sub.subactivity_name].push({
+                                                                                        ...sub,
+                                                                                        originalIndex: idx,
+                                                                                    });
+                                                                                },
+                                                                            );
 
-                                                                    const allRendered = [];
+                                                                            const allRendered = [];
 
-                                                                    Object.keys(grouped).forEach((name) => {
-                                                                        const items = grouped[name];
 
-                                                                        items.forEach((sub, serialIndex) => {
-                                                                            const displayName = items.length > 1 ? `${sub.subactivity_name}` : sub.subactivity_name;
-                                                                            const isSelected = selectedSubs.includes(sub.id);
-                                                                            const key = `${activityId}_${sub.id}`;
-                                                                            const currentUnit = subActivityUnits[key] || sub.unit;
-                                                                            const subUniqueKey = `sub-${serialIndex}-${sub.originalIndex}-${sub.id}`;
+                                                                            Object.keys(grouped).forEach((name) => {
+                                                                                const items = grouped[name];
 
-                                                                            allRendered.push(
-                                                                                <div
-                                                                                    key={subUniqueKey}
-                                                                                    id={`sub-${sub.id}`}
-                                                                                    className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
-                                                                                >
-                                                                                    <div className="flex items-center justify-between mb-2">
-                                                                                        <div className="flex items-center gap-2 flex-1">
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={isSelected}
-                                                                                                onChange={(e) => handleSubActivitySelection(activityId, sub.id, e.target.checked)}
-                                                                                                className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                                            />
-                                                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                                                {isSelected && (
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        onClick={(e) => {
-                                                                                                            e.stopPropagation();
-                                                                                                            setEditingStage({
-                                                                                                                activityId: activityId,
-                                                                                                                subId: sub.id,
-                                                                                                                currentStage: sub.sorting_var || 0,
-                                                                                                            });
-                                                                                                        }}
-                                                                                                        className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
-                                                                                                        title="Edit Stage"
-                                                                                                    >
-                                                                                                        <Edit3 size={12} />
-                                                                                                        <span>Stage {sub.sorting_var || "?"}</span>
-                                                                                                    </button>
-                                                                                                )}
-                                                                                                <span
-                                                                                                    className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        handleSubActivitySelection(activityId, sub.id, !isSelected);
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {displayName}
-                                                                                                </span>
-                                                                                            </div>
-                                                                                            {sub.isCustom && (
-                                                                                                <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">Custom</span>
-                                                                                            )}
-                                                                                        </div>
+                                                                                items.forEach((sub, serialIndex) => {
+                                                                                    const displayName =
+                                                                                        items.length > 1
+                                                                                            ? `${sub.subactivity_name}`
+                                                                                            : sub.subactivity_name;
+                                                                                    const isSelected = selectedSubs.includes(
+                                                                                        sub.id,
+                                                                                    );
+                                                                                    const key = `${activityId}_${sub.id}`;
+                                                                                    console.log(key, 'keyyy')
+                                                                                    // const key = `${activityId}_${sub.subactivity_name}`;
+                                                                                    // const key2 = `${sub?.id}_${sub.subactivity_name}`;
+                                                                                    const currentUnit =
+                                                                                        subActivityUnits[key] || sub.unit;
+                                                                                    // const subUniqueKey = `sub-${serialIndex}-${sub.originalIndex}-${sub.subactivity_name}`;
+                                                                                    const subUniqueKey = `sub-${serialIndex}-${sub.originalIndex}-${sub.id}`;
 
-                                                                                        <div className="flex items-center gap-1">
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                onClick={() => handleCloneSubActivity(activityId, sub.id)}
-                                                                                                className="text-blue-500 hover:text-blue-700"
-                                                                                                title="Add Similar Sub-Activity"
-                                                                                            >
-                                                                                                <Copy size={14} />
-                                                                                            </button>
-                                                                                            {(sub.isCustom || activityObj.isCustom) && (
-                                                                                                <button
-                                                                                                    type="button"
-                                                                                                    onClick={() => handleDeleteSubActivity(activityId, sub.id)}
-                                                                                                    className="text-red-500 hover:text-red-700"
-                                                                                                >
-                                                                                                    <X size={14} />
-                                                                                                </button>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
+                                                                                    allRendered.push(
+                                                                                        <div
+                                                                                            key={subUniqueKey}
+                                                                                            id={`sub-${sub.id}`}
+                                                                                            className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
+                                                                                        >
 
-                                                                                    {isSelected && (
-                                                                                        <div>
-                                                                                            <div className="grid grid-cols-3 gap-2 mt-2 pl-5">
-                                                                                                <div>
-                                                                                                    <label className="block text-[10px] text-gray-500 mb-1">Unit *</label>
-                                                                                                    <select
-                                                                                                        value={currentUnit}
+                                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                                {/* <div className="flex items-center gap-2">
+                                                                             <input
+                                                                               type="checkbox"
+                                                                               checked={isSelected}
+                                                                               onChange={(e) =>
+                                                                                 handleSubActivitySelection(
+                                                                                   activityId,
+                                                                                   sub.id,
+                                                                                   e.target.checked,
+                                                                                 )
+                                                                               }
+                                                                               className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                                             />
+                                                                             <span
+                                                                               className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
+                                                                               onClick={(e) => {
+                                                                                 e.stopPropagation();
+                                                                                 handleSubActivitySelection(
+                                                                                   activityId,
+                                                                                   sub.id,
+                                                                                   !isSelected,
+                                                                                 );
+                                                                               }}
+                                                                             >
+                                                                               Stage {sub.sorting_var}: {displayName}
+                                                                             </span>
+                               
+                               
+                                                                             {sub.isCustom && (
+                                                                               <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
+                                                                                 Custom
+                                                                               </span>
+                                                                             )}
+                                                                           </div> */}
+                                                                                                <div className="flex items-center gap-2 flex-1">
+                                                                                                    <input
+                                                                                                        type="checkbox"
+                                                                                                        checked={isSelected}
                                                                                                         onChange={(e) =>
-                                                                                                            handleSubActivityUnitChange(activityId, sub.id, e.target.value)
+                                                                                                            handleSubActivitySelection(
+                                                                                                                activityId,
+                                                                                                                sub.id,
+                                                                                                                e.target.checked,
+                                                                                                            )
                                                                                                         }
-                                                                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                    >
-                                                                                                        {UNIT_OPTIONS.map((option) => (
-                                                                                                            <option key={option.value} value={option.value}>
-                                                                                                                {option.label}
-                                                                                                            </option>
-                                                                                                        ))}
-                                                                                                    </select>
+                                                                                                        className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                                                                    />
+                                                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                                                        {/* Stage Edit Button */}
+                                                                                                        {isSelected && (
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={(e) => {
+                                                                                                                    e.stopPropagation();
+                                                                                                                    setEditingStage({
+                                                                                                                        activityId: activityId,
+                                                                                                                        subId: sub.id,
+                                                                                                                        currentStage: sub.sorting_var || 0
+                                                                                                                    });
+                                                                                                                }}
+                                                                                                                className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
+                                                                                                                title="Edit Stage"
+                                                                                                            >
+                                                                                                                <Edit3 size={12} />
+                                                                                                                <span>Stage {sub.sorting_var || '?'}</span>
+                                                                                                            </button>
+                                                                                                        )}
+
+                                                                                                        <span
+                                                                                                            className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
+                                                                                                            onClick={(e) => {
+                                                                                                                e.stopPropagation();
+                                                                                                                handleSubActivitySelection(
+                                                                                                                    activityId,
+                                                                                                                    sub.id,
+                                                                                                                    !isSelected,
+                                                                                                                );
+                                                                                                            }}
+                                                                                                        >
+                                                                                                            {/* {sub.sorting_var}. {displayName} */}
+                                                                                                            {displayName}
+                                                                                                        </span>
+
+                                                                                                    </div>
+                                                                                                    {sub.isCustom && (
+                                                                                                        <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
+                                                                                                            Custom
+                                                                                                        </span>
+                                                                                                    )}
                                                                                                 </div>
 
-                                                                                                {currentUnit !== "status" && sub?.planned_quantity_exist && (
-                                                                                                    <div>
-                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">Planned Quantity</label>
-                                                                                                        <input
-                                                                                                            type="number"
-                                                                                                            min="0"
-                                                                                                            step="0.01"
-                                                                                                            value={subActivityPlannedQtys[`${sub.id}_quantity`] || ""}
-                                                                                                            onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "quantity", e.target.value)}
-                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                            placeholder="Enter qty"
-                                                                                                        />
-                                                                                                    </div>
-                                                                                                )}
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    {/* Clone Button */}
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        onClick={() =>
+                                                                                                            handleCloneSubActivity(
+                                                                                                                activityId,
+                                                                                                                sub.id,
+                                                                                                            )
+                                                                                                        }
+                                                                                                        className="text-blue-500 hover:text-blue-700"
+                                                                                                        title="Add Similar Sub-Activity"
+                                                                                                    >
+                                                                                                        <Copy size={14} />
+                                                                                                    </button>
 
-                                                                                                {sub?.submission_exist && (
-                                                                                                    <div>
-                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">Submission Payment (%)</label>
-                                                                                                        <div className="relative">
+
+                                                                                                    <div className="flex items-center gap-2 mr-2">
+                                                                                                        <label className="text-[10px] text-gray-600 flex items-center gap-1 cursor-pointer">
                                                                                                             <input
-                                                                                                                type="number"
-                                                                                                                min="0"
-                                                                                                                step="0.01"
-                                                                                                                value={subActivityPlannedQtys[`${sub.id}_subpayment`] || ""}
+                                                                                                                type="checkbox"
+                                                                                                                checked={showAllFields[key] || false}
                                                                                                                 onChange={(e) =>
-                                                                                                                    handleSubActivityPlannedQtyChange(sub.id, "subpayment", e.target.value)
+                                                                                                                    setShowAllFields((prev) => ({
+                                                                                                                        ...prev,
+                                                                                                                        [key]: e.target.checked,
+                                                                                                                    }))
                                                                                                                 }
-                                                                                                                onBlur={(e) =>
-                                                                                                                    handleActivityWeightageChange(
+                                                                                                                className="w-3 h-3"
+                                                                                                            />
+                                                                                                            Show All
+                                                                                                        </label>
+                                                                                                        {console.log(showAllFields[key], '')}
+
+
+                                                                                                    </div>
+                                                                                                    {/* Edit Button */}
+                                                                                                    {/* <button
+                                                                               type="button"
+                                                                               onClick={() => handleEditSubActivity(activityId, sub.id)}
+                                                                               className="text-blue-500 hover:text-blue-700"
+                                                                               title="Edit sub-activity"
+                                                                             >
+                                                                               <Edit3 size={14} />
+                                                                             </button> */}
+
+                                                                                                    {/* Doubt : need this? */}
+                                                                                                    {/* Edit Button */}
+                                                                                                    {(sub.isCustom ||
+                                                                                                        activityObj.isCustom) && (
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() =>
+                                                                                                                    handleDeleteSubActivity(
                                                                                                                         activityId,
-                                                                                                                        getActivityTotals(activityData, subActivityPlannedQtys),
-                                                                                                                        sub.id
+                                                                                                                        sub.id,
                                                                                                                     )
                                                                                                                 }
-                                                                                                                className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                placeholder="Enter payment in %"
-                                                                                                            />
-                                                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                <Percent className="text-gray-400" size={16} />
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                )}
-
-                                                                                                {sub?.approval_exist && (
-                                                                                                    <div>
-                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">Approval Payment (%)</label>
-                                                                                                        <div className="relative">
-                                                                                                            <input
-                                                                                                                type="number"
-                                                                                                                min="0"
-                                                                                                                step="0.01"
-                                                                                                                value={subActivityPlannedQtys[`${sub.id}_approvalpayment`] || ""}
-                                                                                                                onChange={(e) =>
-                                                                                                                    handleSubActivityPlannedQtyChange(sub.id, "approvalpayment", e.target.value)
-                                                                                                                }
-                                                                                                                onBlur={(e) =>
-                                                                                                                    handleActivityWeightageChange(
-                                                                                                                        activityId,
-                                                                                                                        getActivityTotals(activityData, subActivityPlannedQtys),
-                                                                                                                        sub.id
-                                                                                                                    )
-                                                                                                                }
-                                                                                                                className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                placeholder="Enter payment in %"
-                                                                                                            />
-                                                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                <Percent className="text-gray-400" size={16} />
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                )}
-
-                                                                                                <div className="col-span-3 mt-2">
-                                                                                                    {(parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0 ||
-                                                                                                        parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0) && (
-                                                                                                            <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl overflow-x-auto">
-                                                                                                                <div className="min-w-[280px]">
-                                                                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                                                                                        {parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0 && (
-                                                                                                                            <div key={`${sub.id}-submission`} className="rounded-lg">
-                                                                                                                                <p className="text-[10px] text-gray-500 truncate">
-                                                                                                                                    Submission ({subActivityPlannedQtys[`${sub.id}_subpayment`]}%)
-                                                                                                                                </p>
-                                                                                                                                <p className="text-sm font-semibold text-blue-600 break-words">
-                                                                                                                                    ₹{" "}
-                                                                                                                                    {(
-                                                                                                                                        (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`])) /
-                                                                                                                                        100
-                                                                                                                                    ).toLocaleString("en-IN", {
-                                                                                                                                        minimumFractionDigits: 2,
-                                                                                                                                        maximumFractionDigits: 2,
-                                                                                                                                    })}{" "}
-                                                                                                                                    Lakhs
-                                                                                                                                </p>
-                                                                                                                            </div>
-                                                                                                                        )}
-
-                                                                                                                        {parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0 && (
-                                                                                                                            <div key={`${sub.id}-approval`} className="rounded-lg">
-                                                                                                                                <p className="text-[10px] text-gray-500 truncate">
-                                                                                                                                    Approval ({subActivityPlannedQtys[`${sub.id}_approvalpayment`]}%)
-                                                                                                                                </p>
-                                                                                                                                <p className="text-sm font-semibold text-blue-600 break-words">
-                                                                                                                                    ₹{" "}
-                                                                                                                                    {(
-                                                                                                                                        (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`])) /
-                                                                                                                                        100
-                                                                                                                                    ).toLocaleString("en-IN", {
-                                                                                                                                        minimumFractionDigits: 2,
-                                                                                                                                        maximumFractionDigits: 2,
-                                                                                                                                    })}{" "}
-                                                                                                                                    Lakhs
-                                                                                                                                </p>
-                                                                                                                            </div>
-                                                                                                                        )}
-
-                                                                                                                        <div key={`${sub.id}-total`} className="rounded-lg">
-                                                                                                                            <p className="text-[10px] text-gray-500">Total Amount</p>
-                                                                                                                            <p className="text-sm font-bold text-green-600 break-words">
-                                                                                                                                ₹{" "}
-                                                                                                                                {(
-                                                                                                                                    (parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0
-                                                                                                                                        ? (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`])) /
-                                                                                                                                        100
-                                                                                                                                        : 0) +
-                                                                                                                                    (parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0
-                                                                                                                                        ? (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`])) /
-                                                                                                                                        100
-                                                                                                                                        : 0)
-                                                                                                                                ).toLocaleString("en-IN", {
-                                                                                                                                    minimumFractionDigits: 2,
-                                                                                                                                    maximumFractionDigits: 2,
-                                                                                                                                })}{" "}
-                                                                                                                                Lakhs
-                                                                                                                            </p>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
+                                                                                                                className="text-red-500 hover:text-red-700"
+                                                                                                            >
+                                                                                                                <X size={14} />
+                                                                                                            </button>
                                                                                                         )}
                                                                                                 </div>
                                                                                             </div>
-                                                                                            <div className="ml-4">
-                                                                                                <label className="block text-[10px] text-gray-500 mb-1">Description</label>
-                                                                                                <textarea
-                                                                                                    value={subActivityPlannedQtys[`${sub.id}_description`] || ""}
-                                                                                                    onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "description", e.target.value)}
-                                                                                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 mt-2"
-                                                                                                    placeholder="Enter any specific details or instructions for this sub-activity"
-                                                                                                    rows={2}
-                                                                                                />
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        });
-                                                                    });
+                                                                                            {isSelected && (
+                                                                                                <div>
+                                                                                                    <div className="grid grid-cols-3 gap-2 mt-2 pl-5">
+                                                                                                        <div>
+                                                                                                            <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                Unit *
+                                                                                                            </label>
+                                                                                                            <select
+                                                                                                                value={currentUnit}
+                                                                                                                onChange={(e) =>
+                                                                                                                    handleSubActivityUnitChange(
+                                                                                                                        activityId,
+                                                                                                                        sub.id,
+                                                                                                                        e.target.value,
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                            >
+                                                                                                                {UNIT_OPTIONS.map(
+                                                                                                                    (option) => (
+                                                                                                                        <option
+                                                                                                                            key={option.value}
+                                                                                                                            value={option.value}
+                                                                                                                        >
+                                                                                                                            {option.label}
+                                                                                                                        </option>
+                                                                                                                    ),
+                                                                                                                )}
+                                                                                                            </select>
+                                                                                                        </div>
+                                                                                                        {currentUnit !== "status" && (sub?.planned_quantity_exist || showAllFields[key]) && (
+                                                                                                            <div>
+                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                    Planned Quantity
+                                                                                                                </label>
+                                                                                                                <input
+                                                                                                                    type="number"
+                                                                                                                    min="0"
+                                                                                                                    step="0.01"
+                                                                                                                    // value={subActivityPlannedQtys[key2] || ''}
+                                                                                                                    value={
+                                                                                                                        subActivityPlannedQtys[
+                                                                                                                        `${sub.id}_quantity`
+                                                                                                                        ] || ""
+                                                                                                                    }
+                                                                                                                    // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, sub.subactivity_name, e.target.value)}
+                                                                                                                    onChange={(e) =>
+                                                                                                                        handleSubActivityPlannedQtyChange(
+                                                                                                                            sub.id,
+                                                                                                                            "quantity",
+                                                                                                                            e.target.value,
+                                                                                                                        )
+                                                                                                                    }
+                                                                                                                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                    placeholder="Enter qty"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        )}
 
-                                                                    return allRendered;
-                                                                })()}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </motion.div>
-                                        );
-                                    })}
+                                                                                                        {(sub?.chainage_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                    <div>
+                                                                                                                        <div className="flex flex-row justify-between items-center">
+                                                                                                                            <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                                Chainage Start
+                                                                                                                            </label>
+                                                                                                                            {currentUnit ===
+                                                                                                                                "status" && (
+                                                                                                                                    // <div className="col-span-3">
+                                                                                                                                    //   <div className="text-[10px] text-blue-600 bg-blue-50 p-1 rounded flex items-center gap-1">
+                                                                                                                                    //     <Info size={10} />
+                                                                                                                                    //     Status-based - no quantity needed
+                                                                                                                                    //   </div>
+                                                                                                                                    // </div>
+                                                                                                                                    <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
+                                                                                                                                        <Info size={10} />
+                                                                                                                                        Status-based - no
+                                                                                                                                        quantity needed
+                                                                                                                                    </div>
+                                                                                                                                )}
+                                                                                                                        </div>
+
+                                                                                                                        <input
+                                                                                                                            type="number"
+                                                                                                                            min="0"
+                                                                                                                            step="0.01"
+                                                                                                                            defaultValue={
+                                                                                                                                sub.chainage_start ||
+                                                                                                                                ""
+                                                                                                                            } // Read from sub object directly
+                                                                                                                            // disabled // Make it read-only as it's calculated
+                                                                                                                            onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
+                                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
+                                                                                                                            placeholder="001"
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        }
+
+                                                                                                        {(sub?.length_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                    <div>
+                                                                                                                        <div className="flex flex-row justify-between items-center">
+                                                                                                                            <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                                Chainage Length
+                                                                                                                            </label>
+                                                                                                                            {currentUnit ===
+                                                                                                                                "status" && (
+                                                                                                                                    <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
+                                                                                                                                        <Info size={10} />
+                                                                                                                                        Status-based - no
+                                                                                                                                        quantity needed
+                                                                                                                                    </div>
+                                                                                                                                )}
+                                                                                                                        </div>
+                                                                                                                        {/* <input
+                                                                                     type="number"
+                                                                                     min="0"
+                                                                                     step="0.01"
+                                                                                     value={subActivityPlannedQtys[`${sub.id}_coveredarea`] || ''}
+                                                                                     onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'coveredarea', e.target.value)}
+                                                                                     className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                     placeholder="001"
+                                                                                   /> */}
+                                                                                                                        <input
+                                                                                                                            type="number"
+                                                                                                                            min="0"
+                                                                                                                            step="0.01"
+                                                                                                                            value={
+                                                                                                                                sub.covered_area || ""
+                                                                                                                            } // Read from sub object directly
+                                                                                                                            onChange={(e) => {
+                                                                                                                                // Update the sub-activity's covered_area in the state
+                                                                                                                                const newValue =
+                                                                                                                                    e.target.value;
+                                                                                                                                const templateIndex =
+                                                                                                                                    templatesActivities.findIndex(
+                                                                                                                                        (act) =>
+                                                                                                                                            act.id ===
+                                                                                                                                            activityId,
+                                                                                                                                    );
+                                                                                                                                if (
+                                                                                                                                    templateIndex !== -1
+                                                                                                                                ) {
+                                                                                                                                    setTemplateActivities(
+                                                                                                                                        (prev) =>
+                                                                                                                                            prev.map(
+                                                                                                                                                (act) => {
+                                                                                                                                                    if (
+                                                                                                                                                        act.id ===
+                                                                                                                                                        activityId
+                                                                                                                                                    ) {
+                                                                                                                                                        return {
+                                                                                                                                                            ...act,
+                                                                                                                                                            subActivities:
+                                                                                                                                                                act.subActivities.map(
+                                                                                                                                                                    (
+                                                                                                                                                                        s,
+                                                                                                                                                                    ) =>
+                                                                                                                                                                        s.id ===
+                                                                                                                                                                            sub.id
+                                                                                                                                                                            ? {
+                                                                                                                                                                                ...s,
+                                                                                                                                                                                covered_area:
+                                                                                                                                                                                    newValue,
+                                                                                                                                                                            }
+                                                                                                                                                                            : s,
+                                                                                                                                                                ),
+                                                                                                                                                        };
+                                                                                                                                                    }
+                                                                                                                                                    return act;
+                                                                                                                                                },
+                                                                                                                                            ),
+                                                                                                                                    );
+                                                                                                                                } else {
+                                                                                                                                    setCustomActivities(
+                                                                                                                                        (prev) =>
+                                                                                                                                            prev.map(
+                                                                                                                                                (act) => {
+                                                                                                                                                    if (
+                                                                                                                                                        act.id ===
+                                                                                                                                                        activityId
+                                                                                                                                                    ) {
+                                                                                                                                                        return {
+                                                                                                                                                            ...act,
+                                                                                                                                                            subActivities:
+                                                                                                                                                                act.subActivities.map(
+                                                                                                                                                                    (
+                                                                                                                                                                        s,
+                                                                                                                                                                    ) =>
+                                                                                                                                                                        s.id ===
+                                                                                                                                                                            sub.id
+                                                                                                                                                                            ? {
+                                                                                                                                                                                ...s,
+                                                                                                                                                                                covered_area:
+                                                                                                                                                                                    newValue,
+                                                                                                                                                                            }
+                                                                                                                                                                            : s,
+                                                                                                                                                                ),
+                                                                                                                                                        };
+                                                                                                                                                    }
+                                                                                                                                                    return act;
+                                                                                                                                                },
+                                                                                                                                            ),
+                                                                                                                                    );
+                                                                                                                                }
+                                                                                                                            }}
+                                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                            placeholder="Length"
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>}
+                                                                                                        {(sub?.submission_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                    Submission Payment (%)
+                                                                                                                </label>
+                                                                                                                <div className="relative">
+                                                                                                                    <input
+                                                                                                                        type="number"
+                                                                                                                        min="0"
+                                                                                                                        step="0.01"
+                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_subpayment")] || ''}
+                                                                                                                        value={
+                                                                                                                            subActivityPlannedQtys[
+                                                                                                                            `${sub.id}_subpayment`
+                                                                                                                            ] || ""
+                                                                                                                        }
+                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_subpayment"), e.target.value)}
+                                                                                                                        onChange={(e) =>
+                                                                                                                            handleSubActivityPlannedQtyChange(
+                                                                                                                                sub.id,
+                                                                                                                                "subpayment",
+                                                                                                                                e.target.value,
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        onBlur={(e) =>
+                                                                                                                            handleActivityWeightageChange(
+                                                                                                                                activityId,
+                                                                                                                                getActivityTotals(
+                                                                                                                                    activityData,
+                                                                                                                                    subActivityPlannedQtys,
+                                                                                                                                ),
+                                                                                                                                sub.id
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                        placeholder="Enter payment in %"
+                                                                                                                    />
+                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                                                                                                                        <Percent
+                                                                                                                            className=" text-gray-400"
+                                                                                                                            size={16}
+                                                                                                                        />
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            </div>}
+
+                                                                                                        {(sub?.approval_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                    Approval Payment (%)
+                                                                                                                </label>
+                                                                                                                <div className="relative">
+                                                                                                                    <input
+                                                                                                                        type="number"
+                                                                                                                        min="0"
+                                                                                                                        step="0.01"
+                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_approvalpayment")] || ''}
+                                                                                                                        value={
+                                                                                                                            subActivityPlannedQtys[
+                                                                                                                            `${sub.id}_approvalpayment`
+                                                                                                                            ] || ""
+                                                                                                                        }
+                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_approvalpayment"), e.target.value)}
+                                                                                                                        onChange={(e) =>
+                                                                                                                            handleSubActivityPlannedQtyChange(
+                                                                                                                                sub.id,
+                                                                                                                                "approvalpayment",
+                                                                                                                                e.target.value,
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        onBlur={(e) =>
+                                                                                                                            handleActivityWeightageChange(
+                                                                                                                                activityId,
+                                                                                                                                getActivityTotals(
+                                                                                                                                    activityData,
+                                                                                                                                    subActivityPlannedQtys,
+                                                                                                                                ),
+                                                                                                                                sub.id
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                        placeholder="Enter payment in %"
+                                                                                                                    />
+                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                                                                                                                        <Percent
+                                                                                                                            className=" text-gray-400"
+                                                                                                                            size={16}
+                                                                                                                        />
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            </div>}
+
+                                                                                                        <div className="col-span-3 mt-2">
+                                                                                                            {(parseFloat(
+                                                                                                                subActivityPlannedQtys[
+                                                                                                                `${sub.id}_subpayment`
+                                                                                                                ],
+                                                                                                            ) > 0 ||
+                                                                                                                parseFloat(
+                                                                                                                    subActivityPlannedQtys[
+                                                                                                                    `${sub.id}_approvalpayment`
+                                                                                                                    ],
+                                                                                                                ) > 0) && (
+                                                                                                                    <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl overflow-x-auto">
+                                                                                                                        <div className="min-w-[280px]">
+                                                                                                                            {/* Payment Cards Grid */}
+                                                                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                                                                                                {/* Submission Payment Card */}
+                                                                                                                                {parseFloat(
+                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                    `${sub.id}_subpayment`
+                                                                                                                                    ],
+                                                                                                                                ) > 0 && (
+                                                                                                                                        <div
+                                                                                                                                            key={`${sub.id}-submission`}
+                                                                                                                                            className="rounded-lg"
+                                                                                                                                        >
+                                                                                                                                            <p className="text-[10px] text-gray-500 truncate">
+                                                                                                                                                Submission (
+                                                                                                                                                {
+                                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                                    `${sub.id}_subpayment`
+                                                                                                                                                    ]
+                                                                                                                                                }
+                                                                                                                                                %)
+                                                                                                                                            </p>
+                                                                                                                                            <p className="text-sm font-semibold text-blue-600 break-words">
+                                                                                                                                                ₹{" "}
+                                                                                                                                                {(
+                                                                                                                                                    (parseFloat(
+                                                                                                                                                        form.workorder_Amount,
+                                                                                                                                                    ) *
+                                                                                                                                                        parseFloat(
+                                                                                                                                                            subActivityPlannedQtys[
+                                                                                                                                                            `${sub.id}_subpayment`
+                                                                                                                                                            ],
+                                                                                                                                                        )) /
+                                                                                                                                                    100
+                                                                                                                                                ).toLocaleString(
+                                                                                                                                                    "en-IN",
+                                                                                                                                                    {
+                                                                                                                                                        minimumFractionDigits: 2,
+                                                                                                                                                        maximumFractionDigits: 2,
+                                                                                                                                                    },
+                                                                                                                                                )}{" "}
+                                                                                                                                                Lakhs
+                                                                                                                                            </p>
+                                                                                                                                        </div>
+                                                                                                                                    )}
+
+                                                                                                                                {/* Approval Payment Card */}
+                                                                                                                                {parseFloat(
+                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                    `${sub.id}_approvalpayment`
+                                                                                                                                    ],
+                                                                                                                                ) > 0 && (
+                                                                                                                                        <div
+                                                                                                                                            key={`${sub.id}-approval`}
+                                                                                                                                            className="rounded-lg"
+                                                                                                                                        >
+                                                                                                                                            <p className="text-[10px] text-gray-500 truncate">
+                                                                                                                                                Approval (
+                                                                                                                                                {
+                                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                                    `${sub.id}_approvalpayment`
+                                                                                                                                                    ]
+                                                                                                                                                }
+                                                                                                                                                %)
+                                                                                                                                            </p>
+                                                                                                                                            <p className="text-sm font-semibold text-blue-600 break-words">
+                                                                                                                                                ₹{" "}
+                                                                                                                                                {(
+                                                                                                                                                    (parseFloat(
+                                                                                                                                                        form.workorder_Amount,
+                                                                                                                                                    ) *
+                                                                                                                                                        parseFloat(
+                                                                                                                                                            subActivityPlannedQtys[
+                                                                                                                                                            `${sub.id}_approvalpayment`
+                                                                                                                                                            ],
+                                                                                                                                                        )) /
+                                                                                                                                                    100
+                                                                                                                                                ).toLocaleString(
+                                                                                                                                                    "en-IN",
+                                                                                                                                                    {
+                                                                                                                                                        minimumFractionDigits: 2,
+                                                                                                                                                        maximumFractionDigits: 2,
+                                                                                                                                                    },
+                                                                                                                                                )}{" "}
+                                                                                                                                                Lakhs
+                                                                                                                                            </p>
+                                                                                                                                        </div>
+                                                                                                                                    )}
+
+                                                                                                                                {/* Total Amount Card */}
+                                                                                                                                <div
+                                                                                                                                    key={`${sub.id}-total`}
+                                                                                                                                    className="rounded-lg"
+                                                                                                                                >
+                                                                                                                                    <p className="text-[10px] text-gray-500">
+                                                                                                                                        Total Amount
+                                                                                                                                    </p>
+                                                                                                                                    <p className="text-sm font-bold text-green-600 break-words">
+                                                                                                                                        ₹{" "}
+                                                                                                                                        {(
+                                                                                                                                            (parseFloat(
+                                                                                                                                                subActivityPlannedQtys[
+                                                                                                                                                `${sub.id}_subpayment`
+                                                                                                                                                ],
+                                                                                                                                            ) > 0
+                                                                                                                                                ? (parseFloat(
+                                                                                                                                                    form.workorder_Amount,
+                                                                                                                                                ) *
+                                                                                                                                                    parseFloat(
+                                                                                                                                                        subActivityPlannedQtys[
+                                                                                                                                                        `${sub.id}_subpayment`
+                                                                                                                                                        ],
+                                                                                                                                                    )) /
+                                                                                                                                                100
+                                                                                                                                                : 0) +
+                                                                                                                                            (parseFloat(
+                                                                                                                                                subActivityPlannedQtys[
+                                                                                                                                                `${sub.id}_approvalpayment`
+                                                                                                                                                ],
+                                                                                                                                            ) > 0
+                                                                                                                                                ? (parseFloat(
+                                                                                                                                                    form.workorder_Amount,
+                                                                                                                                                ) *
+                                                                                                                                                    parseFloat(
+                                                                                                                                                        subActivityPlannedQtys[
+                                                                                                                                                        `${sub.id}_approvalpayment`
+                                                                                                                                                        ],
+                                                                                                                                                    )) /
+                                                                                                                                                100
+                                                                                                                                                : 0)
+                                                                                                                                        ).toLocaleString(
+                                                                                                                                            "en-IN",
+                                                                                                                                            {
+                                                                                                                                                minimumFractionDigits: 2,
+                                                                                                                                                maximumFractionDigits: 2,
+                                                                                                                                            },
+                                                                                                                                        )}{" "}
+                                                                                                                                        Lakhs
+                                                                                                                                    </p>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                )}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div className="ml-4">
+                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                            Description
+                                                                                                        </label>
+                                                                                                        <textarea
+                                                                                                            // value={subActivityPlannedQtys[key2 + "_description"] || ''}
+                                                                                                            value={
+                                                                                                                subActivityPlannedQtys[
+                                                                                                                `${sub.id}_description`
+                                                                                                                ] || ""
+                                                                                                            }
+                                                                                                            // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_description"), e.target.value)}
+                                                                                                            onChange={(e) =>
+                                                                                                                handleSubActivityPlannedQtyChange(
+                                                                                                                    sub.id,
+                                                                                                                    "description",
+                                                                                                                    e.target.value,
+                                                                                                                )
+                                                                                                            }
+                                                                                                            className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 mt-2"
+                                                                                                            placeholder="Enter any specific details or instructions for this sub-activity"
+                                                                                                            rows={2}
+                                                                                                        />
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>,
+                                                                                    );
+                                                                                });
+                                                                            });
+
+                                                                            return allRendered;
+                                                                        })()}
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                    </motion.div>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>

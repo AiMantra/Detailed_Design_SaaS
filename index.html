@@ -1,26 +1,29 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <script>
-      (function () {
-        var key = "appTheme";
-        var t = sessionStorage.getItem(key);
-        var dark = false;
-        if (t === "dark") dark = true;
-        else if (t === "light") dark = false;
-        else if (t === "system")
-          dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        else dark = false;
-        if (dark) document.documentElement.classList.add("dark");
-      })();
-    </script>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DDT Management</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <script>
+    (function () {
+      var key = "appTheme";
+      var t = sessionStorage.getItem(key);
+      var dark = false;
+      if (t === "dark") dark = true;
+      else if (t === "light") dark = false;
+      else if (t === "system")
+        dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      else dark = false;
+      if (dark) document.documentElement.classList.add("dark");
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TT Management</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

@@ -25,6 +25,7 @@ import EmployeeReport from "../features/projects/empreport";
 import SettingsComponent from "../features/setupsettings/settings";
 import ProjectReport from "../features/projects/projectreport";
 import UpdateProject from "../features/projects/updateProject";
+import TicketsManagement from "../features/ticketsManagement/TicketsManagement";
 
 export default function AppRoutes() {
   return (
@@ -47,7 +48,7 @@ export default function AppRoutes() {
         <Route path="/projects/:id" element={<ProjectDetails />} />
         <Route path="/projects/:id/extend" element={<ExtensionRequestPage />} />
         <Route path="/projects/:id/logs" element={<ProjectLogs />} />
-
+        <Route path="/ticket" element={<TicketsManagement />} />
         {/*For Users */}
         <Route
           path="/my-tasks"
