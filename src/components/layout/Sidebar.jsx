@@ -216,15 +216,23 @@ const Sidebar = () => {
     //   badge: null,
     //   description: "System settings",
     // },
+    {
+      name: "Tech Support",
+      icon: CheckCircle,
+      path: "/ticket",
+      roles: ["USER", "ACCOUNT", "ADMIN", "TL"],
+      badge: null,
+      description: "Tech Support & Ticketing",
+    },
   ];
-
+  console.log("User Role:", user);
   const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role));
 
   // Separate menu sections for better organization
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs",
+      "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support"
       // "settings"
     ].includes(item.name)
   );
@@ -238,7 +246,7 @@ const Sidebar = () => {
   );
 
   const tLMenu = filteredMenu.filter(item =>
-    ["My Projects", "Submitted Task"].includes(item.name)
+    ["My Projects", "Submitted Task", "Tech Support"].includes(item.name)
   );
 
   const getBadgeColor = (badge) => {
@@ -345,7 +353,7 @@ const Sidebar = () => {
                 </div>
                 <div className="min-w-0">
                   <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent block leading-tight">
-                    Detailed Design
+                    Time Sheet
                   </span>
                   {/* <span className="block text-[10px] text-gray-500">Enterprise Suite</span> */}
                 </div>

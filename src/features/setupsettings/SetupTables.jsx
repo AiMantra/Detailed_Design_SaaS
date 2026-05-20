@@ -334,7 +334,7 @@ const CompaniesTable = ({ refreshKey }) => {
     const { companies = [] } = useSelector((state) => state.api || {});
     const [searchTerm, setSearchTerm] = useState("");
     const [refreshing, setRefreshing] = useState(false);
-
+    const [showDeleted, setShowDeleted] = useState(false);
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -348,7 +348,9 @@ const CompaniesTable = ({ refreshKey }) => {
     const loadData = async () => {
         setRefreshing(true);
         try {
-            await dispatch(fetchCompanies()).unwrap();
+            await dispatch(
+                fetchCompanies(showDeleted)
+            ).unwrap();
         } catch (error) {
             dispatch(showSnackbar({
                 message: "Failed to load companies",
@@ -361,7 +363,7 @@ const CompaniesTable = ({ refreshKey }) => {
 
     useEffect(() => {
         loadData();
-    }, [refreshKey]);
+    }, [refreshKey, showDeleted]);
 
     const filteredCompanies = useMemo(() => {
         if (!companies || !Array.isArray(companies)) return [];
@@ -379,6 +381,58 @@ const CompaniesTable = ({ refreshKey }) => {
     const handleRefresh = () => {
         loadData();
     };
+    const prepareMetadata = (company) => {
+        return {
+            id: company.id,
+            name: company.name,
+            created_at: company.created_at,
+            created_by: company.created_by,
+            created_by_details: company.created_by_details,
+            updated_at: company.updated_at,
+            updated_by: company.updated_by,
+            updated_by_details: company.updated_by_details,
+            deleted_at: company.deleted_at,
+            deleted_by: company.deleted_by,
+            deleted_by_details: company.deleted_by_details,
+            // customSections: [
+            //     {
+            //         icon: Layers,
+            //         title: "Work Types",
+            //         content: (
+            //             <div className="flex flex-wrap gap-2">
+            //                 {company.sector_work_types?.length > 0 ? (
+            //                     company.sector_work_types.map((wt, idx) => (
+            //                         <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
+            //                             {wt.name}
+            //                         </span>
+            //                     ))
+            //                 ) : (
+            //                     <p className="text-gray-400 text-sm">No work types assigned</p>
+            //                 )}
+            //             </div>
+            //         )
+            //     },
+            //     {
+            //         icon: Building2,
+            //         title: "Basic Information",
+            //         content: (
+            //             <div className="grid grid-cols-2 gap-2 text-sm">
+            //                 <div>
+            //                     <span className="text-gray-500">Unit Type:</span>
+            //                     <span className="ml-2 font-medium">{getUnitDisplayName(company.unit)}</span>
+            //                 </div>
+            //                 <div>
+            //                     <span className="text-gray-500">Status:</span>
+            //                     <span className={`ml-2 font-medium ${company.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
+            //                         {sector.is_deleted ? 'Deleted' : 'Active'}
+            //                     </span>
+            //                 </div>
+            //             </div>
+            //         )
+            //     }
+            // ]
+        };
+    };
 
     return (
         <>
@@ -395,6 +449,15 @@ const CompaniesTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddCompanyButton onSuccess={handleRefresh} loadData={loadData} companies={filteredCompanies} />
+                {/* <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
+                    <input
+                        type="checkbox"
+                        checked={showDeleted}
+                        onChange={(e) => setShowDeleted(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    Show Deleted
+                </label> */}
             </div>
 
             {/* Companies List */}
@@ -422,42 +485,52 @@ const CompaniesTable = ({ refreshKey }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredCompanies.map((company, index) => (
-                                        <motion.tr
-                                            key={company.id}
-                                            variants={itemVariants}
-                                            className="border-t border-gray-200 hover:bg-gray-50 transition"
-                                        >
-                                            <td className="px-4 py-3 font-medium text-gray-800 max-w-[5vw] break-words">
-                                                {company.name}
-                                            </td>
-                                            <td className="px-4 py-3 ">
-                                                <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-mono">
-                                                    {company.gst_no || '-'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-mono">
-                                                    {company.pan_no || '-'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <EditCompanyButton
-                                                        company={company}
-                                                        onSuccess={handleRefresh}
-                                                        loadData={loadData}
-                                                        companies={filteredCompanies}
-                                                    />
-                                                    <DeleteCompanyButton
-                                                        company={company}
-                                                        onSuccess={handleRefresh}
-                                                        loadData={loadData}
-                                                    />
-                                                </div>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
+                                    {filteredCompanies.map((company, index) => {
+                                        const metadata = prepareMetadata(company);
+                                        return (
+                                            <motion.tr
+                                                key={company.id}
+                                                variants={itemVariants}
+                                                className="border-t border-gray-200 hover:bg-gray-50 transition"
+                                            >
+                                                <td className="px-4 py-3 font-medium text-gray-800 max-w-[5vw] break-words">
+                                                    {company.name}
+                                                </td>
+                                                <td className="px-4 py-3 ">
+                                                    <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-mono">
+                                                        {company.gst_no || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-mono">
+                                                        {company.pan_no || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <EditCompanyButton
+                                                            company={company}
+                                                            onSuccess={handleRefresh}
+                                                            loadData={loadData}
+                                                            companies={filteredCompanies}
+                                                        />
+                                                        <DeleteCompanyButton
+                                                            company={company}
+                                                            onSuccess={handleRefresh}
+                                                            loadData={loadData}
+                                                        />
+                                                        <ViewTimeStampDetailsButton
+                                                            data={company}
+                                                            title="Company Details"
+                                                            className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600"
+                                                        >
+                                                            <FileClock size={18} />
+                                                        </ViewTimeStampDetailsButton>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>)
+                                    }
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -631,7 +704,7 @@ const SectorsTable = ({ refreshKey }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [expandedSector, setExpandedSector] = useState({});
-
+    const [showDeleted, setShowDeleted] = useState(false);
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -646,7 +719,7 @@ const SectorsTable = ({ refreshKey }) => {
     const loadData = async () => {
         setRefreshing(true);
         try {
-            await dispatch(fetchSectors()).unwrap();
+            await dispatch(fetchSectors(showDeleted)).unwrap();
         } catch (error) {
             dispatch(showSnackbar({
                 message: "Failed to load sectors",
@@ -659,8 +732,7 @@ const SectorsTable = ({ refreshKey }) => {
 
     useEffect(() => {
         loadData();
-    }, [refreshKey]);
-
+    }, [refreshKey, showDeleted]);
     const filteredSectors = useMemo(() => {
         if (!sectors || !Array.isArray(sectors)) return [];
         let filtered = [...sectors];
@@ -668,7 +740,7 @@ const SectorsTable = ({ refreshKey }) => {
             filtered = filtered.filter(sector =>
                 sector.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 sector.unit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sector.stage_work_types?.some(wt => wt.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+                sector.sector_work_types?.some(wt => wt.name?.toLowerCase().includes(searchTerm.toLowerCase()))
             );
         }
         return filtered;
@@ -716,8 +788,8 @@ const SectorsTable = ({ refreshKey }) => {
                     title: "Work Types",
                     content: (
                         <div className="flex flex-wrap gap-2">
-                            {sector.stage_work_types?.length > 0 ? (
-                                sector.stage_work_types.map((wt, idx) => (
+                            {sector.sector_work_types?.length > 0 ? (
+                                sector.sector_work_types.map((wt, idx) => (
                                     <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
                                         {wt.name}
                                     </span>
@@ -772,6 +844,15 @@ const SectorsTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddSectorButton onSuccess={handleRefresh} loadData={loadData} sectors={filteredSectors} />
+                {/* <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
+                    <input
+                        type="checkbox"
+                        checked={showDeleted}
+                        onChange={(e) => setShowDeleted(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    Show Deleted
+                </label> */}
             </div>
 
             {/* Sectors List */}
@@ -800,7 +881,7 @@ const SectorsTable = ({ refreshKey }) => {
                                 </thead>
                                 <tbody>
                                     {filteredSectors.map((sector) => {
-                                        const hasWorkTypes = sector.stage_work_types && sector.stage_work_types.length > 0;
+                                        const hasWorkTypes = sector.sector_work_types && sector.sector_work_types.length > 0;
                                         const metadata = prepareMetadata(sector);
                                         const isExpanded = expandedSector[sector.id];
 
@@ -829,21 +910,21 @@ const SectorsTable = ({ refreshKey }) => {
                                                         <div className="flex flex-wrap gap-1"
                                                             onClick={() => toggleExpand(sector.id)}
                                                         >
-                                                            {sector.stage_work_types?.slice(0, 2).map((wt, idx) => (
+                                                            {sector.sector_work_types?.slice(0, 2).map((wt, idx) => (
                                                                 <span key={`worktype_${idx}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
                                                                     {wt.name}
                                                                 </span>
                                                             ))}
-                                                            {sector.stage_work_types?.length > 2 && (
+                                                            {sector.sector_work_types?.length > 2 && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
-                                                                    +{sector.stage_work_types.length - 2}
+                                                                    +{sector.sector_work_types.length - 2}
                                                                 </span>
                                                             )}
-                                                            {(!sector.stage_work_types || sector.stage_work_types.length === 0) && (
+                                                            {(!sector.sector_work_types || sector.sector_work_types.length === 0) && (
                                                                 <span className="text-gray-400 text-xs">No Work Types</span>
                                                             )}
 
-                                                            {sector.stage_work_types?.length > 0 && <button
+                                                            {sector.sector_work_types?.length > 0 && <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     toggleExpand(sector.id)
@@ -869,13 +950,13 @@ const SectorsTable = ({ refreshKey }) => {
                                                                 loadData={loadData}
                                                             />
                                                             {/* View Details Button - Always visible */}
-                                                            {/* <ViewTimeStampDetailsButton
+                                                            <ViewTimeStampDetailsButton
                                                                 data={metadata}
                                                                 title="Sector Details"
                                                                 className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600"
                                                             >
                                                                 <FileClock size={18} />
-                                                            </ViewTimeStampDetailsButton> */}
+                                                            </ViewTimeStampDetailsButton>
                                                         </div>
                                                     </td>
                                                 </motion.tr>
@@ -892,14 +973,14 @@ const SectorsTable = ({ refreshKey }) => {
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 
                                                                 {/* All Work Types */}
-                                                                {sector.stage_work_types && sector.stage_work_types.length > 0 && (
+                                                                {sector.sector_work_types && sector.sector_work_types.length > 0 && (
                                                                     <div className="space-y-1">
                                                                         <h4 className="font-semibold text-gray-700 flex items-center gap-2">
                                                                             <Layers size={14} className="text-purple-500" />
-                                                                            All Work Types ({sector.stage_work_types.length})
+                                                                            All Work Types ({sector.sector_work_types.length})
                                                                         </h4>
                                                                         <div className="flex flex-wrap gap-1">
-                                                                            {sector.stage_work_types.map((wt, idx) => (
+                                                                            {sector.sector_work_types.map((wt, idx) => (
                                                                                 <span key={`work-type-${idx}`} className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-200 text-gray-700">
                                                                                     {wt.name}
                                                                                 </span>
@@ -930,7 +1011,7 @@ const ClientsTable = ({ refreshKey }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [expandedClients, setExpandedClients] = useState({});
-
+    const [showDeleted, setShowDeleted] = useState(false);
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -944,7 +1025,7 @@ const ClientsTable = ({ refreshKey }) => {
     const loadData = async () => {
         setRefreshing(true);
         try {
-            await dispatch(fetchClients()).unwrap();
+            await dispatch(fetchClients(showDeleted)).unwrap();
         } catch (error) {
             dispatch(showSnackbar({
                 message: "Failed to load clients",
@@ -957,7 +1038,7 @@ const ClientsTable = ({ refreshKey }) => {
 
     useEffect(() => {
         loadData();
-    }, [refreshKey]);
+    }, [refreshKey, showDeleted]);
 
     const filteredClients = useMemo(() => {
         if (!clients || !Array.isArray(clients)) return [];
@@ -992,7 +1073,66 @@ const ClientsTable = ({ refreshKey }) => {
     const handleRefresh = () => {
         loadData();
     };
-
+    const getUnitDisplayName = (unit) => {
+        const unitMap = {
+            'length': 'Length',
+            'area': 'Area',
+            'quantity': 'Quantity'
+        };
+        return unitMap[unit] || unit || '-';
+    };
+    const prepareMetadata = (client) => {
+        return {
+            id: client.id,
+            name: client.name,
+            created_at: client.created_at,
+            created_by: client.created_by,
+            created_by_details: client.created_by_details,
+            updated_at: client.updated_at,
+            updated_by: client.updated_by,
+            updated_by_details: client.updated_by_details,
+            deleted_at: client.deleted_at,
+            deleted_by: client.deleted_by,
+            deleted_by_details: client.deleted_by_details,
+            customSections: [
+                {
+                    icon: Layers,
+                    title: "Work Types",
+                    content: (
+                        <div className="flex flex-wrap gap-2">
+                            {client.sector_work_types?.length > 0 ? (
+                                client.sector_work_types.map((wt, idx) => (
+                                    <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
+                                        {wt.name}
+                                    </span>
+                                ))
+                            ) : (
+                                <p className="text-gray-400 text-sm">No work types assigned</p>
+                            )}
+                        </div>
+                    )
+                },
+                {
+                    icon: Building2,
+                    title: "Basic Information",
+                    content: (
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span className="text-gray-500">Unit Type:</span>
+                                <span className="ml-2 font-medium">{getUnitDisplayName(client.unit)}</span>
+                            </div>
+                            <div>
+                                <span className="text-gray-500">Status:</span>
+                                <span className={`ml-2 font-medium ${client.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
+                                    {client.is_deleted ? 'Deleted' : 'Active'}
+                                </span>
+                            </div>
+                        </div>
+                    )
+                }
+            ]
+        };
+    };
     return (
         <>
             {/* Search and Actions */}
@@ -1008,6 +1148,15 @@ const ClientsTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddClientButton onSuccess={handleRefresh} loadData={loadData} />
+                {/* <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
+                    <input
+                        type="checkbox"
+                        checked={showDeleted}
+                        onChange={(e) => setShowDeleted(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    Show Deleted
+                </label> */}
             </div>
 
             {/* Clients List */}
@@ -1027,7 +1176,7 @@ const ClientsTable = ({ refreshKey }) => {
                         {filteredClients.map((client) => {
                             const isExpanded = expandedClients[client.id];
                             const branches = client.branches || [];
-
+                            const metadata = prepareMetadata(client);
                             return (
                                 <motion.div
                                     key={client.id}
@@ -1090,6 +1239,13 @@ const ClientsTable = ({ refreshKey }) => {
                                                     onSuccess={handleRefresh}
                                                     loadData={loadData}
                                                 />
+                                                <ViewTimeStampDetailsButton
+                                                    data={metadata}
+                                                    title="Sector Details"
+                                                    className="p-2 hover:bg-purple-100 rounded-lg transition-colors text-purple-600"
+                                                >
+                                                    <FileClock size={18} />
+                                                </ViewTimeStampDetailsButton>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation()

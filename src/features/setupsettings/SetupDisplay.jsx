@@ -159,11 +159,6 @@ const SettingsComponentDisplay = () => {
                                     <p className="text-gray-500">This section is under development</p>
                                 </motion.div>
                             )}
-                            {activeTab === "activities" && (
-                                <ActivityTable
-                                    refreshKey={refreshKey}
-                                />
-                            )}
                             {activeTab === "companies" && (
                                 <CompaniesTable
                                     refreshKey={refreshKey}
@@ -176,6 +171,11 @@ const SettingsComponentDisplay = () => {
                             )}
                             {activeTab === "clients" && (
                                 <ClientsTable
+                                    refreshKey={refreshKey}
+                                />
+                            )}
+                            {activeTab === "activities" && (
+                                <ActivityTable
                                     refreshKey={refreshKey}
                                 />
                             )}

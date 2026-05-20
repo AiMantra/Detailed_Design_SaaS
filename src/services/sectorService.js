@@ -2,9 +2,10 @@ import api from './api';
 
 export const sectorService = {
 
-  getSectors: async () => {
+  getSectors: async (is_deleted = false) => {
     try {
-      const response = await api.get('/sector/');
+      const response = await api.get(`/sector/?is_deleted=${is_deleted}`);
+      // const response = await api.get('/sector/?is_deleted=null');
       return response.data;
     } catch (error) {
       console.error('Error fetching sectors:', error);
@@ -46,9 +47,14 @@ export const sectorService = {
   },
 
 
-  deleteSector: async (sectorId) => {
+  deleteSector: async (sectorId, DeleteBY) => {
+    const payload = {
+      deleted_by: DeleteBY
+    }
     try {
-      const response = await api.delete(`/sector/${sectorId}/`);
+      const response = await api.delete(`/sector/${sectorId}/`, {
+        data: payload
+      });
       return response.data;
     } catch (error) {
       console.error('Error deleting sector:', error);
