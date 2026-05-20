@@ -6,7 +6,7 @@ import { Ticket, Plus, MessageCircle, CheckCircle, Clock, AlertCircle } from 'lu
 import { MyTickets } from './Myticket';
 import { RaisedTickets } from './RaisedTicket';
 import { CreateTicketModal } from '../../components/modals/CreateTicketModal';
-import { fetchMyTickets, fetchAllTickets, clearTicketError, setCurrentView } from './ticketSlice';
+import { fetchMyTickets, fetchAllTickets, clearTicketError, setCurrentView } from './ticketslice';
 // import usePermission from '../../config/permissions';
 
 const TicketsManagement = () => {
