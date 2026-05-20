@@ -1961,6 +1961,7 @@ const CreateProject = () => {
     // 🔹 Required Fields
     const missingFields = [];
 
+
     if (!form.project_code) missingFields.push("Project Code");
     if (!form.project_name) missingFields.push("Project Name");
     if (!form.short_name) missingFields.push("Short Name");
