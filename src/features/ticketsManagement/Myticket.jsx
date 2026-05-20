@@ -14,7 +14,7 @@ import {
     CheckCircle,
     Plus
 } from 'lucide-react';
-import { fetchMyTickets, filterMyTickets, resetFilters, setSelectedStatus } from './ticketSlice';
+import { fetchMyTickets, filterMyTickets, resetFilters, setSelectedStatus } from './ticketslice';
 import { TicketChatModal } from '../../components/modals/TicketChatModal';
 
 const StatusBadge = ({ status }) => {
