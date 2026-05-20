@@ -59,7 +59,7 @@ export const TicketChatModal = ({ ticket, onClose }) => {
             formData.append('timestamp', new Date().toISOString());
             formData.append('ticketaccepted_by_email', ticket.assigned_by || sessionStorage.getItem('userEmail') || sessionStorage.getItem('email'));
             formData.append('ticketaccepted_by_name', ticket.assigned_by_name || sessionStorage.getItem('name') || 'User');
-            formData.append('ticket_for_productname', ticket.ticket_for || 'Aimantra HRMS');
+            formData.append('ticket_for_productname', ticket.ticket_for || 'Aimantra Timesheet');
             formData.append('status', ticket.status || 'pending');
             formData.append('read_status', 'false');
             formData.append('ticket_link', window.location.origin || 'https://www.detaildesign.aimantra.co/');
@@ -128,12 +128,18 @@ export const TicketChatModal = ({ ticket, onClose }) => {
                 >
                     {/* Header */}
                     <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                        <div>
+                        {/* Added 'min-w-0' and 'flex-1' to allow this container to shrink properly inside its parent flex row */}
+                        <div className="min-w-0 flex-1 pr-4">
                             <h3 className="text-lg font-bold text-gray-800">Ticket Chat</h3>
-                            <p className="text-sm text-gray-500">{ticket.title}</p>
+
+                            {/* UPDATED LINE BELOW: Changed to standard Tailwind text wrap utilities */}
+                            <p className="text-sm text-gray-500 break-words line-clamp">
+                                {ticket.title}
+                            </p>
+
                             <p className="text-xs text-gray-400">Ticket ID: {ticket.id}</p>
                         </div>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
                             <X size={20} />
                         </button>
                     </div>

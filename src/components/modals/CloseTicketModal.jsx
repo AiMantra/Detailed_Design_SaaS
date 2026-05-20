@@ -23,13 +23,14 @@ export const CloseTicketModal = ({ ticket, onClose, onSuccess }) => {
         setError('');
 
         try {
+            // 1. Close the ticket
             await dispatch(closeTicket({ id: ticket.id, remark: remark.trim() })).unwrap();
 
-            // Refresh tickets after closing
-            await dispatch(fetchMyTickets('null'));
-            await dispatch(fetchAllTickets({ status: 'pending' }));
+            // 2. Trigger the callback from the parent to refresh lists using active filters
+            if (onSuccess) {
+                onSuccess();
+            }
 
-            if (onSuccess) onSuccess();
             onClose();
         } catch (err) {
             setError(err.message || 'Failed to close ticket. Please try again.');
@@ -75,9 +76,11 @@ export const CloseTicketModal = ({ ticket, onClose, onSuccess }) => {
                             {/* Ticket Info */}
                             <div className="bg-gray-50 rounded-lg p-4">
                                 <p className="text-sm text-gray-500 mb-1">Ticket ID</p>
-                                <p className="text-sm font-medium text-gray-800">{ticket.id}</p>
+                                <p className="text-sm font-medium text-gray-800 break-all">{ticket.id}</p>
+
                                 <p className="text-sm text-gray-500 mt-2 mb-1">Title</p>
-                                <p className="text-sm font-medium text-gray-800">{ticket.title}</p>
+                                <p className="text-sm font-medium text-gray-800 line-clamp break-words" dangerouslySetInnerHTML={{ __html: ticket.title }} />
+
                                 <p className="text-sm text-gray-500 mt-2 mb-1">Current Status</p>
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                     {ticket.status}

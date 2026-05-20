@@ -233,9 +233,9 @@ const ticketSlice = createSlice({
                 pending: tickets.filter(t => t.status === 'pending').length,
                 completed: tickets.filter(t => t.status === 'completed').length,
                 byPriority: {
-                    high: tickets.filter(t => t.priority === 1).length,
-                    medium: tickets.filter(t => t.priority === 2).length,
-                    low: tickets.filter(t => t.priority === 3).length
+                    high: tickets.filter(t => String(t.priority) === '1' || String(t.priority).toLowerCase() === 'high').length,
+                    medium: tickets.filter(t => String(t.priority) === '2' || String(t.priority).toLowerCase() === 'medium').length,
+                    low: tickets.filter(t => String(t.priority) === '3' || String(t.priority).toLowerCase() === 'low').length
                 }
             };
         },
@@ -247,9 +247,9 @@ const ticketSlice = createSlice({
                 pending: tickets.filter(t => t.status === 'pending').length,
                 completed: tickets.filter(t => t.status === 'completed').length,
                 byPriority: {
-                    high: tickets.filter(t => t.priority === 1).length,
-                    medium: tickets.filter(t => t.priority === 2).length,
-                    low: tickets.filter(t => t.priority === 3).length
+                    high: tickets.filter(t => String(t.priority) === '1' || String(t.priority).toLowerCase() === 'high').length,
+                    medium: tickets.filter(t => String(t.priority) === '2' || String(t.priority).toLowerCase() === 'medium').length,
+                    low: tickets.filter(t => String(t.priority) === '3' || String(t.priority).toLowerCase() === 'low').length
                 }
             };
         },
@@ -257,7 +257,7 @@ const ticketSlice = createSlice({
         filterMyTickets: (state, action) => {
             const { searchTerm, startDate, endDate } = action.payload;
             let filtered = [...state.myTickets];
-
+            // console.log("Filtering My Tickets with:", { searchTerm, startDate, endDate, filtered });
             if (searchTerm) {
                 const term = searchTerm.toLowerCase();
                 filtered = filtered.filter(ticket =>

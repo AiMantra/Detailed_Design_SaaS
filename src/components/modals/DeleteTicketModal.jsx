@@ -21,7 +21,7 @@ export const DeleteConfirmModal = ({ item, itemName = 'ticket', onClose, onSucce
         setError('');
 
         try {
-            await dispatch(deleteTicket(item.id)).unwrap();
+            await dispatch(deleteTicket({ id: item.id })).unwrap();
 
             // Refresh tickets after deletion
             await dispatch(fetchMyTickets('null'));
@@ -91,7 +91,7 @@ export const DeleteConfirmModal = ({ item, itemName = 'ticket', onClose, onSucce
                         {item.title && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                 <p className="text-sm text-gray-600 mb-1">You are about to delete:</p>
-                                <p className="text-sm font-semibold text-gray-800">"{item.title}"</p>
+                                <p className="text-sm font-semibold text-gray-800 break-words line-clamp">"{item.title}"</p>
                                 {item.id && (
                                     <p className="text-xs text-gray-500 mt-1">ID: {item.id}</p>
                                 )}

@@ -32,12 +32,11 @@ const TicketsManagement = () => {
     }, [dispatch, activeTab]);
 
     useEffect(() => {
-        if (activeTab === 'my-tickets') {
-            dispatch(fetchMyTickets(selectedStatus !== 'null' ? selectedStatus : 'null'));
-        } else {
-            dispatch(fetchAllTickets({ status: selectedStatus !== 'null' ? selectedStatus : null }));
-        }
-    }, [dispatch, activeTab, selectedStatus]);
+        dispatch(fetchMyTickets(selectedStatus !== 'null' ? selectedStatus : 'null'));
+
+        dispatch(fetchAllTickets({ status: selectedStatus !== 'null' ? selectedStatus : null }));
+    }, [dispatch, selectedStatus]);
+
 
     useEffect(() => {
         if (error) {
@@ -45,19 +44,23 @@ const TicketsManagement = () => {
             return () => clearTimeout(timer);
         }
     }, [error, dispatch]);
+    const { user } = useSelector((state) => state.auth);
+    const tabs = [
+        { id: 'my-tickets', label: 'My Tickets', icon: Ticket },
 
-    const tabs =
-        [
-            { id: 'my-tickets', label: 'My Tickets', icon: Ticket },
-            { id: 'raised-tickets', label: 'Raised Tickets', icon: MessageCircle }
-        ]
+        // Hide "Raised Tickets" for Civilmantra users
+        ...(user?.company !== 'Civilmantra'
+            ? [{ id: 'raised-tickets', label: 'Raised Tickets', icon: MessageCircle }]
+            : [])
+    ];
 
 
     const getTabCount = (tabId) => {
         if (tabId === 'my-tickets') {
-            return myTicketsStats?.pending || 0;
+            console.log("My Tickets Stats:", myTicketsStats);
+            return myTicketsStats?.total || 0;
         }
-        return raisedTicketsStats?.pending || 0;
+        return raisedTicketsStats?.total || 0;
     };
 
     return (

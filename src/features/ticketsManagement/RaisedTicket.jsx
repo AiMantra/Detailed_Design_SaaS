@@ -12,14 +12,14 @@ import {
     CheckCircle,
     Clock,
     Trash2,
-    Plus
+    Plus,
+    MessageCircle,
 } from 'lucide-react';
-import { fetchAllTickets, filterRaisedTickets, resetFilters, setSelectedStatus } from './ticketSlice';
+import { fetchAllTickets, fetchMyTickets, filterRaisedTickets, resetFilters, setSelectedStatus } from './ticketSlice';
 import { CreateTicketModal } from '../../components/modals/CreateTicketModal';
 import { DeleteConfirmModal } from '../../components/modals/DeleteTicketModal';
 import { TicketChatModal } from '../../components/modals/TicketChatModal';
 import { CloseTicketModal } from '../../components/modals/CloseTicketModal';
-// import usePermission from '../../config/permissions';
 
 const StatusBadge = ({ status }) => {
     const config = {
@@ -40,7 +40,6 @@ const StatusBadge = ({ status }) => {
 export const RaisedTickets = () => {
     const dispatch = useDispatch();
     const { filteredRaisedTickets, loading, raisedTicketsStats, selectedStatus } = useSelector((state) => state.tickets);
-
 
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
@@ -67,7 +66,7 @@ export const RaisedTickets = () => {
     }, [dispatch, searchTerm, startDate, endDate]);
 
     const handleStatusFilter = (status) => {
-        setSelectedStatus(status);
+        dispatch(setSelectedStatus(status));
         setCurrentPage(1);
     };
 
@@ -99,8 +98,10 @@ export const RaisedTickets = () => {
         return `${d.getDate()} ${d.toLocaleString('default', { month: 'long' })} ${d.getFullYear()}`;
     };
 
-    const canClose = (ticket) => ticket.status !== 'completed' && (TICKET_SUPPORT || localStorage.getItem('tech_support') === 'true');
-
+    const canClose = (ticket) => {
+        const isSupport = typeof TICKET_SUPPORT !== 'undefined' ? TICKET_SUPPORT : false;
+        return ticket.status !== 'completed' && (isSupport || localStorage.getItem('tech_support') === 'true');
+    };
 
     return (
         <div className="space-y-4">
@@ -183,17 +184,18 @@ export const RaisedTickets = () => {
             {/* Tickets Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="w-full divide-y divide-gray-200 table-fixed">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requester</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th className="w-[5%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requester</th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                                <th className="w-[30%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed Date</th>
+                                <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th className="w-[15%] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Chat History</th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -218,33 +220,36 @@ export const RaisedTickets = () => {
                                         animate={{ opacity: 1 }}
                                         className="hover:bg-gray-50 transition-colors"
                                     >
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="w-[5%] px-6 py-4 text-sm text-gray-500">
                                             {(currentPage - 1) * itemsPerPage + index + 1}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="w-[20%] px-6 py-4">
                                             <div className="text-sm font-medium text-gray-900">{ticket.assigned_by_name || 'N/A'}</div>
                                             <div className="text-xs text-gray-500">{ticket.assigned_by || 'N/A'}</div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-900 max-w-xs truncate">{ticket.title}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
+                                        <td className="w-[15%] px-6 py-4">
                                             <div
-                                                className="text-sm text-gray-500 max-w-md line-clamp-2"
+                                                className="text-sm text-gray-500 max-w-md line-clamp wrap-break-word"
+                                                dangerouslySetInnerHTML={{ __html: ticket.title }}
+                                            />
+                                        </td>
+                                        <td className="w-[30%] px-6 py-4">
+                                            <div
+                                                className="text-sm text-gray-500 max-w-md line-clamp wrap-break-word"
                                                 dangerouslySetInnerHTML={{ __html: ticket.description }}
                                             />
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="w-[15%] px-6 py-4 text-sm text-gray-500">
                                             {formatDate(ticket.created_at || ticket.assign_date)}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="w-[15%] px-6 py-4 text-sm text-gray-500">
                                             {formatDate(ticket.close_datetime)}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="w-[15%] px-6 py-4">
                                             <StatusBadge status={ticket.status} />
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
+                                        <td className="w-[15%] px-6 py-4">
+                                            <div className="flex gap-2 justify-center">
                                                 <button
                                                     onClick={() => {
                                                         setSelectedTicket(ticket);
@@ -253,21 +258,29 @@ export const RaisedTickets = () => {
                                                     className="text-blue-600 hover:text-blue-700"
                                                     title="View Chat"
                                                 >
-                                                    <Eye size={18} />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedTicket(ticket);
-                                                        setShowCloseModal(true);
-                                                    }}
-                                                    className="text-green-600 hover:text-green-700"
-                                                    title="Close Ticket"
-                                                >
-                                                    <CheckCircle size={18} />
+                                                    <MessageCircle size={18} />
                                                 </button>
 
 
+                                            </div>
+                                        </td>
+                                        <td className="w-[15%] px-6 py-4">
+                                            <div className="flex gap-2">
+
+
+                                                {/* 3. OPTIONAL IMPROVEMENT: Only show check/close action if ticket is eligible */}
+                                                {ticket.status !== 'completed' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedTicket(ticket);
+                                                            setShowCloseModal(true);
+                                                        }}
+                                                        className="text-green-600 hover:text-green-700"
+                                                        title="Close Ticket"
+                                                    >
+                                                        <CheckCircle size={18} />
+                                                    </button>
+                                                )}
 
                                                 <button
                                                     onClick={() => {
@@ -279,7 +292,6 @@ export const RaisedTickets = () => {
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
-
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -327,6 +339,12 @@ export const RaisedTickets = () => {
                     onClose={() => {
                         setShowCloseModal(false);
                         setSelectedTicket(null);
+                    }}
+                    onSuccess={() => {
+                        const statusParam = selectedStatus !== 'null' ? selectedStatus : 'null';
+                        // Executing this dispatch will no longer crash because fetchMyTickets is explicitly imported now
+                        dispatch(fetchMyTickets(statusParam));
+                        dispatch(fetchAllTickets({ status: selectedStatus !== 'null' ? selectedStatus : null }));
                     }}
                     isRaisedTicket={true}
                 />

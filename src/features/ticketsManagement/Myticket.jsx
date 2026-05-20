@@ -74,7 +74,7 @@ export const MyTickets = ({ onRaiseTicket }) => {
     }, [dispatch, searchTerm, startDate, endDate]);
 
     const handleStatusFilter = (status) => {
-        setSelectedStatus(status);
+        dispatch(setSelectedStatus(status));
         setCurrentPage(1);
     };
 
@@ -89,6 +89,7 @@ export const MyTickets = ({ onRaiseTicket }) => {
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+    console.log('Paginating tickets:', paginatedTickets);
 
     const totalPages = Math.ceil(filteredMyTickets.length / itemsPerPage);
 
@@ -115,8 +116,8 @@ export const MyTickets = ({ onRaiseTicket }) => {
                         key={tab.value}
                         onClick={() => handleStatusFilter(tab.value)}
                         className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${selectedStatus === tab.value
-                                ? 'border-b-2 border-blue-600 text-blue-600'
-                                : 'text-gray-500 hover:text-gray-700'
+                            ? 'border-b-2 border-blue-600 text-blue-600'
+                            : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         {tab.label}
@@ -186,29 +187,30 @@ export const MyTickets = ({ onRaiseTicket }) => {
             {/* Tickets Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="w-full divide-y divide-gray-200 table-fixed">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th className="w-[5%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                                <th className="w-[25%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
+                                <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
+                                <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th className="w-[10%] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Chat History</th>
+
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center">
+                                    <td colSpan={8} className="px-6 py-12 text-center">
                                         <Loader2 className="animate-spin mx-auto text-blue-600" size={32} />
                                         <p className="mt-2 text-gray-500">Loading tickets...</p>
                                     </td>
                                 </tr>
                             ) : paginatedTickets.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                         No tickets found
                                     </td>
                                 </tr>
@@ -220,31 +222,33 @@ export const MyTickets = ({ onRaiseTicket }) => {
                                         animate={{ opacity: 1 }}
                                         className="hover:bg-gray-50 transition-colors"
                                     >
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="w-[5%] px-6 py-4 text-sm text-gray-500">
                                             {(currentPage - 1) * itemsPerPage + index + 1}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                                                {ticket.title}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
+                                        <td className="w-[15%] px-6 py-4">
                                             <div
-                                                className="text-sm text-gray-500 max-w-md line-clamp-2"
+                                                className="w-full text-sm text-gray-500 line-clamp-2 break-words"
+                                                dangerouslySetInnerHTML={{ __html: ticket.title }}
+                                            />
+                                        </td>
+                                        <td className="w-[25%] px-6 py-4">
+                                            <div
+                                                className="w-full text-sm text-gray-500 line-clamp-2 break-words"
                                                 dangerouslySetInnerHTML={{ __html: ticket.description }}
                                             />
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="w-[15%] px-6 py-4 text-sm text-gray-500">
                                             {formatDate(ticket.assign_date)}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="w-[10%] px-6 py-4">
                                             <PriorityBadge priority={ticket.priority} />
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="w-[10%] px-6 py-4">
                                             <StatusBadge status={ticket.status} />
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
+
+                                        <td className="w-[10%] px-6 py-4">
+                                            <div className="flex gap-2 justify-center">
                                                 <button
                                                     onClick={() => {
                                                         setSelectedTicket(ticket);
