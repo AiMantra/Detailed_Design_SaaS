@@ -213,7 +213,7 @@ export const RaisedTickets = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedTickets.map((ticket, index) => (
+                                paginatedTickets.filter(ticket => ticket.ticket_for?.trim() === "Aimantra Timesheet").map((ticket, index) => (
                                     <motion.tr
                                         key={ticket.id}
                                         initial={{ opacity: 0 }}
