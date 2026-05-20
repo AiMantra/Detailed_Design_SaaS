@@ -65,7 +65,6 @@ const Notifications = () => {
   );
 };
 
-
 const Layout = () => {
   const dispatch = useDispatch();
   const location = useLocation();
