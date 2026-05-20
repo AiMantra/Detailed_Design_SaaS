@@ -15,7 +15,7 @@ import {
     Plus,
     MessageCircle,
 } from 'lucide-react';
-import { fetchAllTickets, fetchMyTickets, filterRaisedTickets, resetFilters, setSelectedStatus } from './ticketSlice';
+import { fetchAllTickets, fetchMyTickets, filterRaisedTickets, resetFilters, setSelectedStatus } from './ticketslice';
 import { CreateTicketModal } from '../../components/modals/CreateTicketModal';
 import { DeleteConfirmModal } from '../../components/modals/DeleteTicketModal';
 import { TicketChatModal } from '../../components/modals/TicketChatModal';
