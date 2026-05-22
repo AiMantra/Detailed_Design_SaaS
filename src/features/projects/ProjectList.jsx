@@ -115,6 +115,8 @@ const ProjectList = () => {
   const [expandedProjectDetails, setExpandedProjectDetails] = useState({});
   const [loadingProjectDetails, setLoadingProjectDetails] = useState({});
 
+  const [activePhaseTab, setActivePhaseTab] = useState("All");
+
 
   // Create lookup maps for IDs to names
   const companyMap = useMemo(() => {
@@ -2902,6 +2904,7 @@ const ProjectList = () => {
                                                                               onClick={() => {
                                                                                 if (sub.work_summary?.users?.length > 0) {
                                                                                   setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                                                                                  setActivePhaseTab("All"); // Reset tab when opening a new row
                                                                                 }
                                                                               }}
                                                                             >

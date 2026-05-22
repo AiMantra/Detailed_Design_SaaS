@@ -106,16 +106,16 @@ export const subActivityService = {
   },
 
 
-  updateSubActivity: async (subActivityId, subActivityData) => {
-    try {
-      // subactivity-submission/
-      const response = await api.post(`subactivity-submission/`, subActivityData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating sub activity:', error);
-      throw error;
-    }
-  },
+  // updateSubActivity: async (subActivityId, subActivityData) => {
+  //   try {
+  //     // subactivity-submission/
+  //     const response = await api.post(`subactivity-submission/`, subActivityData);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error updating sub activity:', error);
+  //     throw error;
+  //   }
+  // },
 
 
   deleteSubActivity: async (subactivityId) => {

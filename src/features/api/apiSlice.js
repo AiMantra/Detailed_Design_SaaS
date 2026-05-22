@@ -522,10 +522,10 @@ export const deleteProject = createAsyncThunk(
 );
 
 export const tlSubactivitySubmitwithProof = createAsyncThunk(
-  'api/subactivity-submission',
+  'api/stages/work-logs',
   async (proofData, { rejectWithValue }) => {
     try {
-      const url = (proofData.to_status == "Submitted" || proofData.to_status == "Approved") ? '/subactivity-submission/' : "/subactivity-paymentstage/";
+      const url = (proofData.to_status == "Submitted" || proofData.to_status == "Approved") ? '/stages/work-logs/' : "/stages/payment-logs/";
       await projectService.tlSubactivitySubmitwithProof(proofData, url);
       return proofData; // Return the submitted data for potential state updates
     } catch (error) {

@@ -1,6 +1,3 @@
-
-
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
 import { showSuccess, showError } from "../../utils/toast";
@@ -84,7 +81,7 @@ export const fetchUserWorkSummary = createAsyncThunk(
 // Save daily work log directly (no picking required)
 export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
-  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status }, { getState, rejectWithValue }) => {
+  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status, phase = "R0", submission_po_status = "", submission_invoice_status = "", approval_po_status = "", approval_invoice_status = "" }, { getState, rejectWithValue }) => {
     try {
       const userUUID = getEmpCode();
 
@@ -126,7 +123,12 @@ export const saveDailyWorkLog = createAsyncThunk(
         end_time: endDateTime,
         duration: durationSeconds,
         work_type: work_type,
-        note: note || (status === 'WORKED' ? `Worked on task` : `No work done`)
+        note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+        phase: phase,
+        submission_po_status: submission_po_status,
+        submission_invoice_status: submission_invoice_status,
+        approval_po_status: approval_po_status,
+        approval_invoice_status: approval_invoice_status
       };
 
       const response = await api.post('/employee-timelog/', timeLogData);
@@ -206,7 +208,7 @@ export const fetchUserSubmittedTask = createAsyncThunk(
   'tasks/fetchUserSubmittedTask',
   async (empCode, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/subactivity-submission/?emp_code=${empCode}`);
+      const response = await api.get(`/stages/work-logs/?emp_code=${empCode}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching user work summary:', error);
