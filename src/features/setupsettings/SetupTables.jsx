@@ -400,8 +400,8 @@ const CompaniesTable = ({ refreshKey }) => {
             //         title: "Work Types",
             //         content: (
             //             <div className="flex flex-wrap gap-2">
-            //                 {company.sector_work_types?.length > 0 ? (
-            //                     company.sector_work_types.map((wt, idx) => (
+            //                 {company.stage_work_types?.length > 0 ? (
+            //                     company.stage_work_types.map((wt, idx) => (
             //                         <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
             //                             {wt.name}
             //                         </span>
@@ -740,7 +740,7 @@ const SectorsTable = ({ refreshKey }) => {
             filtered = filtered.filter(sector =>
                 sector.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 sector.unit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sector.sector_work_types?.some(wt => wt.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+                sector.stage_work_types?.some(wt => wt.name?.toLowerCase().includes(searchTerm.toLowerCase()))
             );
         }
         return filtered;
@@ -788,8 +788,8 @@ const SectorsTable = ({ refreshKey }) => {
                     title: "Work Types",
                     content: (
                         <div className="flex flex-wrap gap-2">
-                            {sector.sector_work_types?.length > 0 ? (
-                                sector.sector_work_types.map((wt, idx) => (
+                            {sector.stage_work_types?.length > 0 ? (
+                                sector.stage_work_types.map((wt, idx) => (
                                     <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
                                         {wt.name}
                                     </span>
@@ -881,7 +881,7 @@ const SectorsTable = ({ refreshKey }) => {
                                 </thead>
                                 <tbody>
                                     {filteredSectors.map((sector) => {
-                                        const hasWorkTypes = sector.sector_work_types && sector.sector_work_types.length > 0;
+                                        const hasWorkTypes = sector.stage_work_types && sector.stage_work_types.length > 0;
                                         const metadata = prepareMetadata(sector);
                                         const isExpanded = expandedSector[sector.id];
 
@@ -910,21 +910,21 @@ const SectorsTable = ({ refreshKey }) => {
                                                         <div className="flex flex-wrap gap-1"
                                                             onClick={() => toggleExpand(sector.id)}
                                                         >
-                                                            {sector.sector_work_types?.slice(0, 2).map((wt, idx) => (
+                                                            {sector.stage_work_types?.slice(0, 2).map((wt, idx) => (
                                                                 <span key={`worktype_${idx}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
                                                                     {wt.name}
                                                                 </span>
                                                             ))}
-                                                            {sector.sector_work_types?.length > 2 && (
+                                                            {sector.stage_work_types?.length > 2 && (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
-                                                                    +{sector.sector_work_types.length - 2}
+                                                                    +{sector.stage_work_types.length - 2}
                                                                 </span>
                                                             )}
-                                                            {(!sector.sector_work_types || sector.sector_work_types.length === 0) && (
+                                                            {(!sector.stage_work_types || sector.stage_work_types.length === 0) && (
                                                                 <span className="text-gray-400 text-xs">No Work Types</span>
                                                             )}
 
-                                                            {sector.sector_work_types?.length > 0 && <button
+                                                            {sector.stage_work_types?.length > 0 && <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     toggleExpand(sector.id)
@@ -973,14 +973,14 @@ const SectorsTable = ({ refreshKey }) => {
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 
                                                                 {/* All Work Types */}
-                                                                {sector.sector_work_types && sector.sector_work_types.length > 0 && (
+                                                                {sector.stage_work_types && sector.stage_work_types.length > 0 && (
                                                                     <div className="space-y-1">
                                                                         <h4 className="font-semibold text-gray-700 flex items-center gap-2">
                                                                             <Layers size={14} className="text-purple-500" />
-                                                                            All Work Types ({sector.sector_work_types.length})
+                                                                            All Work Types ({sector.stage_work_types.length})
                                                                         </h4>
                                                                         <div className="flex flex-wrap gap-1">
-                                                                            {sector.sector_work_types.map((wt, idx) => (
+                                                                            {sector.stage_work_types.map((wt, idx) => (
                                                                                 <span key={`work-type-${idx}`} className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-200 text-gray-700">
                                                                                     {wt.name}
                                                                                 </span>
@@ -1100,8 +1100,8 @@ const ClientsTable = ({ refreshKey }) => {
                     title: "Work Types",
                     content: (
                         <div className="flex flex-wrap gap-2">
-                            {client.sector_work_types?.length > 0 ? (
-                                client.sector_work_types.map((wt, idx) => (
+                            {client.stage_work_types?.length > 0 ? (
+                                client.stage_work_types.map((wt, idx) => (
                                     <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
                                         {wt.name}
                                     </span>

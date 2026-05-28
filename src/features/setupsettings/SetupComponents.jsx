@@ -1168,7 +1168,7 @@ export const AddSectorButton = ({ onSuccess, loadData, sectors, BasicButtonView 
                 name: formData.name,
                 unit: formData.unit,
                 created_by: formData.created_by,
-                sector_work_types: validWorkTypes
+                stage_work_types: validWorkTypes
             })).unwrap();
 
             dispatch(showSnackbar({ message: "Sector created successfully", type: "success" }));
@@ -1254,9 +1254,9 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
         updated_by: sessionStorage.getItem('emp_code')
     });
     const [workTypes, setWorkTypes] = useState(() => {
-        // Initialize from existing sector_work_types
-        if (sector?.sector_work_types && Array.isArray(sector.sector_work_types)) {
-            return sector.sector_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') }));
+        // Initialize from existing stage_work_types
+        if (sector?.stage_work_types && Array.isArray(sector.stage_work_types)) {
+            return sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') }));
         }
         return [];
     });
@@ -1271,8 +1271,8 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
             updated_by: sessionStorage.getItem('emp_code')
         });
 
-        if (sector?.sector_work_types) {
-            setWorkTypes(sector.sector_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
+        if (sector?.stage_work_types) {
+            setWorkTypes(sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
         } else {
             setWorkTypes([]);
         }
@@ -1295,8 +1295,8 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
             unit: sector?.unit || "",
             updated_by: sessionStorage.getItem('emp_code')
         });
-        if (sector?.sector_work_types) {
-            setWorkTypes(sector.sector_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
+        if (sector?.stage_work_types) {
+            setWorkTypes(sector.stage_work_types.map(wt => ({ id: wt.id, name: wt.name, updated_by: sessionStorage.getItem('emp_code') })));
         } else {
             setWorkTypes([]);
         }
@@ -1334,7 +1334,7 @@ export const EditSectorButton = ({ sector, onSuccess, loadData, sectors }) => {
                     name: formData.name,
                     unit: formData.unit,
                     updated_by: formData.updated_by,
-                    sector_work_types: validWorkTypes
+                    stage_work_types: validWorkTypes
                 }
             })).unwrap();
 
