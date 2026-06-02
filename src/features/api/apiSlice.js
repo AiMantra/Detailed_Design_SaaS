@@ -10,6 +10,8 @@ import { projectService } from '../../services/projectService';
 import { projectWorkSummaryService } from '../../services/projectWorkSummaryService';
 import { stagesTemplateService } from '../../services/stagesTemplateService';
 
+import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
+
 
 const initialState = {
   companies: [],
@@ -26,8 +28,24 @@ const initialState = {
   projectDetails: null,
   loading: false,
   error: null,
+  taskPlanners: [],
 };
 
+
+// ============ TASK PLANNER THUNKS ============
+export const fetchTaskPlanners = createAsyncThunk(
+  'api/fetchTaskPlanners',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Replace taskPlannerService.getTaskPlanners() with your actual API call
+      // Example: const response = await axios.get('/api/planners/'); return response.data;
+      const response = await taskPlannerService.getTaskPlanners();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 export const fetchProjectWorkSummary = createAsyncThunk(
   'api/fetchProjectWorkSummary',
@@ -699,6 +717,24 @@ const apiSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+
+
+      // ============ TASK PLANNERS ============
+      .addCase(fetchTaskPlanners.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTaskPlanners.fulfilled, (state, action) => {
+        state.loading = false;
+        // Based on your JSON payload structure ({ message, count, data: [...] })
+        // If your service returns the whole JSON, extract action.payload.data
+        // If your service already extracts it, just use action.payload
+        state.taskPlanners = action.payload.data || action.payload || [];
+      })
+      .addCase(fetchTaskPlanners.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
       .addCase(fetchProjectWorkSummary.pending, (state) => {
         state.loading = true;

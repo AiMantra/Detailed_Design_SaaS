@@ -65,7 +65,7 @@ import { saveDailyWorkLog } from "../tasks/taskSlice";
 import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
-
+import MultiWorkLogModal from "./MultilogModal";
 const ProjectList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -84,7 +84,7 @@ const ProjectList = () => {
     clients = [],
   } = useSelector((state) => state.api || {});
   const { user } = useSelector((state) => state.auth);
-
+  const [showMultiLog, setShowMultiLog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("deadline");
@@ -1618,6 +1618,16 @@ const ProjectList = () => {
               />
               <span className="text-sm font-medium text-gray-700">Refresh</span>
             </motion.button>
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => setShowMultiLog(true)}
+              // disabled={showLoading}
+              className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
+            >
+              <PlusCircle size={16} />
+              <span className="text-sm font-medium text-gray-700">Work Log</span>
+            </motion.button>
           </div>
 
           {/* Stats Cards - Removed Critical/Delayed for user, only shown to Admin */}
@@ -3134,6 +3144,7 @@ const ProjectList = () => {
                                                                                       </span>
                                                                                     </button>
                                                                                   </td>
+
                                                                                 </>
                                                                               }
                                                                             </tr >
@@ -3640,6 +3651,47 @@ const ProjectList = () => {
                 })}
               </motion.div >
             )}
+            <MultiWorkLogModal
+              isOpen={showMultiLog}
+              onClose={() => setShowMultiLog(false)}
+              projects={projectsOnly}          // your full projects array
+              // onSave={async (date, rows) => {
+              //   // rows = [{ projectId, activityId, subActivityId, startTime, endTime, workType, description }]
+              //   for (const row of rows) {
+              //     await dispatch(saveDailyWorkLog({
+              //       projectId: row.projectId,
+              //       subActivityId: row.subActivityId,
+              //       date,
+              //       startTime: row.startTime,
+              //       endTime: row.endTime,
+              //       work_type: row.workType,
+              //       note: row.description,
+              //       status: "WORKED",
+              //     })).unwrap();
+              //   }
+              //   dispatch(showSnackbar({ message: "Work logs saved!", type: "success" }));
+              // }}
+              onSave={async (date, rows) => {
+                try {
+                  // Append the 'date' and default 'status' to every row 
+                  // so the thunk can process it correctly
+                  const payloadArray = rows.map(row => ({
+                    ...row,
+                    date: date,
+                    status: row.status || "WORKED" // fallback to "WORKED" if not provided
+                  }));
+
+                  // Dispatch the thunk ONCE with the full array
+                  await dispatch(saveDailyWorkLog(payloadArray)).unwrap();
+
+                  // Note: The thunk handles the success snackbar now via showSuccess()
+
+                } catch (error) {
+                  // The thunk handles the error snackbar now via showError()
+                  console.error("Failed to save", error);
+                }
+              }}
+            />
           </AnimatePresence >
         </>
       )

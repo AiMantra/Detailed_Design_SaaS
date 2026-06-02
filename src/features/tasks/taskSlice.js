@@ -79,76 +79,158 @@ export const fetchUserWorkSummary = createAsyncThunk(
 );
 
 // Save daily work log directly (no picking required)
+// export const saveDailyWorkLog = createAsyncThunk(
+//   'tasks/saveDailyWorkLog',
+//   async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status, phase = "R0", submission_po_status = "", submission_invoice_status = "", approval_po_status = "", approval_invoice_status = "" }, { getState, rejectWithValue }) => {
+//     try {
+//       const userUUID = getEmpCode();
+
+//       if (!userUUID) throw new Error('User not authenticated');
+
+//       let durationSeconds = 0;
+//       let startDateTime = null;
+//       let endDateTime = null;
+
+//       if (status === 'WORKED') {
+//         if (!startTime || !endTime) {
+//           throw new Error('Please enter both start and end time');
+//         }
+
+//         startDateTime = `${date}T${startTime}:00`;
+//         endDateTime = `${date}T${endTime}:00`;
+
+//         const start = new Date(startDateTime);
+//         const end = new Date(endDateTime);
+
+//         if (start >= end) {
+//           throw new Error('End time must be after start time');
+//         }
+
+//         durationSeconds = Math.round((end - start) / 1000);
+//       } else {
+//         startDateTime = `${date}T00:00:00`;
+//         endDateTime = `${date}T23:59:59`;
+//         durationSeconds = 86400; // 24 hours
+//       }
+
+//       const timeLogData = {
+//         project: projectId,
+//         user: userUUID,
+//         subactivity: subActivityId,
+//         entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
+//         status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
+//         start_time: startDateTime,
+//         end_time: endDateTime,
+//         duration: durationSeconds,
+//         work_type: work_type,
+//         note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+//         phase: phase,
+//         submission_po_status: submission_po_status,
+//         submission_invoice_status: submission_invoice_status,
+//         approval_po_status: approval_po_status,
+//         approval_invoice_status: approval_invoice_status
+//       };
+
+//       const response = await api.post('/employee-timelog/', timeLogData);
+
+//       showSuccess(status === 'WORKED' ?
+//         `Work logged! ${(durationSeconds / 3600).toFixed(2)} hours recorded` :
+//         'Leave record saved successfully'
+//       );
+
+//       return {
+//         ...response.data,
+//         project_id: projectId,
+//         subactivity_id: subActivityId,
+//         date: date,
+//         duration: durationSeconds,
+//         hours: durationSeconds / 3600
+//       };
+//     } catch (error) {
+//       console.error('Error saving work log:', error);
+//       showError(error.message || 'Failed to save record');
+//       return rejectWithValue(error.message);
+//     }
+//   }
+// );
+
 export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
-  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status, phase = "R0", submission_po_status = "", submission_invoice_status = "", approval_po_status = "", approval_invoice_status = "" }, { getState, rejectWithValue }) => {
+  async (logs, { getState, rejectWithValue }) => {
+    // "logs" is now an array of objects
     try {
       const userUUID = getEmpCode();
 
       if (!userUUID) throw new Error('User not authenticated');
 
-      let durationSeconds = 0;
-      let startDateTime = null;
-      let endDateTime = null;
+      // 1. Map over the incoming array and process each log
+      const timeLogDataArray = logs.map((log) => {
+        const {
+          projectId, subActivityId, date, startTime, endTime,
+          work_type, note, status, phase = "R0",
+          submission_po_status = "", submission_invoice_status = "",
+          approval_po_status = "", approval_invoice_status = ""
+        } = log;
 
-      if (status === 'WORKED') {
-        if (!startTime || !endTime) {
-          throw new Error('Please enter both start and end time');
+        let durationSeconds = 0;
+        let startDateTime = null;
+        let endDateTime = null;
+
+        if (status === 'WORKED') {
+          if (!startTime || !endTime) {
+            throw new Error('Please enter both start and end time');
+          }
+
+          startDateTime = `${date}T${startTime}:00`;
+          endDateTime = `${date}T${endTime}:00`;
+
+          const start = new Date(startDateTime);
+          const end = new Date(endDateTime);
+
+          if (start >= end) {
+            throw new Error('End time must be after start time');
+          }
+
+          durationSeconds = Math.round((end - start) / 1000);
+        } else {
+          startDateTime = `${date}T00:00:00`;
+          endDateTime = `${date}T23:59:59`;
+          durationSeconds = 86400; // 24 hours
         }
 
-        startDateTime = `${date}T${startTime}:00`;
-        endDateTime = `${date}T${endTime}:00`;
+        // Return the formatted object for this specific row
+        return {
+          project: projectId,
+          user: userUUID,
+          subactivity: subActivityId,
+          entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
+          status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
+          start_time: startDateTime,
+          end_time: endDateTime,
+          duration: durationSeconds,
+          work_type: work_type,
+          date: date,
+          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          phase: phase,
+          submission_po_status: submission_po_status,
+          submission_invoice_status: submission_invoice_status,
+          approval_po_status: approval_po_status,
+          approval_invoice_status: approval_invoice_status
+        };
+      });
 
-        const start = new Date(startDateTime);
-        const end = new Date(endDateTime);
+      // 2. Send the entire array in a SINGLE API request
+      const response = await api.post('/time-planer/', timeLogDataArray);
 
-        if (start >= end) {
-          throw new Error('End time must be after start time');
-        }
+      // 3. Show a bulk success message
+      showSuccess(`Successfully saved ${timeLogDataArray.length} work log(s)`);
 
-        durationSeconds = Math.round((end - start) / 1000);
-      } else {
-        startDateTime = `${date}T00:00:00`;
-        endDateTime = `${date}T23:59:59`;
-        durationSeconds = 86400; // 24 hours
-      }
+      // 4. Return the response data
+      return response.data;
 
-      const timeLogData = {
-        project: projectId,
-        user: userUUID,
-        subactivity: subActivityId,
-        entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
-        status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
-        start_time: startDateTime,
-        end_time: endDateTime,
-        duration: durationSeconds,
-        work_type: work_type,
-        note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
-        phase: phase,
-        submission_po_status: submission_po_status,
-        submission_invoice_status: submission_invoice_status,
-        approval_po_status: approval_po_status,
-        approval_invoice_status: approval_invoice_status
-      };
-
-      const response = await api.post('/employee-timelog/', timeLogData);
-
-      showSuccess(status === 'WORKED' ?
-        `Work logged! ${(durationSeconds / 3600).toFixed(2)} hours recorded` :
-        'Leave record saved successfully'
-      );
-
-      return {
-        ...response.data,
-        project_id: projectId,
-        subactivity_id: subActivityId,
-        date: date,
-        duration: durationSeconds,
-        hours: durationSeconds / 3600
-      };
     } catch (error) {
       console.error('Error saving work log:', error);
-      showError(error.message || 'Failed to save record');
+      showError(error.message || 'Failed to save records');
       return rejectWithValue(error.message);
     }
   }
