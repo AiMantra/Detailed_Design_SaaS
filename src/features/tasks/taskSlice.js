@@ -154,6 +154,97 @@ export const fetchUserWorkSummary = createAsyncThunk(
 //   }
 // );
 
+export const updateDailyWorkLog = createAsyncThunk(
+  'tasks/updateDailyWorkLog',
+  async (logs, { getState, rejectWithValue }) => {
+    // "logs" is an array of objects to update from the UpdateGroupModal
+    try {
+      const userUUID = getEmpCode();
+
+      if (!userUUID) throw new Error('User not authenticated');
+
+      console.log("Updating logs:", logs);
+
+      // 1. Map over the incoming array and process each log
+      const timeLogDataArray = logs.map((log) => {
+        const {
+          id, // IMPORTANT: The ID of the task being updated
+          project, subactivity, date, start_time, end_time,
+          work_type, note, status, phase = "R0",
+          submission_po_status = "", submission_invoice_status = "",
+          approval_po_status = "", approval_invoice_status = ""
+        } = log;
+
+        // if (!id) {
+        //   throw new Error('Task ID is missing for the update operation');
+        // }
+
+        let durationSeconds = 0;
+        let startDateTime = start_time ? `${date}T${start_time}:00` : null;
+        let endDateTime = end_time ? `${date}T${end_time}:00` : null;
+
+        if (status === 'WORKED') {
+          if (!start_time || !end_time) {
+            throw new Error('Please enter both start and end time');
+          }
+
+          startDateTime = `${date}T${start_time}:00`;
+          endDateTime = `${date}T${end_time}:00`;
+
+          const start = new Date(startDateTime);
+          const end = new Date(endDateTime);
+
+          if (start >= end) {
+            throw new Error('End time must be after start time');
+          }
+
+          durationSeconds = Math.round((end - start) / 1000);
+        } else {
+          startDateTime = `${date}T00:00:00`;
+          endDateTime = `${date}T23:59:59`;
+          durationSeconds = 86400; // 24 hours
+        }
+
+        // Return the formatted object including the ID
+        return {
+          id: id, 
+          project: project,
+          user: userUUID,
+          subactivity: subactivity,
+          entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
+          status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
+          start_time: startDateTime,
+          end_time: endDateTime,
+          duration: durationSeconds,
+          work_type: work_type,
+          date: date,
+          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          phase: phase,
+          submission_po_status: submission_po_status,
+          submission_invoice_status: submission_invoice_status,
+          approval_po_status: approval_po_status,
+          approval_invoice_status: approval_invoice_status
+        };
+      });
+
+      // 2. Send the array to your bulk update API endpoint
+      // Note: Adjust the method (.put vs .patch) and URL if your backend uses a specific route for updates 
+      const response = await api.put('/time-planer/bulk-update/', {"planners": timeLogDataArray});
+
+      // 3. Show a bulk success message
+      showSuccess(`Successfully updated ${timeLogDataArray.length} work log(s)`);
+
+      // 4. Return the response data
+      return response.data;
+
+    } catch (error) {
+      console.error('Error updating work log:', error);
+      showError(error.message || 'Failed to update records');
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
   async (logs, { getState, rejectWithValue }) => {
@@ -407,6 +498,8 @@ const taskSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+
+    
       // Fetch User Work Logs
       .addCase(fetchUserWorkLogs.pending, (state) => {
         state.loading = true;
@@ -474,6 +567,19 @@ const taskSlice = createSlice({
       })
       .addCase(fetchAllEmployeesReport.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+      // Update Daily Work Log
+      .addCase(updateDailyWorkLog.pending, (state) => {
+        state.updating = true;
+      })
+      .addCase(updateDailyWorkLog.fulfilled, (state, action) => {
+        state.updating = false;
+        // Optionally update the specific logs in state.userWorkLogs here if needed,
+        // though typically fetching the list again from the component is safer.
+      })
+      .addCase(updateDailyWorkLog.rejected, (state, action) => {
+        state.updating = false;
         state.error = action.payload;
       })
       // Save Daily Work Log

@@ -100,6 +100,9 @@ const TlProjectList = () => {
     const [showProofModal, setShowProofModal] = useState(false);
     const [proofData, setProofData] = useState({
         documents: [],
+        rejection_proof: [],
+        rejection_reason: "",
+        rejection_type: "",
         subactivity: "",
         to_status: "Submitted",
         changed_by: user?.emp_code || "",
@@ -580,14 +583,18 @@ const TlProjectList = () => {
 
     const showLoading = isInitialLoading || refreshing || deleteInProgress;
     const [loder, setloder] = useState(false)
-
+    console.log(proofData?.documents.length, 'proof data document')
     const handleSubmitProof = async () => {
+        console.log('clicked')
         setloder(true)
         const response = await dispatch(tlSubactivitySubmitwithProof(proofData)).unwrap();
         await fetchProjectDetailsIfNeeded(proofData.projectId);
         setloder(false)
         setProofData({
             documents: [],
+            rejection_proof: [],
+            rejection_reason: "",
+            rejection_type: "",
             subactivity: "",
             to_status: "Submitted",
             changed_by: user?.emp_code || "",
@@ -823,6 +830,9 @@ const TlProjectList = () => {
                                 setShowProofModal(false)
                                 setProofData({
                                     documents: [],
+                                    rejection_proof: [],
+                                    rejection_reason: "",
+                                    rejection_type: "",
                                     subactivity: "",
                                     to_status: "Submitted",
                                     changed_by: user?.emp_code || "",
@@ -843,13 +853,16 @@ const TlProjectList = () => {
                                 {/* HEADER */}
                                 <div className="flex justify-between items-center mb-5">
                                     <h3 className="text-lg font-semibold text-gray-800">
-                                        📎 Submit Work Proof
+                                        {proofData.to_status !== "Rejected" ? "📎 Submit Work Proof" : "📎 Rejection Proof"}
                                     </h3>
                                     <button
                                         onClick={() => {
                                             setShowProofModal(false)
                                             setProofData({
                                                 documents: [],
+                                                rejection_proof: [],
+                                                rejection_reason: "",
+                                                rejection_type: "",
                                                 subactivity: "",
                                                 to_status: "Submitted",
                                                 changed_by: user?.emp_code || "",
@@ -926,20 +939,119 @@ const TlProjectList = () => {
                                 </div>
 
                                 {/* MESSAGE */}
-                                <div className="mt-5">
-                                    <label className="text-sm font-medium text-gray-700 block mb-1">
-                                        Message
-                                    </label>
-                                    <textarea
-                                        value={proofData.remarks}
-                                        onChange={(e) =>
-                                            setProofData({ ...proofData, remarks: e.target.value })
-                                        }
-                                        placeholder="Describe your proof..."
-                                        rows={3}
-                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
+                                {proofData.to_status !== "Rejected" && (
+                                    <div className="mt-5">
+                                        <label className="text-sm font-medium text-gray-700 block mb-1">
+                                            Message
+                                        </label>
+                                        <textarea
+                                            value={proofData.remarks}
+                                            onChange={(e) =>
+                                                setProofData({ ...proofData, remarks: e.target.value })
+                                            }
+                                            placeholder="Describe your proof..."
+                                            rows={3}
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* REJECTION FIELDS */}
+                                {proofData.to_status === "Rejected" && (
+                                    <>
+                                        <div className="mt-5">
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Rejection Type <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                value={proofData.rejection_type || ""}
+                                                onChange={(e) =>
+                                                    setProofData({ ...proofData, rejection_type: e.target.value })
+                                                }
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                            >
+                                                <option value="" disabled>Select Rejection Type</option>
+                                                <option value="internal">Internal</option>
+                                                <option value="external">External</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="mt-5">
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Rejection Reason <span className="text-red-500">*</span>
+                                            </label>
+                                            <textarea
+                                                value={proofData.rejection_reason || ""}
+                                                onChange={(e) =>
+                                                    setProofData({ ...proofData, rejection_reason: e.target.value })
+                                                }
+                                                placeholder="Enter reason for rejection..."
+                                                rows={3}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                            />
+                                        </div>
+
+                                        <div className="mt-4">
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Rejection Proof
+                                            </label>
+                                            <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    className="hidden"
+                                                    onChange={(e) =>
+                                                        setProofData({
+                                                            ...proofData,
+                                                            rejection_proof: [...(proofData.rejection_proof || []), ...Array.from(e.target.files)],
+                                                        })
+                                                    }
+                                                />
+                                                <p className="text-sm text-gray-500">
+                                                    <span className="text-red-600 font-medium">browse rejection proofs</span>
+                                                </p>
+                                            </label>
+
+                                            <div className="grid grid-cols-3 gap-3 mt-4">
+                                                {proofData?.rejection_proof?.map((file, i) => {
+                                                    const isImage = file.type.startsWith("image/");
+                                                    const url = URL.createObjectURL(file);
+
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="relative border rounded-lg overflow-hidden group"
+                                                        >
+                                                            {isImage ? (
+                                                                <img
+                                                                    src={url}
+                                                                    alt="preview"
+                                                                    className="w-full h-24 object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex items-center justify-center p-2 text-center bg-gray-100 text-xs text-gray-600 h-full">
+                                                                    📄 {file.name}
+                                                                </div>
+                                                            )}
+
+                                                            <button
+                                                                onClick={() =>
+                                                                    setProofData({
+                                                                        ...proofData,
+                                                                        rejection_proof: proofData.rejection_proof.filter((_, index) => index !== i),
+                                                                    })
+                                                                }
+                                                                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* ACTIONS */}
                                 <div className="flex gap-3 mt-6">
@@ -948,6 +1060,9 @@ const TlProjectList = () => {
                                             setShowProofModal(false)
                                             setProofData({
                                                 documents: [],
+                                                rejection_proof: [],
+                                                rejection_reason: "",
+                                                rejection_type: "",
                                                 subactivity: "",
                                                 to_status: "Submitted",
                                                 changed_by: user?.emp_code || "",
@@ -963,7 +1078,12 @@ const TlProjectList = () => {
 
                                     <button
                                         onClick={handleSubmitProof}
-                                        disabled={(!proofData?.documents?.length || loder)}
+                                        disabled={
+                                            loder ||
+                                            (proofData?.to_status === "Rejected"
+                                                ? proofData?.rejection_proof?.length < 1
+                                                : proofData?.documents?.length < 1)
+                                        }
                                         className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                                     >
                                         Submit Proof
@@ -1983,7 +2103,7 @@ const TlProjectList = () => {
                                                                                                                                                                                 }
                                                                                                                                                                             </div>
                                                                                                                                                                         </td>
-                                                                                                                                                                        <td className="text-center">
+                                                                                                                                                                        {/* <td className="text-center">
                                                                                                                                                                             {
 
                                                                                                                                                                                 <button
@@ -1999,6 +2119,49 @@ const TlProjectList = () => {
                                                                                                                                                                                     <Handshake size={13} /> Approve
                                                                                                                                                                                 </button>
                                                                                                                                                                             }
+                                                                                                                                                                        </td> */}
+
+
+
+
+
+                                                                                                                                                                        <td className="text-center">
+                                                                                                                                                                            <div className="relative inline-block">
+                                                                                                                                                                                <select
+                                                                                                                                                                                    className="border rounded px-2 py-1 text-sm"
+                                                                                                                                                                                    defaultValue=""
+                                                                                                                                                                                    onChange={(e) => {
+                                                                                                                                                                                        const value = e.target.value;
+
+                                                                                                                                                                                        if (!value) return;
+
+                                                                                                                                                                                        setShowProofModal(true);
+
+                                                                                                                                                                                        setProofData({
+                                                                                                                                                                                            ...proofData,
+                                                                                                                                                                                            subactivity: sub.id,
+                                                                                                                                                                                            to_status: value,
+                                                                                                                                                                                            projectId: projectId
+                                                                                                                                                                                        });
+
+                                                                                                                                                                                        // reset dropdown after selection
+                                                                                                                                                                                        e.target.value = "";
+                                                                                                                                                                                    }}
+                                                                                                                                                                                    disabled={changeStatus === "Approved"}
+                                                                                                                                                                                >
+                                                                                                                                                                                    <option value="" disabled>
+                                                                                                                                                                                        Action
+                                                                                                                                                                                    </option>
+
+                                                                                                                                                                                    <option value="Approved">
+                                                                                                                                                                                        Approve
+                                                                                                                                                                                    </option>
+
+                                                                                                                                                                                    <option value="Rejected">
+                                                                                                                                                                                        Rejected
+                                                                                                                                                                                    </option>
+                                                                                                                                                                                </select>
+                                                                                                                                                                            </div>
                                                                                                                                                                         </td>
                                                                                                                                                                         <td className="text-center">
                                                                                                                                                                             <div className="relative inline-block p-2">

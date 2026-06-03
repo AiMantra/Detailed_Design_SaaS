@@ -27,6 +27,17 @@ export const subActivityService = {
     }
   },
 
+  // ---> NEW METHOD ADDED HERE <---
+  getSubActivityDetails: async (subActivityId) => {
+    try {
+      const response = await api.get(`/subactivity/${subActivityId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sub activity details:', error);
+      throw error;
+    }
+  },
+
 
   getSubActivity: async (subactivityId) => {
     try {

@@ -203,6 +203,45 @@ const CreateProject = () => {
     { name: "", gst: "", state: "", status: "Active" },
   ]);
 
+
+  const [workStages, setWorkStages] = useState({});
+
+
+  // --- Dynamic Work Stages Handlers ---
+  const handleAddStage = (subId) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: [
+          ...existing,
+          { id: `stg_${subId}_${Date.now()}`, name: "", payment_percent: "" },
+        ],
+      };
+    });
+  };
+
+  const handleRemoveStage = (subId, stageId) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: existing.filter((s) => s.id !== stageId),
+      };
+    });
+  };
+
+  const handleStageUpdate = (subId, stageId, field, value) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: existing.map((s) =>
+          s.id === stageId ? { ...s, [field]: value } : s
+        ),
+      };
+    });
+  };
   const addBranch = () => {
     setBranches([
       ...branches,
@@ -264,7 +303,59 @@ const CreateProject = () => {
   }, [sectors]);
 
   //Activity,Sub-Activity Template
+  // useEffect(() => {
+  //   if (stageTemplates && stageTemplates.length > 0) {
+  //     const transformedActivities = stageTemplates
+  //       .filter((act) => !act.is_deleted)
+  //       .map((template, index) => ({
+  //         id:
+  //           template.id ||
+  //           `template-activity-${template.sorting_var}` ||
+  //           `template-activity-${index}`,
+  //         sorting_var: template.sorting_var,
+  //         activity_name: template.activity_name,
+  //         start_date: template.start_date,
+  //         end_date: template.end_date,
+  //         weightage: template.weightage,
+  //         isFromTemplate: true,
+  //         isCustom: false,
+  //         subActivities: template.subactivities
+  //           .filter((sub) => !sub.is_deleted) // Only include non-deleted sub-activities
+  //           .map((sub) => ({
+  //             id:
+  //               sub.id ||
+  //               `template-subactivity-${sub.sorting_var}` ||
+  //               `template-subactivity-${index}`,
+  //             sorting_var: sub.sorting_var,
+  //             subactivity_name: sub.subactivity_name,
+  //             description: sub.description,
+  //             unit: sub.unit,
+  //             total_quantity: sub.total_quantity,
+  //             submission_payment: sub.submission_payment,
+  //             approval_payment: sub.approval_payment,
+  //             chainage_start: sub.chainage_start,
+  //             chainage_end: sub.chainage_end,
+  //             covered_area: sub.covered_area,
+  //             chainage_exist: sub.chainage_exist,
+  //             planned_quantity_exist: sub.planned_quantity_exist,
+  //             length_exist: sub.length_exist,
+  //             submission_exist: sub.submission_exist,
+  //             approval_exist: sub.approval_exist,
+  //             // activityType: sub.chainage_start ? 'multiple' : 'single',
+  //           }))
+  //           .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)), // Sort Sub-Activities by sorting_var
+  //       }))
+  //       .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)); // Sort Activities by sorting_var
+  //     setTemplateActivities(transformedActivities);
+  //   } else {
+  //     setTemplateActivities([]);
+  //   }
+  // }, [stageTemplates]);
+
+
   useEffect(() => {
+    const initialStages = {};
+
     if (stageTemplates && stageTemplates.length > 0) {
       const transformedActivities = stageTemplates
         .filter((act) => !act.is_deleted)
@@ -281,37 +372,76 @@ const CreateProject = () => {
           isFromTemplate: true,
           isCustom: false,
           subActivities: template.subactivities
-            .filter((sub) => !sub.is_deleted) // Only include non-deleted sub-activities
-            .map((sub) => ({
-              id:
+            .filter((sub) => !sub.is_deleted)
+            .map((sub) => {
+              // 1. Define the subId first
+              const subId =
                 sub.id ||
                 `template-subactivity-${sub.sorting_var}` ||
-                `template-subactivity-${index}`,
-              sorting_var: sub.sorting_var,
-              subactivity_name: sub.subactivity_name,
-              description: sub.description,
-              unit: sub.unit,
-              total_quantity: sub.total_quantity,
-              submission_payment: sub.submission_payment,
-              approval_payment: sub.approval_payment,
-              chainage_start: sub.chainage_start,
-              chainage_end: sub.chainage_end,
-              covered_area: sub.covered_area,
-              chainage_exist: sub.chainage_exist,
-              planned_quantity_exist: sub.planned_quantity_exist,
-              length_exist: sub.length_exist,
-              submission_exist: sub.submission_exist,
-              approval_exist: sub.approval_exist,
-              // activityType: sub.chainage_start ? 'multiple' : 'single',
-            }))
-            .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)), // Sort Sub-Activities by sorting_var
+                `template-subactivity-${index}`;
+
+              // 2. Perform the assignment
+              initialStages[subId] = sub.work_stages?.length > 0
+                ? sub.work_stages.map((ws, i) => ({
+                  id: `stg_${subId}_${i}`,
+                  name: ws.name,
+                  payment_percent: ws.payment_percent || 0
+                }))
+                : [
+                  { id: `stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+                  { id: `stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+                ];
+
+              // 3. Return the mapped object
+              return {
+                id: subId,
+                sorting_var: sub.sorting_var,
+                subactivity_name: sub.subactivity_name,
+                description: sub.description,
+                unit: sub.unit,
+                total_quantity: sub.total_quantity,
+                submission_payment: sub.submission_payment,
+                approval_payment: sub.approval_payment,
+                chainage_start: sub.chainage_start,
+                chainage_end: sub.chainage_end,
+                covered_area: sub.covered_area,
+                chainage_exist: sub.chainage_exist,
+                planned_quantity_exist: sub.planned_quantity_exist,
+                length_exist: sub.length_exist,
+                submission_exist: sub.submission_exist,
+                approval_exist: sub.approval_exist,
+              };
+            })
+            .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)),
         }))
-        .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)); // Sort Activities by sorting_var
+        .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0));
+
       setTemplateActivities(transformedActivities);
+      // Don't forget to update the state with the mapped stages!
+      setWorkStages((prev) => ({ ...prev, ...initialStages }));
     } else {
       setTemplateActivities([]);
+      setWorkStages({});
     }
   }, [stageTemplates]);
+
+
+  // Deriving Weightages Dynamically
+  useEffect(() => {
+    const newWeightages = {};
+    selectedActivities.forEach(activityId => {
+      let total = 0;
+      const selectedSubs = selectedSubActivities[activityId] || [];
+      selectedSubs.forEach(subId => {
+        const stages = workStages[subId] || [];
+        stages.forEach(stg => {
+          total += parseFloat(stg.payment_percent) || 0;
+        });
+      });
+      newWeightages[activityId] = total;
+    });
+    setActivityWeightages(newWeightages);
+  }, [workStages, selectedSubActivities, selectedActivities]);
 
   //GST Calculation
   useEffect(() => {
@@ -2082,13 +2212,38 @@ const CreateProject = () => {
           };
         });
 
+
+
+
+        // return {
+        //   activity_name: activityObj?.activity_name,
+        //   start_date: dates.startDate,
+        //   end_date: dates.endDate,
+        //   weightage: weightage,
+        //   sorting_var: activitySortingVar,
+        //   subactivities: subactivities,
+        // };
+
+
+
+
+        const stages = workStages[subId] || [];
+        const mappedStages = stages.map((stg, sIdx) => ({
+          name: stg.name || `Stage ${sIdx + 1}`,
+          payment_percent: parseFloat(stg.payment_percent) || 0,
+          sorting_var: sIdx
+        }));
+
         return {
-          activity_name: activityObj?.activity_name,
-          start_date: dates.startDate,
-          end_date: dates.endDate,
-          weightage: weightage,
-          sorting_var: activitySortingVar,
-          subactivities: subactivities,
+          subactivity_name: subObj?.subactivity_name || String(subId),
+          description: description,
+          total_quantity: isStatusBased ? 1 : plannedQty,
+          unit: isStatusBased ? "status" : unit,
+          chainage_start: chainagestart,
+          chainage_end: chainageend,
+          covered_area: coveredarea || "0.00",
+          sorting_var: subSortingVar,
+          work_stages: mappedStages // <--- Replaced old payment fields with this
         };
       });
 
@@ -6424,7 +6579,7 @@ const CreateProject = () => {
                                                       </div>
                                                     </div>
                                                   </div>}
-                                                {(sub?.submission_exist || showAllFields[key]) &&
+                                                {/* {(sub?.submission_exist || showAllFields[key]) &&
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Submission Payment (%)
@@ -6468,9 +6623,9 @@ const CreateProject = () => {
                                                         />
                                                       </span>
                                                     </div>
-                                                  </div>}
+                                                  </div>} */}
 
-                                                {(sub?.approval_exist || showAllFields[key]) &&
+                                                {/* {(sub?.approval_exist || showAllFields[key]) &&
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Approval Payment (%)
@@ -6514,7 +6669,51 @@ const CreateProject = () => {
                                                         />
                                                       </span>
                                                     </div>
-                                                  </div>}
+                                                  </div>} */}
+                                                {/* Dynamic Work Stages Section */}
+                                                <div className="col-span-3 mt-4 pl-5">
+                                                  <label className="block text-[10px] text-gray-500 mb-1 font-medium">Work Stages & Payment (%) *</label>
+                                                  <div className="space-y-2">
+                                                    {(workStages[sub.id] || []).map((stage, idx) => (
+                                                      <div key={stage.id} className="flex items-center gap-2">
+                                                        <input
+                                                          type="text"
+                                                          placeholder="Stage Name (e.g. Submission)"
+                                                          value={stage.name}
+                                                          onChange={(e) => handleStageUpdate(sub.id, stage.id, 'name', e.target.value)}
+                                                          className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                        <div className="relative w-28">
+                                                          <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            placeholder="%"
+                                                            value={stage.payment_percent}
+                                                            onChange={(e) => handleStageUpdate(sub.id, stage.id, 'payment_percent', e.target.value)}
+                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 pr-6"
+                                                          />
+                                                          <Percent size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                        </div>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleRemoveStage(sub.id, stage.id)}
+                                                          className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+                                                          title="Remove Stage"
+                                                        >
+                                                          <X size={14} />
+                                                        </button>
+                                                      </div>
+                                                    ))}
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleAddStage(sub.id)}
+                                                      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-1"
+                                                    >
+                                                      <Plus size={10} /> Add Work Stage
+                                                    </button>
+                                                  </div>
+                                                </div>
 
                                                 <div className="col-span-3 mt-2">
                                                   {(parseFloat(

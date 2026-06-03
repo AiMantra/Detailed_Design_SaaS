@@ -22,6 +22,7 @@ const initialState = {
   stageTemplates: [],
   activities: [],
   subActivities: [],
+  subActivityDetails: null,
   projectWorkSummary: null,
   projects: [],
   projectsOnly: [],
@@ -359,6 +360,24 @@ export const fetchSubActivities = createAsyncThunk(
   }
 );
 
+
+// ============ SUB-ACTIVITY THUNKS ============
+
+export const fetchSubActivityDetails = createAsyncThunk(
+  'api/fetchSubActivityDetails',
+  async (subActivityId, { rejectWithValue }) => {
+    try {
+      // Assuming you add this to your subActivityService:
+      // getSubActivityDetails: (id) => api.get(`subactivity/${id}/`).then(res => res.data)
+      const response = await subActivityService.getSubActivityDetails(subActivityId);
+      
+      return response; 
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const createSubActivity = createAsyncThunk(
   'api/createSubActivity',
   async (subActivityData, { rejectWithValue }) => {
@@ -543,7 +562,8 @@ export const tlSubactivitySubmitwithProof = createAsyncThunk(
   'api/stages/work-logs',
   async (proofData, { rejectWithValue }) => {
     try {
-      const url = (proofData.to_status == "Submitted" || proofData.to_status == "Approved") ? '/stages/work-logs/' : "/stages/payment-logs/";
+      const url = (proofData.to_status == "Submitted" || proofData.to_status == "Approved") ? '/subactivity-submission/' : "/stages/payment-logs/";
+      // const url = "/subactivity-submission/";
       await projectService.tlSubactivitySubmitwithProof(proofData, url);
       return proofData; // Return the submitted data for potential state updates
     } catch (error) {
@@ -898,6 +918,22 @@ const apiSlice = createSlice({
       .addCase(createSubActivitiesBulk.fulfilled, (state, action) => {
         addUniqueItems(state.subActivities, action.payload);
       })
+      // ============ SUB ACTIVITIES ============
+      // ... existing cases
+
+      .addCase(fetchSubActivityDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.subActivityDetails = null; // Clear old data while fetching
+      })
+      .addCase(fetchSubActivityDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.subActivityDetails = action.payload;
+      })
+      .addCase(fetchSubActivityDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // .addCase(updateSubActivityProgress.fulfilled, (state, action) => {
       //   updateItemInArray(state.subActivities, action.payload);
       // })
@@ -1051,6 +1087,8 @@ const apiSlice = createSlice({
       });
   },
 });
+
+
 
 export const { clearError, clearProjects, clearActivities, clearSubActivities } = apiSlice.actions;
 export default apiSlice.reducer;

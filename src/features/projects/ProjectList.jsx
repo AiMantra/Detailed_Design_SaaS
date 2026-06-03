@@ -51,6 +51,7 @@ import {
   fetchProjects,
   fetchOnlyProjectsList,
   fetchProjectDetails,
+  fetchSubActivityDetails,
   deleteProject,
   fetchCompanies,
   fetchSectors,
@@ -66,6 +67,7 @@ import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 import MultiWorkLogModal from "./MultilogModal";
+import api from "../../services/api";
 const ProjectList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -117,6 +119,9 @@ const ProjectList = () => {
 
   const [activePhaseTab, setActivePhaseTab] = useState("All");
 
+  const [showSubActivityModal, setShowSubActivityModal] = useState(false);
+  const [subActivityModalData, setSubActivityModalData] = useState(null);
+  const [loadingSubActivity, setLoadingSubActivity] = useState(false);
 
   // Create lookup maps for IDs to names
   const companyMap = useMemo(() => {
@@ -241,6 +246,52 @@ const ProjectList = () => {
     }
   };
 
+  // const handleViewSubActivity = async (subActivityId, e) => {
+  //   if (e) e.stopPropagation();
+
+  //   setShowSubActivityModal(true);
+  //   setLoadingSubActivity(true);
+  //   setSubActivityModalData(null);
+
+  //   try {
+
+  //     // Make the request
+  //     const response = await api.get(`subactivity/${subActivityId}/`);
+
+  //     // Axios stores the JSON payload inside response.data
+  //     setSubActivityModalData(response.data);
+
+  //   } catch (error) {
+  //     console.error(error);
+  //     dispatch(showSnackbar({ message: "Failed to load sub-activity details", type: "error" }));
+  //     setShowSubActivityModal(false);
+  //   } finally {
+  //     setLoadingSubActivity(false);
+  //   }
+  // };
+
+  const handleViewSubActivity = async (subActivityId, e) => {
+    if (e) e.stopPropagation();
+
+    setShowSubActivityModal(true);
+    setLoadingSubActivity(true);
+    setSubActivityModalData(null);
+
+    try {
+      // Dispatch the thunk and use .unwrap() to handle the promise result locally
+      const response = await dispatch(fetchSubActivityDetails(subActivityId)).unwrap();
+
+      // The response is now the resolved payload from your Redux thunk
+      setSubActivityModalData(response);
+
+    } catch (error) {
+      console.error(error);
+      dispatch(showSnackbar({ message: "Failed to load sub-activity details", type: "error" }));
+      setShowSubActivityModal(false);
+    } finally {
+      setLoadingSubActivity(false);
+    }
+  };
   const handleDeleteProject = async (projectId, projectName, e) => {
     e.stopPropagation();
     if (
@@ -654,6 +705,9 @@ const ProjectList = () => {
   const [proofData, setProofData] = useState({
     stage_type: "",
     documents: [],
+    rejection_proof: [],
+    rejection_reason: "",
+    rejection_type: "",
     subactivity: "",
     to_status: "",
     changed_by: user?.emp_code || "",
@@ -819,6 +873,9 @@ const ProjectList = () => {
     setProofData({
       stage_type: "",
       documents: [],
+      rejection_proof: [],
+      rejection_reason: "",
+      rejection_type: "",
       subactivity: "",
       to_status: "",
       changed_by: user?.emp_code || "",
@@ -1183,6 +1240,9 @@ const ProjectList = () => {
               setProofData({
                 stage_type: "",
                 documents: [],
+                rejection_proof: [],
+                rejection_reason: "",
+                rejection_type: "",
                 subactivity: "",
                 to_status: "",
                 changed_by: user?.emp_code || "",
@@ -1213,6 +1273,9 @@ const ProjectList = () => {
                     setProofData({
                       stage_type: "",
                       documents: [],
+                      rejection_proof: [],
+                      rejection_reason: "",
+                      rejection_type: "",
                       subactivity: "",
                       to_status: "",
                       changed_by: user?.emp_code || "",
@@ -1291,20 +1354,121 @@ const ProjectList = () => {
               </div>
 
               {/* MESSAGE */}
-              <div className="mt-5">
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Message
-                </label>
-                <textarea
-                  defaultValue={proofData.remarks}
-                  onBlur={(e) =>
-                    setProofData({ ...proofData, remarks: e.target.value })
-                  }
-                  placeholder="Describe your proof..."
-                  rows={3}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              {proofData.to_status !== "Rejected" && (
+                <div className="mt-5">
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    defaultValue={proofData.remarks}
+                    onBlur={(e) =>
+                      setProofData({ ...proofData, remarks: e.target.value })
+                    }
+                    placeholder="Describe your proof..."
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              {/* REJECTION FIELDS */}
+              {proofData.to_status === "Rejected" && (
+                <>
+                  <div className="mt-5">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Rejection Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={proofData.rejection_type || ""}
+                      onChange={(e) =>
+                        setProofData({ ...proofData, rejection_type: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="" disabled>Select Rejection Type</option>
+                      <option value="Quality Issue">Quality Issue</option>
+                      <option value="Incomplete Work">Incomplete Work</option>
+                      <option value="Client Requirement Mismatch">Client Requirement Mismatch</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="mt-5">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Rejection Reason <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      defaultValue={proofData.rejection_reason || ""}
+                      onBlur={(e) =>
+                        setProofData({ ...proofData, rejection_reason: e.target.value })
+                      }
+                      placeholder="Enter reason for rejection..."
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Rejection Proof
+                    </label>
+                    <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) =>
+                          setProofData({
+                            ...proofData,
+                            rejection_proof: [...(proofData.rejection_proof || []), ...Array.from(e.target.files)],
+                          })
+                        }
+                      />
+                      <p className="text-sm text-gray-500">
+                        <span className="text-red-600 font-medium">browse rejection proofs</span>
+                      </p>
+                    </label>
+
+                    <div className="grid grid-cols-3 gap-3 mt-4">
+                      {proofData?.rejection_proof?.map((file, i) => {
+                        const isImage = file.type.startsWith("image/");
+                        const url = URL.createObjectURL(file);
+
+                        return (
+                          <div
+                            key={i}
+                            className="relative border rounded-lg overflow-hidden group"
+                          >
+                            {isImage ? (
+                              <img
+                                src={url}
+                                alt="preview"
+                                className="w-full h-24 object-cover"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center p-2 text-center bg-gray-100 text-xs text-gray-600 h-full">
+                                📄 {file.name}
+                              </div>
+                            )}
+
+                            <button
+                              onClick={() =>
+                                setProofData({
+                                  ...proofData,
+                                  rejection_proof: proofData.rejection_proof.filter((_, index) => index !== i),
+                                })
+                              }
+                              className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="mt-5 relative">
                 <label className="text-sm font-medium text-gray-700 block mb-1">
@@ -1337,6 +1501,9 @@ const ProjectList = () => {
                     setProofData({
                       stage_type: "",
                       documents: [],
+                      rejection_proof: [],
+                      rejection_reason: "",
+                      rejection_type: "",
                       subactivity: "",
                       to_status: "",
                       changed_by: user?.emp_code || "",
@@ -1567,6 +1734,299 @@ const ProjectList = () => {
         )}
       </AnimatePresence>
 
+      {/* Sub-Activity Details Modal */}
+      <AnimatePresence>
+        {showSubActivityModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowSubActivityModal(false);
+              setSubActivityModalData(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 30 }}
+              className="bg-white rounded-2xl p-6 max-w-4xl w-full shadow-2xl border flex flex-col max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex justify-between items-center mb-5 pb-4 border-b">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    <Eye size={20} className="text-blue-500" />
+                    Sub-Activity Details
+                  </h3>
+                  {subActivityModalData && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {subActivityModalData.subactivity_name} • Status:{" "}
+                      <span className="font-semibold text-blue-600">
+                        {subActivityModalData.status}
+                      </span>
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSubActivityModal(false);
+                    setSubActivityModalData(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="overflow-y-auto pr-2 custom-scrollbar">
+                {loadingSubActivity ? (
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <Loader2 size={40} className="animate-spin text-blue-600 mb-4" />
+                    <p className="text-gray-500">Fetching activity data...</p>
+                  </div>
+                ) : subActivityModalData ? (
+                  <div className="space-y-6">
+                    {/* Overall Summary */}
+                    <div className="bg-blue-50 rounded-xl p-4 flex justify-between items-center border border-blue-100">
+                      <div>
+                        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider">
+                          Total Time Spent
+                        </p>
+                        <p className="text-2xl font-bold text-gray-800">
+                          {formatDuration(
+                            subActivityModalData.work_summary?.total_hours ||
+                            "00:00:00"
+                          )}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider">
+                          Reworks
+                        </p>
+                        <p className="text-2xl font-bold text-gray-800">
+                          {subActivityModalData.rework_count || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Rework Cycles Segregation */}
+                    <div className="space-y-5">
+                      <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                        Work Cycles
+                      </h4>
+
+                      {subActivityModalData.work_logs_segregated?.rework_cycles?.map(
+                        (cycle, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white border rounded-xl shadow-sm overflow-hidden"
+                          >
+                            {/* Cycle Header */}
+                            <div className="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
+                              <h5 className="font-bold text-gray-700 flex items-center gap-2">
+                                <RefreshCw
+                                  size={16}
+                                  className={
+                                    cycle.cycle_number === 0
+                                      ? "text-green-500"
+                                      : "text-orange-500"
+                                  }
+                                />
+                                {cycle.cycle_name}
+                              </h5>
+                              {/* CYCLE TOTAL TIME ADDED HERE */}
+                              {cycle.cycle_total_time && (
+                                <span className="text-xs font-semibold bg-white border border-gray-200 px-2 py-1 rounded-md text-gray-600 shadow-sm">
+                                  Total: {formatDuration(cycle.cycle_total_time)}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Rejection Details (if any) */}
+                            {cycle.rejection_details && (
+                              <div className="bg-red-50 p-4 border-b border-red-100">
+                                <p className="text-sm font-semibold text-red-700 flex items-center gap-2 mb-1">
+                                  <XCircle size={16} /> Rejection Details
+                                </p>
+                                <p className="text-sm text-red-600">
+                                  <span className="font-semibold">Reason:</span>{" "}
+                                  {cycle.rejection_details.reason}
+                                </p>
+                                <p className="text-xs text-red-500 mt-1">
+                                  Rejected by {cycle.rejection_details.rejected_by} on{" "}
+                                  {new Date(
+                                    cycle.rejection_details.rejected_at
+                                  ).toLocaleString("en-IN")}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Iterate through the three possible phases of a cycle */}
+                            {[
+                              {
+                                key: "before_submission",
+                                label: "Before Submission",
+                                badgeColor: "bg-blue-100 text-blue-600",
+                              },
+                              {
+                                key: "after_submission",
+                                label: "After Submission",
+                                badgeColor: "bg-orange-100 text-orange-600",
+                              },
+                              {
+                                key: "after_approval",
+                                label: "After Approval",
+                                badgeColor: "bg-blue-100 text-blue-600",
+                              },
+                            ].map((phase) => {
+                              const phaseData = cycle[phase.key];
+
+                              // Skip rendering this phase if it is null or empty
+                              if (!phaseData) return null;
+
+                              return (
+                                <div
+                                  key={phase.key}
+                                  className="p-4 border-b border-gray-100 last:border-b-0"
+                                >
+                                  {/* Phase Header */}
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h6 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
+                                      {phase.label}
+                                    </h6>
+                                    <span
+                                      className={`text-xs font-bold px-2 py-1 rounded ${phase.badgeColor}`}
+                                    >
+                                      Total:{" "}
+                                      {formatDuration(phaseData.total_time_spent)}
+                                    </span>
+                                  </div>
+
+                                  {/* Cycle Users & Logs for this phase */}
+                                  {phaseData.users?.length > 0 ? (
+                                    <div className="space-y-4">
+                                      {phaseData.users.map((user, userIdx) => (
+                                        <div
+                                          key={userIdx}
+                                          className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                                        >
+                                          {/* User Info */}
+                                          <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                              {user.profilepic ? (
+                                                <img
+                                                  src={`${IMAGE_URL}${user.profilepic}`}
+                                                  alt={user.name}
+                                                  className="w-8 h-8 rounded-full object-cover"
+                                                />
+                                              ) : (
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                                  {user.name?.charAt(0)}
+                                                </div>
+                                              )}
+                                              <div>
+                                                <p className="text-sm font-semibold text-gray-800">
+                                                  {user.name}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                  {user.days_worked} days worked
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <div className="text-right">
+                                              <span className="text-sm font-bold text-gray-600 bg-gray-200 px-2 py-1 rounded">
+                                                {formatDuration(
+                                                  user.total_time_spent
+                                                )}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {/* Date-wise Logs inside Phase */}
+                                          <div className="space-y-2 mt-3">
+                                            {user.date_wise?.map((day, dayIdx) => (
+                                              <div
+                                                key={dayIdx}
+                                                className="ml-4 pl-3 border-l-2 border-gray-200"
+                                              >
+                                                <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-2">
+                                                  <Calendar size={12} />
+                                                  {new Date(
+                                                    day.date
+                                                  ).toLocaleDateString("en-IN", {
+                                                    weekday: "short",
+                                                    year: "numeric",
+                                                    month: "short",
+                                                    day: "numeric",
+                                                  })}
+                                                  <span className="text-gray-400 font-normal ml-2">
+                                                    ({formatDuration(
+                                                      day.total_time_spent
+                                                    )})
+                                                  </span>
+                                                </p>
+                                                <div className="space-y-2">
+                                                  {day.logs.map((log, logIdx) => (
+                                                    <div
+                                                      key={logIdx}
+                                                      className="bg-white border border-gray-100 p-2 rounded text-sm flex justify-between items-start gap-4 shadow-sm"
+                                                    >
+                                                      <div className="flex-1">
+                                                        {log.work_type && (
+                                                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">
+                                                            {log.work_type}
+                                                          </span>
+                                                        )}
+                                                        <p className="text-gray-700 leading-snug">
+                                                          {log.description || (
+                                                            <span className="italic text-gray-400">
+                                                              No description
+                                                            </span>
+                                                          )}
+                                                        </p>
+                                                      </div>
+                                                      <span className="text-xs font-mono font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded whitespace-nowrap">
+                                                        {formatDuration(
+                                                          log.time_spent
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center text-sm text-gray-400 py-2">
+                                      No logs recorded for this phase.
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                    <AlertCircle size={40} className="mb-4 text-gray-300" />
+                    <p>Failed to load data or data is empty.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {!showLoading && (
         <>
           <div className="mb-10 flex justify-between items-start">
@@ -2855,6 +3315,8 @@ const ProjectList = () => {
                                                                         isUser &&
                                                                         <>
                                                                           <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                          <th className="px-2 py-3 text-center" title="Project Owner Status">view</th>
+
                                                                           <th className="px-2 py-3 text-right">Action</th>
                                                                         </>
                                                                       }
@@ -3113,10 +3575,23 @@ const ProjectList = () => {
                                                                                     </div>
                                                                                   </td>
 
+                                                                                  <td rowSpan="2" className={"text-center px-2 py-2 cursor-pointer "}>
+                                                                                    <button
+                                                                                      className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                                                                                      onClick={(e) => handleViewSubActivity(sub.id, e)}
+                                                                                      title="View Details"
+                                                                                    >
+                                                                                      <span className='flex flex-row items-center gap-1'>
+                                                                                        <Eye size={16} />
+                                                                                      </span>
+                                                                                    </button>
+                                                                                  </td>
+
 
                                                                                   <td rowSpan="2" className={"text-right px-2 py-2 "}>
-                                                                                    <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")}
-                                                                                      disabled={changeStatus == "Submitted" || changeStatus == "Approved" || changeStatus == "Completed"}
+                                                                                    {/* <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")} */}
+                                                                                    <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200"}
+                                                                                      // disabled={changeStatus == "Submitted" || changeStatus == "Approved" || changeStatus == "Completed"}
                                                                                       onClick={() => {
 
                                                                                         setSelectedTaskfortimelog({
