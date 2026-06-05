@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback,Fragment } from "react";
 import {
   Plus,
   Eye,
@@ -3326,734 +3326,385 @@ const ProjectList = () => {
                                                                   {/* BODY */}
                                                                   <tbody>
                                                                     {/* {subs */}
-                                                                    {[...(subs || [])]
-                                                                      .sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0))
-                                                                      .map((sub, i) => {
-                                                                        const submissionAmount =
-                                                                          (((project?.workorder_cost || 0) *
-                                                                            (sub?.submission_payment || 0)) /
-                                                                            100) * 1.18;
+                                                                  {[...(subs || [])]
+  .sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0))
+  .map((sub, i) => {
+    const changeStatus = sub.status || "Pending";
 
-                                                                        const approvalAmount =
-                                                                          (((project?.workorder_cost || 0) *
-                                                                            (sub?.approval_payment || 0)) /
-                                                                            100) * 1.18;
+    return (
+      <Fragment key={sub.id}>
+        {isUser ? (
+          // ==========================================
+          // EMPLOYEE VIEW (1 Row per Sub-Activity)
+          // ==========================================
+          <tr
+            className="border-t text-[12px] bg-white hover:bg-gray-50 transition-colors"
+            onClick={() => {
+              if (sub.work_summary?.users?.length > 0) {
+                setExpandedRow(expandedRow === sub.id ? null : sub.id);
+              }
+            }}
+          >
+            <td className="px-2 text-center align-middle border-r border-gray-100">
+              {sub.work_summary?.users?.length > 0 ? (
+                <motion.button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                  }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    expandedRow === sub.id
+                      ? "bg-red-100 text-red-600 hover:bg-red-200"
+                      : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                  }`}
+                  title={expandedRow === sub.id ? "Collapse" : "Expand"}
+                >
+                  {expandedRow === sub.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </motion.button>
+              ) : (
+                <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
+              )}
+            </td>
+            <td className="px-2 font-medium align-middle border-r border-gray-100">
+              {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
+            </td>
+            <td className="text-center align-middle border-r border-gray-100">
+              {formatNumber(sub.chainage_start)}
+            </td>
+            <td className="text-center align-middle border-r border-gray-100">
+              {sub.total_quantity}
+            </td>
+            <td className="text-center align-middle border-r border-gray-100">
+              {formatNumber(sub.covered_area)}
+            </td>
 
-                                                                        const stages = sub?.payment_stages || [];
+            {/* 🔵 EMPLOYEE COLUMNS */}
+            <td className="text-center p-1">
+              <div className="relative inline-block py-2 !inline-flex items-center">
+                <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
+                  ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
+                    changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
+                    changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
+                    changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
+                    changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                    "bg-gray-100 text-gray-600 border-gray-200"}`}
+                >
+                  {changeStatus === "Approved" ? "Submitted" : changeStatus === "Pending" ? "Not Started" : changeStatus}
+                </span>
+              </div>
+            </td>
+            <td className="text-center px-2 py-2 cursor-pointer border-l border-gray-100">
+              <button
+                className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                onClick={(e) => handleViewSubActivity(sub.id, e)}
+                title="View Details"
+              >
+                <span className='flex flex-row items-center justify-center gap-1'>
+                  <Eye size={16} />
+                </span>
+              </button>
+            </td>
+            <td className="text-right px-2 py-2 border-l border-gray-100">
+              <button 
+                className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 inline-flex items-center gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTaskfortimelog({
+                    id: sub.id,
+                    project_id: projectId,
+                    subactivity_name: sub.subactivity_name,
+                    project_name: project.short_name || project.project_name,
+                    sector_work_types: expandedProjectDetails[projectId]?.sector_detail?.sector_work_types || []
+                  });
+                  setTimeLogData({
+                    date: new Date().toISOString().split("T")[0],
+                    startTime: "",
+                    endTime: "",
+                    description: "",
+                    work_type: ""
+                  });
+                  setShowTimeLogModal(true);
+                }}
+              >
+                <PlusCircle size={14} />
+                Work Log
+              </button>
+            </td>
+          </tr>
+        ) : (
+          // ==========================================
+          // ADMIN / ACCOUNT VIEW (1 Row per Stage)
+          // ==========================================
+          sub.stages && sub.stages.length > 0 ? (
+            sub.stages.map((stage, sIdx) => {
+              const rowSpanCount = Math.max(1, sub.stages?.length || 0);
+              const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
+              
+              const stageRaised = (stage.payment_logs || [])
+                .filter(log => log.to_status === "Raised")
+                .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
 
-                                                                        const getAmount = (type, status, key) => {
-                                                                          return stages
-                                                                            .filter(
-                                                                              (s) => s.stage_type === type && s.to_status === status
-                                                                            )
-                                                                            .reduce((sum, item) => sum + (item?.[key] || 0), 0);
-                                                                        };
+              const stageReceived = (stage.payment_logs || [])
+                .filter(log => log.to_status === "Received")
+                .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
 
-                                                                        // submission
-                                                                        const subRaised = getAmount("submission", "Raised", "raised_amount");
-                                                                        const subReceived = getAmount("submission", "Received", "received_amount");
-                                                                        const subRemaining = submissionAmount - subReceived;
+              const stageRemaining = stageAmount - stageReceived;
 
-                                                                        // approval
-                                                                        const apprRaised = getAmount("approval", "Raised", "raised_amount");
-                                                                        const apprReceived = getAmount("approval", "Received", "received_amount");
+              const workStatus = stage.work_status || "Pending";
+              const paymentStatus = stage.payment_status || "Waiting";
 
-                                                                        const apprRemaining = approvalAmount - apprReceived;
-                                                                        const changeStatus = (sub.status || "Pending");
+              return (
+                <tr
+                  key={stage.id}
+                  className="border-t text-[12px] bg-white hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    if (sub.work_summary?.users?.length > 0) {
+                      setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                    }
+                  }}
+                >
+                  {/* 🟢 Render Sub-Activity Parent Info ONLY on the FIRST stage row */}
+                  {sIdx === 0 && (
+                    <>
+                      <td rowSpan={rowSpanCount} className="px-2 text-center align-middle border-r border-gray-100">
+                        {sub.work_summary?.users?.length > 0 ? (
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${
+                              expandedRow === sub.id
+                                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                            }`}
+                            title={expandedRow === sub.id ? "Collapse" : "Expand"}
+                          >
+                            {expandedRow === sub.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </motion.button>
+                        ) : (
+                          <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
+                        )}
+                      </td>
+                      <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
+                        {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
+                      </td>
+                      <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                        {formatNumber(sub.chainage_start)}
+                      </td>
+                      <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                        {sub.total_quantity}
+                      </td>
+                      <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                        {formatNumber(sub.covered_area)}
+                      </td>
+                    </>
+                  )}
 
-                                                                        let submissionStatus = sub?.submission_status || "Waiting";
-                                                                        let approvalStatus = sub?.approval_status || "Waiting";
-                                                                        const blurstatus = sub?.submission_status === "Waiting" && sub.status != "Submitted" ? "opacity-50" : "";
-                                                                        const highlite = submissionStatus === "Pending" ? " bg-orange-50  " : ""
+                  {/* 🔵 ADMIN / ACCOUNT COLUMNS */}
+                  <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
+                  <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
+                  <td className="text-center">₹ {stageAmount.toFixed(2)} L</td>
+                  
+                  {/* Raised */}
+                  <td className="text-center">
+                    {stageRaised.toFixed(2)} L
+                    {stageRaised > 0 && (
+                      <FileText
+                        className="inline-block ml-1 -mt-1 text-red-500 cursor-pointer"
+                        size={13}
+                        title="View Raised Files"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewDocumentModel({
+                            model: true,
+                            data: (stage.payment_logs || []).filter((log) => log.to_status === "Raised"),
+                            title: `${stage.name} - Raised Documents`
+                          });
+                        }}
+                      />
+                    )}
+                  </td>
 
-                                                                        return (
-                                                                          <>
-                                                                            {/* 🔵 SUBMISSION ROW */}
-                                                                            <tr
-                                                                              id={`subactivity-row-${sub.id}`}
-                                                                              className="border-t text-[12px]"
-                                                                              key={sub?.id}
-                                                                              onClick={() => {
-                                                                                if (sub.work_summary?.users?.length > 0) {
-                                                                                  setExpandedRow(expandedRow === sub.id ? null : sub.id);
-                                                                                  setActivePhaseTab("All"); // Reset tab when opening a new row
-                                                                                }
-                                                                              }}
-                                                                            >
-                                                                              <td rowSpan="2" className="px-2 text-center align-middle">
-                                                                                {(sub.work_summary?.users?.length > 0) ? (
-                                                                                  <motion.button
-                                                                                    onClick={() => setExpandedRow(expandedRow === sub.id ? null : sub.id)}
-                                                                                    whileHover={{ scale: 1.1 }}
-                                                                                    whileTap={{ scale: 0.95 }}
-                                                                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
-                                                                                      ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                                                      : "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                                                                                      }`}
-                                                                                    title={expandedRow === sub.id ? "Collapse" : "Expand"}
-                                                                                  >
-                                                                                    {expandedRow === sub.id ? (
-                                                                                      <ChevronUp size={14} />
-                                                                                    ) : (
-                                                                                      <ChevronDown size={14} />
-                                                                                    )}
-                                                                                  </motion.button>
-                                                                                ) : (
-                                                                                  <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
-                                                                                )}
-                                                                              </td>
+                  {/* Received */}
+                  <td className="text-center">
+                    {stageReceived === 0 && (stage.payment_logs || []).some(log => log.to_status === "Raised") ? (
+                      getDaysStatus(
+                        (stage.payment_logs || []).find(log => log.to_status === "Raised")?.created_at
+                      )
+                    ) : (
+                      <>
+                        {stageReceived.toFixed(2)} L
+                        {stageReceived > 0 && (
+                          <FileText
+                            className="inline-block ml-1 -mt-1 text-red-500 cursor-pointer"
+                            size={13}
+                            title="View Received Files"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewDocumentModel({
+                                model: true,
+                                data: (stage.payment_logs || []).filter((log) => log.to_status === "Received"),
+                                title: `${stage.name} - Received Documents`
+                              });
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </td>
 
-                                                                              <td rowSpan="2" className="px-2 font-medium align-center">
-                                                                                {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
-                                                                              </td>
+                  {/* Remaining */}
+                  <td className={`text-center font-medium ${stageRemaining <= 0 ? "text-green-500" : "text-red-500"}`}>
+                    {stageRemaining <= 0 ? "0.00" : stageRemaining.toFixed(2)} L
+                  </td>
 
+                  {/* PO Status (Invoice Status Dropdown) */}
+                  {/* 1. PO Status (Work Status Display) - Now matches the 7th column header */}
+                  <td className="text-center">
+                    <div className="relative inline-block py-2 !inline-flex items-center">
+                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
+                        ${workStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
+                          workStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
+                          workStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
+                          workStatus === "Approved" ? "bg-blue-100 text-blue-600 border-blue-200" :
+                          workStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
+                          "bg-gray-100 text-gray-600 border-gray-200"}`}
+                      >
+                        {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus}
+                      </span>
+                      {
+                        (workStatus === "Submitted" || workStatus === "Approved") &&
+                        <FileText className="inline-block ml-1 text-red-500 cursor-pointer" size={13} title="Work Proof Files" onClick={(e) => {
+                          e.stopPropagation();
+                          setViewDocumentModel({
+                            model: true,
+                            data: (stage.work_logs || []).filter((log) => log.to_status === workStatus),
+                            title: `${stage.name} Work Proofs`
+                          });
+                        }} />
+                      }
+                    </div>
+                  </td>
 
-                                                                              <td rowSpan="2" className="text-center">{formatNumber(sub.chainage_start)}</td>
-                                                                              <td rowSpan="2" className="text-center">{sub.total_quantity}</td>
-                                                                              <td rowSpan="2" className="text-center">{formatNumber(sub.covered_area)}</td>
-                                                                              {
-                                                                                !isUser && sub.submission_payment > 0 &&
-                                                                                <>
-                                                                                  <td className={"text-center font-semibold text-green-600 border-b border-gray-300 border-l pl-1 " + blurstatus + highlite}>
-                                                                                    Submission
-                                                                                  </td>
+                  {/* 2. Invoice Status (Dropdown) - Now matches the 8th column header */}
+                  <td className="text-center p-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative inline-block">
+                      <select
+                        value={paymentStatus}
+                        disabled={paymentStatus === "Waiting"}
+                        onChange={(e) => {
+                          handleSubmissionapproveStatus(
+                            stage.id,
+                            sub,
+                            e.target.value,
+                            stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
+                            projectId
+                          );
+                        }}
+                        className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
+                        style={{
+                          backgroundColor:
+                            paymentStatus === "Pending" ? "#FEF3C7" :
+                            paymentStatus === "Raised" ? "#DBEAFE" :
+                            paymentStatus === "Received" ? "#D1FAE5" :
+                            paymentStatus === "Completed" ? "#F3E8FF" : "#F3F4F6",
+                          color:
+                            paymentStatus === "Pending" ? "#D97706" :
+                            paymentStatus === "Raised" ? "#2563EB" :
+                            paymentStatus === "Received" ? "#059669" :
+                            paymentStatus === "Completed" ? "#9333EA" : "#6B7280",
+                          borderColor:
+                            paymentStatus === "Pending" ? "#D97706" :
+                            paymentStatus === "Raised" ? "#2563EB" :
+                            paymentStatus === "Received" ? "#059669" :
+                            paymentStatus === "Completed" ? "#9333EA" : "#D1D5DB"
+                        }}
+                      >
+                        <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>Not Started</option>
+                        <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>Pending</option>
+                        <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>Raised</option>
+                        <option value="Received" disabled={paymentStatus !== "Raised"} style={{ backgroundColor: "#D1FAE5", color: "#059669" }}>Received</option>
+                      </select>
+                    </div>
+                  </td>
+                
+                </tr>
+              );
+            })
+          ) : (
+            /* Fallback row if no stages are recorded */
+            <tr className="border-t text-[12px] bg-white">
+              <td className="px-2 text-center align-middle border-r border-gray-100"></td>
+              <td className="px-2 font-medium align-middle border-r border-gray-100">{"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}</td>
+              <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
+              <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
+              <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
+              <td colSpan="8" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
+            </tr>
+          )
+        )}
 
-                                                                                  <td className={"text-center text-green-600 border-b border-gray-300 " + blurstatus + highlite}>
-                                                                                    {sub.submission_payment}%
-                                                                                  </td>
+        {/* 🟡 Expanded Time Logs Row (Same for everyone) */}
+        {expandedRow === sub.id && (
+          <tr className="bg-gray-50/80">
+            <td colSpan="14" className="px-4 py-4 w-full">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-blue-500" />
+                    <span className="text-sm font-medium text-gray-700">Time Logs</span>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    Total: {sub.work_summary?.total_hours || "00:00:00"}
+                  </span>
+                </div>
 
-                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>
-                                                                                    ₹ {submissionAmount.toFixed(2)} L
-                                                                                  </td>
+                <div className="divide-y divide-gray-100">
+                  {sub.work_summary?.users?.length > 0 ? (
+                    sub.work_summary.users.map((log, i) => (
+                      <div key={i} className="px-4 py-2.5 flex justify-between items-center hover:bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
+                            {log.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-700">{log.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-400">{log.days_worked} day(s)</span>
+                          <span className="text-sm font-mono font-medium text-blue-600">
+                            {log.total_time_spent}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-6 text-center text-sm text-gray-400">
+                      No time logs recorded
+                    </div>
+                  )}
+                </div>
 
-                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>{subRaised.toFixed(2)} L
-                                                                                    {
-                                                                                      subRaised > 0 &&
-                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                        model: true,
-                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission") || [],
-                                                                                        title: "Raised Stage Documents"
-                                                                                      })} />
-                                                                                    }
-                                                                                  </td>
-                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>{subReceived == 0 && sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission")[0] ?
-                                                                                    getDaysStatus(sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "submission")[0]?.created_at)
-                                                                                    : subReceived.toFixed(2) + " L"}
-                                                                                    {
-                                                                                      subReceived > 0 &&
-                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                        model: true,
-                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Received" && stage.stage_type == "submission") || [],
-                                                                                        title: "Received Stage Documents"
-                                                                                      })} />
-                                                                                    }
-                                                                                  </td>
-                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite + (subRemaining.toFixed(2) == 0 ? " text-black-500" : subRemaining.toFixed(2) < 0 ? " text-green-500" : " text-red-500")}>
-                                                                                    {subRemaining.toFixed(2) == 0 ? "0" : subRemaining.toFixed(2)} L
-                                                                                  </td>
-                                                                                  <td className={"text-center border-b border-gray-300 " + blurstatus + highlite}>
-                                                                                    <div className="relative inline-block py-2 !inline-flex items-center" >
-                                                                                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
-                                                                                ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                          changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                            changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
-                                                                                              changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                                changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                                  "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                        }`}>
-                                                                                        {changeStatus == "Approved" ? "Submitted" : changeStatus}
-                                                                                      </span>
-                                                                                      {
-                                                                                        !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
-                                                                                        <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
-                                                                                          onClick={(e) => setViewDocumentModel({
-                                                                                            model: true,
-                                                                                            data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
-                                                                                            title: "Submission Stage Documents"
-                                                                                          })} />
-                                                                                      }
-                                                                                    </div>
-                                                                                  </td>
-                                                                                  {/* <td className={"text-center border-b border-gray-300 p-1 " + blurstatus + highlite}>
-                                                                                  <select
-                                                                                    value={submissionStatus}
-                                                                                    disabled={submissionStatus == "Waiting"}
-                                                                                    onChange={(e) => {
-                                                                                      handleSubmissionapproveStatus("submission", sub, e.target.value, (subRemaining > 0 ? subRemaining.toFixed(2) : submissionAmount.toFixed(2)), projectId)
-                                                                                      submissionStatus = e.target.value;
-                                                                                    }}
-                                                                                    className={`text-xs border m-1 rounded  cursor-pointer w-[90px] p-1 
-                                                                        ${submissionStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                        submissionStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
-                                                                                          submissionStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                            submissionStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                              "bg-gray-100 text-gray-600 border-gray-200"}`}
-                                                                                  >
-                                                                                    <option value="Waiting" disabled>Not Started</option>
-                                                                                    <option value="Pending" disabled>Pending</option>
-                                                                                    <option value="Raised">Raised</option>
-                                                                                    <option value="Received" disabled={submissionStatus === "Raised" ? false : true}>Received</option>
-                                                                                  </select>
-                                                                                </td> */}
-                                                                                  <td className={"text-center border-b border-gray-300 p-1 " + blurstatus + highlite}>
-                                                                                    <div className="relative inline-block">
-                                                                                      <select
-                                                                                        value={submissionStatus}
-                                                                                        disabled={submissionStatus === "Waiting"}
-                                                                                        onChange={(e) => {
-                                                                                          handleSubmissionapproveStatus("submission", sub, e.target.value, (subRemaining > 0 ? subRemaining.toFixed(2) : submissionAmount.toFixed(2)), projectId);
-                                                                                          submissionStatus = e.target.value;
-                                                                                        }}
-                                                                                        className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
-                                                                                        style={{
-                                                                                          backgroundColor:
-                                                                                            submissionStatus === "Pending" ? "#FEF3C7" :
-                                                                                              submissionStatus === "Raised" ? "#DBEAFE" :
-                                                                                                submissionStatus === "Received" ? "#D1FAE5" :
-                                                                                                  submissionStatus === "Completed" ? "#F3E8FF" :
-                                                                                                    submissionStatus === "Waiting" ? "#F3F4F6" : "#F3F4F6",
-                                                                                          color:
-                                                                                            submissionStatus === "Pending" ? "#D97706" :
-                                                                                              submissionStatus === "Raised" ? "#2563EB" :
-                                                                                                submissionStatus === "Received" ? "#059669" :
-                                                                                                  submissionStatus === "Completed" ? "#9333EA" :
-                                                                                                    submissionStatus === "Waiting" ? "#6B7280" : "#6B7280",
-                                                                                          borderColor:
-                                                                                            submissionStatus === "Pending" ? "#D97706" :
-                                                                                              submissionStatus === "Raised" ? "#2563EB" :
-                                                                                                submissionStatus === "Received" ? "#059669" :
-                                                                                                  submissionStatus === "Completed" ? "#9333EA" :
-                                                                                                    submissionStatus === "Waiting" ? "#D1D5DB" : "#D1D5DB"
-                                                                                        }}
-                                                                                      >
-                                                                                        <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
-                                                                                          Not Started
-                                                                                        </option>
-                                                                                        <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>
-                                                                                          Pending
-                                                                                        </option>
-                                                                                        <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>
-                                                                                          Raised
-                                                                                        </option>
-                                                                                        <option
-                                                                                          value="Received"
-                                                                                          disabled={submissionStatus !== "Raised"}
-                                                                                          style={{ backgroundColor: "#D1FAE5", color: "#059669" }}
-                                                                                        >
-                                                                                          Received
-                                                                                        </option>
-                                                                                      </select>
-                                                                                    </div>
-                                                                                  </td>
-
-                                                                                </>
-                                                                              }
-                                                                              {
-                                                                                isUser &&
-                                                                                <>
-                                                                                  <td className={"text-center "}>
-                                                                                    <div className="relative inline-block py-2 !inline-flex items-center" >
-                                                                                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
-                                                                                ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                          changeStatus === "Submitted" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                            changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
-                                                                                              changeStatus === "Approved" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                                changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                                  "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                        }`}>
-                                                                                        {changeStatus == "Approved" ? "Submitted" : changeStatus}
-                                                                                      </span>
-                                                                                      {
-                                                                                        !isUser && sub?.submission_stages[0] && (changeStatus == "Submitted" || changeStatus == "Approved") &&
-                                                                                        <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
-                                                                                          onClick={(e) => setViewDocumentModel({
-                                                                                            model: true,
-                                                                                            data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
-                                                                                            title: "Submission Stage Documents"
-                                                                                          })} />
-                                                                                      }
-                                                                                    </div>
-                                                                                  </td>
-
-                                                                                  <td rowSpan="2" className={"text-center px-2 py-2 cursor-pointer "}>
-                                                                                    <button
-                                                                                      className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
-                                                                                      onClick={(e) => handleViewSubActivity(sub.id, e)}
-                                                                                      title="View Details"
-                                                                                    >
-                                                                                      <span className='flex flex-row items-center gap-1'>
-                                                                                        <Eye size={16} />
-                                                                                      </span>
-                                                                                    </button>
-                                                                                  </td>
-
-
-                                                                                  <td rowSpan="2" className={"text-right px-2 py-2 "}>
-                                                                                    {/* <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full " + (changeStatus == "Submitted" || changeStatus == "Approved" ? "!cursor-no-drop opacity-50" : "hover:bg-blue-200")} */}
-                                                                                    <button className={"text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200"}
-                                                                                      // disabled={changeStatus == "Submitted" || changeStatus == "Approved" || changeStatus == "Completed"}
-                                                                                      onClick={() => {
-
-                                                                                        setSelectedTaskfortimelog({
-                                                                                          id: sub.id,
-                                                                                          project_id: project.id || project.project_id,
-                                                                                          subactivity_name: sub.subactivity_name,
-                                                                                          project_name: project.shortName || project.short_name,
-                                                                                          sector_work_types: expandedProjectDetails[projectId].sector_detail?.sector_work_types || []
-                                                                                        });
-
-                                                                                        setTimeLogData({
-                                                                                          date: new Date()
-                                                                                            .toISOString()
-                                                                                            .split("T")[0],
-                                                                                          startTime: "",
-                                                                                          endTime: "",
-                                                                                          description: "",
-                                                                                        });
-
-                                                                                        setShowTimeLogModal(true);
-                                                                                      }}>
-                                                                                      <span className='flex flex-row '>
-                                                                                        <PlusCircle size={16} />
-                                                                                        Work Log
-                                                                                      </span>
-                                                                                    </button>
-                                                                                  </td>
-
-                                                                                </>
-                                                                              }
-                                                                            </tr >
-
-                                                                            {/* 🟢 APPROVAL ROW */}
-                                                                            {
-                                                                              !isUser &&
-                                                                                sub.approval_payment > 0 ? (
-                                                                                <tr className={" text-[12px] border-b " + (approvalStatus === "Waiting" ? "opacity-50" : "") + (approvalStatus === "Pending" ? " bg-orange-50 " : "")}>
-                                                                                  <td className="text-center font-semibold text-blue-600 border-gray-300 border-l -pl-1">
-                                                                                    Approval
-                                                                                  </td>
-
-                                                                                  <td className="text-center text-blue-600">
-                                                                                    {sub.approval_payment}%
-                                                                                  </td>
-
-                                                                                  <td className="text-center">
-                                                                                    ₹ {approvalAmount.toFixed(2)} L
-                                                                                  </td>
-
-                                                                                  <td className="text-center">{apprRaised.toFixed(2)} L
-                                                                                    {
-                                                                                      apprRaised > 0 &&
-                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                        model: true,
-                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval") || [],
-                                                                                        title: "Raised Stage Documents"
-                                                                                      })} />
-                                                                                    }
-                                                                                  </td>
-                                                                                  <td className="text-center">{apprReceived == 0 && sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval")[0] ?
-                                                                                    getDaysStatus(sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval")[0]?.created_at)
-                                                                                    : apprReceived.toFixed(2) + " L"}
-                                                                                    {
-                                                                                      apprReceived > 0 &&
-                                                                                      <FileText className="inline-block ml-1 -mt-1 text-red-500" size={13} title="Raised Files" onClick={(e) => setViewDocumentModel({
-                                                                                        model: true,
-                                                                                        data: sub?.payment_stages?.filter((stage) => stage.to_status == "Raised" && stage.stage_type == "approval") || [],
-                                                                                        title: "Raised Stage Documents"
-                                                                                      })} />
-                                                                                    }
-                                                                                  </td>
-                                                                                  <td className={"text-center " + (apprRemaining.toFixed(2) == 0 ? " text-black-500" : apprRemaining.toFixed(2) < 0 ? " text-green-500" : " text-red-500")}>
-                                                                                    {apprRemaining.toFixed(2) == 0 ? "0" : apprRemaining.toFixed(2)} L
-                                                                                  </td>
-                                                                                  <td className="text-center">
-                                                                                    <div className="relative inline-block py-2 !inline-flex items-center" >
-                                                                                      <span className={`min-w-[80px] text-center appearance-none text-[11px] font-medium px-3 py-1 block rounded-full border
-                                                                                ${changeStatus === "Inprogress" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                          changeStatus === "Submitted" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                            changeStatus === "Rejected" ? "bg-red-100 text-red-600 border-red-200" :
-                                                                                              changeStatus === "Approved" ? "bg-blue-100 text-blue-600 border-blue-200" :
-                                                                                                changeStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                                  "bg-gray-100 text-gray-600 border-gray-200"
-                                                                                        }`}>
-                                                                                        {changeStatus == "Submitted" ? "Inprogress" : changeStatus}
-                                                                                      </span>
-                                                                                      {
-                                                                                        !isUser && sub?.submission_stages[0] && changeStatus == "Approved" &&
-                                                                                        <FileText className="inline-block ml-1 text-red-500" size={13} title="Raised Files"
-                                                                                          onClick={(e) => setViewDocumentModel({
-                                                                                            model: true,
-                                                                                            data: sub?.submission_stages?.filter((stage) => stage.to_status == changeStatus) || [],
-                                                                                            title: "Approved Stage Documents"
-                                                                                          })} />
-                                                                                      }
-                                                                                    </div>
-                                                                                  </td>
-                                                                                  {/* <td className="text-center  p-1 ">
-                                                                                  <select
-                                                                                    value={approvalStatus}
-                                                                                    disabled={approvalStatus == "Waiting"}
-                                                                                    onChange={(e) => {
-                                                                                      handleSubmissionapproveStatus("approval", sub, e.target.value, (apprRemaining > 0 ? apprRemaining.toFixed(2) : approvalAmount.toFixed(2)), projectId)
-                                                                                      approvalStatus = e.target.value;
-                                                                                    }}
-                                                                                    className={`text-xs border m-1 rounded cursor-pointer w-[90px] p-1 
-                                                                                    ${approvalStatus === "Pending" ? "bg-yellow-100 text-yellow-600 border-yellow-600" :
-                                                                                        approvalStatus === "Raised" ? "bg-blue-100 text-blue-600 border-blue-200" :
-                                                                                          approvalStatus === "Received" ? "bg-green-100 text-green-600 border-green-200" :
-                                                                                            approvalStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
-                                                                                              "bg-gray-100 text-gray-600 border-gray-200"}`}
-                                                                                  >
-                                                                                    <option value="Waiting" disabled>Not Started</option>
-                                                                                    <option value="Pending" disabled>Pending</option>
-                                                                                    <option value="Raised">Raised</option>
-                                                                                    <option value="Received" disabled={approvalStatus === "Raised" ? false : true}>Received</option>
-                                                                                  </select>
-                                                                                </td> */}
-
-                                                                                  <td className={"text-center  p-1 "}>
-                                                                                    {/* <td className="text-center p-1"> */}
-                                                                                    <div className="relative inline-block">
-                                                                                      <select
-                                                                                        value={approvalStatus}
-                                                                                        disabled={approvalStatus === "Waiting"}
-                                                                                        onChange={(e) => {
-                                                                                          handleSubmissionapproveStatus(
-                                                                                            "approval",
-                                                                                            sub,
-                                                                                            e.target.value,
-                                                                                            apprRemaining > 0
-                                                                                              ? apprRemaining.toFixed(2)
-                                                                                              : approvalAmount.toFixed(2),
-                                                                                            projectId
-                                                                                          );
-                                                                                        }}
-                                                                                        // className="text-xs border rounded cursor-pointer w-[100px] px-2 py-1 pr-6 appearance-none transition-all focus:outline-none"
-                                                                                        className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1 "
-                                                                                        style={{
-                                                                                          backgroundColor:
-                                                                                            approvalStatus === "Pending" ? "#FEF3C7" :
-                                                                                              approvalStatus === "Raised" ? "#DBEAFE" :
-                                                                                                approvalStatus === "Received" ? "#D1FAE5" :
-                                                                                                  approvalStatus === "Completed" ? "#F3E8FF" :
-                                                                                                    approvalStatus === "Waiting" ? "#F3F4F6" : "#F3F4F6",
-                                                                                          color:
-                                                                                            approvalStatus === "Pending" ? "#D97706" :
-                                                                                              approvalStatus === "Raised" ? "#2563EB" :
-                                                                                                approvalStatus === "Received" ? "#059669" :
-                                                                                                  approvalStatus === "Completed" ? "#9333EA" :
-                                                                                                    approvalStatus === "Waiting" ? "#6B7280" : "#6B7280",
-                                                                                          borderColor:
-                                                                                            approvalStatus === "Pending" ? "#D97706" :
-                                                                                              approvalStatus === "Raised" ? "#2563EB" :
-                                                                                                approvalStatus === "Received" ? "#059669" :
-                                                                                                  approvalStatus === "Completed" ? "#9333EA" :
-                                                                                                    approvalStatus === "Waiting" ? "#D1D5DB" : "#D1D5DB"
-                                                                                        }}
-                                                                                      >
-                                                                                        <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
-                                                                                          Not Started
-                                                                                        </option>
-
-                                                                                        <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>
-                                                                                          Pending
-                                                                                        </option>
-
-                                                                                        <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>
-                                                                                          Raised
-                                                                                        </option>
-
-                                                                                        <option
-                                                                                          value="Received"
-                                                                                          disabled={approvalStatus !== "Raised"}
-                                                                                          style={{ backgroundColor: "#D1FAE5", color: "#059669" }}
-                                                                                        >
-                                                                                          Received
-                                                                                        </option>
-                                                                                      </select>
-
-                                                                                      {/* dropdown arrow */}
-                                                                                      {/* <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 text-[10px]">
-                                                                                      ▼
-                                                                                    </span> */}
-                                                                                    </div>
-                                                                                  </td>
-                                                                                  <td></td>
-                                                                                </tr>
-                                                                              ) : <tr>
-                                                                              </tr>
-                                                                            }
-
-                                                                            {/* {
-                                                                          isUser &&
-                                                                          <tr>
-                                                                            <td></td>
-                                                                          </tr>
-                                                                        } */}
-
-
-                                                                            {expandedRow === sub.id && (
-                                                                              <tr className="bg-gray-50/80">
-                                                                                <td colSpan="13" className="px-4 py-4">
-                                                                                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-
-                                                                                    {/* Header */}
-                                                                                    {/* <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 flex justify-between items-center"> */}
-                                                                                    <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 flex gap-2 items-center">
-                                                                                      <div className="flex items-center gap-2">
-                                                                                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                                                                                          <Clock size={16} className="text-blue-600" />
-                                                                                        </div>
-                                                                                        <span className="text-sm font-semibold text-gray-700">Time Logs</span>
-                                                                                        <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
-                                                                                          {sub.work_summary?.users?.length || 0} contributors
-                                                                                        </span>
-                                                                                      </div>
-                                                                                      <hr className='w-1.5' />
-                                                                                      <div className="flex items-center gap-2">
-                                                                                        <div className="text-xs text-gray-500">Total Hours:</div>
-                                                                                        <div className="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                                                                          {formatDuration(sub.work_summary?.total_hours || "00:00:00")}
-                                                                                        </div>
-                                                                                      </div>
-                                                                                    </div>
-
-                                                                                    {/* User Summary Cards */}
-                                                                                    {sub.work_summary?.users?.length > 0 && (
-                                                                                      <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                                                                                        <div className="flex flex-wrap gap-3">
-                                                                                          {sub.work_summary.users.map((userLog, i) => (
-                                                                                            <div
-                                                                                              key={i}
-                                                                                              className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-                                                                                            >
-                                                                                              {userLog.profilepic ? (
-                                                                                                <CustomImageModal customStyle>
-                                                                                                  <img
-                                                                                                    src={`${IMAGE_URL}${userLog.profilepic}`}
-                                                                                                    alt={userLog.name}
-                                                                                                    className="w-8 h-8 rounded-full object-cover"
-                                                                                                  />
-                                                                                                </CustomImageModal>
-                                                                                              ) : (
-                                                                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold shadow-sm">
-                                                                                                  {userLog.name?.charAt(0)?.toUpperCase()}
-                                                                                                </div>
-                                                                                              )}
-                                                                                              <div>
-                                                                                                <p className="text-sm font-medium text-gray-800">{userLog.name}</p>
-                                                                                                <div className="flex items-center gap-2 text-xs">
-                                                                                                  <span className="text-gray-400">
-                                                                                                    {userLog.days_worked} day{userLog.days_worked !== 1 ? 's' : ''}
-                                                                                                  </span>
-                                                                                                  <span className="text-gray-300">•</span>
-                                                                                                  <span className="font-semibold text-blue-600">
-                                                                                                    {formatDuration(userLog.total_time_spent)}
-                                                                                                  </span>
-                                                                                                </div>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                          ))}
-                                                                                        </div>
-                                                                                      </div>
-                                                                                    )}
-
-                                                                                    {/* Detailed Daily Logs - With Date-wise breakdown */}
-                                                                                    <div className="max-h-[400px] overflow-y-auto">
-                                                                                      {sub.work_summary?.users?.length > 0 ? (
-                                                                                        <div className="divide-y divide-gray-100">
-                                                                                          {sub.work_summary.users.map((userLog, userIdx) => (
-                                                                                            <div key={userIdx} className="bg-white">
-
-                                                                                              {/* User Header for daily logs */}
-                                                                                              <div className="px-5 py-2 bg-gray-50 flex items-center gap-2 sticky top-0 z-10">
-                                                                                                {/* <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
-                                                                                                  {userLog.name?.charAt(0)?.toUpperCase()}
-                                                                                                </div> */}
-                                                                                                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                                                                                  {userLog.profilepic ? (
-                                                                                                    <CustomImageModal customStyle>
-                                                                                                      <img
-                                                                                                        src={`${IMAGE_URL}${userLog.profilepic}`}
-                                                                                                        alt={userLog.name}
-                                                                                                        className="w-6 h-6 rounded-full object-cover"
-                                                                                                      />
-                                                                                                    </CustomImageModal>
-                                                                                                  ) : (
-                                                                                                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
-                                                                                                      {userLog.name?.charAt(0)?.toUpperCase()}
-                                                                                                    </div>
-                                                                                                  )}
-                                                                                                </div>
-                                                                                                <span className="text-xs font-medium text-gray-600">{userLog.name}</span>
-                                                                                                <hr className='w-1.5' />
-                                                                                                <div className="flex gap-1  text-xs text-gray-400">
-                                                                                                  <span className="text-xs text-gray-500">
-                                                                                                    Total: {formatDuration(userLog.total_time_spent)}
-                                                                                                  </span>
-                                                                                                  <span className="text-xs text-gray-400">
-                                                                                                    (
-                                                                                                    {userLog.days_worked} day{userLog.days_worked !== 1 ? 's' : ''}
-                                                                                                    )
-                                                                                                  </span>
-                                                                                                </div>
-                                                                                              </div>
-
-                                                                                              {/* Date-wise logs for this user */}
-                                                                                              <div className="px-5 py-3 space-y-3">
-                                                                                                {userLog.date_wise?.map((dayLog, dayIdx) => (
-                                                                                                  <div key={dayIdx} className="border-l-2 border-blue-200 pl-3">
-                                                                                                    {/* Date Header */}
-                                                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                                                      <Calendar size={12} className="text-gray-400" />
-                                                                                                      <span className="text-xs font-medium text-gray-500">
-                                                                                                        {new Date(dayLog.date).toLocaleDateString('en-IN', {
-                                                                                                          weekday: 'short',
-                                                                                                          year: 'numeric',
-                                                                                                          month: 'short',
-                                                                                                          day: 'numeric'
-                                                                                                        })}
-                                                                                                      </span>
-                                                                                                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                                                                                                        {formatDuration(dayLog.total_time_spent)}
-                                                                                                      </span>
-                                                                                                    </div>
-
-                                                                                                    {/* Log entries for this date */}
-                                                                                                    <div className="space-y-2 ml-2">
-                                                                                                      {dayLog.logs?.map((log, logIdx) => (
-                                                                                                        <div
-                                                                                                          key={logIdx}
-                                                                                                          className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
-                                                                                                        >
-                                                                                                          <div className="flex justify-between items-start">
-                                                                                                            <div className="flex-1">
-                                                                                                              <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                                                                                {log.work_type && (
-                                                                                                                  <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
-                                                                                                                    {log.work_type}
-                                                                                                                  </span>
-                                                                                                                )}
-                                                                                                                {log.description && (
-                                                                                                                  <p className="text-sm text-gray-600 leading-relaxed">
-                                                                                                                    {log.description}
-                                                                                                                  </p>
-                                                                                                                )}
-                                                                                                              </div>
-                                                                                                              {!log.description && !log.work_type && (
-                                                                                                                <p className="text-sm text-gray-400 italic">
-                                                                                                                  No description provided
-                                                                                                                </p>
-                                                                                                              )}
-                                                                                                            </div>
-                                                                                                            <div className="ml-3">
-                                                                                                              <span
-                                                                                                                className="text-xs font-mono font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded whitespace-nowrap"
-                                                                                                                title={formatDurationDetailed(log.time_spent)}
-                                                                                                              >
-                                                                                                                {formatDuration(log.time_spent)}
-                                                                                                              </span>
-                                                                                                            </div>
-                                                                                                          </div>
-                                                                                                        </div>
-                                                                                                      ))}
-                                                                                                    </div>
-                                                                                                  </div>
-                                                                                                ))}
-
-                                                                                                {/* Show if user has no date-wise logs but has total time */}
-                                                                                                {(!userLog.date_wise || userLog.date_wise.length === 0) && userLog.total_time_spent !== "00:00:00" && (
-                                                                                                  <div className="text-sm text-gray-500 italic ml-2">
-                                                                                                    No detailed logs available for this user
-                                                                                                  </div>
-                                                                                                )}
-                                                                                              </div>
-                                                                                            </div>
-                                                                                          ))}
-                                                                                        </div>
-                                                                                      ) : (
-                                                                                        <div className="px-5 py-12 text-center">
-                                                                                          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
-                                                                                            <Clock size={24} className="text-gray-400" />
-                                                                                          </div>
-                                                                                          <p className="text-sm text-gray-400">No time logs recorded yet</p>
-                                                                                          <p className="text-xs text-gray-300 mt-1">Time logs will appear here once team members log their work hours</p>
-                                                                                        </div>
-                                                                                      )}
-                                                                                    </div>
-
-                                                                                    {/* Collapse Button */}
-                                                                                    <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100 flex justify-center">
-                                                                                      <button
-                                                                                        onClick={() => setExpandedRow(null)}
-                                                                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
-                                                                                      >
-                                                                                        <ChevronUp size={14} />
-                                                                                        Collapse
-                                                                                      </button>
-                                                                                    </div>
-                                                                                  </div>
-                                                                                </td>
-                                                                              </tr>
-                                                                            )}
-
-                                                                            {/* 🔽 EXPAND ROW - Minimalist Version */}
-                                                                            {/* {expandedRow === sub.id && (
-                                                                              <tr className="bg-gray-50/80">
-                                                                                <td colSpan="13" className="px-4 py-4">
-                                                                                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-
-                                                                                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                                                                                      <div className="flex items-center gap-2">
-                                                                                        <Clock size={16} className="text-blue-500" />
-                                                                                        <span className="text-sm font-medium text-gray-700">Time Logs</span>
-                                                                                      </div>
-                                                                                      <span className="text-xs text-gray-500">
-                                                                                        Total: {sub.work_summary?.total_hours || "00:00:00"}
-                                                                                      </span>
-                                                                                    </div>
-
-                                                                                    <div className="divide-y divide-gray-100">
-                                                                                      {sub.work_summary?.users?.length > 0 ? (
-                                                                                        sub.work_summary.users.map((log, i) => (
-                                                                                          <div key={i} className="px-4 py-2.5 flex justify-between items-center hover:bg-gray-50">
-                                                                                            <div className="flex items-center gap-2">
-                                                                                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
-                                                                                                {log.name?.charAt(0)?.toUpperCase()}
-                                                                                              </div>
-                                                                                              <span className="text-sm text-gray-700">{log.name}</span>
-                                                                                            </div>
-                                                                                            <div className="flex items-center gap-3">
-                                                                                              <span className="text-xs text-gray-400">{log.days_worked} day(s)</span>
-                                                                                              <span className="text-sm font-mono font-medium text-blue-600">
-                                                                                                {log.total_time_spent}
-                                                                                              </span>
-                                                                                            </div>
-                                                                                          </div>
-                                                                                        ))
-                                                                                      ) : (
-                                                                                        <div className="px-4 py-6 text-center text-sm text-gray-400">
-                                                                                          No time logs recorded
-                                                                                        </div>
-                                                                                      )}
-                                                                                    </div>
-
-                                                                                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
-                                                                                      <button
-                                                                                        onClick={() => setExpandedRow(null)}
-                                                                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mx-auto"
-                                                                                      >
-                                                                                        <ChevronUp size={12} />
-                                                                                        Collapse
-                                                                                      </button>
-                                                                                    </div>
-                                                                                  </div>
-                                                                                </td>
-                                                                              </tr>
-                                                                            )} */}
-                                                                          </>
-                                                                        );
-                                                                      })}
+                <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
+                  <button
+                    onClick={() => setExpandedRow(null)}
+                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mx-auto"
+                  >
+                    <ChevronUp size={12} />
+                    Collapse
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        )}
+      </Fragment>
+    );
+  })}
                                                                   </tbody>
                                                                 </table>
                                                               </div>
