@@ -1,5 +1,6 @@
 // src/utils/toast.js
-import { toast } from 'react-hot-toast';
+// import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export const showSuccess = (message) => {
   toast.success(message, {
@@ -9,6 +10,7 @@ export const showSuccess = (message) => {
 };
 
 export const showError = (message) => {
+
   toast.error(message, {
     duration: 4000,
     position: 'top-right',

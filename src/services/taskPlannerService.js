@@ -4,32 +4,45 @@ import api from './api';
 
 
 
-export const taskPlannerService = {
+// taskPlannerService.js
 
-    // GET: Fetch all task planners
-    getTaskPlanners: async () => {
+export const taskPlannerService = {
+    getTaskPlanners: async (user, activeTab, date) => {
         try {
-            // Note: Replace '/detaildesign/planner/' with your exact backend endpoint path
-            const response = await api.get('/time-planer/');
+            let url = "";
+
+            const empCode = user?.emp_code;
+
+            if (user?.role === "ACCOUNT" || user?.role === "ADMIN") {
+                if (activeTab === "My Tasks") {
+                    url = `/tl-planner-report/?emp_code=${empCode}&date=${date}`;
+                } else if (activeTab === "TL Tasks") {
+                    url = `/tl-planner-report/?tl_code=null&emp_code=null&date=${date}`;
+                } else {
+                    url = `/tl-planner-report/?tl_code=null&emp_code=null&date=${date}`;
+                }
+            }
+
+            else if (user?.role === "TL") {
+                if (activeTab === "My Tasks") {
+                    url = `/tl-planner-report/?emp_code=${empCode}&date=${date}`;
+                } else {
+                    url = `/tl-planner-report/?tl_code=${empCode}&date=${date}`;
+                }
+            }
+
+            else {
+                url = `/tl-planner-report/?emp_code=${empCode}&date=${date}`;
+            }
+
+            const response = await api.get(url);
 
             return response.data;
+
         } catch (error) {
-            console.error('Error fetching task planners:', error);
-            throw error; // Re-throw the error so the Redux thunk's rejectWithValue can catch it
+            console.error(error);
+            throw error;
         }
-    },
-
-    // GET: Fetch planners for a specific user (Optional, if your API supports it)
-    // getUserTaskPlanners: async (userId) => {
-    //   try {
-    //     const response = await axios.get(
-    //       `${API_BASE_URL}/detaildesign/planner/?user=${userId}`, 
-    //       getAxiosConfig()
-    //     );
-    //     return response.data;
-    //   } catch (error) {
-    //     throw error;
-    //   }
-    // }
-
+    }
 };
+

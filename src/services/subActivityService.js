@@ -38,6 +38,16 @@ export const subActivityService = {
     }
   },
 
+  getSubActivityDetailsworklog: async (subActivityId) => {
+    try {
+      const response = await api.get(`/subactivity-detail/${subActivityId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sub activity details:', error);
+      throw error;
+    }
+  },
+
 
   getSubActivity: async (subactivityId) => {
     try {

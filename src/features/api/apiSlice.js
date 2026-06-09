@@ -9,6 +9,7 @@ import { subActivityService } from '../../services/subActivityService';
 import { projectService } from '../../services/projectService';
 import { projectWorkSummaryService } from '../../services/projectWorkSummaryService';
 import { stagesTemplateService } from '../../services/stagesTemplateService';
+import { showError } from '../../utils/toast.js'; // <-- ADD THIS
 
 import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
 
@@ -29,24 +30,50 @@ const initialState = {
   projectDetails: null,
   loading: false,
   error: null,
-  taskPlanners: [],
+
+  taskPlannersData: null, // Store the full response
+  taskPlanners: [], // Keep for backward compatibility
 };
 
 
 // ============ TASK PLANNER THUNKS ============
 export const fetchTaskPlanners = createAsyncThunk(
-  'api/fetchTaskPlanners',
-  async (_, { rejectWithValue }) => {
+  "api/fetchTaskPlanners",
+  async ({ user, activeTab, date }, { rejectWithValue }) => {
     try {
-      // Replace taskPlannerService.getTaskPlanners() with your actual API call
-      // Example: const response = await axios.get('/api/planners/'); return response.data;
-      const response = await taskPlannerService.getTaskPlanners();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const response = await taskPlannerService.getTaskPlanners(user, activeTab, date);
+
+      let employees = [];
+      if (response?.results?.employees) employees = response.results.employees;
+      else if (response?.employees) employees = response.employees;
+
+      const planners = employees.flatMap(emp =>
+        (emp.planners || []).map(planner => ({
+          ...planner,
+          employee_name: emp.emp_name,
+          employee_code: emp.emp_code,
+        }))
+      );
+
+      // Return BOTH — flat list for My Tasks, full employees for comparison
+      return {
+        planners,
+        employees,
+        summary: response?.results?.summary || response?.summary || null,
+      };
+    }
+    // catch (error) {
+    //   return rejectWithValue(error?.response?.data || error.message);
+    // }
+    catch (error) {
+      // EXACT ERROR HANDLING PATTERN APPLIED HERE
+      console.error('Error fetching task planners:', error);
+      showError(error.message || 'Failed to fetch task planners');
+      return rejectWithValue(error.message);
     }
   }
 );
+
 
 export const fetchProjectWorkSummary = createAsyncThunk(
   'api/fetchProjectWorkSummary',
@@ -370,13 +397,30 @@ export const fetchSubActivityDetails = createAsyncThunk(
       // Assuming you add this to your subActivityService:
       // getSubActivityDetails: (id) => api.get(`subactivity/${id}/`).then(res => res.data)
       const response = await subActivityService.getSubActivityDetails(subActivityId);
-      
-      return response; 
+
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
+export const fetchSubActivityDetailsworklog = createAsyncThunk(
+  'api/fetchSubActivityDetails',
+  async (subActivityId, { rejectWithValue }) => {
+    try {
+      // Assuming you add this to your subActivityService:
+      // getSubActivityDetails: (id) => api.get(`subactivity/${id}/`).then(res => res.data)
+      const response = await subActivityService.getSubActivityDetailsworklog(subActivityId);
+
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
 
 export const createSubActivity = createAsyncThunk(
   'api/createSubActivity',
@@ -463,8 +507,15 @@ export const fetchOnlyProjectsList = createAsyncThunk(
 
       const response = await projectService.getProjectsLessDetails(user);
       return Array.isArray(response) ? response : [];
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+    }
+    // catch (error) {
+    //   return rejectWithValue(error.response?.data || error.message);
+    // }
+    catch (error) {
+      // EXACT ERROR HANDLING PATTERN APPLIED HERE
+      console.error('Error fetching projects list:', error);
+      showError(error.message || 'Failed to fetch projects list');
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -562,8 +613,9 @@ export const tlSubactivitySubmitwithProof = createAsyncThunk(
   'api/stages/work-logs',
   async (proofData, { rejectWithValue }) => {
     try {
-      // const url = (proofData.to_status == "Submitted" || proofData.to_status == "Approved") ? '/subactivity-submission/' : "/stages/payment-logs/";
-      const url = (proofData.to_status == "Submitted" || proofData.to_status == "Approved") ? 'stages/work-logs/' : "/stages/payment-logs/";
+      console.log('Submitting proof data:', proofData);
+      const url = (proofData.url == "payment") ? '/stages/payment-logs/' : "stages/work-logs/";
+      // const url = ''
       // const url = "/subactivity-submission/";
       await projectService.tlSubactivitySubmitwithProof(proofData, url);
       return proofData; // Return the submitted data for potential state updates
@@ -745,12 +797,20 @@ const apiSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
+      // .addCase(fetchTaskPlanners.fulfilled, (state, action) => {
+      //   state.loading = false;
+      //   // Based on your JSON payload structure ({ message, count, data: [...] })
+      //   // If your service returns the whole JSON, extract action.payload.data
+      //   // If your service already extracts it, just use action.payload
+      //   state.taskPlanners = action.payload.data || action.payload || [];
+      // })
       .addCase(fetchTaskPlanners.fulfilled, (state, action) => {
         state.loading = false;
-        // Based on your JSON payload structure ({ message, count, data: [...] })
-        // If your service returns the whole JSON, extract action.payload.data
-        // If your service already extracts it, just use action.payload
-        state.taskPlanners = action.payload.data || action.payload || [];
+        state.taskPlanners = action.payload.planners || [];       // flat → My Tasks
+        state.taskPlannersData = {                               // full → comparison view
+          employees: action.payload.employees || [],
+          summary: action.payload.summary || null,
+        };
       })
       .addCase(fetchTaskPlanners.rejected, (state, action) => {
         state.loading = false;

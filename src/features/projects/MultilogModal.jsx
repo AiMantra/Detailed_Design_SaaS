@@ -6,7 +6,7 @@ import {
     Calendar, ChevronDown, AlertCircle, Zap, FolderOpen,
 } from "lucide-react";
 import { fetchProjectDetails } from "../api/apiSlice"; // ← adjust path
-
+import { showSnackbar } from "../notifications/notificationSlice";
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const TIME_PRESETS = [
@@ -426,7 +426,6 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                 errs[`${r._id}.endTime`] = true;
             }
 
-            // optional
             // if (!r.workType) errs[`${r._id}.workType`] = true;
         });
 
@@ -464,7 +463,10 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             const payload = rows.map(({ _id, ...rest }) => rest);
             console.log("Saving work logs:", { date, payload });
             await onSave(date, payload);
+
             onClose();
+        } catch (error) {
+
         } finally {
             setSaving(false);
         }
@@ -551,8 +553,8 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                         <th className="px-2 pb-1 text-left min-w-[170px]">Project <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[140px]">Activity <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[160px]">Sub-Activity <span className="text-red-400">*</span></th>
-                                        <th className="px-2 pb-1 text-center min-w-[85px]">In <span className="text-red-400">*</span></th>
-                                        <th className="px-2 pb-1 text-center min-w-[85px]">Out <span className="text-red-400">*</span></th>
+                                        <th className="px-2 pb-1 text-center min-w-[85px]">Start Time <span className="text-red-400">*</span></th>
+                                        <th className="px-2 pb-1 text-center min-w-[85px]">End Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
                                         <th className="px-2 pb-1 text-left min-w-[130px]">Work Type <span className="text-red-400">*</span></th>

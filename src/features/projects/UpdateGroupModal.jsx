@@ -3,9 +3,9 @@ import { useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X, Plus, Trash2, Clock, Save, Loader2,
-    Calendar, ChevronDown, AlertCircle, FolderOpen, Edit, CheckSquare
+    Calendar, ChevronDown, AlertCircle, FolderOpen, Edit, CheckSquare, Pencil, CheckCircle2
 } from "lucide-react";
-import { fetchProjectDetails } from "../api/apiSlice"; 
+import { fetchProjectDetails } from "../api/apiSlice";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
@@ -38,8 +38,8 @@ const timeOptions = Array.from({ length: 24 }, (_, hour) =>
 ).flat();
 
 const emptyRow = () => ({
-    _id: crypto.randomUUID(), 
-    taskId: null, 
+    _id: crypto.randomUUID(),
+    taskId: null,
     projectId: "",
     activityId: "",
     subActivityId: "",
@@ -75,7 +75,7 @@ const ProjectSearchInput = ({ projects, value, onChange, error, disabled }) => {
 
     useEffect(() => {
         setSearch(selectedProject ? displayName(selectedProject) : "");
-    }, [value]); 
+    }, [value]);
 
     useEffect(() => {
         const handler = (e) => {
@@ -247,9 +247,9 @@ const DurationBadge = ({ start, end }) => {
 
 // ─── Main Modal Component ─────────────────────────────────────────────────────
 
-const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData = {} }) => {
+const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [], isEdit, initialData = {} }) => {
     const dispatch = useDispatch();
-
+    console.log("Rendering UpdateGroupModal with initialData:", isEdit, initialData);
     const [date, setDate] = useState("");
     const [rows, setRows] = useState([]);
     const [saving, setSaving] = useState(false);
@@ -259,15 +259,16 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
     const [loadingDetail, setLoadingDetail] = useState({});
 
     const ensureProjectDetail = useCallback(async (projectId) => {
+        console.log("Ensuring project detail for projectId:", projectId);
         if (!projectId || detailCache[projectId] || loadingDetail[projectId]) return;
-        setLoadingDetail((prev) => ({ ...prev, [projectId]: true }));
+        // setLoadingDetail((prev) => ({ ...prev, [projectId]: true }));
         try {
             const result = await dispatch(fetchProjectDetails(projectId)).unwrap();
             setDetailCache((prev) => ({ ...prev, [projectId]: result }));
         } catch (err) {
             console.error("Failed to fetch project details:", err);
         } finally {
-            setLoadingDetail((prev) => ({ ...prev, [projectId]: false }));
+            // setLoadingDetail((prev) => ({ ...prev, [projectId]: false }));
         }
     }, [dispatch, detailCache, loadingDetail]);
 
@@ -275,22 +276,24 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
     useEffect(() => {
         if (isOpen && initialData) {
             setDate(initialData.date && initialData.date !== "Unscheduled" ? initialData.date : todayStr());
-            
+            console.log("Initializing rows with tasks:", initialData.tasks);
             if (initialData.tasks && initialData.tasks.length > 0) {
                 const mappedRows = initialData.tasks.map(task => ({
                     _id: crypto.randomUUID(),
-                    taskId: task.id, 
-                    projectId: task.project || "",
-                    activityId: task.activity || "",
-                    subActivityId: task.subactivity || "",
+                    taskId: task.id,
+                    projectId: task.project_id || "",
+                    activityId: task.activity_id || "",
+                    subActivityId: task.subactivity_id || "",
                     startTime: extractTime(task.start_time),
                     endTime: extractTime(task.end_time),
                     workType: task.work_type || "",
                     description: task.note || "",
                     isSelected: false, // ✅ Existing tasks are unchecked by default
+                    status: task.status || "not_done",
                 }));
+                console.log("Mapped rows for modal:", mappedRows);
                 setRows(mappedRows);
-
+                console.log("Ensuring project details for project IDs:", mappedRows.map(r => r.projectId));
                 const uniquePids = [...new Set(mappedRows.map(r => r.projectId).filter(Boolean))];
                 uniquePids.forEach(pid => ensureProjectDetail(pid));
             } else {
@@ -314,9 +317,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
             const u = { ...r, [field]: value };
             if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.workType = ""; }
             if (field === "activityId") { u.subActivityId = ""; }
-            
+
             // If they modify a row, automatically check the box so it gets saved
-            if (field !== "isSelected") u.isSelected = true; 
+            if (field !== "isSelected") u.isSelected = true;
 
             return u;
         }));
@@ -340,13 +343,13 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
 
     const addRow = () => setRows((prev) => [...prev, emptyRow()]);
     const removeRow = (id) => setRows((prev) => prev.length > 1 ? prev.filter((r) => r._id !== id) : prev);
-    
+
     // Only calculate hours for selected rows
-    const totalHours = rows.filter(r => r.isSelected).reduce((sum, r) => sum + calcHours(r.startTime, r.endTime), 0);
+    const totalHours = rows.reduce((sum, r) => sum + calcHours(r.startTime, r.endTime), 0);
 
     const validate = () => {
         const errs = {};
-        const selectedRows = rows.filter(r => r.isSelected);
+        const selectedRows = rows;
 
         if (selectedRows.length === 0) {
             errs["global"] = "Please select at least one task to update.";
@@ -378,21 +381,39 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
         setSaving(true);
         try {
             // ✅ ONLY Extract Selected Rows
-            const selectedRows = rows.filter(r => r.isSelected);
-            
+            const selectedRows = rows
+            const selectedRowsworklog = rows.filter(r => r.isSelected);
+            console.log("Selected rows for update:", selectedRowsworklog);
             // ✅ Format exactly as requested
             const payload = selectedRows.map(row => ({
-                id: row.taskId, 
+                id: row.taskId,
                 project: row.projectId,
                 subactivity: row.subActivityId,
                 date: date,
-                start_time: `${date}T${row.startTime}:00`,
-                end_time: `${date}T${row.endTime}:00`,
+                start_time: row.startTime,
+                end_time: row.endTime,
+                note: row.description,
+            }));
+
+            const worklogPayload = selectedRowsworklog.map(row => ({
+                id: row.taskId,
+                project: row.projectId,
+                subactivity: row.subActivityId,
+                date: date,
+                start_time: row.startTime,
+                end_time: row.endTime,
                 note: row.description,
             }));
 
             console.log("Saving update payload:", payload);
-            await onSave(date, payload);
+            if (!isEdit) {
+                await onSaveWorklog(date, worklogPayload);
+                console.log("Would call onSaveWorklog with:", { date, worklogPayload });
+            } else {
+                console.log("Would call onSave with:", { date, payload });
+                await onSave(date, payload);
+            }
+
             onClose();
         } catch (error) {
             console.error("Save failed", error);
@@ -403,10 +424,27 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
 
     const toggleAllChecks = (e) => {
         const checked = e.target.checked;
-        setRows(prev => prev.map(r => ({ ...r, isSelected: checked })));
-    };
 
-    const areAllSelected = rows.length > 0 && rows.every(r => r.isSelected);
+        setRows(prev =>
+            prev.map(r => ({
+                ...r,
+                isSelected:
+                    r.status?.toUpperCase() === "COMPLETED"
+                        ? false
+                        : checked,
+            }))
+        );
+    };
+    console.log("Rendering UpdateGroupModal with rows:", rows);
+    // const areAllSelected = rows.length > 0 && rows.every(r => r.isSelected);
+    const selectableRows = rows.filter(
+        r => r.status?.toUpperCase() !== "COMPLETED"
+    );
+
+    const areAllSelected =
+        selectableRows.length > 0 &&
+        selectableRows.every(r => r.isSelected);
+    const [editingRow, setEditingRow] = useState(null);
 
     return (
         <AnimatePresence>
@@ -456,23 +494,27 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
                             <table className="w-full text-xs" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
                                 <thead>
                                     <tr className="text-[10px] uppercase tracking-wider text-gray-400">
-                                        <th className="px-2 pb-1 text-center w-8">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={areAllSelected}
-                                                onChange={toggleAllChecks}
-                                                className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                            />
-                                        </th>
+                                        {!isEdit && (
+                                            <th className="px-2 pb-1 text-center w-8">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={areAllSelected}
+                                                    onChange={toggleAllChecks}
+                                                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                />
+                                            </th>)}
                                         <th className="px-2 pb-1 text-left min-w-[170px]">Project <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[140px]">Activity <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[160px]">Sub-Activity <span className="text-red-400">*</span></th>
-                                        <th className="px-2 pb-1 text-center min-w-[85px]">In <span className="text-red-400">*</span></th>
-                                        <th className="px-2 pb-1 text-center min-w-[85px]">Out <span className="text-red-400">*</span></th>
+                                        <th className="px-2 pb-1 text-center min-w-[85px]">Start Time <span className="text-red-400">*</span></th>
+                                        <th className="px-2 pb-1 text-center min-w-[85px]">End Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
                                         <th className="px-2 pb-1 text-left min-w-[190px]">Description</th>
-                                        <th className="px-2 pb-1 w-7"></th>
+                                        {/* <th className="px-1 py-2 text-center">Edit</th> */}
+                                        {isEdit && (
+                                            <th className="px-1 py-2 text-center">Delete</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -481,63 +523,220 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
                                             const isLoadingThis = !!loadingDetail[row.projectId];
                                             const activities = activitiesFor(row.projectId);
                                             const subActivities = subActivitiesFor(row.projectId, row.activityId);
-                                            const timeInvalid = row.startTime && row.endTime && row.endTime <= row.startTime;
+                                            const timeInvalid =
+                                                row.startTime &&
+                                                row.endTime &&
+                                                row.endTime <= row.startTime;
+
                                             const e = (f) => !!errors[`${row._id}.${f}`];
-                                            const disabled = !row.isSelected;
+
+                                            const isEditing = editingRow === row._id;
+
+                                            // Row is editable only when selected AND Edit button clicked
+                                            const disabled = !isEdit;
 
                                             return (
-                                                <motion.tr 
-                                                    key={row._id} 
-                                                    initial={{ opacity: 0, y: -8 }} 
-                                                    animate={{ opacity: 1, y: 0 }} 
-                                                    exit={{ opacity: 0, x: -16 }} 
-                                                    transition={{ duration: 0.16 }} 
-                                                    className={`group transition-all ${disabled ? "opacity-60 bg-gray-50/50" : ""}`}
+                                                <motion.tr
+                                                    key={row._id}
+                                                    initial={{ opacity: 0, y: -8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, x: -16 }}
+                                                    transition={{ duration: 0.16 }}
+                                                    className={`group transition-all ${disabled ? "opacity-60 bg-gray-50/50" : ""
+                                                        }`}
                                                 >
                                                     {/* CHECKBOX */}
-                                                    <td className="px-1 py-2 align-top text-center">
-                                                        <div className="mt-1.5 flex justify-center items-center">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                checked={row.isSelected}
-                                                                onChange={(e) => updateRow(row._id, "isSelected", e.target.checked)}
-                                                                className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-all"
-                                                            />
-                                                        </div>
-                                                    </td>
+
+                                                    {!isEdit && (
+                                                        <td className="px-1 py-2 align-top text-center">
+                                                            <div className="mt-1.5 flex justify-center items-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={row.isSelected}
+                                                                    disabled={row.status?.toUpperCase() === "COMPLETED"}
+                                                                    onChange={(e) =>
+                                                                        updateRow(
+                                                                            row._id,
+                                                                            "isSelected",
+                                                                            e.target.checked
+                                                                        )
+                                                                    }
+                                                                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                    )}
+
+                                                    {/* PROJECT */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <ProjectSearchInput projects={projects} value={row.projectId} onChange={(pid) => updateRow(row._id, "projectId", pid)} error={e("projectId")} disabled={disabled} />
+                                                        <ProjectSearchInput
+                                                            projects={projects}
+                                                            value={row.projectId}
+                                                            onChange={(pid) =>
+                                                                updateRow(row._id, "projectId", pid)
+                                                            }
+                                                            error={e("projectId")}
+                                                            disabled={disabled}
+                                                        />
                                                     </td>
+
+                                                    {/* ACTIVITY */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <Sel value={row.activityId} onChange={(v) => updateRow(row._id, "activityId", v)} placeholder="Select activity" disabled={!row.projectId || isLoadingThis || disabled} loading={isLoadingThis} error={e("activityId")}>
-                                                            {activities.map((a) => <option key={a.id} value={a.id}>{a.activity_name}</option>)}
+                                                        <Sel
+                                                            value={row.activityId}
+                                                            onChange={(v) =>
+                                                                updateRow(row._id, "activityId", v)
+                                                            }
+                                                            placeholder="Select activity"
+                                                            disabled={
+                                                                !row.projectId ||
+                                                                isLoadingThis ||
+                                                                disabled
+                                                            }
+                                                            loading={isLoadingThis}
+                                                            error={e("activityId")}
+                                                        >
+                                                            {activities.map((a) => (
+                                                                <option key={a.id} value={a.id}>
+                                                                    {a.activity_name}
+                                                                </option>
+                                                            ))}
                                                         </Sel>
                                                     </td>
+
+                                                    {/* SUB ACTIVITY */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <Sel value={row.subActivityId} onChange={(v) => updateRow(row._id, "subActivityId", v)} placeholder="Select sub-activity" disabled={!row.activityId || isLoadingThis || disabled} error={e("subActivityId")}>
-                                                            {subActivities.map((s) => <option key={s.id} value={s.id}>{s.sorting_var ? `Stage ${s.sorting_var} – ` : ""}{s.subactivity_name}</option>)}
+                                                        <Sel
+                                                            value={row.subActivityId}
+                                                            onChange={(v) =>
+                                                                updateRow(row._id, "subActivityId", v)
+                                                            }
+                                                            placeholder="Select sub-activity"
+                                                            disabled={
+                                                                !row.activityId ||
+                                                                isLoadingThis ||
+                                                                disabled
+                                                            }
+                                                            error={e("subActivityId")}
+                                                        >
+                                                            {subActivities.map((s) => (
+                                                                <option key={s.id} value={s.id}>
+                                                                    {s.sorting_var
+                                                                        ? `Stage ${s.sorting_var} – `
+                                                                        : ""}
+                                                                    {s.subactivity_name}
+                                                                </option>
+                                                            ))}
                                                         </Sel>
                                                     </td>
+
+                                                    {/* START TIME */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <TimeSel value={row.startTime} onChange={(v) => updateRow(row._id, "startTime", v)} placeholder="In" error={e("startTime")} disabled={disabled} />
+                                                        <TimeSel
+                                                            value={row.startTime}
+                                                            onChange={(v) =>
+                                                                updateRow(row._id, "startTime", v)
+                                                            }
+                                                            placeholder="In"
+                                                            error={e("startTime")}
+                                                            disabled={disabled}
+                                                        />
                                                     </td>
+
+                                                    {/* END TIME */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <TimeSel value={row.endTime} onChange={(v) => updateRow(row._id, "endTime", v)} placeholder="Out" error={e("endTime") || (!disabled && timeInvalid)} disabled={disabled} />
+                                                        <TimeSel
+                                                            value={row.endTime}
+                                                            onChange={(v) =>
+                                                                updateRow(row._id, "endTime", v)
+                                                            }
+                                                            placeholder="Out"
+                                                            error={
+                                                                e("endTime") ||
+                                                                (!disabled && timeInvalid)
+                                                            }
+                                                            disabled={disabled}
+                                                        />
                                                     </td>
+
+                                                    {/* PRESET */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <PresetPills onApply={(s, end) => applyPreset(row._id, s, end)} disabled={disabled} />
+                                                        <PresetPills
+                                                            onApply={(s, end) =>
+                                                                applyPreset(row._id, s, end)
+                                                            }
+                                                            disabled={disabled}
+                                                        />
                                                     </td>
+
+                                                    {/* DURATION */}
                                                     <td className="px-2 py-2 align-top text-center">
-                                                        <DurationBadge start={row.startTime} end={row.endTime} />
+                                                        <DurationBadge
+                                                            start={row.startTime}
+                                                            end={row.endTime}
+                                                        />
                                                     </td>
+
+                                                    {/* DESCRIPTION */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <input type="text" value={row.description} disabled={disabled} onChange={(ev) => updateRow(row._id, "description", ev.target.value)} placeholder="What did you work on?" className={`w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${disabled ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}`} />
+                                                        <input
+                                                            type="text"
+                                                            value={row.description}
+                                                            disabled={disabled}
+                                                            onChange={(ev) =>
+                                                                updateRow(
+                                                                    row._id,
+                                                                    "description",
+                                                                    ev.target.value
+                                                                )
+                                                            }
+                                                            placeholder="What did you work on?"
+                                                            className={`w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${disabled
+                                                                ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                                                                : ""
+                                                                }`}
+                                                        />
                                                     </td>
-                                                    <td className="px-1 py-2 align-top text-center">
-                                                        <button onClick={() => removeRow(row._id)} disabled={rows.length === 1} className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-20" title="Remove row">
-                                                            <Trash2 size={14} />
+
+                                                    {/* EDIT BUTTON */}
+                                                    {/* <td className="px-1 py-2 align-top text-center">
+                                                        <button
+                                                            onClick={() =>
+                                                                setEditingRow(
+                                                                    editingRow === row._id
+                                                                        ? null
+                                                                        : row._id
+                                                                )
+                                                            }
+                                                            disabled={!row.isSelected}
+                                                            className={`p-1.5 rounded-lg transition ${isEditing
+                                                                ? "bg-green-100 text-green-600"
+                                                                : "text-blue-500 hover:bg-blue-50"
+                                                                } ${!row.isSelected
+                                                                    ? "opacity-50 cursor-not-allowed"
+                                                                    : ""
+                                                                }`}
+                                                        >
+                                                            {isEditing ? (
+                                                                <CheckCircle2 size={14} />
+                                                            ) : (
+                                                                <Pencil size={14} />
+                                                            )}
                                                         </button>
-                                                    </td>
+                                                    </td> */}
+
+                                                    {/* DELETE BUTTON */}
+                                                    {isEdit && (
+                                                        <td className="px-1 py-2 align-top text-center">
+                                                            <button
+                                                                onClick={() => removeRow(row._id)}
+                                                                disabled={rows.length === 1}
+                                                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-20"
+                                                                title="Remove row"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </td>)}
                                                 </motion.tr>
                                             );
                                         })}
@@ -546,11 +745,13 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
                             </table>
                         </div>
 
-                        <div className="px-6 py-2 flex items-center gap-4">
-                            <button onClick={addRow} className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition">
-                                <Plus size={15} /> Add More Tasks
-                            </button>
-                        </div>
+                        {isEdit && (
+                            <div className="px-6 py-2 flex items-center gap-4">
+                                <button onClick={addRow} className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition">
+                                    <Plus size={15} /> Add More Tasks
+                                </button>
+                            </div>
+                        )}
 
                         <AnimatePresence>
                             {Object.keys(errors).length > 0 && (
@@ -565,12 +766,12 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, projects = [], initialData 
                             <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition text-sm font-medium text-gray-700">
                                 Cancel
                             </button>
-                            <button 
-                                onClick={handleSave} 
-                                disabled={saving || !rows.some(r => r.isSelected)} 
+                            <button
+                                onClick={handleSave}
+                                // disabled={saving || !rows.some(r => r.isSelected)}
                                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-400 transition flex items-center justify-center gap-2 text-sm font-medium"
                             >
-                                {saving ? <><Loader2 size={15} className="animate-spin" /> Updating…</> : <><Save size={15} /> Update Selected ({rows.filter(r => r.isSelected).length})</>}
+                                {saving ? <><Loader2 size={15} className="animate-spin" /> Updating…</> : <><Save size={15} /> Update Selected </>}
                             </button>
                         </div>
 
