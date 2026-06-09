@@ -250,12 +250,23 @@ export const projectService = {
   tlSubactivitySubmitwithProof: async (proofData, url) => {
     try {
       const formData = new FormData();
-      proofData.documents.forEach((file) => {
-        formData.append("documents", file);
-      });
+
+      if (proofData.documents) {
+        proofData.documents.forEach((file) => {
+          formData.append("documents", file);
+        });
+      }
+
+      if (proofData.rejection_proof) {
+        proofData.rejection_proof.forEach((file) => {
+          formData.append("rejection_proof", file);
+        });
+      }
+
       for (const key in proofData) {
-        key !== "documents" && proofData[key] !== "" &&
+        if (key !== "documents" && key !== "rejection_proof" && proofData[key] !== "") {
           formData.append(key, proofData[key]);
+        }
       }
       const response = await api.post(url, formData, {
         headers: {

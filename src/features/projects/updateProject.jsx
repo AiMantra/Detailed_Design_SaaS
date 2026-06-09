@@ -194,6 +194,109 @@ const UpdateProject = () => {
         { name: "", gst: "", state: "", status: "Active" },
     ]);
 
+    const [workStages, setWorkStages] = useState({});
+
+  // --- Dynamic Work Stages Handlers ---
+  const handleAddStage = (subId) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: [
+          ...existing,
+          { id: `temp_stg_${subId}_${Date.now()}`, name: "", payment_percent: "" },
+        ],
+      };
+    });
+  };
+
+  const handleRemoveStage = (subId, stageId) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: existing.filter((s) => s.id !== stageId),
+      };
+    });
+  };
+
+//   const handleStageUpdate = (subId, stageId, field, value) => {
+//     setWorkStages((prev) => {
+//       const existing = prev[subId] || [];
+//       return {
+//         ...prev,
+//         [subId]: existing.map((s) =>
+//           s.id === stageId ? { ...s, [field]: value } : s
+//         ),
+//       };
+//     });
+//   };
+
+
+const handleStageUpdate = (subId, stageId, field, value) => {
+    // 1. Intercept weightage changes to prevent exceeding 100%
+    if (field === 'payment_percent') {
+      const newPercent = parseFloat(value) || 0;
+      
+      let otherStagesTotal = 0;
+      let currentPercentOfThisStage = 0;
+
+      // Sum up percentages of all currently selected activities/sub-activities
+      selectedActivities.forEach(actId => {
+        const selectedSubs = selectedSubActivities[actId] || [];
+        selectedSubs.forEach(sId => {
+          const stages = workStages[sId] || [];
+          stages.forEach(stg => {
+            if (sId === subId && stg.id === stageId) {
+              currentPercentOfThisStage = parseFloat(stg.payment_percent) || 0;
+            } else {
+              otherStagesTotal += parseFloat(stg.payment_percent) || 0;
+            }
+          });
+        });
+      });
+
+      const projectedTotal = otherStagesTotal + newPercent;
+
+      // 2. Block if it exceeds 100% AND the user is trying to increase the value
+      // (We allow decreases so users can fix errors if they clone an activity and go over 100%)
+      if (projectedTotal > 100 && newPercent > currentPercentOfThisStage) {
+        const maxAllowed = Math.max(0, 100 - otherStagesTotal);
+        
+        // Show user a warning that they hit the limit
+        dispatch(
+          showSnackbar({
+            message: `Total project weightage cannot exceed 100%. Capped at ${maxAllowed.toFixed(2)}%.`,
+            type: "warning",
+          })
+        );
+
+        // Auto-cap the value to whatever percentage is left
+        setWorkStages((prev) => {
+          const existing = prev[subId] || [];
+          return {
+            ...prev,
+            [subId]: existing.map((s) =>
+              s.id === stageId ? { ...s, [field]: maxAllowed > 0 ? maxAllowed : "" } : s
+            ),
+          };
+        });
+        return; // Stop the standard update
+      }
+    }
+
+    // 3. Standard update if it's within the 100% limit (or if updating the stage name)
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: existing.map((s) =>
+          s.id === stageId ? { ...s, [field]: value } : s
+        ),
+      };
+    });
+  };
+
     const addBranch = () => {
         setBranches([
             ...branches,
@@ -353,12 +456,34 @@ const UpdateProject = () => {
 
                     // Set planned quantities
                     subQtysMap[`${subId}_quantity`] = sub.total_quantity || 0;
-                    subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
-                    subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
+                    subQtysMap[`${subId}_start_date`] = sub.start_date || "";
+                    subQtysMap[`${subId}_end_date`] = sub.end_date || "";
+                    // subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
+                    // subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
                     subQtysMap[`${subId}_chainagestart`] = parseFloat(sub.chainage_start) || 0;
                     subQtysMap[`${subId}_chainageend`] = parseFloat(sub.chainage_end) || 0;
                     subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
                     subQtysMap[`${subId}_description`] = sub.description || "";
+                    // Initialize dynamic stages from backend data
+          if (sub.stages && sub.stages.length > 0) {
+            setWorkStages(prev => ({
+              ...prev,
+              [subId]: sub.stages.map((stg, i) => ({
+                id: stg.id, // Preserve existing DB ID for updating
+                name: stg.name || stg.stage_type || `Stage ${i + 1}`,
+                payment_percent: stg.payment_percent || 0
+              }))
+            }));
+          } else {
+            // Fallback for older data that doesn't have the stages array yet
+            setWorkStages(prev => ({
+              ...prev,
+              [subId]: [
+                { id: `temp_stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+                { id: `temp_stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+              ]
+            }));
+          }
                 });
             }
             subSelectionsMap[activityId] = selectedSubs;
@@ -531,25 +656,44 @@ const UpdateProject = () => {
         }));
     };
 
-    const getActivityTotals = (activity, storeData) => {
-        let totalSubmission = 0;
-        let totalApproval = 0;
+    // const getActivityTotals = (activity, storeData) => {
+    //     let totalSubmission = 0;
+    //     let totalApproval = 0;
 
-        activity.subActivities.forEach((sub) => {
-            const subId = sub.id;
+    //     activity.subActivities.forEach((sub) => {
+    //         const subId = sub.id;
 
-            const submissionKey = `${subId}_subpayment`;
-            const approvalKey = `${subId}_approvalpayment`;
+    //         const submissionKey = `${subId}_subpayment`;
+    //         const approvalKey = `${subId}_approvalpayment`;
 
-            const submissionValue = parseFloat(storeData[submissionKey]) || 0;
-            const approvalValue = parseFloat(storeData[approvalKey]) || 0;
+    //         const submissionValue = parseFloat(storeData[submissionKey]) || 0;
+    //         const approvalValue = parseFloat(storeData[approvalKey]) || 0;
 
-            totalSubmission += submissionValue;
-            totalApproval += approvalValue;
+    //         totalSubmission += submissionValue;
+    //         totalApproval += approvalValue;
+    //     });
+
+    //     return totalSubmission + totalApproval;
+    // };
+
+
+// Deriving Weightages Dynamically
+  useEffect(() => {
+    const newWeightages = {};
+    selectedActivities.forEach(activityId => {
+      let total = 0;
+      const selectedSubs = selectedSubActivities[activityId] || [];
+      selectedSubs.forEach(subId => {
+        const stages = workStages[subId] || [];
+        stages.forEach(stg => {
+          total += parseFloat(stg.payment_percent) || 0;
         });
+      });
+      newWeightages[activityId] = total;
+    });
+    setActivityWeightages(newWeightages);
+  }, [workStages, selectedSubActivities, selectedActivities]);
 
-        return totalSubmission + totalApproval;
-    };
 
     const handleActivityWeightageChange = (activityId, value, subid) => {
         const numValue = parseFloat(value) || 0;
@@ -666,7 +810,7 @@ const UpdateProject = () => {
     };
 
     const handleSubActivityPlannedQtyChange = (subId, field, value) => {
-        if (field === "description") {
+        if (field === "description"|| field === "start_date" || field === "end_date") {
             setSubActivityPlannedQtys((prev) => ({
                 ...prev,
                 [`${subId}_${field}`]: value,
@@ -1072,18 +1216,300 @@ const UpdateProject = () => {
         }
     };
 
-    const handleCloneSubActivitySubmit = async (e) => {
+    // const handleCloneSubActivitySubmit = async (e) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+
+    //     if (!cloningSubActivity) return;
+
+    //     let newSubs = [];
+
+    //     if (cloningSubActivity.activityType === "single") {
+    //         newSubs = [
+    //             {
+    //                 // id: `custom-sub-${Date.now()}`,
+    //                 sorting_var: null,
+    //                 subactivity_name: cloningSubActivity.subactivity_name,
+    //                 unit: cloningSubActivity.unit,
+    //                 activityType: cloningSubActivity.activityType,
+    //                 chainage_start: null,
+    //                 chainage_end: null,
+    //                 covered_area: null,
+    //                 chainage_quantity: null,
+    //                 lengthType: "same",
+    //                 chainageLengths: [],
+    //                 isCustom: true,
+    //             },
+    //         ];
+    //     } else {
+    //         const start = Number(cloningSubActivity.chainage_start) || 0;
+    //         const count = Number(cloningSubActivity.chainage_quantity) || 0;
+
+    //         if (!count || start === undefined) {
+    //             dispatch(showSnackbar({ message: "Enter valid Chainage Details", type: "error" }));
+    //             return;
+    //         }
+
+    //         let currentStart = Number(start);
+
+    //         if (cloningSubActivity.lengthType === "same") {
+    //             const covered = Number(cloningSubActivity.covered_area) || 0;
+
+    //             if (!covered) {
+    //                 dispatch(
+    //                     showSnackbar({
+    //                         message: "Please enter Chainage Length",
+    //                         type: "error",
+    //                     })
+    //                 );
+    //                 return;
+    //             }
+
+    //             for (let i = 0; i < count; i++) {
+
+    //                 // same chainage logic as your working test(1), test(2)
+    //                 const chainageStart = Number(currentStart.toFixed(2));
+    //                 const currentEnd = Number(
+    //                     (chainageStart + covered).toFixed(2)
+    //                 );
+
+    //                 newSubs.push({
+    //                     // id: `custom-sub-${Date.now()}-${i}`,
+    //                     sorting_var: null,
+
+    //                     // same naming pattern
+    //                     subactivity_name:
+    //                         cloningSubActivity.subactivity_name +
+    //                         ` (${i + 1})`,
+
+    //                     unit: cloningSubActivity.unit,
+
+    //                     // updated chainage logic
+    //                     chainage_start: chainageStart,
+    //                     chainage_end: currentEnd,
+
+    //                     covered_area: covered,
+    //                     chainage_quantity: count,
+
+    //                     activityType: cloningSubActivity.activityType,
+    //                     lengthType: "same",
+    //                     chainageLengths: [],
+    //                     lengthIndex: i,
+    //                     isCustom: true,
+    //                     chainage_exist: cloningSubActivity.chainage_exist || true,
+
+    //                     // keep flags same as existing structure
+    //                     approval_exist:
+    //                         cloningSubActivity.approval_exist || true,
+
+    //                     // chainage_exist:
+    //                     //     cloningSubActivity.chainage_exist ?? true,
+
+    //                     length_exist:
+    //                         cloningSubActivity.length_exist || true,
+
+    //                     planned_quantity_exist:
+    //                         cloningSubActivity.planned_quantity_exist || true,
+
+    //                     submission_exist:
+    //                         cloningSubActivity.submission_exist || true,
+    //                 });
+
+    //                 // next start
+    //                 currentStart = currentEnd;
+    //             }
+    //         } else {
+
+    //             const lengths = cloningSubActivity.chainageLengths;
+
+    //             if (lengths.length !== count) {
+    //                 dispatch(
+    //                     showSnackbar({
+    //                         message: `Please enter lengths for all ${count} chainages`,
+    //                         type: "error",
+    //                     })
+    //                 );
+    //                 return;
+    //             }
+
+    //             for (let i = 0; i < count; i++) {
+
+    //                 const covered = Number(lengths[i]) || 0;
+
+    //                 if (!covered) {
+    //                     dispatch(
+    //                         showSnackbar({
+    //                             message: `Please enter valid length for chainage ${i + 1}`,
+    //                             type: "error",
+    //                         })
+    //                     );
+    //                     return;
+    //                 }
+
+    //                 // same chainage logic
+    //                 const chainageStart = Number(currentStart.toFixed(2));
+    //                 const currentEnd = Number(
+    //                     (chainageStart + covered).toFixed(2)
+    //                 );
+
+    //                 newSubs.push({
+    //                     // id: `custom-sub-${Date.now()}-${i}`,
+    //                     sorting_var: null,
+
+    //                     // same naming pattern
+    //                     subactivity_name:
+    //                         cloningSubActivity.subactivity_name +
+    //                         ` (${i + 1})`,
+
+    //                     unit: cloningSubActivity.unit,
+
+    //                     chainage_start: chainageStart,
+    //                     chainage_end: currentEnd,
+
+    //                     covered_area: covered,
+    //                     chainage_quantity: count,
+
+    //                     activityType: cloningSubActivity.activityType,
+    //                     chainageLengths: lengths,
+    //                     lengthType: "different",
+    //                     lengthIndex: i,
+    //                     isCustom: true,
+
+    //                     approval_exist:
+    //                         cloningSubActivity.approval_exist || true,
+
+    //                     chainage_exist:
+    //                         cloningSubActivity.chainage_exist ?? true,
+
+    //                     length_exist:
+    //                         cloningSubActivity.length_exist || true,
+
+    //                     planned_quantity_exist:
+    //                         cloningSubActivity.planned_quantity_exist || true,
+
+    //                     submission_exist:
+    //                         cloningSubActivity.submission_exist || true,
+    //                 });
+
+    //                 // next start
+    //                 currentStart = currentEnd;
+    //             }
+    //         }
+    //     }
+
+    //     const activityId = cloningSubActivity.activityId;
+    //     const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
+    //     const newSubIds = newSubs.map((s) => s.id);
+    //     const lastSubId = newSubIds[newSubIds.length - 1];
+
+    //     const existingSubs =
+    //         templateIndex !== -1
+    //             ? [...(templatesActivities[templateIndex]?.subActivities || [])]
+    //             : [...(customActivities.find((act) => act.id === activityId)?.subActivities || [])];
+
+    //     let insertIndex = existingSubs.length;
+    //     const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
+    //     for (let i = existingSubs.length - 1; i >= 0; i--) {
+    //         if (existingSubs[i]?.subactivity_name?.toLowerCase() === lowerNewName) {
+    //             insertIndex = i + 1;
+    //             break;
+    //         }
+    //     }
+
+    //     const updatedSubActivities = [...existingSubs];
+    //     updatedSubActivities.splice(insertIndex, 0, ...newSubs);
+
+    //     const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
+    //         ...sub,
+    //         sorting_var: idx + 1,
+    //     }));
+
+    //     if (templateIndex !== -1) {
+    //         setTemplateActivities((prev) =>
+    //             prev.map((act, index) => {
+    //                 if (index === templateIndex) {
+    //                     return { ...act, subActivities: reassignedSubActivities };
+    //                 }
+    //                 return act;
+    //             })
+    //         );
+    //     } else {
+    //         setCustomActivities((prev) =>
+    //             prev.map((act) => {
+    //                 if (act.id === activityId) {
+    //                     return { ...act, subActivities: reassignedSubActivities };
+    //                 }
+    //                 return act;
+    //             })
+    //         );
+    //     }
+
+    //     setSelectedSubActivities((prev) => ({
+    //         ...prev,
+    //         [activityId]: [...(prev[activityId] || []), ...newSubIds],
+    //     }));
+
+    //     // Recalculate weightage for this activity
+    //     const activityObj = getAllActivities().find(a => a.id === activityId);
+    //     if (activityObj) {
+    //         const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
+    //         let totalWeightage = 0;
+    //         updatedSelectedSubs.forEach(selectedSubId => {
+    //             const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+    //             if (subObj) {
+    //                 const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+    //                 const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+    //                 totalWeightage += submissionPayment + approvalPayment;
+    //             }
+    //         });
+    //         setActivityWeightages(prev => ({
+    //             ...prev,
+    //             [activityId]: totalWeightage
+    //         }));
+    //     }
+
+    //     setTimeout(() => {
+    //         const lastSubElement = document.getElementById(`sub-${lastSubId}`);
+    //         if (lastSubElement) {
+    //             lastSubElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    //         }
+    //     }, 100);
+
+    //     setShowCloneSubActivityModal(false);
+    //     setCloningSubActivity(null);
+    //     dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
+    // };
+
+   const handleCloneSubActivitySubmit = async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
         if (!cloningSubActivity) return;
 
+        // 1. Extract the missing source data from states to clone
+        const sourceId = cloningSubActivity.sourceSubId;
+        const activityId = cloningSubActivity.activityId;
+        
+        const sourceDesc = subActivityPlannedQtys[`${sourceId}_description`] || "";
+        const sourceStartDate = subActivityPlannedQtys[`${sourceId}_start_date`] || "";
+        const sourceEndDate = subActivityPlannedQtys[`${sourceId}_end_date`] || "";
+        const sourceQty = subActivityPlannedQtys[`${sourceId}_quantity`] || "";
+        const sourceStages = workStages[sourceId] || [];
+
+        // Prepare batch updates for the states
+        const qtysToUpdate = {};
+        const unitsToUpdate = {};
+        const stagesToUpdate = {};
+
         let newSubs = [];
 
         if (cloningSubActivity.activityType === "single") {
+            // Generate a guaranteed unique ID
+            const newSubId = `custom-sub-clone-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+            
             newSubs = [
                 {
-                    // id: `custom-sub-${Date.now()}`,
+                    id: newSubId, 
                     sorting_var: null,
                     subactivity_name: cloningSubActivity.subactivity_name,
                     unit: cloningSubActivity.unit,
@@ -1095,8 +1521,27 @@ const UpdateProject = () => {
                     lengthType: "same",
                     chainageLengths: [],
                     isCustom: true,
+                    // Keep visibility flags matching existing structure
+                    approval_exist: cloningSubActivity.approval_exist || true,
+                    chainage_exist: cloningSubActivity.chainage_exist ?? true,
+                    length_exist: cloningSubActivity.length_exist || true,
+                    planned_quantity_exist: cloningSubActivity.planned_quantity_exist || true,
+                    submission_exist: cloningSubActivity.submission_exist || true,
                 },
             ];
+
+            // 2. Map all extracted source fields to the NEW ID
+            unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+            qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+            qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+            qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+            qtysToUpdate[`${newSubId}_quantity`] = sourceQty;
+
+            stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+                ...stg,
+                id: `temp_stg_${newSubId}_${Date.now()}_${sIdx}`
+            }));
+
         } else {
             const start = Number(cloningSubActivity.chainage_start) || 0;
             const count = Number(cloningSubActivity.chainage_quantity) || 0;
@@ -1112,148 +1557,115 @@ const UpdateProject = () => {
                 const covered = Number(cloningSubActivity.covered_area) || 0;
 
                 if (!covered) {
-                    dispatch(
-                        showSnackbar({
-                            message: "Please enter Chainage Length",
-                            type: "error",
-                        })
-                    );
+                    dispatch(showSnackbar({ message: "Please enter Chainage Length", type: "error" }));
                     return;
                 }
 
                 for (let i = 0; i < count; i++) {
-
-                    // same chainage logic as your working test(1), test(2)
                     const chainageStart = Number(currentStart.toFixed(2));
-                    const currentEnd = Number(
-                        (chainageStart + covered).toFixed(2)
-                    );
+                    const currentEnd = Number((chainageStart + covered).toFixed(2));
+                    
+                    const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
 
                     newSubs.push({
-                        // id: `custom-sub-${Date.now()}-${i}`,
+                        id: newSubId, 
                         sorting_var: null,
-
-                        // same naming pattern
-                        subactivity_name:
-                            cloningSubActivity.subactivity_name +
-                            ` (${i + 1})`,
-
+                        subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: cloningSubActivity.unit,
-
-                        // updated chainage logic
                         chainage_start: chainageStart,
                         chainage_end: currentEnd,
-
                         covered_area: covered,
                         chainage_quantity: count,
-
                         activityType: cloningSubActivity.activityType,
                         lengthType: "same",
                         chainageLengths: [],
                         lengthIndex: i,
                         isCustom: true,
                         chainage_exist: cloningSubActivity.chainage_exist || true,
-
-                        // keep flags same as existing structure
-                        approval_exist:
-                            cloningSubActivity.approval_exist || true,
-
-                        // chainage_exist:
-                        //     cloningSubActivity.chainage_exist ?? true,
-
-                        length_exist:
-                            cloningSubActivity.length_exist || true,
-
-                        planned_quantity_exist:
-                            cloningSubActivity.planned_quantity_exist || true,
-
-                        submission_exist:
-                            cloningSubActivity.submission_exist || true,
+                        approval_exist: cloningSubActivity.approval_exist || true,
+                        length_exist: cloningSubActivity.length_exist || true,
+                        planned_quantity_exist: cloningSubActivity.planned_quantity_exist || true,
+                        submission_exist: cloningSubActivity.submission_exist || true,
                     });
 
-                    // next start
+                    // Map all extracted source fields to the NEW ID
+                    unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+                    qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+                    qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+                    qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+                    qtysToUpdate[`${newSubId}_quantity`] = 1; // Always 1 for separated chains
+
+                    stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+                        ...stg,
+                        id: `temp_stg_${newSubId}_${Date.now()}_${sIdx}`
+                    }));
+
                     currentStart = currentEnd;
                 }
             } else {
-
                 const lengths = cloningSubActivity.chainageLengths;
 
                 if (lengths.length !== count) {
-                    dispatch(
-                        showSnackbar({
-                            message: `Please enter lengths for all ${count} chainages`,
-                            type: "error",
-                        })
-                    );
+                    dispatch(showSnackbar({ message: `Please enter lengths for all ${count} chainages`, type: "error" }));
                     return;
                 }
 
                 for (let i = 0; i < count; i++) {
-
                     const covered = Number(lengths[i]) || 0;
 
                     if (!covered) {
-                        dispatch(
-                            showSnackbar({
-                                message: `Please enter valid length for chainage ${i + 1}`,
-                                type: "error",
-                            })
-                        );
+                        dispatch(showSnackbar({ message: `Please enter valid length for chainage ${i + 1}`, type: "error" }));
                         return;
                     }
 
-                    // same chainage logic
                     const chainageStart = Number(currentStart.toFixed(2));
-                    const currentEnd = Number(
-                        (chainageStart + covered).toFixed(2)
-                    );
+                    const currentEnd = Number((chainageStart + covered).toFixed(2));
+                    
+                    const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
 
                     newSubs.push({
-                        // id: `custom-sub-${Date.now()}-${i}`,
+                        id: newSubId, 
                         sorting_var: null,
-
-                        // same naming pattern
-                        subactivity_name:
-                            cloningSubActivity.subactivity_name +
-                            ` (${i + 1})`,
-
+                        subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: cloningSubActivity.unit,
-
                         chainage_start: chainageStart,
                         chainage_end: currentEnd,
-
                         covered_area: covered,
                         chainage_quantity: count,
-
                         activityType: cloningSubActivity.activityType,
                         chainageLengths: lengths,
                         lengthType: "different",
                         lengthIndex: i,
                         isCustom: true,
-
-                        approval_exist:
-                            cloningSubActivity.approval_exist || true,
-
-                        chainage_exist:
-                            cloningSubActivity.chainage_exist ?? true,
-
-                        length_exist:
-                            cloningSubActivity.length_exist || true,
-
-                        planned_quantity_exist:
-                            cloningSubActivity.planned_quantity_exist || true,
-
-                        submission_exist:
-                            cloningSubActivity.submission_exist || true,
+                        approval_exist: cloningSubActivity.approval_exist || true,
+                        chainage_exist: cloningSubActivity.chainage_exist ?? true,
+                        length_exist: cloningSubActivity.length_exist || true,
+                        planned_quantity_exist: cloningSubActivity.planned_quantity_exist || true,
+                        submission_exist: cloningSubActivity.submission_exist || true,
                     });
 
-                    // next start
+                    // Map all extracted source fields to the NEW ID
+                    unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+                    qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+                    qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+                    qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+                    qtysToUpdate[`${newSubId}_quantity`] = 1; // Always 1 for separated chains
+
+                    stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+                        ...stg,
+                        id: `temp_stg_${newSubId}_${Date.now()}_${sIdx}`
+                    }));
+
                     currentStart = currentEnd;
                 }
             }
         }
 
-        const activityId = cloningSubActivity.activityId;
+        // 3. Apply the state updates immediately
+        setSubActivityPlannedQtys(prev => ({ ...prev, ...qtysToUpdate }));
+        setSubActivityUnits(prev => ({ ...prev, ...unitsToUpdate }));
+        setWorkStages(prev => ({ ...prev, ...stagesToUpdate }));
+
         const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
         const newSubIds = newSubs.map((s) => s.id);
         const lastSubId = newSubIds[newSubIds.length - 1];
@@ -1305,7 +1717,7 @@ const UpdateProject = () => {
             [activityId]: [...(prev[activityId] || []), ...newSubIds],
         }));
 
-        // Recalculate weightage for this activity
+        // Trigger manual weightage recalculation (optional fallback as your useEffect handles it)
         const activityObj = getAllActivities().find(a => a.id === activityId);
         if (activityObj) {
             const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
@@ -1335,6 +1747,7 @@ const UpdateProject = () => {
         setCloningSubActivity(null);
         dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
     };
+
 
     const handleEditSubActivity = (activityId, subId) => {
         const activityObj = getAllActivities().find((a) => a.id === activityId);
@@ -1805,25 +2218,54 @@ const UpdateProject = () => {
                     const chainageend = subActivityPlannedQtys[`${subId}_chainageend`] || 0;
                     const coveredarea = subActivityPlannedQtys[`${subId}_coveredarea`] || 0;
                     const description = subActivityPlannedQtys[`${subId}_description`] || "";
+                    const start_date = subActivityPlannedQtys[`${subId}_start_date`] || null;
+                    const end_date = subActivityPlannedQtys[`${subId}_end_date`] || null;
                     const isStatusBased = unit === "status";
                     const subSortingVar = subObj?.sorting_var || 0;
 
                     const isNewSub = subId?.toString().startsWith('custom-sub-');
 
-                    return {
-                        // id: subId,
-                        ...(isNewSub ? {} : { id: subId }),
-                        subactivity_name: subObj?.subactivity_name || String(subId),
-                        description: description,
-                        total_quantity: isStatusBased ? 1 : plannedQty,
-                        unit: isStatusBased ? "status" : unit,
-                        submission_payment: submissionpayment,
-                        approval_payment: approvalpayment,
-                        chainage_start: chainagestart,
-                        chainage_end: chainageend,
-                        covered_area: coveredarea || "0.00",
-                        sorting_var: subSortingVar,
-                    };
+                    // return {
+                    //     // id: subId,
+                    //     ...(isNewSub ? {} : { id: subId }),
+                    //     subactivity_name: subObj?.subactivity_name || String(subId),
+                    //     description: description,
+                    //     total_quantity: isStatusBased ? 1 : plannedQty,
+                    //     unit: isStatusBased ? "status" : unit,
+                    //     submission_payment: submissionpayment,
+                    //     approval_payment: approvalpayment,
+                    //     chainage_start: chainagestart,
+                    //     chainage_end: chainageend,
+                    //     covered_area: coveredarea || "0.00",
+                    //     sorting_var: subSortingVar,
+                    // };
+
+                    const stages = workStages[subId] || [];
+          const mappedStages = stages.map((stg, sIdx) => {
+            // Check if it's a newly added stage (has a temp_stg_ ID)
+            const isNewStage = String(stg.id).startsWith("temp_stg_");
+            return {
+              ...(isNewStage ? {} : { id: stg.id }), // Include the ID only if it already exists in the DB
+              name: stg.name || `Stage ${sIdx + 1}`,
+              payment_percent: parseFloat(stg.payment_percent) || 0,
+              sorting_var: sIdx + 1
+            };
+          });
+
+          return {
+            ...(isNewSub ? {} : { id: subId }),
+            subactivity_name: subObj?.subactivity_name || String(subId),
+            description: description,
+            start_date: start_date, // ADD THIS
+            end_date: end_date,     // ADD THIS
+            total_quantity: isStatusBased ? 1 : plannedQty,
+            unit: isStatusBased ? "status" : unit,
+            chainage_start: chainagestart,
+            chainage_end: chainageend,
+            covered_area: coveredarea || "0.00",
+            sorting_var: subSortingVar,
+            stages: mappedStages // Pass the dynamic stages array to the backend!
+          };
                 });
 
                 return {
@@ -4987,10 +5429,6 @@ const UpdateProject = () => {
                                         exit={{ opacity: 0, y: -20 }}
                                         className="space-y-3 md:space-y-4"
                                     >
-                                        <h4 className="font-semibold text-gray-700 text-sm md:text-base flex items-center gap-2">
-                                            <Calendar size={16} className="text-blue-600" />
-                                            Configure Activities
-                                        </h4>
                                         {selectedActivities
                                             .map((id) => getAllActivities().find((a) => a.id === id))
                                             .filter(Boolean)
@@ -5656,7 +6094,8 @@ const UpdateProject = () => {
                                                                                                                     </div>
                                                                                                                 </div>
                                                                                                             </div>}
-                                                                                                        {(sub?.submission_exist || showAllFields[key]) &&
+                                                                                                            
+                                                                                                        {/* {(sub?.submission_exist || showAllFields[key]) &&
                                                                                                             <div>
                                                                                                                 <label className="block text-[10px] text-gray-500 mb-1">
                                                                                                                     Submission Payment (%)
@@ -5700,9 +6139,9 @@ const UpdateProject = () => {
                                                                                                                         />
                                                                                                                     </span>
                                                                                                                 </div>
-                                                                                                            </div>}
+                                                                                                            </div>} */}
 
-                                                                                                        {(sub?.approval_exist || showAllFields[key]) &&
+                                                                                                        {/* {(sub?.approval_exist || showAllFields[key]) &&
                                                                                                             <div>
                                                                                                                 <label className="block text-[10px] text-gray-500 mb-1">
                                                                                                                     Approval Payment (%)
@@ -5746,7 +6185,100 @@ const UpdateProject = () => {
                                                                                                                         />
                                                                                                                     </span>
                                                                                                                 </div>
-                                                                                                            </div>}
+                                                                                                            </div>} */}
+                                                                                                            
+
+
+                                                                                                         {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+<div >
+  <div className="grid grid-cols-1 gap-1 col-span-3">
+    <label className="block text-[10px] text-gray-500 ">
+      Start Date
+    </label>
+    <input
+      type="date"
+      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
+      min={activityDates[activityId]?.startDate || form.loa_date}
+      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
+      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
+      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+  </div>
+  <div> 
+    <div className="grid grid-cols-1 gap-1 col-span-3">
+    <label className="block text-[10px] text-gray-500 ">
+      End Date
+    </label>
+    <input
+      type="date"
+      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
+      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+      max={activityDates[activityId]?.endDate || form.completion_date}
+      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
+      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+  </div>
+
+
+<div className="col-span-3 mt-4 pl-5">
+  <label className="block text-[10px] text-gray-500 mb-1 font-medium">
+    Work Stages & Payment (%) *
+  </label>
+  <div className="space-y-2">
+    {(workStages[sub.id] || []).map((stage, idx) => (
+      <div key={stage.id} className="flex items-center gap-2">
+        <input
+          type="text"
+          placeholder="Stage Name (e.g. Submission)"
+          value={stage.name}
+          onChange={(e) =>
+            handleStageUpdate(sub.id, stage.id, "name", e.target.value)
+          }
+          className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+        />
+        <div className="relative w-28">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="%"
+            value={stage.payment_percent}
+            onChange={(e) =>
+              handleStageUpdate(
+                sub.id,
+                stage.id,
+                "payment_percent",
+                e.target.value
+              )
+            }
+            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 pr-6"
+          />
+          <Percent
+            size={12}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => handleRemoveStage(sub.id, stage.id)}
+          className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+          title="Remove Stage"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    ))}
+    <button
+      type="button"
+      onClick={() => handleAddStage(sub.id)}
+      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-1"
+    >
+      <Plus size={10} /> Add Work Stage
+    </button>
+  </div>
+</div>
 
                                                                                                         <div className="col-span-3 mt-2">
                                                                                                             {(parseFloat(

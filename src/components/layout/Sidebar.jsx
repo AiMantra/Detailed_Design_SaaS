@@ -24,7 +24,8 @@ import {
   Clock,
   Settings2,
   ChartArea,
-  ChartBar
+  ChartBar,
+  CalendarDays
 } from "lucide-react";
 
 import logo from "../../assets/aimantra.png";
@@ -125,6 +126,15 @@ const Sidebar = () => {
       roles: ["USER"],
       badge: null,
       description: "View and manage your picked tasks",
+    },
+    // --- NEWLY ADDED: Task Planner ---
+    {
+      name: "Task Planner",
+      icon: CalendarDays,
+      path: "/task-planner",
+      roles: ["USER", "TL", "ADMIN", "ACCOUNT"], // Adjust roles as needed
+      badge: null,
+      description: "Plan and organize your tasks",
     },
 
     // Work Logs - Different for User vs Admin
@@ -232,7 +242,7 @@ const Sidebar = () => {
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support"
+      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support"
       // "settings"
     ].includes(item.name)
   );
