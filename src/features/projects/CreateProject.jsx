@@ -248,7 +248,7 @@ const CreateProject = () => {
     // 1. Intercept weightage changes to prevent exceeding 100%
     if (field === 'payment_percent') {
       const newPercent = parseFloat(value) || 0;
-      
+
       let otherStagesTotal = 0;
       let currentPercentOfThisStage = 0;
 
@@ -273,7 +273,7 @@ const CreateProject = () => {
       // (We allow decreases so users can fix errors if they clone an activity and go over 100%)
       if (projectedTotal > 100 && newPercent > currentPercentOfThisStage) {
         const maxAllowed = Math.max(0, 100 - otherStagesTotal);
-        
+
         // Show user a warning that they hit the limit
         dispatch(
           showSnackbar({
@@ -774,8 +774,8 @@ const CreateProject = () => {
   //   }
   // };
 
- 
-   const handleSubActivityPlannedQtyChange = (subId, field, value) => {
+
+  const handleSubActivityPlannedQtyChange = (subId, field, value) => {
     if (field === "description" || field === "start_date" || field === "end_date") {
       setSubActivityPlannedQtys((prev) => ({
         ...prev,
@@ -1349,46 +1349,46 @@ const CreateProject = () => {
     );
   };
 
-//   const handleCloneSubActivity = (activityId, subId) => {
-    
-//     const activityObj = getAllActivities().find((a) => a.id === activityId);
-//     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+  //   const handleCloneSubActivity = (activityId, subId) => {
 
-//     if (subObj) {
-// // Get latest typed values from state dictionary first!
-//       const latestStart = subActivityPlannedQtys[`${subId}_chainagestart`] ?? subObj.chainage_start ?? "";
-//       const latestCovered = subActivityPlannedQtys[`${subId}_coveredarea`] ?? subObj.covered_area ?? "";
-//       const latestQty = subActivityPlannedQtys[`${subId}_quantity`] ?? subObj.chainage_quantity ?? "";
+  //     const activityObj = getAllActivities().find((a) => a.id === activityId);
+  //     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
-//       // Prepare clone data with name and unit pre-filled and locked
-//       setCloningSubActivity({
-//         activityId,
-//         sourceSubId: subId,
-//         subactivity_name: subObj.subactivity_name,
-//         unit: subObj.unit,
-//         activityType: subObj.activityType || "single",
-//         chainage_start: latestStart,
-//         covered_area: subObj.covered_area || "",
-//         chainage_quantity: subObj.chainage_quantity || "",
-//         lengthType: subObj.lengthType || "same",
-//         chainageLengths: subObj.chainageLengths || [],
-//         isCustom: true,
+  //     if (subObj) {
+  // // Get latest typed values from state dictionary first!
+  //       const latestStart = subActivityPlannedQtys[`${subId}_chainagestart`] ?? subObj.chainage_start ?? "";
+  //       const latestCovered = subActivityPlannedQtys[`${subId}_coveredarea`] ?? subObj.covered_area ?? "";
+  //       const latestQty = subActivityPlannedQtys[`${subId}_quantity`] ?? subObj.chainage_quantity ?? "";
 
-//         approval_exist: subObj.approval_exist || '',
-//         length_exist: subObj.length_exist || '',
-//         submission_exist: subObj.submission_exist || ''
+  //       // Prepare clone data with name and unit pre-filled and locked
+  //       setCloningSubActivity({
+  //         activityId,
+  //         sourceSubId: subId,
+  //         subactivity_name: subObj.subactivity_name,
+  //         unit: subObj.unit,
+  //         activityType: subObj.activityType || "single",
+  //         chainage_start: latestStart,
+  //         covered_area: subObj.covered_area || "",
+  //         chainage_quantity: subObj.chainage_quantity || "",
+  //         lengthType: subObj.lengthType || "same",
+  //         chainageLengths: subObj.chainageLengths || [],
+  //         isCustom: true,
 
-
-//       });
-//       setShowCloneSubActivityModal(true);
-//     }
-//   };
+  //         approval_exist: subObj.approval_exist || '',
+  //         length_exist: subObj.length_exist || '',
+  //         submission_exist: subObj.submission_exist || ''
 
 
+  //       });
+  //       setShowCloneSubActivityModal(true);
+  //     }
+  //   };
 
 
 
-const handleCloneSubActivity = (activityId, subId) => {
+
+
+  const handleCloneSubActivity = (activityId, subId) => {
     const activityObj = getAllActivities().find((a) => a.id === activityId);
     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
@@ -1410,7 +1410,7 @@ const handleCloneSubActivity = (activityId, subId) => {
         lengthType: subObj.lengthType || "same",
         chainageLengths: subObj.chainageLengths || [],
         isCustom: true,
-        
+
         // 🚀 FIX: Add the missing visibility flags here!
         chainage_exist: subObj.chainage_exist ?? true,
         planned_quantity_exist: subObj.planned_quantity_exist ?? true,
@@ -1669,7 +1669,7 @@ const handleCloneSubActivity = (activityId, subId) => {
   // };
 
 
-const handleCloneSubActivitySubmit = async (e) => {
+  const handleCloneSubActivitySubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -1678,17 +1678,17 @@ const handleCloneSubActivitySubmit = async (e) => {
     // 1. Extract the missing source data from states to clone
     const sourceId = cloningSubActivity.sourceSubId;
     const activityId = cloningSubActivity.activityId;
-    
+
     // Pull text and date fields
     const sourceDesc = subActivityPlannedQtys[`${sourceId}_description`] || "";
     const sourceStartDate = subActivityPlannedQtys[`${sourceId}_start_date`] || "";
     const sourceEndDate = subActivityPlannedQtys[`${sourceId}_end_date`] || "";
     const sourceQty = subActivityPlannedQtys[`${sourceId}_quantity`] || "";
-    
+
     // Pull payment fields to duplicate
     const sourceSubPayment = subActivityPlannedQtys[`${sourceId}_subpayment`] || 0;
     const sourceAppPayment = subActivityPlannedQtys[`${sourceId}_approvalpayment`] || 0;
-    
+
     const sourceStages = workStages[sourceId] || [];
 
     // Prepare batch updates for the states
@@ -1714,7 +1714,7 @@ const handleCloneSubActivitySubmit = async (e) => {
           chainage_end: null,
           covered_area: null,
           chainage_exist: cloningSubActivity.chainage_exist,
-          planned_quantity_exist: cloningSubActivity.planned_quantity_exist,         
+          planned_quantity_exist: cloningSubActivity.planned_quantity_exist,
           chainage_quantity: null,
           lengthType: "same",
           chainageLengths: [],
@@ -1726,7 +1726,7 @@ const handleCloneSubActivitySubmit = async (e) => {
       ];
 
       unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
-      
+
       // Inject all mapped states for a Single Clone
       qtysToUpdate[`${newSubId}_description`] = sourceDesc;
       qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
@@ -1929,7 +1929,7 @@ const handleCloneSubActivitySubmit = async (e) => {
     setCloningSubActivity(null);
     dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
   };
-  
+
   const handleEditSubActivity = (activityId, subId) => {
     const activityObj = getAllActivities().find((a) => a.id === activityId);
     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
@@ -2468,12 +2468,12 @@ const handleCloneSubActivitySubmit = async (e) => {
     if (!form.project_code) missingFields.push("Project Code");
     if (!form.project_name) missingFields.push("Project Name");
     if (!form.short_name) missingFields.push("Short Name");
-    // if (!form.company) missingFields.push("Please select a Company");
-    // if (!form.sector) missingFields.push("Sector");
+    if (!form.company) missingFields.push("Please select a Company");
+    if (!form.sector) missingFields.push("Sector");
     if (!form.workorder_Amount) missingFields.push("Workorder Amount");
     if (!form.location) missingFields.push("Work location");
     if (!form.workorder_document) missingFields.push("Workorder Document");
-    // if (!form.clientbranch) missingFields.push("Please select a Client & branch");
+    if (!form.clientbranch) missingFields.push("Please select a Client & branch");
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
     if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
     if (!selectedActivities.length) missingFields.push("Please select at least one activity");
@@ -2593,7 +2593,7 @@ const handleCloneSubActivitySubmit = async (e) => {
             chainage_end: chainageend,
             covered_area: coveredarea || "0.00",
             sorting_var: subSortingVar,
-            work_stages: mappedStages 
+            work_stages: mappedStages
           };
         });
 
@@ -3100,6 +3100,59 @@ const handleCloneSubActivitySubmit = async (e) => {
   };
 
   const [showAllFields, setShowAllFields] = useState({});
+  // Add these refs at the top of your component
+
+
+  // Add these state variables
+
+
+  // Add click outside handler with clear logic
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Handle Company dropdown
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+        setShowCompanyDropdown(false);
+        // Check if current search value matches any company
+        const hasMatchingCompany = companies.some(c =>
+          c.name?.toLowerCase() === companySearch?.toLowerCase()
+        );
+        // If no match and no company selected, clear the search
+        if (!hasMatchingCompany && !form.company && companySearch) {
+          setCompanySearch("");
+        }
+      }
+
+      // Handle Sector dropdown
+      if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
+        setShowSectorDropdown(false);
+        // Check if current search value matches any sector
+        const hasMatchingSector = sectorsList.some(s =>
+          s.name?.toLowerCase() === sectorSearch?.toLowerCase()
+        );
+        // If no match and no sector selected, clear the search
+        if (!hasMatchingSector && !form.sector && sectorSearch) {
+          setSectorSearch("");
+        }
+      }
+
+      // Handle Client dropdown
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
+        setShowClientDropdown(false);
+        // Check if current search value matches any client
+        const hasMatchingClient = clients.some(c =>
+          c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
+          c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
+        );
+        // If no match and no client selected, clear the search
+        if (!hasMatchingClient && !form.client && clientSearch) {
+          setClientSearch("");
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -4707,280 +4760,100 @@ const handleCloneSubActivitySubmit = async (e) => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Company *</label>
-              <div className="relative" ref={companyDropdownRef}>
-                <Building2
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
+            <div className="relative" ref={companyDropdownRef}>
+              <Building2
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
 
-                <input
-                  type="text"
-                  value={companySearch || (form.company ? companies.find(c => c.name === form.company)?.name : "")}
-                  placeholder="Select Company"
-                  onFocus={() => {
-                    if (!form.company) {
-                      setShowCompanyDropdown(true);
-                    } else {
-                      setShowCompanyDropdown(false);
-                    }
-                  }}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      const matchedCompany = companies.find(
-                        (c) =>
-                          c.name?.trim().toLowerCase().includes(
-                            companySearch?.trim().toLowerCase()
-                          )
-                      );
+              <input
+                type="text"
+                value={companySearch || (form.company ? form.company : "")}
+                placeholder="Select Company"
+                onFocus={() => {
+                  setShowCompanyDropdown(true);
+                }}
+                onChange={(e) => {
+                  setCompanySearch(e.target.value);
+                  if (form.company) {
+                    setForm({
+                      ...form,
+                      company: ""
+                    });
+                  }
+                  setShowCompanyDropdown(true);
+                }}
+                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+              />
 
-                      if (!matchedCompany) {
-                        setCompanySearch("");
-                        setForm({
-                          ...form,
-                          company: "",
-                        });
-                        setShowCompanyDropdown(false);
-                      }
-
-
-                    }, 200);
-                  }}
-                  onChange={(e) => {
-                    setCompanySearch(e.target.value);
-                    if (!form.company) {
-                      setShowCompanyDropdown(true);
-                    } else {
-                      setForm({
-                        ...form,
-                        company: ''
-                      });
-                      setCompanySearch('');
-                      setShowCompanyDropdown(false);
-                    }
-                  }}
-                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                />
-
-                {/* Clear button */}
-                {form.company && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setForm({
-                        ...form,
-                        company: ''
-                      });
-                      setCompanySearch('');
-                      setShowCompanyDropdown(false);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                    title="Clear company"
-                  >
-                    <X size={20} />
-                  </button>
-                )}
-
-                {/* Plus button for adding new company */}
-                {/* <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAddCompanyModal(true);
-                  }}
-                  className="absolute right-12 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                >
-                  <Plus size={14} />
-                </button> */}
-
-                {/* Dropdown with sorting and highlighting */}
-                {showCompanyDropdown && (
-                  <div
-                    className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
-                  >
-                    {(() => {
-                      const filteredCompanies = companies.filter((c) =>
-                        c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                      );
-
-                      // Auto close dropdown if no match found
-                      if (companySearch && filteredCompanies.length === 0) {
-                        setTimeout(() => setShowCompanyDropdown(false), 0);
-
-                        return (
-                          <div className="px-3 py-2 text-gray-400 text-sm">
-                            No matching companies
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <>
-                          {companySearch && filteredCompanies.length > 0 && (
-                            <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                              Showing {filteredCompanies.length} of {companies.length} companies
-                            </div>
-                          )}
-
-                          {filteredCompanies.length > 0 ? (
-                            [...filteredCompanies]
-                              .sort((a, b) => {
-                                const aName = a.name || "";
-                                const bName = b.name || "";
-                                const searchTerm = companySearch?.toLowerCase() || "";
-
-                                const aMatches =
-                                  searchTerm &&
-                                  aName.toLowerCase().includes(searchTerm);
-
-                                const bMatches =
-                                  searchTerm &&
-                                  bName.toLowerCase().includes(searchTerm);
-
-                                // Matching items first
-                                if (aMatches && !bMatches) return -1;
-                                if (!aMatches && bMatches) return 1;
-
-                                return aName.localeCompare(bName);
-                              })
-                              .map((company) => {
-                                const companyName = company.name || "";
-                                const searchTerm =
-                                  companySearch?.toLowerCase() || "";
-
-                                const isMatching =
-                                  searchTerm &&
-                                  companyName
-                                    .toLowerCase()
-                                    .includes(searchTerm);
-
-                                // Highlight matching text
-                                const getHighlightedText = (
-                                  text,
-                                  highlight,
-                                ) => {
-                                  if (
-                                    !highlight ||
-                                    !text
-                                      .toLowerCase()
-                                      .includes(highlight.toLowerCase())
-                                  ) {
-                                    return text;
-                                  }
-
-                                  const regex = new RegExp(
-                                    `(${highlight.replace(
-                                      /[.*+?^${}()|[\]\\]/g,
-                                      "\\$&",
-                                    )})`,
-                                    "gi",
-                                  );
-
-                                  const parts = text.split(regex);
-
-                                  return parts.map((part, i) =>
-                                    regex.test(part) ? (
-                                      <span
-                                        key={i}
-                                        className="bg-yellow-200 font-semibold"
-                                      >
-                                        {part}
-                                      </span>
-                                    ) : (
-                                      part
-                                    ),
-                                  );
-                                };
-
-                                return (
-                                  <div
-                                    key={company.id}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-
-                                      setForm({
-                                        ...form,
-                                        company: company.name,
-                                      });
-
-                                      setCompanySearch(company.name);
-                                      setShowCompanyDropdown(false);
-                                    }}
-                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
-                                      ? "bg-yellow-50/50"
-                                      : ""
-                                      }`}
-                                  >
-                                    <div>
-                                      {getHighlightedText(
-                                        companyName,
-                                        companySearch,
-                                      )}
-
-                                      {company.gst_no && (
-                                        <span className="text-xs text-gray-400 ml-2">
-                                          (GST: {company.gst_no})
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {isMatching && (
-                                      <div className="text-xs text-green-600 mt-0.5">
-                                        Click to select
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                          ) : (
-                            <div className="px-3 py-2 text-gray-400 text-sm">
-                              No companies available
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Company *</label>
-              <div className="relative">
-                <Building2
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
-                <select
-                  name="company"
-                  value={form.company}
-                  onChange={handleChange}
-                  className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.name}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Clear button */}
+              {form.company && (
                 <button
                   type="button"
-                  onClick={() => setShowAddCompanyModal(true)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors z-10"
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      company: ''
+                    });
+                    setCompanySearch('');
+                    setShowCompanyDropdown(false);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                 >
-                  <Plus size={14} />
+                  <X size={20} />
                 </button>
-              </div>
-            </div> */}
+              )}
+
+              {/* Dropdown */}
+              {showCompanyDropdown && (
+                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {(() => {
+                    const filteredCompanies = companies.filter((c) =>
+                      !companySearch ||
+                      c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                    );
+
+                    if (filteredCompanies.length === 0) {
+                      return (
+                        <div className="px-3 py-2 text-gray-400 text-sm">
+                          No matching companies
+                        </div>
+                      );
+                    }
+
+                    return filteredCompanies.map((company) => {
+                      const companyName = company.name || "";
+
+                      return (
+                        <div
+                          key={company.id}
+                          onClick={() => {
+                            setForm({
+                              ...form,
+                              company: company.name,
+                            });
+                            setCompanySearch(company.name);
+                            setShowCompanyDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          <div>
+                            {companyName}
+                            {company.gst_no && (
+                              <span className="text-xs text-gray-400 ml-2">
+                                (GST: {company.gst_no})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+            </div>
+
+
             {form.company && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-500">Company GST</label>
@@ -5008,577 +4881,198 @@ const handleCloneSubActivitySubmit = async (e) => {
             )}
 
             {/* Sector Field */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Sector *</label>
-              <div className="relative" ref={sectorDropdownRef}>
-                <Factory
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
+            <div className="relative" ref={sectorDropdownRef}>
+              <Factory
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
 
-                <input
-                  type="text"
-                  value={sectorSearch || (form.sector ? form.sector : "")}
-                  placeholder="Select Sector"
-                  onFocus={() => {
-                    if (!form.sector) {
-                      setShowSectorDropdown(true)
-                    } else {
-                      setShowSectorDropdown(false)
-                    }
+              <input
+                type="text"
+                value={sectorSearch || (form.sector ? form.sector : "")}
+                placeholder="Select Sector"
+                onFocus={() => {
+                  setShowSectorDropdown(true);
+                }}
+                onChange={(e) => {
+                  setSectorSearch(e.target.value);
+                  if (form.sector) {
+                    setForm({
+                      ...form,
+                      sector: ""
+                    });
+                  }
+                  setShowSectorDropdown(true);
+                }}
+                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+              />
 
-                  }}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      const matchedSector = sectorsList.find(
-                        (s) =>
-                          s.name?.trim().toLowerCase().includes(
-                            sectorSearch?.trim().toLowerCase()
-                          )
-                      );
-
-                      if (!matchedSector) {
-                        setSectorSearch("");
-                        setForm({
-                          ...form,
-                          sector: "",
-                        });
-                      }
-
-                      setShowSectorDropdown(false);
-                    }, 200);
-                  }}
-
-                  onChange={(e) => {
-                    if (!form.sector) {
-                      setSectorSearch(e.target.value);
-                      setShowSectorDropdown(true);
-                    } else {
-                      setForm({
-                        ...form,
-                        sector: ''
-                      });
-                      setSectorSearch('');
-                      setShowSectorDropdown(false);
-                    }
-
-                  }}
-                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                />
-                {/* <button
-                    type="button"
-                    onClick={() => setShowAdvancedSectorModal(true)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button> */}
-                {/* <AddSectorButton
-                  onSuccess={handleRefresh}
-                  loadData={loadSectorsData}
-                  sectors={sectors}
-                  BasicButtonView={true} /> */}
-
-                {/* Clear button */}
-                {form.sector && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setForm({
-                        ...form,
-                        sector: ''
-                      });
-                      setSectorSearch('');
-                      setShowSectorDropdown(false);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                    title="Clear sector"
-                  >
-                    <X size={20} />
-                  </button>
-                )}
-
-                {/* Plus button for adding new sector */}
-                {/* <button
+              {/* Clear button */}
+              {form.sector && (
+                <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAddSectorModal(true);
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      sector: ''
+                    });
+                    setSectorSearch('');
+                    setShowSectorDropdown(false);
                   }}
-                  className="absolute right-12 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                 >
-                  <Plus size={14} />
-                </button> */}
+                  <X size={20} />
+                </button>
+              )}
 
-                {/* Dropdown with sorting and highlighting */}
-                {showSectorDropdown && (
-                  <div
-                    className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
-                  >
-                    {(() => {
-                      const filteredSectors = sectorsList.filter((s) =>
-                        s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+              {/* Dropdown */}
+              {showSectorDropdown && (
+                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {(() => {
+                    const filteredSectors = sectorsList.filter((s) =>
+                      !sectorSearch ||
+                      s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                    );
+
+                    if (filteredSectors.length === 0) {
+                      return (
+                        <div className="px-3 py-2 text-gray-400 text-sm">
+                          No matching sectors
+                        </div>
                       );
+                    }
 
-                      // Auto close dropdown if no match found
-                      if (sectorSearch && filteredSectors.length === 0) {
-                        setTimeout(() => setShowSectorDropdown(false), 0);
-
-                        return (
-                          <div className="px-3 py-2 text-gray-400 text-sm">
-                            No matching sectors
-                          </div>
-                        );
-                      }
+                    return filteredSectors.map((sector) => {
+                      const sectorName = sector.name || "";
+                      const sectorUnit = sector.unit || "";
 
                       return (
-                        <>
-                          {sectorSearch && filteredSectors.length > 0 && (
-                            <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                              Showing {filteredSectors.length} of {sectorsList.length} sectors
-                            </div>
-                          )}
-
-                          {filteredSectors.length > 0 ? (
-                            [...filteredSectors]
-                              .sort((a, b) => {
-                                const aName = a.name || "";
-                                const bName = b.name || "";
-                                const searchTerm = sectorSearch?.toLowerCase() || "";
-
-                                const aMatches =
-                                  searchTerm &&
-                                  aName.toLowerCase().includes(searchTerm);
-
-                                const bMatches =
-                                  searchTerm &&
-                                  bName.toLowerCase().includes(searchTerm);
-
-                                // Matching items first
-                                if (aMatches && !bMatches) return -1;
-                                if (!aMatches && bMatches) return 1;
-
-                                return aName.localeCompare(bName);
-                              })
-                              .map((sector) => {
-                                const sectorName = sector.name || "";
-                                const sectorUnit = sector.unit || "";
-                                const searchTerm =
-                                  sectorSearch?.toLowerCase() || "";
-
-                                const isMatching =
-                                  searchTerm &&
-                                  sectorName
-                                    .toLowerCase()
-                                    .includes(searchTerm);
-
-                                // Highlight matching text
-                                const getHighlightedText = (
-                                  text,
-                                  highlight,
-                                ) => {
-                                  if (
-                                    !highlight ||
-                                    !text
-                                      .toLowerCase()
-                                      .includes(highlight.toLowerCase())
-                                  ) {
-                                    return text;
-                                  }
-
-                                  const regex = new RegExp(
-                                    `(${highlight.replace(
-                                      /[.*+?^${}()|[\]\\]/g,
-                                      "\\$&",
-                                    )})`,
-                                    "gi",
-                                  );
-
-                                  const parts = text.split(regex);
-
-                                  return parts.map((part, i) =>
-                                    regex.test(part) ? (
-                                      <span
-                                        key={i}
-                                        className="bg-yellow-200 font-semibold"
-                                      >
-                                        {part}
-                                      </span>
-                                    ) : (
-                                      part
-                                    ),
-                                  );
-                                };
-
-                                return (
-                                  <div
-                                    key={sector.id || sector.name}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-
-                                      setForm({
-                                        ...form,
-                                        sector: sector.name,
-                                      });
-
-                                      setSectorSearch(sector.name);
-                                      setShowSectorDropdown(false);
-                                    }}
-                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
-                                      ? "bg-yellow-50/50"
-                                      : ""
-                                      }`}
-                                  >
-                                    <div>
-                                      {getHighlightedText(
-                                        sectorName,
-                                        sectorSearch,
-                                      )}
-
-                                      {sectorUnit && (
-                                        <span className="text-xs text-gray-400 ml-2">
-                                          (Unit:{" "}
-                                          {SECTOR_UNIT_MAPPING[
-                                            sectorUnit
-                                          ] || sectorUnit}
-                                          )
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {isMatching && (
-                                      <div className="text-xs text-green-600 mt-0.5">
-                                        Click to select
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                          ) : (
-                            <div className="px-3 py-2 text-gray-400 text-sm">
-                              No sectors available
-                            </div>
-                          )}
-                        </>
+                        <div
+                          key={sector.id || sector.name}
+                          onClick={() => {
+                            setForm({
+                              ...form,
+                              sector: sector.name,
+                            });
+                            setSectorSearch(sector.name);
+                            setShowSectorDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          <div>
+                            {sectorName}
+                            {sectorUnit && (
+                              <span className="text-xs text-gray-400 ml-2">
+                                (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       );
-                    })()}
-                  </div>
-                )}
-              </div>
+                    });
+                  })()}
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between">
-                <label className="text-xs text-gray-500">Client *</label>
-                {/* <label className="text-xs text-gray-500">{showClientCode ? `Code: ${showClientCode}` : ''}</label> */}
-              </div>
-              <div
-                className="relative"
-                ref={clientDropdownRef}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Handshake
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
+            <div className="relative" ref={clientDropdownRef}>
+              <Handshake
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
 
-                <input
-                  type="text"
-                  value={clientSearch}
-                  placeholder="Select Client"
-                  onFocus={() => setShowClientDropdown(true)}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    setForm(prev => ({
-                      ...prev,
+              <input
+                type="text"
+                value={clientSearch}
+                placeholder="Select Client"
+                onFocus={() => {
+                  setShowClientDropdown(true);
+                }}
+                onChange={(e) => {
+                  setClientSearch(e.target.value);
+                  if (form.client) {
+                    setForm({
+                      ...form,
+                      client: "",
+                      clientbranch: ""
+                    });
+                  }
+                  setShowClientDropdown(true);
+                }}
+                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+              />
+
+              {/* Clear button */}
+              {form.client && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      client: '',
                       clientbranch: ''
-                    }));
-                    setShowClientDropdown(true);
+                    });
+                    setClientSearch('');
+                    setClientCode('');
+                    setShowClientDropdown(false);
                   }}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      const matchedClient = clients.find(
-                        (c) =>
-                          c.client_name?.trim().toLowerCase().includes(
-                            clientSearch?.trim().toLowerCase()
-                          ) ||
-                          c.client_code?.trim().toLowerCase().includes(
-                            clientSearch?.trim().toLowerCase()
-                          )
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              )}
+
+              {/* Dropdown */}
+              {showClientDropdown && (
+                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {(() => {
+                    const filteredClients = clients.filter((c) =>
+                      !clientSearch ||
+                      c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                      c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
+                    );
+
+                    if (filteredClients.length === 0) {
+                      return (
+                        <div className="px-3 py-2 text-gray-400 text-sm">
+                          No matching clients
+                        </div>
                       );
+                    }
 
-                      if (!matchedClient) {
-                        setClientSearch("");
-                        setClientCode("");
-
-                        setForm({
-                          ...form,
-                          client: "",
-                          clientbranch: "",
-                        });
-                      }
-
-                      setShowClientDropdown(false);
-                    }, 200);
-                  }}
-                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                />
-
-                {/* <button
-                      type="button"
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          setShowAddClientModal(true);
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                  >
-                      <Plus size={14} />
-                  </button> */}
-
-
-                {/* Clear button */}
-                {form.client && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setForm({
-                        ...form,
-                        client: '',
-                        clientbranch: ''
-                      });
-                      setClientSearch('');
-                      setClientCode('');
-                      setShowClientDropdown(true);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                    title="Clear client"
-                  >
-                    <X size={20} />
-                  </button>
-                )}
-
-                {/* Dropdown with sorting and highlighting */}
-                {showClientDropdown && (
-                  <div
-                    className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
-                  >
-                    {(() => {
-                      const filteredClients = clients.filter(
-                        (c) =>
-                          c.client_name
-                            ?.toLowerCase()
-                            .includes(clientSearch.toLowerCase()) ||
-                          c.client_code
-                            ?.toLowerCase()
-                            .includes(clientSearch.toLowerCase()),
-                      );
-
-                      // Auto close dropdown if no match found
-                      if (clientSearch && filteredClients.length === 0) {
-                        setTimeout(() => setShowClientDropdown(false), 0);
-
-                        return (
-                          <div className="px-3 py-2 text-gray-400 text-sm">
-                            No matching clients
-                          </div>
-                        );
-                      }
+                    return filteredClients.map((client) => {
+                      const clientName = client.client_name || "";
+                      const clientCode = client.client_code || "";
 
                       return (
-                        <>
-                          {clientSearch && filteredClients.length > 0 && (
-                            <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                              Showing {filteredClients.length} of{" "}
-                              {clients.length} clients
-                            </div>
-                          )}
-
-                          {filteredClients.length > 0 ? (
-                            [...filteredClients]
-                              .sort((a, b) => {
-                                const searchTerm =
-                                  clientSearch?.toLowerCase() || "";
-
-                                const aName = a.client_name || "";
-                                const aCode = a.client_code || "";
-                                const bName = b.client_name || "";
-                                const bCode = b.client_code || "";
-
-                                // Match checks
-                                const aNameMatches =
-                                  searchTerm &&
-                                  aName.toLowerCase().includes(searchTerm);
-
-                                const aCodeMatches =
-                                  searchTerm &&
-                                  aCode.toLowerCase().includes(searchTerm);
-
-                                const bNameMatches =
-                                  searchTerm &&
-                                  bName.toLowerCase().includes(searchTerm);
-
-                                const bCodeMatches =
-                                  searchTerm &&
-                                  bCode.toLowerCase().includes(searchTerm);
-
-                                const aMatches =
-                                  aNameMatches || aCodeMatches;
-
-                                const bMatches =
-                                  bNameMatches || bCodeMatches;
-
-                                // Matching first
-                                if (aMatches && !bMatches) return -1;
-                                if (!aMatches && bMatches) return 1;
-
-                                // Code match priority
-                                if (aMatches && bMatches) {
-                                  if (aCodeMatches && !bCodeMatches)
-                                    return -1;
-
-                                  if (!aCodeMatches && bCodeMatches)
-                                    return 1;
-                                }
-
-                                return aName.localeCompare(bName);
-                              })
-                              .map((client) => {
-                                const clientName =
-                                  client.client_name || "";
-
-                                const clientCode =
-                                  client.client_code || "";
-
-                                const searchTerm =
-                                  clientSearch?.toLowerCase() || "";
-
-                                const isMatching =
-                                  searchTerm &&
-                                  (clientName
-                                    .toLowerCase()
-                                    .includes(searchTerm) ||
-                                    clientCode
-                                      .toLowerCase()
-                                      .includes(searchTerm));
-
-                                // Highlight matching text
-                                const getHighlightedText = (
-                                  text,
-                                  highlight,
-                                ) => {
-                                  if (
-                                    !highlight ||
-                                    !text
-                                      .toLowerCase()
-                                      .includes(highlight.toLowerCase())
-                                  ) {
-                                    return text;
-                                  }
-
-                                  const regex = new RegExp(
-                                    `(${highlight.replace(
-                                      /[.*+?^${}()|[\]\\]/g,
-                                      "\\$&",
-                                    )})`,
-                                    "gi",
-                                  );
-
-                                  const parts = text.split(regex);
-
-                                  return parts.map((part, i) =>
-                                    regex.test(part) ? (
-                                      <span
-                                        key={i}
-                                        className="bg-yellow-200 font-semibold"
-                                      >
-                                        {part}
-                                      </span>
-                                    ) : (
-                                      part
-                                    ),
-                                  );
-                                };
-
-                                return (
-                                  <div
-                                    key={client.id}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-
-                                      setForm({
-                                        ...form,
-                                        client: client.id,
-                                        clientbranch: "",
-                                      });
-
-                                      setClientSearch(
-                                        `${clientName} - ${clientCode}`,
-                                      );
-
-                                      setClientCode(clientCode);
-
-                                      setShowClientDropdown(false);
-                                    }}
-                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
-                                      ? "bg-yellow-50/50"
-                                      : ""
-                                      }`}
-                                  >
-                                    <div>
-                                      {getHighlightedText(
-                                        `${clientName} - ${clientCode}`,
-                                        clientSearch,
-                                      )}
-                                    </div>
-
-                                    {isMatching && (
-                                      <div className="text-xs text-green-600 mt-0.5">
-                                        Press Enter to select
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                          ) : (
-                            <div className="px-3 py-2 text-gray-400 text-sm">
-                              No Clients Available
-                            </div>
-                          )}
-                        </>
+                        <div
+                          key={client.id}
+                          onClick={() => {
+                            setForm({
+                              ...form,
+                              client: client.id,
+                              clientbranch: "",
+                            });
+                            setClientSearch(`${clientName} - ${clientCode}`);
+                            setClientCode(clientCode);
+                            setShowClientDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          <div>
+                            {clientName} - {clientCode}
+                          </div>
+                        </div>
                       );
-                    })()}
-                  </div>
-                )}
-              </div>
+                    });
+                  })()}
+                </div>
+              )}
             </div>
 
             {form.client && (
               <>
-                {/* <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Client PAN</label>
-                  <div className="relative">
-                    <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <input
-                      type="text"
-                      name="location"
-                      disabled
-                      value={(clients.filter((data) => data?.id == form.client)[0]?.pan_no)}
-                      onChange={handleChange}
-                      className="w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div> */}
+
 
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-500">Branch *</label>
@@ -6833,15 +6327,15 @@ const handleCloneSubActivitySubmit = async (e) => {
                                                         /> */}
 
                                                         <input
-  type="number"
-  min="0"
-  step="0.01"
-  // 🚀 FIX: Bind to the state dictionary, falling back to the object
-  value={subActivityPlannedQtys[`${sub.id}_chainagestart`] ?? sub.chainage_start ?? ""}
-  onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
-  className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-  placeholder="001"
-/>
+                                                          type="number"
+                                                          min="0"
+                                                          step="0.01"
+                                                          // 🚀 FIX: Bind to the state dictionary, falling back to the object
+                                                          value={subActivityPlannedQtys[`${sub.id}_chainagestart`] ?? sub.chainage_start ?? ""}
+                                                          onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
+                                                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                          placeholder="001"
+                                                        />
                                                       </div>
                                                     </div>
                                                   </div>
@@ -7053,8 +6547,8 @@ const handleCloneSubActivitySubmit = async (e) => {
                                                       </span>
                                                     </div>
                                                   </div>} */}
-                                                   
-                                                 {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-2 col-span-3 mt-2">
+
+                                                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-2 col-span-3 mt-2">
   <div>
     <label className="block text-[10px] text-gray-500 mb-1">
       Start Date
@@ -7082,36 +6576,36 @@ const handleCloneSubActivitySubmit = async (e) => {
     />
   </div>
 </div> */}
-{/* Sub-Activity Dates aligned with Quantities and Chainages */}
-<div >
-  <div className="grid grid-cols-1 gap-1 col-span-3">
-    <label className="block text-[10px] text-gray-500 ">
-      Start Date
-    </label>
-    <input
-      type="date"
-      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
-      min={activityDates[activityId]?.startDate || form.loa_date}
-      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
-      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-  </div>
-  <div> 
-    <div className="grid grid-cols-1 gap-1 col-span-3">
-    <label className="block text-[10px] text-gray-500 ">
-      End Date
-    </label>
-    <input
-      type="date"
-      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
-      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
-      max={activityDates[activityId]?.endDate || form.completion_date}
-      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-    />
-  </div> </div>
+                                                {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+                                                <div >
+                                                  <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                    <label className="block text-[10px] text-gray-500 ">
+                                                      Start Date
+                                                    </label>
+                                                    <input
+                                                      type="date"
+                                                      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
+                                                      min={activityDates[activityId]?.startDate || form.loa_date}
+                                                      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
+                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
+                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                  </div>
+                                                </div>
+                                                <div>
+                                                  <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                    <label className="block text-[10px] text-gray-500 ">
+                                                      End Date
+                                                    </label>
+                                                    <input
+                                                      type="date"
+                                                      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
+                                                      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+                                                      max={activityDates[activityId]?.endDate || form.completion_date}
+                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
+                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                  </div> </div>
 
 
 
@@ -7342,7 +6836,7 @@ const handleCloneSubActivitySubmit = async (e) => {
                                                   rows={2}
                                                 />
                                               </div>
-                                              
+
                                             </div>
                                           )}
                                         </div>,

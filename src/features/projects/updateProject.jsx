@@ -196,106 +196,106 @@ const UpdateProject = () => {
 
     const [workStages, setWorkStages] = useState({});
 
-  // --- Dynamic Work Stages Handlers ---
-  const handleAddStage = (subId) => {
-    setWorkStages((prev) => {
-      const existing = prev[subId] || [];
-      return {
-        ...prev,
-        [subId]: [
-          ...existing,
-          { id: `temp_stg_${subId}_${Date.now()}`, name: "", payment_percent: "" },
-        ],
-      };
-    });
-  };
-
-  const handleRemoveStage = (subId, stageId) => {
-    setWorkStages((prev) => {
-      const existing = prev[subId] || [];
-      return {
-        ...prev,
-        [subId]: existing.filter((s) => s.id !== stageId),
-      };
-    });
-  };
-
-//   const handleStageUpdate = (subId, stageId, field, value) => {
-//     setWorkStages((prev) => {
-//       const existing = prev[subId] || [];
-//       return {
-//         ...prev,
-//         [subId]: existing.map((s) =>
-//           s.id === stageId ? { ...s, [field]: value } : s
-//         ),
-//       };
-//     });
-//   };
-
-
-const handleStageUpdate = (subId, stageId, field, value) => {
-    // 1. Intercept weightage changes to prevent exceeding 100%
-    if (field === 'payment_percent') {
-      const newPercent = parseFloat(value) || 0;
-      
-      let otherStagesTotal = 0;
-      let currentPercentOfThisStage = 0;
-
-      // Sum up percentages of all currently selected activities/sub-activities
-      selectedActivities.forEach(actId => {
-        const selectedSubs = selectedSubActivities[actId] || [];
-        selectedSubs.forEach(sId => {
-          const stages = workStages[sId] || [];
-          stages.forEach(stg => {
-            if (sId === subId && stg.id === stageId) {
-              currentPercentOfThisStage = parseFloat(stg.payment_percent) || 0;
-            } else {
-              otherStagesTotal += parseFloat(stg.payment_percent) || 0;
-            }
-          });
-        });
-      });
-
-      const projectedTotal = otherStagesTotal + newPercent;
-
-      // 2. Block if it exceeds 100% AND the user is trying to increase the value
-      // (We allow decreases so users can fix errors if they clone an activity and go over 100%)
-      if (projectedTotal > 100 && newPercent > currentPercentOfThisStage) {
-        const maxAllowed = Math.max(0, 100 - otherStagesTotal);
-        
-        // Show user a warning that they hit the limit
-        dispatch(
-          showSnackbar({
-            message: `Total project weightage cannot exceed 100%. Capped at ${maxAllowed.toFixed(2)}%.`,
-            type: "warning",
-          })
-        );
-
-        // Auto-cap the value to whatever percentage is left
+    // --- Dynamic Work Stages Handlers ---
+    const handleAddStage = (subId) => {
         setWorkStages((prev) => {
-          const existing = prev[subId] || [];
-          return {
-            ...prev,
-            [subId]: existing.map((s) =>
-              s.id === stageId ? { ...s, [field]: maxAllowed > 0 ? maxAllowed : "" } : s
-            ),
-          };
+            const existing = prev[subId] || [];
+            return {
+                ...prev,
+                [subId]: [
+                    ...existing,
+                    { id: `temp_stg_${subId}_${Date.now()}`, name: "", payment_percent: "" },
+                ],
+            };
         });
-        return; // Stop the standard update
-      }
-    }
+    };
 
-    // 3. Standard update if it's within the 100% limit (or if updating the stage name)
-    setWorkStages((prev) => {
-      const existing = prev[subId] || [];
-      return {
-        ...prev,
-        [subId]: existing.map((s) =>
-          s.id === stageId ? { ...s, [field]: value } : s
-        ),
-      };
-    });
-  };
+    const handleRemoveStage = (subId, stageId) => {
+        setWorkStages((prev) => {
+            const existing = prev[subId] || [];
+            return {
+                ...prev,
+                [subId]: existing.filter((s) => s.id !== stageId),
+            };
+        });
+    };
+
+    //   const handleStageUpdate = (subId, stageId, field, value) => {
+    //     setWorkStages((prev) => {
+    //       const existing = prev[subId] || [];
+    //       return {
+    //         ...prev,
+    //         [subId]: existing.map((s) =>
+    //           s.id === stageId ? { ...s, [field]: value } : s
+    //         ),
+    //       };
+    //     });
+    //   };
+
+
+    const handleStageUpdate = (subId, stageId, field, value) => {
+        // 1. Intercept weightage changes to prevent exceeding 100%
+        if (field === 'payment_percent') {
+            const newPercent = parseFloat(value) || 0;
+
+            let otherStagesTotal = 0;
+            let currentPercentOfThisStage = 0;
+
+            // Sum up percentages of all currently selected activities/sub-activities
+            selectedActivities.forEach(actId => {
+                const selectedSubs = selectedSubActivities[actId] || [];
+                selectedSubs.forEach(sId => {
+                    const stages = workStages[sId] || [];
+                    stages.forEach(stg => {
+                        if (sId === subId && stg.id === stageId) {
+                            currentPercentOfThisStage = parseFloat(stg.payment_percent) || 0;
+                        } else {
+                            otherStagesTotal += parseFloat(stg.payment_percent) || 0;
+                        }
+                    });
+                });
+            });
+
+            const projectedTotal = otherStagesTotal + newPercent;
+
+            // 2. Block if it exceeds 100% AND the user is trying to increase the value
+            // (We allow decreases so users can fix errors if they clone an activity and go over 100%)
+            if (projectedTotal > 100 && newPercent > currentPercentOfThisStage) {
+                const maxAllowed = Math.max(0, 100 - otherStagesTotal);
+
+                // Show user a warning that they hit the limit
+                dispatch(
+                    showSnackbar({
+                        message: `Total project weightage cannot exceed 100%. Capped at ${maxAllowed.toFixed(2)}%.`,
+                        type: "warning",
+                    })
+                );
+
+                // Auto-cap the value to whatever percentage is left
+                setWorkStages((prev) => {
+                    const existing = prev[subId] || [];
+                    return {
+                        ...prev,
+                        [subId]: existing.map((s) =>
+                            s.id === stageId ? { ...s, [field]: maxAllowed > 0 ? maxAllowed : "" } : s
+                        ),
+                    };
+                });
+                return; // Stop the standard update
+            }
+        }
+
+        // 3. Standard update if it's within the 100% limit (or if updating the stage name)
+        setWorkStages((prev) => {
+            const existing = prev[subId] || [];
+            return {
+                ...prev,
+                [subId]: existing.map((s) =>
+                    s.id === stageId ? { ...s, [field]: value } : s
+                ),
+            };
+        });
+    };
 
     const addBranch = () => {
         setBranches([
@@ -465,25 +465,25 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                     subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
                     subQtysMap[`${subId}_description`] = sub.description || "";
                     // Initialize dynamic stages from backend data
-          if (sub.stages && sub.stages.length > 0) {
-            setWorkStages(prev => ({
-              ...prev,
-              [subId]: sub.stages.map((stg, i) => ({
-                id: stg.id, // Preserve existing DB ID for updating
-                name: stg.name || stg.stage_type || `Stage ${i + 1}`,
-                payment_percent: stg.payment_percent || 0
-              }))
-            }));
-          } else {
-            // Fallback for older data that doesn't have the stages array yet
-            setWorkStages(prev => ({
-              ...prev,
-              [subId]: [
-                { id: `temp_stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
-                { id: `temp_stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
-              ]
-            }));
-          }
+                    if (sub.stages && sub.stages.length > 0) {
+                        setWorkStages(prev => ({
+                            ...prev,
+                            [subId]: sub.stages.map((stg, i) => ({
+                                id: stg.id, // Preserve existing DB ID for updating
+                                name: stg.name || stg.stage_type || `Stage ${i + 1}`,
+                                payment_percent: stg.payment_percent || 0
+                            }))
+                        }));
+                    } else {
+                        // Fallback for older data that doesn't have the stages array yet
+                        setWorkStages(prev => ({
+                            ...prev,
+                            [subId]: [
+                                { id: `temp_stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+                                { id: `temp_stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+                            ]
+                        }));
+                    }
                 });
             }
             subSelectionsMap[activityId] = selectedSubs;
@@ -677,22 +677,22 @@ const handleStageUpdate = (subId, stageId, field, value) => {
     // };
 
 
-// Deriving Weightages Dynamically
-  useEffect(() => {
-    const newWeightages = {};
-    selectedActivities.forEach(activityId => {
-      let total = 0;
-      const selectedSubs = selectedSubActivities[activityId] || [];
-      selectedSubs.forEach(subId => {
-        const stages = workStages[subId] || [];
-        stages.forEach(stg => {
-          total += parseFloat(stg.payment_percent) || 0;
+    // Deriving Weightages Dynamically
+    useEffect(() => {
+        const newWeightages = {};
+        selectedActivities.forEach(activityId => {
+            let total = 0;
+            const selectedSubs = selectedSubActivities[activityId] || [];
+            selectedSubs.forEach(subId => {
+                const stages = workStages[subId] || [];
+                stages.forEach(stg => {
+                    total += parseFloat(stg.payment_percent) || 0;
+                });
+            });
+            newWeightages[activityId] = total;
         });
-      });
-      newWeightages[activityId] = total;
-    });
-    setActivityWeightages(newWeightages);
-  }, [workStages, selectedSubActivities, selectedActivities]);
+        setActivityWeightages(newWeightages);
+    }, [workStages, selectedSubActivities, selectedActivities]);
 
 
     const handleActivityWeightageChange = (activityId, value, subid) => {
@@ -810,7 +810,7 @@ const handleStageUpdate = (subId, stageId, field, value) => {
     };
 
     const handleSubActivityPlannedQtyChange = (subId, field, value) => {
-        if (field === "description"|| field === "start_date" || field === "end_date") {
+        if (field === "description" || field === "start_date" || field === "end_date") {
             setSubActivityPlannedQtys((prev) => ({
                 ...prev,
                 [`${subId}_${field}`]: value,
@@ -1480,7 +1480,7 @@ const handleStageUpdate = (subId, stageId, field, value) => {
     //     dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
     // };
 
-   const handleCloneSubActivitySubmit = async (e) => {
+    const handleCloneSubActivitySubmit = async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -1489,7 +1489,7 @@ const handleStageUpdate = (subId, stageId, field, value) => {
         // 1. Extract the missing source data from states to clone
         const sourceId = cloningSubActivity.sourceSubId;
         const activityId = cloningSubActivity.activityId;
-        
+
         const sourceDesc = subActivityPlannedQtys[`${sourceId}_description`] || "";
         const sourceStartDate = subActivityPlannedQtys[`${sourceId}_start_date`] || "";
         const sourceEndDate = subActivityPlannedQtys[`${sourceId}_end_date`] || "";
@@ -1506,10 +1506,10 @@ const handleStageUpdate = (subId, stageId, field, value) => {
         if (cloningSubActivity.activityType === "single") {
             // Generate a guaranteed unique ID
             const newSubId = `custom-sub-clone-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-            
+
             newSubs = [
                 {
-                    id: newSubId, 
+                    id: newSubId,
                     sorting_var: null,
                     subactivity_name: cloningSubActivity.subactivity_name,
                     unit: cloningSubActivity.unit,
@@ -1564,11 +1564,11 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                 for (let i = 0; i < count; i++) {
                     const chainageStart = Number(currentStart.toFixed(2));
                     const currentEnd = Number((chainageStart + covered).toFixed(2));
-                    
+
                     const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
 
                     newSubs.push({
-                        id: newSubId, 
+                        id: newSubId,
                         sorting_var: null,
                         subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: cloningSubActivity.unit,
@@ -1620,11 +1620,11 @@ const handleStageUpdate = (subId, stageId, field, value) => {
 
                     const chainageStart = Number(currentStart.toFixed(2));
                     const currentEnd = Number((chainageStart + covered).toFixed(2));
-                    
+
                     const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
 
                     newSubs.push({
-                        id: newSubId, 
+                        id: newSubId,
                         sorting_var: null,
                         subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: cloningSubActivity.unit,
@@ -2241,31 +2241,31 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                     // };
 
                     const stages = workStages[subId] || [];
-          const mappedStages = stages.map((stg, sIdx) => {
-            // Check if it's a newly added stage (has a temp_stg_ ID)
-            const isNewStage = String(stg.id).startsWith("temp_stg_");
-            return {
-              ...(isNewStage ? {} : { id: stg.id }), // Include the ID only if it already exists in the DB
-              name: stg.name || `Stage ${sIdx + 1}`,
-              payment_percent: parseFloat(stg.payment_percent) || 0,
-              sorting_var: sIdx + 1
-            };
-          });
+                    const mappedStages = stages.map((stg, sIdx) => {
+                        // Check if it's a newly added stage (has a temp_stg_ ID)
+                        const isNewStage = String(stg.id).startsWith("temp_stg_");
+                        return {
+                            ...(isNewStage ? {} : { id: stg.id }), // Include the ID only if it already exists in the DB
+                            name: stg.name || `Stage ${sIdx + 1}`,
+                            payment_percent: parseFloat(stg.payment_percent) || 0,
+                            sorting_var: sIdx + 1
+                        };
+                    });
 
-          return {
-            ...(isNewSub ? {} : { id: subId }),
-            subactivity_name: subObj?.subactivity_name || String(subId),
-            description: description,
-            start_date: start_date, // ADD THIS
-            end_date: end_date,     // ADD THIS
-            total_quantity: isStatusBased ? 1 : plannedQty,
-            unit: isStatusBased ? "status" : unit,
-            chainage_start: chainagestart,
-            chainage_end: chainageend,
-            covered_area: coveredarea || "0.00",
-            sorting_var: subSortingVar,
-            stages: mappedStages // Pass the dynamic stages array to the backend!
-          };
+                    return {
+                        ...(isNewSub ? {} : { id: subId }),
+                        subactivity_name: subObj?.subactivity_name || String(subId),
+                        description: description,
+                        start_date: start_date, // ADD THIS
+                        end_date: end_date,     // ADD THIS
+                        total_quantity: isStatusBased ? 1 : plannedQty,
+                        unit: isStatusBased ? "status" : unit,
+                        chainage_start: chainagestart,
+                        chainage_end: chainageend,
+                        covered_area: coveredarea || "0.00",
+                        sorting_var: subSortingVar,
+                        stages: mappedStages // Pass the dynamic stages array to the backend!
+                    };
                 });
 
                 return {
@@ -2493,6 +2493,55 @@ const handleStageUpdate = (subId, stageId, field, value) => {
         );
     }
 
+
+
+    // Add click outside handler with clear logic
+    useEffect(() => {
+        function handleClickOutside(event) {
+            // Handle Company dropdown
+            if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+                setShowCompanyDropdown(false);
+                // Check if current search value matches any company
+                const hasMatchingCompany = companies.some(c =>
+                    c.name?.toLowerCase() === companySearch?.toLowerCase()
+                );
+                // If no match and no company selected, clear the search
+                if (!hasMatchingCompany && !form.company && companySearch) {
+                    setCompanySearch("");
+                }
+            }
+
+            // Handle Sector dropdown
+            if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
+                setShowSectorDropdown(false);
+                // Check if current search value matches any sector
+                const hasMatchingSector = sectorsList.some(s =>
+                    s.name?.toLowerCase() === sectorSearch?.toLowerCase()
+                );
+                // If no match and no sector selected, clear the search
+                if (!hasMatchingSector && !form.sector && sectorSearch) {
+                    setSectorSearch("");
+                }
+            }
+
+            // Handle Client dropdown
+            if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
+                setShowClientDropdown(false);
+                // Check if current search value matches any client
+                const hasMatchingClient = clients.some(c =>
+                    c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
+                    c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
+                );
+                // If no match and no client selected, clear the search
+                if (!hasMatchingClient && !form.client && clientSearch) {
+                    setClientSearch("");
+                }
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
     // Rest of the component remains the same (all the JSX with modals and form)...
     return (
         <motion.div
@@ -4086,249 +4135,97 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Company *</label>
-                            <div className="relative" ref={companyDropdownRef}>
-                                <Building2
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                    size={16}
-                                />
+                        <div className="relative" ref={companyDropdownRef}>
+                            <Building2
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={16}
+                            />
 
-                                <input
-                                    type="text"
-                                    value={companySearch || (form.company ? companies.find(c => c.name === form.company)?.name : "")}
-                                    placeholder="Select Company"
-                                    onFocus={() => {
-                                        if (!form.company) {
-                                            setShowCompanyDropdown(true);
-                                        } else {
-                                            setShowCompanyDropdown(false)
-                                        }
+                            <input
+                                type="text"
+                                value={companySearch || (form.company ? form.company : "")}
+                                placeholder="Select Company"
+                                onFocus={() => {
+                                    setShowCompanyDropdown(true);
+                                }}
+                                onChange={(e) => {
+                                    setCompanySearch(e.target.value);
+                                    if (form.company) {
+                                        setForm({
+                                            ...form,
+                                            company: ""
+                                        });
+                                    }
+                                    setShowCompanyDropdown(true);
+                                }}
+                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                            />
+
+                            {/* Clear button */}
+                            {form.company && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setForm({
+                                            ...form,
+                                            company: ''
+                                        });
+                                        setCompanySearch('');
+                                        setShowCompanyDropdown(false);
                                     }}
-                                    onBlur={() => {
-                                        setTimeout(() => {
-                                            const matchedCompany = companies.find(
-                                                (c) =>
-                                                    c.name?.trim().toLowerCase().includes(
-                                                        companySearch?.trim().toLowerCase()
-                                                    )
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            )}
+
+                            {/* Dropdown */}
+                            {showCompanyDropdown && (
+                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const filteredCompanies = companies.filter((c) =>
+                                            !companySearch ||
+                                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                                        );
+
+                                        if (filteredCompanies.length === 0) {
+                                            return (
+                                                <div className="px-3 py-2 text-gray-400 text-sm">
+                                                    No matching companies - This will clear when you click outside
+                                                </div>
                                             );
-
-                                            if (!matchedCompany) {
-                                                setCompanySearch("");
-                                                setForm({
-                                                    ...form,
-                                                    company: "",
-                                                });
-                                                setShowCompanyDropdown(false);
-                                            }
-
-
-                                        }, 200);
-                                    }}
-                                    onChange={(e) => {
-                                        setCompanySearch(e.target.value);
-                                        if (!form.company) {
-                                            setShowCompanyDropdown(true);
-                                        } else {
-                                            setForm({
-                                                ...form,
-                                                company: ''
-                                            });
-                                            setCompanySearch('');
-                                            setShowCompanyDropdown(false);
                                         }
-                                    }}
-                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                                />
 
-                                {/* Clear button */}
-                                {form.company && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setForm({
-                                                ...form,
-                                                company: ''
-                                            });
-                                            setCompanySearch('');
-                                            setShowCompanyDropdown(false);
-                                        }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                        title="Clear company"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                )}
-
-                                {/* Plus button for adding new company */}
-                                {/* <button
-                                     type="button"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       setShowAddCompanyModal(true);
-                                     }}
-                                     className="absolute right-12 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                                   >
-                                     <Plus size={14} />
-                                   </button> */}
-
-                                {/* Dropdown with sorting and highlighting */}
-                                {showCompanyDropdown && (
-                                    <div
-                                        className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                        }}
-                                    >
-                                        {(() => {
-                                            const filteredCompanies = companies.filter((c) =>
-                                                c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                                            );
-
-                                            // Auto close dropdown if no match found
-                                            if (companySearch && filteredCompanies.length === 0) {
-                                                setTimeout(() => setShowCompanyDropdown(false), 0);
-
-                                                return (
-                                                    <div className="px-3 py-2 text-gray-400 text-sm">
-                                                        No matching companies
-                                                    </div>
-                                                );
-                                            }
+                                        return filteredCompanies.map((company) => {
+                                            const companyName = company.name || "";
 
                                             return (
-                                                <>
-                                                    {companySearch && filteredCompanies.length > 0 && (
-                                                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                            Showing {filteredCompanies.length} of {companies.length} companies
-                                                        </div>
-                                                    )}
-
-                                                    {filteredCompanies.length > 0 ? (
-                                                        [...filteredCompanies]
-                                                            .sort((a, b) => {
-                                                                const aName = a.name || "";
-                                                                const bName = b.name || "";
-                                                                const searchTerm = companySearch?.toLowerCase() || "";
-
-                                                                const aMatches =
-                                                                    searchTerm &&
-                                                                    aName.toLowerCase().includes(searchTerm);
-
-                                                                const bMatches =
-                                                                    searchTerm &&
-                                                                    bName.toLowerCase().includes(searchTerm);
-
-                                                                // Matching items first
-                                                                if (aMatches && !bMatches) return -1;
-                                                                if (!aMatches && bMatches) return 1;
-
-                                                                return aName.localeCompare(bName);
-                                                            })
-                                                            .map((company) => {
-                                                                const companyName = company.name || "";
-                                                                const searchTerm =
-                                                                    companySearch?.toLowerCase() || "";
-
-                                                                const isMatching =
-                                                                    searchTerm &&
-                                                                    companyName
-                                                                        .toLowerCase()
-                                                                        .includes(searchTerm);
-
-                                                                // Highlight matching text
-                                                                const getHighlightedText = (
-                                                                    text,
-                                                                    highlight,
-                                                                ) => {
-                                                                    if (
-                                                                        !highlight ||
-                                                                        !text
-                                                                            .toLowerCase()
-                                                                            .includes(highlight.toLowerCase())
-                                                                    ) {
-                                                                        return text;
-                                                                    }
-
-                                                                    const regex = new RegExp(
-                                                                        `(${highlight.replace(
-                                                                            /[.*+?^${}()|[\]\\]/g,
-                                                                            "\\$&",
-                                                                        )})`,
-                                                                        "gi",
-                                                                    );
-
-                                                                    const parts = text.split(regex);
-
-                                                                    return parts.map((part, i) =>
-                                                                        regex.test(part) ? (
-                                                                            <span
-                                                                                key={i}
-                                                                                className="bg-yellow-200 font-semibold"
-                                                                            >
-                                                                                {part}
-                                                                            </span>
-                                                                        ) : (
-                                                                            part
-                                                                        ),
-                                                                    );
-                                                                };
-
-                                                                return (
-                                                                    <div
-                                                                        key={company.id}
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-
-                                                                            setForm({
-                                                                                ...form,
-                                                                                company: company.name,
-                                                                            });
-
-                                                                            setCompanySearch(company.name);
-                                                                            setShowCompanyDropdown(false);
-                                                                        }}
-                                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
-                                                                                ? "bg-yellow-50/50"
-                                                                                : ""
-                                                                            }`}
-                                                                    >
-                                                                        <div>
-                                                                            {getHighlightedText(
-                                                                                companyName,
-                                                                                companySearch,
-                                                                            )}
-
-                                                                            {company.gst_no && (
-                                                                                <span className="text-xs text-gray-400 ml-2">
-                                                                                    (GST: {company.gst_no})
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {isMatching && (
-                                                                            <div className="text-xs text-green-600 mt-0.5">
-                                                                                Click to select
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })
-                                                    ) : (
-                                                        <div className="px-3 py-2 text-gray-400 text-sm">
-                                                            No companies available
-                                                        </div>
-                                                    )}
-                                                </>
+                                                <div
+                                                    key={company.id}
+                                                    onClick={() => {
+                                                        setForm({
+                                                            ...form,
+                                                            company: company.name,
+                                                        });
+                                                        setCompanySearch(company.name);
+                                                        setShowCompanyDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                >
+                                                    <div>
+                                                        {companyName}
+                                                        {company.gst_no && (
+                                                            <span className="text-xs text-gray-400 ml-2">
+                                                                (GST: {company.gst_no})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
+                                        });
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
                         {form.company && (
@@ -4348,559 +4245,194 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Sector *</label>
-                            <div className="relative" ref={sectorDropdownRef}>
-                                <Factory
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                    size={16}
-                                />
+                        <div className="relative" ref={sectorDropdownRef}>
+                            <Factory
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={16}
+                            />
 
-                                <input
-                                    type="text"
-                                    value={sectorSearch || (form.sector ? form.sector : "")}
-                                    placeholder="Select Sector"
-                                    onBlur={() => {
-                                        setTimeout(() => {
-                                            const matchedSector = sectorsList.find(
-                                                (s) =>
-                                                    s.name?.trim().toLowerCase().includes(
-                                                        sectorSearch?.trim().toLowerCase()
-                                                    )
-                                            );
-
-                                            if (!matchedSector) {
-                                                setSectorSearch("");
-                                                setForm({
-                                                    ...form,
-                                                    sector: "",
-                                                });
-                                            }
-
-                                            setShowSectorDropdown(false);
-                                        }, 200);
-                                    }}
-                                    onFocus={() => {
-                                        if (!form.sector) {
-
-                                            setShowSectorDropdown(true);
-                                        } else {
-
-                                            setShowSectorDropdown(false);
-                                        }
+                            <input
+                                type="text"
+                                value={sectorSearch || (form.sector ? form.sector : "")}
+                                placeholder="Select Sector"
+                                onFocus={() => {
+                                    setShowSectorDropdown(true);
+                                }}
+                                onChange={(e) => {
+                                    setSectorSearch(e.target.value);
+                                    if (form.sector) {
+                                        setForm({
+                                            ...form,
+                                            sector: ""
+                                        });
                                     }
+                                    setShowSectorDropdown(true);
+                                }}
+                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                            />
 
-
-                                    }
-
-                                    onChange={(e) => {
-                                        if (!form.sector) {
-                                            setSectorSearch(e.target.value);
-                                            setShowSectorDropdown(true);
-                                        } else {
-                                            setForm({
-                                                ...form,
-                                                sector: ''
-                                            });
-                                            setSectorSearch('');
-                                            setShowSectorDropdown(false);
-                                        }
-
-                                    }}
-                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                                />
-                                {/* <button
+                            {/* Clear button */}
+                            {form.sector && (
+                                <button
                                     type="button"
-                                    onClick={() => setShowAddSectorModal(true)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                                    onClick={() => {
+                                        setForm({
+                                            ...form,
+                                            sector: ''
+                                        });
+                                        setSectorSearch('');
+                                        setShowSectorDropdown(false);
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                                 >
-                                    <Plus size={14} />
-                                </button> */}
-                                {/* <AddSectorButton
-                                    onSuccess={handleRefresh}
-                                    loadData={loadSectorsData}
-                                    sectors={sectors}
-                                    BasicButtonView={true} /> */}
+                                    <X size={20} />
+                                </button>
+                            )}
 
-                                {/* Clear button */}
-                                {form.sector && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setForm({
-                                                ...form,
-                                                sector: ''
-                                            });
-                                            setSectorSearch('');
-                                            setShowSectorDropdown(false);
-                                        }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                        title="Clear sector"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                )}
+                            {/* Dropdown */}
+                            {showSectorDropdown && (
+                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const filteredSectors = sectorsList.filter((s) =>
+                                            !sectorSearch ||
+                                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                                        );
 
-                                {/* Plus button for adding new sector */}
-                                {/* <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowAddSectorModal(true);
-                                    }}
-                                    className="absolute right-12 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                                    >
-                                    <Plus size={14} />
-                                    </button> */}
-
-                                {/* Dropdown with sorting and highlighting */}
-                                {showSectorDropdown && (
-                                    <div
-                                        className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                        }}
-                                    >
-                                        {(() => {
-                                            const filteredSectors = sectorsList.filter((s) =>
-                                                s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                                        if (filteredSectors.length === 0) {
+                                            return (
+                                                <div className="px-3 py-2 text-gray-400 text-sm">
+                                                    No matching sectors - This will clear when you click outside
+                                                </div>
                                             );
+                                        }
 
-                                            // Auto close dropdown if no match found
-                                            if (sectorSearch && filteredSectors.length === 0) {
-                                                setTimeout(() => setShowSectorDropdown(false), 0);
-
-                                                return (
-                                                    <div className="px-3 py-2 text-gray-400 text-sm">
-                                                        No matching sectors
-                                                    </div>
-                                                );
-                                            }
+                                        return filteredSectors.map((sector) => {
+                                            const sectorName = sector.name || "";
+                                            const sectorUnit = sector.unit || "";
 
                                             return (
-                                                <>
-                                                    {sectorSearch && filteredSectors.length > 0 && (
-                                                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                            Showing {filteredSectors.length} of {sectorsList.length} sectors
-                                                        </div>
-                                                    )}
-
-                                                    {filteredSectors.length > 0 ? (
-                                                        [...filteredSectors]
-                                                            .sort((a, b) => {
-                                                                const aName = a.name || "";
-                                                                const bName = b.name || "";
-                                                                const searchTerm = sectorSearch?.toLowerCase() || "";
-
-                                                                const aMatches =
-                                                                    searchTerm &&
-                                                                    aName.toLowerCase().includes(searchTerm);
-
-                                                                const bMatches =
-                                                                    searchTerm &&
-                                                                    bName.toLowerCase().includes(searchTerm);
-
-                                                                // Matching items first
-                                                                if (aMatches && !bMatches) return -1;
-                                                                if (!aMatches && bMatches) return 1;
-
-                                                                return aName.localeCompare(bName);
-                                                            })
-                                                            .map((sector) => {
-                                                                const sectorName = sector.name || "";
-                                                                const sectorUnit = sector.unit || "";
-                                                                const searchTerm =
-                                                                    sectorSearch?.toLowerCase() || "";
-
-                                                                const isMatching =
-                                                                    searchTerm &&
-                                                                    sectorName
-                                                                        .toLowerCase()
-                                                                        .includes(searchTerm);
-
-                                                                // Highlight matching text
-                                                                const getHighlightedText = (
-                                                                    text,
-                                                                    highlight,
-                                                                ) => {
-                                                                    if (
-                                                                        !highlight ||
-                                                                        !text
-                                                                            .toLowerCase()
-                                                                            .includes(highlight.toLowerCase())
-                                                                    ) {
-                                                                        return text;
-                                                                    }
-
-                                                                    const regex = new RegExp(
-                                                                        `(${highlight.replace(
-                                                                            /[.*+?^${}()|[\]\\]/g,
-                                                                            "\\$&",
-                                                                        )})`,
-                                                                        "gi",
-                                                                    );
-
-                                                                    const parts = text.split(regex);
-
-                                                                    return parts.map((part, i) =>
-                                                                        regex.test(part) ? (
-                                                                            <span
-                                                                                key={i}
-                                                                                className="bg-yellow-200 font-semibold"
-                                                                            >
-                                                                                {part}
-                                                                            </span>
-                                                                        ) : (
-                                                                            part
-                                                                        ),
-                                                                    );
-                                                                };
-
-                                                                return (
-                                                                    <div
-                                                                        key={sector.id || sector.name}
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-
-                                                                            setForm({
-                                                                                ...form,
-                                                                                sector: sector.name,
-                                                                            });
-
-                                                                            setSectorSearch(sector.name);
-                                                                            setShowSectorDropdown(false);
-                                                                        }}
-                                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
-                                                                            ? "bg-yellow-50/50"
-                                                                            : ""
-                                                                            }`}
-                                                                    >
-                                                                        <div>
-                                                                            {getHighlightedText(
-                                                                                sectorName,
-                                                                                sectorSearch,
-                                                                            )}
-
-                                                                            {sectorUnit && (
-                                                                                <span className="text-xs text-gray-400 ml-2">
-                                                                                    (Unit:{" "}
-                                                                                    {SECTOR_UNIT_MAPPING[
-                                                                                        sectorUnit
-                                                                                    ] || sectorUnit}
-                                                                                    )
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {isMatching && (
-                                                                            <div className="text-xs text-green-600 mt-0.5">
-                                                                                Click to select
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })
-                                                    ) : (
-                                                        <div className="px-3 py-2 text-gray-400 text-sm">
-                                                            No sectors available
-                                                        </div>
-                                                    )}
-                                                </>
+                                                <div
+                                                    key={sector.id || sector.name}
+                                                    onClick={() => {
+                                                        setForm({
+                                                            ...form,
+                                                            sector: sector.name,
+                                                        });
+                                                        setSectorSearch(sector.name);
+                                                        setShowSectorDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                >
+                                                    <div>
+                                                        {sectorName}
+                                                        {sectorUnit && (
+                                                            <span className="text-xs text-gray-400 ml-2">
+                                                                (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
+                                        });
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                            <div className="flex justify-between">
-                                <label className="text-xs text-gray-500">Client *</label>
-                                {/* <label className="text-xs text-gray-500">{showClientCode ? `Code: ${showClientCode}` : ''}</label> */}
-                            </div>
-                            <div
-                                className="relative"
-                                ref={clientDropdownRef}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <Handshake className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                    type="text"
-                                    value={clientSearch}
-                                    placeholder="Select Client"
-                                    onFocus={() => setShowClientDropdown(true)}
-                                    onChange={(e) => {
-                                        setClientSearch(e.target.value);
-                                        setForm(prev => ({
-                                            ...prev,
+                        <div className="relative" ref={clientDropdownRef}>
+                            <Handshake
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={16}
+                            />
+
+                            <input
+                                type="text"
+                                value={clientSearch}
+                                placeholder="Select Client"
+                                onFocus={() => {
+                                    setShowClientDropdown(true);
+                                }}
+                                onChange={(e) => {
+                                    setClientSearch(e.target.value);
+                                    if (form.client) {
+                                        setForm({
+                                            ...form,
+                                            client: "",
+                                            clientbranch: ""
+                                        });
+                                    }
+                                    setShowClientDropdown(true);
+                                }}
+                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                            />
+
+                            {/* Clear button */}
+                            {form.client && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setForm({
+                                            ...form,
+                                            client: '',
                                             clientbranch: ''
-                                        }));
-                                        setShowClientDropdown(true);
+                                        });
+                                        setClientSearch('');
+                                        setClientCode('');
+                                        setShowClientDropdown(false);
                                     }}
-                                    onBlur={() => {
-                                        setTimeout(() => {
-                                            const matchedClient = clients.find(
-                                                (c) =>
-                                                    c.client_name?.trim().toLowerCase().includes(
-                                                        clientSearch?.trim().toLowerCase()
-                                                    ) ||
-                                                    c.client_code?.trim().toLowerCase().includes(
-                                                        clientSearch?.trim().toLowerCase()
-                                                    )
-                                            );
-
-                                            if (!matchedClient) {
-                                                setClientSearch("");
-                                                setClientCode("");
-
-                                                setForm({
-                                                    ...form,
-                                                    client: "",
-                                                    clientbranch: "",
-                                                });
-                                            }
-
-                                            setShowClientDropdown(false);
-                                        }, 200);
-                                    }}
-                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                                />
-
-                                {/* <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowAddClientModal(true);
-                                    }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                                 >
-                                    <Plus size={14} />
-                                </button> */}
+                                    <X size={20} />
+                                </button>
+                            )}
 
-                                {/* Clear button */}
-                                {form.client && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setForm({
-                                                ...form,
-                                                client: '',
-                                                clientbranch: ''
-                                            });
-                                            setClientSearch('');
-                                            setClientCode('');
-                                            setShowClientDropdown(true);
-                                        }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                        title="Clear client"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                )}
-                                {/* Dropdown with sorting and highlighting */}
-                                {showClientDropdown && (
-                                    <div
-                                        className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                        }}
-                                    >
-                                        {(() => {
-                                            const filteredClients = clients.filter(
-                                                (c) =>
-                                                    c.client_name
-                                                        ?.toLowerCase()
-                                                        .includes(clientSearch.toLowerCase()) ||
-                                                    c.client_code
-                                                        ?.toLowerCase()
-                                                        .includes(clientSearch.toLowerCase()),
+                            {/* Dropdown */}
+                            {showClientDropdown && (
+                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const filteredClients = clients.filter((c) =>
+                                            !clientSearch ||
+                                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                            c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
+                                        );
+
+                                        if (filteredClients.length === 0) {
+                                            return (
+                                                <div className="px-3 py-2 text-gray-400 text-sm">
+                                                    No matching clients - This will clear when you click outside
+                                                </div>
                                             );
+                                        }
 
-                                            // Auto close dropdown if no match found
-                                            if (clientSearch && filteredClients.length === 0) {
-                                                setTimeout(() => setShowClientDropdown(false), 0);
-
-                                                return (
-                                                    <div className="px-3 py-2 text-gray-400 text-sm">
-                                                        No matching clients
-                                                    </div>
-                                                );
-                                            }
+                                        return filteredClients.map((client) => {
+                                            const clientName = client.client_name || "";
+                                            const clientCode = client.client_code || "";
 
                                             return (
-                                                <>
-                                                    {clientSearch && filteredClients.length > 0 && (
-                                                        <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                            Showing {filteredClients.length} of{" "}
-                                                            {clients.length} clients
-                                                        </div>
-                                                    )}
-
-                                                    {filteredClients.length > 0 ? (
-                                                        [...filteredClients]
-                                                            .sort((a, b) => {
-                                                                const searchTerm =
-                                                                    clientSearch?.toLowerCase() || "";
-
-                                                                const aName = a.client_name || "";
-                                                                const aCode = a.client_code || "";
-                                                                const bName = b.client_name || "";
-                                                                const bCode = b.client_code || "";
-
-                                                                // Match checks
-                                                                const aNameMatches =
-                                                                    searchTerm &&
-                                                                    aName.toLowerCase().includes(searchTerm);
-
-                                                                const aCodeMatches =
-                                                                    searchTerm &&
-                                                                    aCode.toLowerCase().includes(searchTerm);
-
-                                                                const bNameMatches =
-                                                                    searchTerm &&
-                                                                    bName.toLowerCase().includes(searchTerm);
-
-                                                                const bCodeMatches =
-                                                                    searchTerm &&
-                                                                    bCode.toLowerCase().includes(searchTerm);
-
-                                                                const aMatches =
-                                                                    aNameMatches || aCodeMatches;
-
-                                                                const bMatches =
-                                                                    bNameMatches || bCodeMatches;
-
-                                                                // Matching first
-                                                                if (aMatches && !bMatches) return -1;
-                                                                if (!aMatches && bMatches) return 1;
-
-                                                                // Code match priority
-                                                                if (aMatches && bMatches) {
-                                                                    if (aCodeMatches && !bCodeMatches)
-                                                                        return -1;
-
-                                                                    if (!aCodeMatches && bCodeMatches)
-                                                                        return 1;
-                                                                }
-
-                                                                return aName.localeCompare(bName);
-                                                            })
-                                                            .map((client) => {
-                                                                const clientName =
-                                                                    client.client_name || "";
-
-                                                                const clientCode =
-                                                                    client.client_code || "";
-
-                                                                const searchTerm =
-                                                                    clientSearch?.toLowerCase() || "";
-
-                                                                const isMatching =
-                                                                    searchTerm &&
-                                                                    (clientName
-                                                                        .toLowerCase()
-                                                                        .includes(searchTerm) ||
-                                                                        clientCode
-                                                                            .toLowerCase()
-                                                                            .includes(searchTerm));
-
-                                                                // Highlight matching text
-                                                                const getHighlightedText = (
-                                                                    text,
-                                                                    highlight,
-                                                                ) => {
-                                                                    if (
-                                                                        !highlight ||
-                                                                        !text
-                                                                            .toLowerCase()
-                                                                            .includes(highlight.toLowerCase())
-                                                                    ) {
-                                                                        return text;
-                                                                    }
-
-                                                                    const regex = new RegExp(
-                                                                        `(${highlight.replace(
-                                                                            /[.*+?^${}()|[\]\\]/g,
-                                                                            "\\$&",
-                                                                        )})`,
-                                                                        "gi",
-                                                                    );
-
-                                                                    const parts = text.split(regex);
-
-                                                                    return parts.map((part, i) =>
-                                                                        regex.test(part) ? (
-                                                                            <span
-                                                                                key={i}
-                                                                                className="bg-yellow-200 font-semibold"
-                                                                            >
-                                                                                {part}
-                                                                            </span>
-                                                                        ) : (
-                                                                            part
-                                                                        ),
-                                                                    );
-                                                                };
-
-                                                                return (
-                                                                    <div
-                                                                        key={client.id}
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-
-                                                                            setForm({
-                                                                                ...form,
-                                                                                client: client.id,
-                                                                                clientbranch: "",
-                                                                            });
-
-                                                                            setClientSearch(
-                                                                                `${clientName} - ${clientCode}`,
-                                                                            );
-
-                                                                            setClientCode(clientCode);
-
-                                                                            setShowClientDropdown(false);
-                                                                        }}
-                                                                        className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching
-                                                                            ? "bg-yellow-50/50"
-                                                                            : ""
-                                                                            }`}
-                                                                    >
-                                                                        <div>
-                                                                            {getHighlightedText(
-                                                                                `${clientName} - ${clientCode}`,
-                                                                                clientSearch,
-                                                                            )}
-                                                                        </div>
-
-                                                                        {isMatching && (
-                                                                            <div className="text-xs text-green-600 mt-0.5">
-                                                                                Press Enter to select
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })
-                                                    ) : (
-                                                        <div className="px-3 py-2 text-gray-400 text-sm">
-                                                            No Clients Available
-                                                        </div>
-                                                    )}
-                                                </>
+                                                <div
+                                                    key={client.id}
+                                                    onClick={() => {
+                                                        setForm({
+                                                            ...form,
+                                                            client: client.id,
+                                                            clientbranch: "",
+                                                        });
+                                                        setClientSearch(`${clientName} - ${clientCode}`);
+                                                        setClientCode(clientCode);
+                                                        setShowClientDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                >
+                                                    <div>
+                                                        {clientName} - {clientCode}
+                                                    </div>
+                                                </div>
                                             );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
+                                        });
+                                    })()}
+                                </div>
+                            )}
                         </div>
-
                         {form.client && (
                             <>
                                 <div className="flex flex-col gap-1">
@@ -6094,7 +5626,7 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                                                                                                                     </div>
                                                                                                                 </div>
                                                                                                             </div>}
-                                                                                                            
+
                                                                                                         {/* {(sub?.submission_exist || showAllFields[key]) &&
                                                                                                             <div>
                                                                                                                 <label className="block text-[10px] text-gray-500 mb-1">
@@ -6186,99 +5718,99 @@ const handleStageUpdate = (subId, stageId, field, value) => {
                                                                                                                     </span>
                                                                                                                 </div>
                                                                                                             </div>} */}
-                                                                                                            
 
 
-                                                                                                         {/* Sub-Activity Dates aligned with Quantities and Chainages */}
-<div >
-  <div className="grid grid-cols-1 gap-1 col-span-3">
-    <label className="block text-[10px] text-gray-500 ">
-      Start Date
-    </label>
-    <input
-      type="date"
-      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
-      min={activityDates[activityId]?.startDate || form.loa_date}
-      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
-      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-  </div>
-  <div> 
-    <div className="grid grid-cols-1 gap-1 col-span-3">
-    <label className="block text-[10px] text-gray-500 ">
-      End Date
-    </label>
-    <input
-      type="date"
-      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
-      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
-      max={activityDates[activityId]?.endDate || form.completion_date}
-      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-  </div>
+
+                                                                                                        {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+                                                                                                        <div >
+                                                                                                            <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                <label className="block text-[10px] text-gray-500 ">
+                                                                                                                    Start Date
+                                                                                                                </label>
+                                                                                                                <input
+                                                                                                                    type="date"
+                                                                                                                    value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
+                                                                                                                    min={activityDates[activityId]?.startDate || form.loa_date}
+                                                                                                                    max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
+                                                                                                                    onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
+                                                                                                                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                            <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                <label className="block text-[10px] text-gray-500 ">
+                                                                                                                    End Date
+                                                                                                                </label>
+                                                                                                                <input
+                                                                                                                    type="date"
+                                                                                                                    value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
+                                                                                                                    min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+                                                                                                                    max={activityDates[activityId]?.endDate || form.completion_date}
+                                                                                                                    onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
+                                                                                                                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        </div>
 
 
-<div className="col-span-3 mt-4 pl-5">
-  <label className="block text-[10px] text-gray-500 mb-1 font-medium">
-    Work Stages & Payment (%) *
-  </label>
-  <div className="space-y-2">
-    {(workStages[sub.id] || []).map((stage, idx) => (
-      <div key={stage.id} className="flex items-center gap-2">
-        <input
-          type="text"
-          placeholder="Stage Name (e.g. Submission)"
-          value={stage.name}
-          onChange={(e) =>
-            handleStageUpdate(sub.id, stage.id, "name", e.target.value)
-          }
-          className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-        />
-        <div className="relative w-28">
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="%"
-            value={stage.payment_percent}
-            onChange={(e) =>
-              handleStageUpdate(
-                sub.id,
-                stage.id,
-                "payment_percent",
-                e.target.value
-              )
-            }
-            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 pr-6"
-          />
-          <Percent
-            size={12}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => handleRemoveStage(sub.id, stage.id)}
-          className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
-          title="Remove Stage"
-        >
-          <X size={14} />
-        </button>
-      </div>
-    ))}
-    <button
-      type="button"
-      onClick={() => handleAddStage(sub.id)}
-      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-1"
-    >
-      <Plus size={10} /> Add Work Stage
-    </button>
-  </div>
-</div>
+                                                                                                        <div className="col-span-3 mt-4 pl-5">
+                                                                                                            <label className="block text-[10px] text-gray-500 mb-1 font-medium">
+                                                                                                                Work Stages & Payment (%) *
+                                                                                                            </label>
+                                                                                                            <div className="space-y-2">
+                                                                                                                {(workStages[sub.id] || []).map((stage, idx) => (
+                                                                                                                    <div key={stage.id} className="flex items-center gap-2">
+                                                                                                                        <input
+                                                                                                                            type="text"
+                                                                                                                            placeholder="Stage Name (e.g. Submission)"
+                                                                                                                            value={stage.name}
+                                                                                                                            onChange={(e) =>
+                                                                                                                                handleStageUpdate(sub.id, stage.id, "name", e.target.value)
+                                                                                                                            }
+                                                                                                                            className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                        />
+                                                                                                                        <div className="relative w-28">
+                                                                                                                            <input
+                                                                                                                                type="number"
+                                                                                                                                min="0"
+                                                                                                                                step="0.01"
+                                                                                                                                placeholder="%"
+                                                                                                                                value={stage.payment_percent}
+                                                                                                                                onChange={(e) =>
+                                                                                                                                    handleStageUpdate(
+                                                                                                                                        sub.id,
+                                                                                                                                        stage.id,
+                                                                                                                                        "payment_percent",
+                                                                                                                                        e.target.value
+                                                                                                                                    )
+                                                                                                                                }
+                                                                                                                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 pr-6"
+                                                                                                                            />
+                                                                                                                            <Percent
+                                                                                                                                size={12}
+                                                                                                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+                                                                                                                            />
+                                                                                                                        </div>
+                                                                                                                        <button
+                                                                                                                            type="button"
+                                                                                                                            onClick={() => handleRemoveStage(sub.id, stage.id)}
+                                                                                                                            className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+                                                                                                                            title="Remove Stage"
+                                                                                                                        >
+                                                                                                                            <X size={14} />
+                                                                                                                        </button>
+                                                                                                                    </div>
+                                                                                                                ))}
+                                                                                                                <button
+                                                                                                                    type="button"
+                                                                                                                    onClick={() => handleAddStage(sub.id)}
+                                                                                                                    className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-1"
+                                                                                                                >
+                                                                                                                    <Plus size={10} /> Add Work Stage
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        </div>
 
                                                                                                         <div className="col-span-3 mt-2">
                                                                                                             {(parseFloat(
