@@ -958,7 +958,7 @@ const TlProjectList = () => {
         {/* Approval Proof Upload (Reusing the 'documents' state) */}
         <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-                Approval Proof (Optional)
+                Approval Proof <span className="text-red-500">*</span>
             </label>
             <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-green-400 transition">
                 <input
@@ -1013,7 +1013,7 @@ const TlProjectList = () => {
 
         <div className="mt-5">
             <label className="text-sm font-medium text-gray-700 block mb-1">
-                Remarks (Optional)
+                Remarks <span className="text-red-500">*</span>
             </label>
             <textarea
                 value={proofData.remarks}
@@ -1091,7 +1091,7 @@ const TlProjectList = () => {
         {/* Rejection Proof Upload (Reusing the 'documents' state) */}
         <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-                Rejection Proof (Optional)
+                Rejection Proof <span className="text-red-500">*</span>
             </label>
             <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
                 <input
@@ -1284,17 +1284,40 @@ const TlProjectList = () => {
 
     <button
         onClick={handleSubmitProof}
-        disabled={
-            loder ||
-            // 1. Submit Validation
-            (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
-            // 2. Reject Validation (Updated to use new fields!)
-            (proofData.to_status === "Rejected" && (
-                !proofData.event_type || 
-                !proofData.remarks || 
-                (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
-            ))
-        }
+        // disabled={
+        //     loder ||
+        //     // 1. Submit Validation
+        //     (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
+        //     // 2. Reject Validation (Updated to use new fields!)
+        //     (proofData.to_status === "Rejected" && (
+        //         !proofData.event_type || 
+        //         !proofData.remarks || 
+        //         proofData.documents.length < 1||
+        //         (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
+        //     ))
+        // }
+
+disabled={
+        loder ||
+        // 1. Submit Validation
+        (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
+        // 2. Reject Validation
+        (proofData.to_status === "Rejected" && (
+            !proofData.event_type || 
+            !proofData.remarks || 
+            !proofData.remarks.trim() ||
+            proofData.documents.length < 1|| // Prevents just typing spaces
+            (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
+        )) ||
+        // 3. Approve Validation: BOTH remarks AND documents are MANDATORY
+        (proofData.to_status === "Approved" && (
+            !proofData.remarks || 
+            !proofData.remarks.trim() || 
+            !proofData.documents || 
+            proofData.documents.length < 1
+        ))
+    }
+
         className={`flex-1 px-4 py-2 rounded-lg text-white transition disabled:opacity-50 ${
             proofData.to_status === "Approved"
                 ? "bg-green-600 hover:bg-green-700"

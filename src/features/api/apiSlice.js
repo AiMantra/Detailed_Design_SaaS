@@ -22,7 +22,7 @@ const initialState = {
   reportingHeads: [],
   stageTemplates: [],
   activities: [],
-  subActivities: [],
+  subActivities: [], 
   subActivityDetails: null,
   projectWorkSummary: null,
   projects: [],

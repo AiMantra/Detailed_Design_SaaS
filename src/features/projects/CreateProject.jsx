@@ -4760,98 +4760,63 @@ const CreateProject = () => {
               </div>
             </div>
 
-            <div className="relative" ref={companyDropdownRef}>
-              <Building2
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={16}
-              />
-
-              <input
-                type="text"
-                value={companySearch || (form.company ? form.company : "")}
-                placeholder="Select Company"
-                onFocus={() => {
-                  setShowCompanyDropdown(true);
-                }}
-                onChange={(e) => {
-                  setCompanySearch(e.target.value);
-                  if (form.company) {
-                    setForm({
-                      ...form,
-                      company: ""
-                    });
-                  }
-                  setShowCompanyDropdown(true);
-                }}
-                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-              />
-
-              {/* Clear button */}
-              {form.company && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm({
-                      ...form,
-                      company: ''
-                    });
-                    setCompanySearch('');
-                    setShowCompanyDropdown(false);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              )}
-
-              {/* Dropdown */}
-              {showCompanyDropdown && (
-                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {(() => {
-                    const filteredCompanies = companies.filter((c) =>
-                      !companySearch ||
-                      c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                    );
-
-                    if (filteredCompanies.length === 0) {
-                      return (
-                        <div className="px-3 py-2 text-gray-400 text-sm">
-                          No matching companies
-                        </div>
-                      );
-                    }
-
-                    return filteredCompanies.map((company) => {
-                      const companyName = company.name || "";
-
-                      return (
-                        <div
-                          key={company.id}
-                          onClick={() => {
-                            setForm({
-                              ...form,
-                              company: company.name,
-                            });
-                            setCompanySearch(company.name);
-                            setShowCompanyDropdown(false);
-                          }}
-                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                        >
-                          <div>
-                            {companyName}
-                            {company.gst_no && (
-                              <span className="text-xs text-gray-400 ml-2">
-                                (GST: {company.gst_no})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              )}
+            <div className="flex flex-col gap-1">
+  <label className="text-xs text-gray-500">Company *</label>
+  <div className="relative" ref={companyDropdownRef}>
+    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+    <input
+      type="text"
+      value={companySearch || (form.company ? form.company : "")}
+      placeholder="Select Company"
+      onFocus={() => setShowCompanyDropdown(true)}
+      onChange={(e) => {
+        setCompanySearch(e.target.value);
+        if (form.company) {
+          setForm({ ...form, company: "" });
+        }
+        setShowCompanyDropdown(true);
+      }}
+      className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+    />
+    {form.company && (
+      <button
+        type="button"
+        onClick={() => {
+          setForm({ ...form, company: '' });
+          setCompanySearch('');
+          setShowCompanyDropdown(false);
+        }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+      >
+        <X size={20} />
+      </button>
+    )}
+    {showCompanyDropdown && (
+      <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        {/* ... existing company dropdown logic ... */}
+        {(() => {
+          const filteredCompanies = companies.filter((c) =>
+            !companySearch || c.name?.toLowerCase().includes(companySearch.toLowerCase())
+          );
+          if (filteredCompanies.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching companies</div>;
+          return filteredCompanies.map((company) => (
+            <div
+              key={company.id}
+              onClick={() => {
+                setForm({ ...form, company: company.name });
+                setCompanySearch(company.name);
+                setShowCompanyDropdown(false);
+              }}
+              className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+            >
+              <div>{company.name} {company.gst_no && <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>}</div>
             </div>
+          ));
+        })()}
+      </div>
+    )}
+  </div>
+</div>
 
 
             {form.company && (
@@ -4881,100 +4846,65 @@ const CreateProject = () => {
             )}
 
             {/* Sector Field */}
-            <div className="relative" ref={sectorDropdownRef}>
-              <Factory
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={16}
-              />
-
-              <input
-                type="text"
-                value={sectorSearch || (form.sector ? form.sector : "")}
-                placeholder="Select Sector"
-                onFocus={() => {
-                  setShowSectorDropdown(true);
-                }}
-                onChange={(e) => {
-                  setSectorSearch(e.target.value);
-                  if (form.sector) {
-                    setForm({
-                      ...form,
-                      sector: ""
-                    });
-                  }
-                  setShowSectorDropdown(true);
-                }}
-                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-              />
-
-              {/* Clear button */}
-              {form.sector && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm({
-                      ...form,
-                      sector: ''
-                    });
-                    setSectorSearch('');
-                    setShowSectorDropdown(false);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              )}
-
-              {/* Dropdown */}
-              {showSectorDropdown && (
-                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {(() => {
-                    const filteredSectors = sectorsList.filter((s) =>
-                      !sectorSearch ||
-                      s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                    );
-
-                    if (filteredSectors.length === 0) {
-                      return (
-                        <div className="px-3 py-2 text-gray-400 text-sm">
-                          No matching sectors
-                        </div>
-                      );
-                    }
-
-                    return filteredSectors.map((sector) => {
-                      const sectorName = sector.name || "";
-                      const sectorUnit = sector.unit || "";
-
-                      return (
-                        <div
-                          key={sector.id || sector.name}
-                          onClick={() => {
-                            setForm({
-                              ...form,
-                              sector: sector.name,
-                            });
-                            setSectorSearch(sector.name);
-                            setShowSectorDropdown(false);
-                          }}
-                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                        >
-                          <div>
-                            {sectorName}
-                            {sectorUnit && (
-                              <span className="text-xs text-gray-400 ml-2">
-                                (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              )}
+<div className="flex flex-col gap-1">
+  <label className="text-xs text-gray-500">Sector *</label>
+  <div className="relative" ref={sectorDropdownRef}>
+    <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+    <input
+      type="text"
+      value={sectorSearch || (form.sector ? form.sector : "")}
+      placeholder="Select Sector"
+      onFocus={() => setShowSectorDropdown(true)}
+      onChange={(e) => {
+        setSectorSearch(e.target.value);
+        if (form.sector) {
+          setForm({ ...form, sector: "" });
+        }
+        setShowSectorDropdown(true);
+      }}
+      className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+    />
+    {form.sector && (
+      <button
+        type="button"
+        onClick={() => {
+          setForm({ ...form, sector: '' });
+          setSectorSearch('');
+          setShowSectorDropdown(false);
+        }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+      >
+        <X size={20} />
+      </button>
+    )}
+    {showSectorDropdown && (
+      <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        {/* ... existing sector dropdown logic ... */}
+        {(() => {
+          const filteredSectors = sectorsList.filter((s) =>
+            !sectorSearch || s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+          );
+          if (filteredSectors.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching sectors</div>;
+          return filteredSectors.map((sector) => (
+            <div
+              key={sector.id || sector.name}
+              onClick={() => {
+                setForm({ ...form, sector: sector.name });
+                setSectorSearch(sector.name);
+                setShowSectorDropdown(false);
+              }}
+              className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+            >
+              <div>{sector.name} {sector.unit && <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sector.unit] || sector.unit})</span>}</div>
             </div>
-
+          ));
+        })()}
+      </div>
+    )}
+  </div>
+</div>
+<div className="flex flex-col gap-1">
+  <label className="text-xs text-gray-500">Client *</label>
             <div className="relative" ref={clientDropdownRef}>
               <Handshake
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -5069,7 +4999,7 @@ const CreateProject = () => {
                 </div>
               )}
             </div>
-
+</div>
             {form.client && (
               <>
 

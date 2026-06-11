@@ -148,12 +148,31 @@ export const saveDailyWorkLog = createAsyncThunk(
         duration: durationSeconds,
         hours: durationSeconds / 3600
       };
+    // } catch (error) {
+    //   console.error('Error saving work log:', error);
+    //   showError(error.message || 'Failed to save record');
+    //   return rejectWithValue(error.message);
+    // }
     } catch (error) {
-      console.error('Error saving work log:', error);
-      showError(error.message || 'Failed to save record');
-      return rejectWithValue(error.message);
+  console.error('Error saving work log:', error);
+
+  // Safely extract the backend error response
+  const backendData = error.response?.data;
+
+  // 1. Try to get the specific inner error ("Your total work log exceeds 24 hours.")
+  const specificError = backendData?.errors?.non_field_errors?.[0];
+  
+  // 2. Try to get the general backend message ("Failed to add time log.")
+  const generalMessage = backendData?.message;
+
+  // Prioritize the specific error, fallback to the general message, then fallback to a default string.
+  const errorMessage = specificError || generalMessage || 'Failed to save record';
+
+  showError(errorMessage);
+  return rejectWithValue(errorMessage);
+}
     }
-  }
+  
 );
 
 export const updateDailyWorkplan = createAsyncThunk(
