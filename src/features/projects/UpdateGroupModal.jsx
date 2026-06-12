@@ -65,13 +65,18 @@ const Highlighted = ({ text = "", term = "" }) => {
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
 
-const ProjectSearchInput = ({ projects, value, onChange, error, disabled }) => {
+const ProjectSearchInput = ({ projects, value, onChange, error, disabled,onToggle }) => {
     const selectedProject = projects.find((p) => (p.id || p.project_id) === value);
     const displayName = (p) => p.short_name || p.shortName || p.project_name || p.name || "";
 
     const [search, setSearch] = useState(selectedProject ? displayName(selectedProject) : "");
     const [open, setOpen] = useState(false);
     const containerRef = useRef(null);
+    useEffect(() => {
+        if (onToggle) {
+            onToggle(open);
+        }
+    }, [open, onToggle]);
 
     useEffect(() => {
         setSearch(selectedProject ? displayName(selectedProject) : "");
@@ -257,6 +262,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
 
     const [detailCache, setDetailCache] = useState({});
     const [loadingDetail, setLoadingDetail] = useState({});
+
+    const [openDropdowns, setOpenDropdowns] = useState({});
+    const isAnyDropdownOpen = Object.values(openDropdowns).some(Boolean);
 
     const ensureProjectDetail = useCallback(async (projectId) => {
         console.log("Ensuring project detail for projectId:", projectId);
@@ -491,7 +499,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto px-4 pt-4 pb-2">
+                        <div className={`overflow-x-auto px-4 pt-4 transition-all duration-200 ${isAnyDropdownOpen ? "pb-42" : "pb-2"}`}>
                             <table className="w-full text-xs" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
                                 <thead>
                                     <tr className="text-[10px] uppercase tracking-wider text-gray-400">
@@ -547,6 +555,10 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                     transition={{ duration: 0.16 }}
                                                     className={`group transition-all ${disabled ? "opacity-60 bg-gray-50/50" : ""
                                                         }`}
+                                                        style={{
+                                                                 position: "relative",
+                                                                    zIndex: openDropdowns[row._id] ? 50 : 1
+            }}
                                                 >
                                                     {/* CHECKBOX */}
 
@@ -580,6 +592,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             }
                                                             error={e("projectId")}
                                                             disabled={disabled}
+                                                            onToggle={(isOpen) => setOpenDropdowns((prev) => ({ ...prev, [row._id]: isOpen }))}
                                                         />
                                                     </td>
 

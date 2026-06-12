@@ -11,6 +11,7 @@ import { projectWorkSummaryService } from '../../services/projectWorkSummaryServ
 import { stagesTemplateService } from '../../services/stagesTemplateService';
 import { showError, showSuccess } from '../../utils/toast.js'; // <-- ADD THIS
 
+import { trackWorkLogService } from '../../services/trackworklogService.js';
 import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
 
 
@@ -33,7 +34,25 @@ const initialState = {
 
   taskPlannersData: null, // Store the full response
   taskPlanners: [], // Keep for backward compatibility
+
+  trackWorkLogData: null, // <-- ADDED THIS
 };
+
+
+// ============ TRACK WORK LOG THUNKS ============ // <-- ADDED THIS SECTION
+export const fetchTrackWorkLog = createAsyncThunk(
+  "api/fetchTrackWorkLog",
+  async (subActivityId, { rejectWithValue }) => {
+    try {
+      const response = await trackWorkLogService.getTrackWorkLog(subActivityId);
+      return response;
+    } catch (error) {
+      console.error('Error fetching track work log:', error);
+      showError(error.message || 'Failed to fetch track work log');
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 
 // ============ TASK PLANNER THUNKS ============
@@ -792,6 +811,20 @@ const apiSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
+
+    .addCase(fetchTrackWorkLog.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.trackWorkLogData = null;
+      })
+      .addCase(fetchTrackWorkLog.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trackWorkLogData = action.payload;
+      })
+      .addCase(fetchTrackWorkLog.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
       // ============ TASK PLANNERS ============
       .addCase(fetchTaskPlanners.pending, (state) => {
