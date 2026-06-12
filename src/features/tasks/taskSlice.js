@@ -148,31 +148,31 @@ export const saveDailyWorkLog = createAsyncThunk(
         duration: durationSeconds,
         hours: durationSeconds / 3600
       };
-    // } catch (error) {
-    //   console.error('Error saving work log:', error);
-    //   showError(error.message || 'Failed to save record');
-    //   return rejectWithValue(error.message);
-    // }
+      // } catch (error) {
+      //   console.error('Error saving work log:', error);
+      //   showError(error.message || 'Failed to save record');
+      //   return rejectWithValue(error.message);
+      // }
     } catch (error) {
-  console.error('Error saving work log:', error);
+      console.error('Error saving work log:', error);
 
-  // Safely extract the backend error response
-  const backendData = error.response?.data;
+      // Safely extract the backend error response
+      const backendData = error.response?.data;
 
-  // 1. Try to get the specific inner error ("Your total work log exceeds 24 hours.")
-  const specificError = backendData?.errors?.non_field_errors?.[0];
-  
-  // 2. Try to get the general backend message ("Failed to add time log.")
-  const generalMessage = backendData?.message;
+      // 1. Try to get the specific inner error ("Your total work log exceeds 24 hours.")
+      const specificError = backendData?.errors?.non_field_errors?.[0];
 
-  // Prioritize the specific error, fallback to the general message, then fallback to a default string.
-  const errorMessage = specificError || generalMessage || 'Failed to save record';
+      // 2. Try to get the general backend message ("Failed to add time log.")
+      const generalMessage = backendData?.message;
 
-  showError(errorMessage);
-  return rejectWithValue(errorMessage);
-}
+      // Prioritize the specific error, fallback to the general message, then fallback to a default string.
+      const errorMessage = specificError || generalMessage || 'Failed to save record';
+
+      showError(errorMessage);
+      return rejectWithValue(errorMessage);
     }
-  
+  }
+
 );
 
 export const updateDailyWorkplan = createAsyncThunk(
@@ -408,7 +408,7 @@ export const saveDailyWorkplan = createAsyncThunk(
       const timeLogDataArray = logs.map((log) => {
         const {
           projectId, subActivityId, date, startTime, endTime,
-          work_type, note, status, phase = "R0",
+          workType, note, status, phase = "R0",
           submission_po_status = "", submission_invoice_status = "",
           approval_po_status = "", approval_invoice_status = ""
         } = log;
@@ -449,9 +449,9 @@ export const saveDailyWorkplan = createAsyncThunk(
           start_time: startDateTime,
           end_time: endDateTime,
           duration: durationSeconds,
-          work_type: work_type,
+          work_type: workType,
           date: date,
-          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          note: note,
           phase: phase,
           submission_po_status: submission_po_status,
           submission_invoice_status: submission_invoice_status,
@@ -459,7 +459,7 @@ export const saveDailyWorkplan = createAsyncThunk(
           approval_invoice_status: approval_invoice_status
         };
       });
-
+      console.log("Formatted time log data array:", timeLogDataArray);
       // 2. Send the entire array in a SINGLE API request
       const response = await api.post('/time-planer/', timeLogDataArray);
 

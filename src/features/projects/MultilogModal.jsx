@@ -42,7 +42,7 @@ const emptyRow = () => ({
     startTime: "",
     endTime: "",
     workType: "",
-    description: "",
+    note: "",
 });
 
 // highlight matching text
@@ -69,13 +69,20 @@ const Highlighted = ({ text = "", term = "" }) => {
 //   onChange   – (id, project) => void
 //   error      – boolean
 
-const ProjectSearchInput = ({ projects, value, onChange, error }) => {
+const ProjectSearchInput = ({ projects, value, onChange, error, onToggle }) => {
     const selectedProject = projects.find((p) => (p.id || p.project_id) === value);
     const displayName = (p) => p.short_name || p.shortName || p.project_name || p.name || "";
 
     const [search, setSearch] = useState(selectedProject ? displayName(selectedProject) : "");
     const [open, setOpen] = useState(false);
     const containerRef = useRef(null);
+
+
+    useEffect(() => {
+        if (onToggle) {
+            onToggle(open);
+        }
+    }, [open, onToggle]);
 
     // sync display text when value changes externally (e.g. row reset)
     useEffect(() => {
@@ -94,6 +101,8 @@ const ProjectSearchInput = ({ projects, value, onChange, error }) => {
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
     }, [value]);
+
+
 
     const filtered = projects.filter((p) =>
         displayName(p).toLowerCase().includes(search.toLowerCase()) ||
@@ -192,6 +201,8 @@ const ProjectSearchInput = ({ projects, value, onChange, error }) => {
               rounded-lg shadow-xl max-h-52 overflow-y-auto"
                         onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     >
+
+
                         {/* count hint */}
                         {search && sortedFiltered.length > 0 && (
                             <div className="px-2 py-1.5 border-b border-gray-100 text-[9px] text-gray-400 bg-gray-50">
@@ -328,6 +339,8 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
 
+    const [openDropdowns, setOpenDropdowns] = useState({});
+    const isAnyDropdownOpen = Object.values(openDropdowns).some(Boolean);
     const [detailCache, setDetailCache] = useState({});
     const [loadingDetail, setLoadingDetail] = useState({});
 
@@ -426,7 +439,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                 errs[`${r._id}.endTime`] = true;
             }
 
-            // if (!r.workType) errs[`${r._id}.workType`] = true;
+            if (!r.workType) errs[`${r._id}.workType`] = true;
         });
 
         // ✅ Date validation
@@ -545,7 +558,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                         </div>
 
                         {/* table */}
-                        <div className="overflow-x-auto px-4 pt-4 pb-2">
+                        <div className={`overflow-x-auto px-4 pt-4 transition-all duration-200 ${isAnyDropdownOpen ? "pb-42" : "pb-2"}`}>
                             <table className="w-full text-xs" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
                                 <thead>
                                     <tr className="text-[10px] uppercase tracking-wider text-gray-400">
@@ -558,7 +571,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
                                         <th className="px-2 pb-1 text-left min-w-[130px]">Work Type <span className="text-red-400">*</span></th>
-                                        <th className="px-2 pb-1 text-left min-w-[190px]">Description</th>
+                                        <th className="px-2 pb-1 text-left min-w-[190px]">note</th>
                                         <th className="px-2 pb-1 w-7"></th>
                                     </tr>
                                 </thead>
@@ -581,6 +594,11 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                     exit={{ opacity: 0, x: -16 }}
                                                     transition={{ duration: 0.16 }}
                                                     className="group"
+                                                    style={{
+                                                        position: "relative",
+                                                        zIndex: openDropdowns[row._id] ? 50 : 1
+                                                    }}
+
                                                 >
                                                     {/* # */}
                                                     <td className="px-1 py-2 align-top text-center">
@@ -597,6 +615,9 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                             value={row.projectId}
                                                             onChange={(pid) => handleProjectChange(row._id, pid)}
                                                             error={e("projectId")}
+                                                            onToggle={(isOpen) =>
+                                                                setOpenDropdowns((prev) => ({ ...prev, [row._id]: isOpen }))
+                                                            }
                                                         />
                                                     </td>
 
@@ -688,12 +709,12 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                         )}
                                                     </td>
 
-                                                    {/* Description */}
+                                                    {/* note */}
                                                     <td className="px-1 py-2 align-top">
                                                         <input
                                                             type="text"
-                                                            value={row.description}
-                                                            onChange={(ev) => updateRow(row._id, "description", ev.target.value)}
+                                                            value={row.note}
+                                                            onChange={(ev) => updateRow(row._id, "note", ev.target.value)}
                                                             placeholder="What did you work on?"
                                                             className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs
                                 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -704,8 +725,8 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                     <td className="px-1 py-2 align-top text-center">
                                                         <button
                                                             onClick={() => removeRow(row._id)}
-                                                            disabled={rows.length === 1}
-                                                            className="p-1.5 rounded-lg text-gray-300 group-hover:text-gray-400
+                                                            // disabled={rows.length === 1}
+                                                            className="p-1.5 rounded-lg text-red-300 group-hover:text-gray-400
                                 hover:!text-red-500 hover:bg-red-50 transition
                                 disabled:opacity-20 disabled:cursor-not-allowed"
                                                             title="Remove row"
