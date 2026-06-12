@@ -9,7 +9,7 @@ import { subActivityService } from '../../services/subActivityService';
 import { projectService } from '../../services/projectService';
 import { projectWorkSummaryService } from '../../services/projectWorkSummaryService';
 import { stagesTemplateService } from '../../services/stagesTemplateService';
-import { showError } from '../../utils/toast.js'; // <-- ADD THIS
+import { showError, showSuccess } from '../../utils/toast.js'; // <-- ADD THIS
 
 import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
 
@@ -22,7 +22,7 @@ const initialState = {
   reportingHeads: [],
   stageTemplates: [],
   activities: [],
-  subActivities: [],
+  subActivities: [], 
   subActivityDetails: null,
   projectWorkSummary: null,
   projects: [],
@@ -618,6 +618,7 @@ export const tlSubactivitySubmitwithProof = createAsyncThunk(
       // const url = ''
       // const url = "/subactivity-submission/";
       await projectService.tlSubactivitySubmitwithProof(proofData, url);
+      showSuccess('Proof submitted successfully');
       return proofData; // Return the submitted data for potential state updates
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

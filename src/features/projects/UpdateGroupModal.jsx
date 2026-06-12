@@ -342,7 +342,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     }, []);
 
     const addRow = () => setRows((prev) => [...prev, emptyRow()]);
-    const removeRow = (id) => setRows((prev) => prev.length > 1 ? prev.filter((r) => r._id !== id) : prev);
+    const removeRow = (id) => setRows((prev) => prev.filter((r) => r._id !== id));
 
     // Only calculate hours for selected rows
     const totalHours = rows.reduce((sum, r) => sum + calcHours(r.startTime, r.endTime), 0);
@@ -351,19 +351,20 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         const errs = {};
         const selectedRows = rows;
 
-        if (selectedRows.length === 0) {
-            errs["global"] = "Please select at least one task to update.";
-            setErrors(errs);
-            return false;
-        }
+        // if (selectedRows.length === 0) {
+        //     errs["global"] = "Please select at least one task to update.";
+        //     setErrors(errs);
+        //     return false;
+        // }
 
-        selectedRows.forEach((r) => {
+        selectedRows?.forEach((r) => {
             if (!r.projectId) errs[`${r._id}.projectId`] = true;
             if (!r.activityId) errs[`${r._id}.activityId`] = true;
             if (!r.subActivityId) errs[`${r._id}.subActivityId`] = true;
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
             if (r.startTime && r.endTime && r.endTime <= r.startTime) errs[`${r._id}.endTime`] = true;
+            if (!r.workType) errs[`${r._id}.workType`] = true;
         });
 
         if (!date) errs["date"] = "Date is required";
@@ -509,7 +510,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                         <th className="px-2 pb-1 text-center min-w-[85px]">Start Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[85px]">End Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
+
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
+                                        <th className="px-2 pb-1 text-center min-w-[68px]">Work Type</th>
                                         <th className="px-2 pb-1 text-left min-w-[190px]">Description</th>
                                         {/* <th className="px-1 py-2 text-center">Edit</th> */}
                                         {isEdit && (
@@ -529,7 +532,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                 row.endTime <= row.startTime;
 
                                             const e = (f) => !!errors[`${row._id}.${f}`];
-
+                                            const workTypes = workTypesFor(row.projectId);
                                             const isEditing = editingRow === row._id;
 
                                             // Row is editable only when selected AND Edit button clicked
@@ -677,6 +680,31 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         />
                                                     </td>
 
+                                                    <td className="px-1 py-2 align-top">
+                                                        <Sel
+                                                            value={row.workType}
+                                                            onChange={(v) => updateRow(row._id, "workType", v)}
+                                                            placeholder={
+                                                                !row.projectId ? "Work type" :
+                                                                    isLoadingThis ? "Loading…" :
+                                                                        workTypes.length === 0 ? "None defined" : "Select type"
+                                                            }
+                                                            disabled={disabled}
+                                                            loading={isLoadingThis}
+                                                            error={e("workType")}
+                                                        >
+                                                            {workTypes.map((wt) => (
+                                                                <option key={wt.id} value={wt.id}>{wt.name}</option>
+                                                            ))}
+                                                        </Sel>
+                                                        {row.projectId && !isLoadingThis && workTypes.length === 0 && (
+                                                            <p className="text-[9px] text-amber-500 mt-0.5 leading-tight">
+                                                                No work types in this sector
+                                                            </p>
+                                                        )}
+                                                    </td>
+
+
                                                     {/* DESCRIPTION */}
                                                     <td className="px-1 py-2 align-top">
                                                         <input
@@ -730,8 +758,8 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         <td className="px-1 py-2 align-top text-center">
                                                             <button
                                                                 onClick={() => removeRow(row._id)}
-                                                                disabled={rows.length === 1}
-                                                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-20"
+                                                                // disabled={rows.length === 1}
+                                                                className="p-1.5 rounded-lg text-red-1000 hover:text-red-500 hover:bg-red-50 transition "
                                                                 title="Remove row"
                                                             >
                                                                 <Trash2 size={14} />

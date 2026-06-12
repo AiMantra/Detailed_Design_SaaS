@@ -906,7 +906,26 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-600">
                                                                 <Clock size={12} className="text-indigo-400" />
-                                                                {formatTime(p.start_time)} – {formatTime(p.end_time)}
+                                                                <span>
+                                                                    {(() => {
+                                                                        const utcDate = new Date(p.start_time);
+                                                                        const hours = utcDate.getUTCHours();
+                                                                        const minutes = utcDate.getUTCMinutes();
+                                                                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                                                                        const displayHours = hours % 12 || 12;
+                                                                        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                                                                    })()}
+                                                                </span>
+                                                                <span>
+                                                                    to {(() => {
+                                                                        const utcDate = new Date(p.end_time);
+                                                                        const hours = utcDate.getUTCHours();
+                                                                        const minutes = utcDate.getUTCMinutes();
+                                                                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                                                                        const displayHours = hours % 12 || 12;
+                                                                        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                                                                    })()}
+                                                                </span>
                                                             </div>
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                                 <Hourglass size={11} className="text-purple-400" />
@@ -1048,6 +1067,7 @@ const MyTasksTable = ({ group }) => {
                 <thead>
                     <tr className="bg-gray-50/80 text-gray-500 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
                         <th className="px-6 py-4 whitespace-nowrap">Task Note</th>
+                        <th className="px-6 py-4 whitespace-nowrap">Project Code</th>
                         <th className="px-6 py-4 whitespace-nowrap">Project</th>
                         <th className="px-6 py-4 whitespace-nowrap">Subactivity</th>
                         <th className="px-6 py-4 whitespace-nowrap">Schedule</th>
@@ -1080,17 +1100,29 @@ const MyTasksTable = ({ group }) => {
                                             <Briefcase size={14} className="text-gray-500" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-gray-700">
-                                                {task?.project_detail?.project_name || task.project_name || "Unnamed project"}
-                                            </span>
+
                                             <span className="text-[11px] text-gray-400 font-mono mt-0.5">
                                                 {task?.project_detail?.project_code || task.project_code || "No code available"}
                                             </span>
                                         </div>
                                     </div>
                                 </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 bg-gray-100 rounded-md shrink-0">
+                                            <Briefcase size={14} className="text-gray-500" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-semibold text-gray-700">
+                                                {task?.project_detail?.project_name || task.project_name || "Unnamed project"}
+                                            </span>
+
+                                        </div>
+                                    </div>
+                                </td>
 
                                 {/* Subactivity details stacked */}
+
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center gap-3">
                                         <div className="p-1.5 bg-gray-100 rounded-md shrink-0">
@@ -1114,8 +1146,26 @@ const MyTasksTable = ({ group }) => {
                                             <Clock size={14} className="text-indigo-500" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-gray-700">{formatTime(task.start_time)}</span>
-                                            <span className="text-[11px] text-gray-400 font-medium">to {formatTime(task.end_time)}</span>
+                                            <span className="text-sm font-bold text-gray-700">
+                                                {(() => {
+                                                    const utcDate = new Date(task.start_time);
+                                                    const hours = utcDate.getUTCHours();
+                                                    const minutes = utcDate.getUTCMinutes();
+                                                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                                                    const displayHours = hours % 12 || 12;
+                                                    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                                                })()}
+                                            </span>
+                                            <span className="text-[11px] text-gray-400 font-medium">
+                                                to {(() => {
+                                                    const utcDate = new Date(task.end_time);
+                                                    const hours = utcDate.getUTCHours();
+                                                    const minutes = utcDate.getUTCMinutes();
+                                                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                                                    const displayHours = hours % 12 || 12;
+                                                    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                                                })()}
+                                            </span>
                                         </div>
                                     </div>
                                 </td>

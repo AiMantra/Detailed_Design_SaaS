@@ -262,11 +262,16 @@ export const projectService = {
           formData.append("rejection_proof", file);
         });
       }
+    
 
       for (const key in proofData) {
         if (key !== "documents" && key !== "rejection_proof" && proofData[key] !== "") {
           formData.append(key, proofData[key]);
         }
+      }
+      console.log("FormData entries:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ": ", pair[1]);
       }
       const response = await api.post(url, formData, {
         headers: {
