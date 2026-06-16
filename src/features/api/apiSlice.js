@@ -42,12 +42,13 @@ const initialState = {
 // ============ TRACK WORK LOG THUNKS ============ // <-- ADDED THIS SECTION
 export const fetchTrackWorkLog = createAsyncThunk(
   "api/fetchTrackWorkLog",
-  async (subActivityId, { rejectWithValue }) => {
+  async (filters, { rejectWithValue }) => {
     try {
-      const response = await trackWorkLogService.getTrackWorkLog(subActivityId);
+      const response = await trackWorkLogService.getTrackWorkLog(filters);
       return response;
     } catch (error) {
       console.error('Error fetching track work log:', error);
+      // Assuming showError is accessible in your scope
       showError(error.message || 'Failed to fetch track work log');
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -818,6 +819,7 @@ const apiSlice = createSlice({
         state.trackWorkLogData = null;
       })
       .addCase(fetchTrackWorkLog.fulfilled, (state, action) => {
+        console.log('Track Work Log fetched successfully:', action.payload);
         state.loading = false;
         state.trackWorkLogData = action.payload;
       })
