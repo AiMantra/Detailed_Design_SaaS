@@ -22,6 +22,7 @@ import apiReducer from "../features/api/apiSlice";
 import logReducer from '../features/dailyLogs/logSlice';
 import tasksReducer from '../features/tasks/taskSlice';
 import ticketReducer from "../features/ticketsManagement/ticketslice"
+import trackWorkLogReducer from "../features/api/apiSlice"
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -32,5 +33,6 @@ export const store = configureStore({
     logs: logReducer,
     tasks: tasksReducer,
     tickets: ticketReducer,
+    trackWorkLog: trackWorkLogReducer,
   },
 });
