@@ -943,204 +943,204 @@ const TlProjectList = () => {
                                 )} */}
 
                                 {/* For APPROVE - Confirmation, Proof, and Remarks */}
-{/* For APPROVE - Confirmation, Proof, and Remarks */}
-{proofData.to_status === "Approved" && (
-    <div className="space-y-4">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-800 text-sm">
-                Are you sure you want to approve this work?
-            </p>
-            <p className="text-green-600 text-xs mt-1">
-                This will mark the stage as approved and move to next stage.
-            </p>
-        </div>
+                                {/* For APPROVE - Confirmation, Proof, and Remarks */}
+                                {proofData.to_status === "Approved" && (
+                                    <div className="space-y-4">
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <p className="text-green-800 text-sm">
+                                                Are you sure you want to approve this work?
+                                            </p>
+                                            <p className="text-green-600 text-xs mt-1">
+                                                This will mark the stage as approved and move to next stage.
+                                            </p>
+                                        </div>
 
-        {/* Approval Proof Upload (Reusing the 'documents' state) */}
-        <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-                Approval Proof <span className="text-red-500">*</span>
-            </label>
-            <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-green-400 transition">
-                <input
-                    type="file"
-                 
-                    className="hidden"
-                    onChange={(e) =>
-                        setProofData({
-                            ...proofData,
-                            // Notice we use 'documents' here!
-                            // documents: [...(proofData.documents || []), ...Array.from(e.target.files)],
-                            documents: Array.from(e.target.files),
-                        })
-                    }
-                />
-                <p className="text-sm text-gray-500">
-                    <span className="text-green-600 font-medium">browse approval proofs</span>
-                </p>
-            </label>
+                                        {/* Approval Proof Upload (Reusing the 'documents' state) */}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Approval Proof <span className="text-red-500">*</span>
+                                            </label>
+                                            <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-green-400 transition">
+                                                <input
+                                                    type="file"
 
-            {/* File Preview Grid */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
-                {proofData?.documents?.map((file, i) => {
-                    const isImage = file.type.startsWith("image/");
-                    const url = URL.createObjectURL(file);
-                    return (
-                        <div key={i} className="relative border rounded-lg overflow-hidden group">
-                            {isImage ? (
-                                <img src={url} alt="preview" className="w-full h-20 object-cover" />
-                            ) : (
-                                <div className="flex items-center justify-center h-20 bg-gray-100 text-xs text-gray-600">
-                                    📄 {file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
-                                </div>
-                            )}
-                            <button
-                                onClick={() =>
-                                    setProofData({
-                                        ...proofData,
-                                        // Notice we use 'documents' here too!
-                                        documents: proofData.documents.filter((_, index) => index !== i),
-                                    })
-                                }
-                                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
+                                                    className="hidden"
+                                                    onChange={(e) =>
+                                                        setProofData({
+                                                            ...proofData,
+                                                            // Notice we use 'documents' here!
+                                                            // documents: [...(proofData.documents || []), ...Array.from(e.target.files)],
+                                                            documents: Array.from(e.target.files),
+                                                        })
+                                                    }
+                                                />
+                                                <p className="text-sm text-gray-500">
+                                                    <span className="text-green-600 font-medium">browse approval proofs</span>
+                                                </p>
+                                            </label>
 
-        <div className="mt-5">
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-                Remarks <span className="text-red-500">*</span>
-            </label>
-            <textarea
-                value={proofData.remarks}
-                onChange={(e) =>
-                    setProofData({ ...proofData, remarks: e.target.value })
-                }
-                placeholder="Add any approval remarks..."
-                rows={3}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-        </div>
-    </div>
-)}
+                                            {/* File Preview Grid */}
+                                            <div className="grid grid-cols-3 gap-3 mt-4">
+                                                {proofData?.documents?.map((file, i) => {
+                                                    const isImage = file.type.startsWith("image/");
+                                                    const url = URL.createObjectURL(file);
+                                                    return (
+                                                        <div key={i} className="relative border rounded-lg overflow-hidden group">
+                                                            {isImage ? (
+                                                                <img src={url} alt="preview" className="w-full h-20 object-cover" />
+                                                            ) : (
+                                                                <div className="flex items-center justify-center h-20 bg-gray-100 text-xs text-gray-600">
+                                                                    📄 {file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                onClick={() =>
+                                                                    setProofData({
+                                                                        ...proofData,
+                                                                        // Notice we use 'documents' here too!
+                                                                        documents: proofData.documents.filter((_, index) => index !== i),
+                                                                    })
+                                                                }
+                                                                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
 
-                               {/* For REJECT - Need rejection details and proof */}
-{proofData.to_status === "Rejected" && (
-    <div className="space-y-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 text-sm">
-                Please provide rejection details
-            </p>
-        </div>
+                                        <div className="mt-5">
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Remarks <span className="text-red-500">*</span>
+                                            </label>
+                                            <textarea
+                                                value={proofData.remarks}
+                                                onChange={(e) =>
+                                                    setProofData({ ...proofData, remarks: e.target.value })
+                                                }
+                                                placeholder="Add any approval remarks..."
+                                                rows={3}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
-        <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-                Event Type <span className="text-red-500">*</span>
-            </label>
-            <select
-                value={proofData.event_type || ""}
-                onChange={(e) =>
-                    setProofData({ ...proofData, event_type: e.target.value })
-                }
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 bg-white"
-            >
-                <option value="" disabled>Select Event Type</option>
-                <option value="work_mistake">Work Mistake</option>
-                <option value="client_change">Client Change</option>
-            </select>
-        </div>
+                                {/* For REJECT - Need rejection details and proof */}
+                                {proofData.to_status === "Rejected" && (
+                                    <div className="space-y-4">
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                            <p className="text-red-800 text-sm">
+                                                Please provide rejection details
+                                            </p>
+                                        </div>
 
-        {/* Conditional Field: Only shows if "Client Change" is selected */}
-        {proofData.event_type === "client_change" && (
-            <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                    Extra Payment Percent (%) <span className="text-red-500">*</span>
-                </label>
-                <input
-                    type="number"
-                    value={proofData.extra_payment_percent || ""}
-                    onChange={(e) =>
-                        setProofData({ ...proofData, extra_payment_percent: e.target.value })
-                    }
-                    placeholder="Enter percentage..."
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                />
-            </div>
-        )}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Event Type <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                value={proofData.event_type || ""}
+                                                onChange={(e) =>
+                                                    setProofData({ ...proofData, event_type: e.target.value })
+                                                }
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 bg-white"
+                                            >
+                                                <option value="" disabled>Select Event Type</option>
+                                                <option value="work_mistake">Work Mistake</option>
+                                                <option value="client_change">Client Change</option>
+                                            </select>
+                                        </div>
 
-        <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-                Remarks (Reason) <span className="text-red-500">*</span>
-            </label>
-            {/* Uses 'remarks' instead of 'rejection_reason' to match API */}
-            <textarea
-                value={proofData.remarks || ""}
-                onChange={(e) =>
-                    setProofData({ ...proofData, remarks: e.target.value })
-                }
-                placeholder="Enter detailed reason for rejection..."
-                rows={3}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-            />
-        </div>
+                                        {/* Conditional Field: Only shows if "Client Change" is selected */}
+                                        {proofData.event_type === "client_change" && (
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                    Extra Payment Percent (%) <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={proofData.extra_payment_percent || ""}
+                                                    onChange={(e) =>
+                                                        setProofData({ ...proofData, extra_payment_percent: e.target.value })
+                                                    }
+                                                    placeholder="Enter percentage..."
+                                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                                />
+                                            </div>
+                                        )}
 
-        {/* Rejection Proof Upload (Reusing the 'documents' state) */}
-        <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-                Rejection Proof <span className="text-red-500">*</span>
-            </label>
-            <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
-                <input
-                    type="file"
-                    className="hidden"
-                    onChange={(e) =>
-                        setProofData({
-                            ...proofData,
-                            documents: Array.from(e.target.files), // Same logic as Approve
-                        })
-                    }
-                />
-                <p className="text-sm text-gray-500">
-                    <span className="text-red-600 font-medium">browse rejection proofs</span>
-                </p>
-            </label>
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Remarks (Reason) <span className="text-red-500">*</span>
+                                            </label>
+                                            {/* Uses 'remarks' instead of 'rejection_reason' to match API */}
+                                            <textarea
+                                                value={proofData.remarks || ""}
+                                                onChange={(e) =>
+                                                    setProofData({ ...proofData, remarks: e.target.value })
+                                                }
+                                                placeholder="Enter detailed reason for rejection..."
+                                                rows={3}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                            />
+                                        </div>
 
-            {/* File Preview Grid */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
-                {proofData?.documents?.map((file, i) => {
-                    const isImage = file.type.startsWith("image/");
-                    const url = URL.createObjectURL(file);
-                    return (
-                        <div key={i} className="relative border rounded-lg overflow-hidden group">
-                            {isImage ? (
-                                <img src={url} alt="preview" className="w-full h-20 object-cover" />
-                            ) : (
-                                <div className="flex items-center justify-center h-20 bg-gray-100 text-xs text-gray-600">
-                                    📄 {file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
-                                </div>
-                            )}
-                            <button
-                                onClick={() =>
-                                    setProofData({
-                                        ...proofData,
-                                        documents: proofData.documents.filter((_, index) => index !== i),
-                                    })
-                                }
-                                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    </div>
-)}
+                                        {/* Rejection Proof Upload (Reusing the 'documents' state) */}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700 block mb-1">
+                                                Rejection Proof <span className="text-red-500">*</span>
+                                            </label>
+                                            <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={(e) =>
+                                                        setProofData({
+                                                            ...proofData,
+                                                            documents: Array.from(e.target.files), // Same logic as Approve
+                                                        })
+                                                    }
+                                                />
+                                                <p className="text-sm text-gray-500">
+                                                    <span className="text-red-600 font-medium">browse rejection proofs</span>
+                                                </p>
+                                            </label>
+
+                                            {/* File Preview Grid */}
+                                            <div className="grid grid-cols-3 gap-3 mt-4">
+                                                {proofData?.documents?.map((file, i) => {
+                                                    const isImage = file.type.startsWith("image/");
+                                                    const url = URL.createObjectURL(file);
+                                                    return (
+                                                        <div key={i} className="relative border rounded-lg overflow-hidden group">
+                                                            {isImage ? (
+                                                                <img src={url} alt="preview" className="w-full h-20 object-cover" />
+                                                            ) : (
+                                                                <div className="flex items-center justify-center h-20 bg-gray-100 text-xs text-gray-600">
+                                                                    📄 {file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                onClick={() =>
+                                                                    setProofData({
+                                                                        ...proofData,
+                                                                        documents: proofData.documents.filter((_, index) => index !== i),
+                                                                    })
+                                                                }
+                                                                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* For SUBMIT - Upload work proof */}
                                 {proofData.to_status === "Submitted" && (
@@ -1260,78 +1260,77 @@ const TlProjectList = () => {
 
 
                                 {/* ACTIONS */}
-<div className="flex gap-3 mt-6">
-    <button
-        onClick={() => {
-            setShowProofModal(false)
-            setProofData({
-                documents: [],
-                stage: "",
-                to_status: "Submitted",
-                created_by: user?.emp_code || "",
-                remarks: "",
-                event_type: "",
-                extra_payment_percent: "",
-                document_type: "ref_doc",
-                client_remarks: "",
-                projectId: null
-            })
-        }}
-        className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
-    >
-        Cancel
-    </button>
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        onClick={() => {
+                                            setShowProofModal(false)
+                                            setProofData({
+                                                documents: [],
+                                                stage: "",
+                                                to_status: "Submitted",
+                                                created_by: user?.emp_code || "",
+                                                remarks: "",
+                                                event_type: "",
+                                                extra_payment_percent: "",
+                                                document_type: "ref_doc",
+                                                client_remarks: "",
+                                                projectId: null
+                                            })
+                                        }}
+                                        className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
 
-    <button
-        onClick={handleSubmitProof}
-        // disabled={
-        //     loder ||
-        //     // 1. Submit Validation
-        //     (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
-        //     // 2. Reject Validation (Updated to use new fields!)
-        //     (proofData.to_status === "Rejected" && (
-        //         !proofData.event_type || 
-        //         !proofData.remarks || 
-        //         proofData.documents.length < 1||
-        //         (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
-        //     ))
-        // }
+                                    <button
+                                        onClick={handleSubmitProof}
+                                        // disabled={
+                                        //     loder ||
+                                        //     // 1. Submit Validation
+                                        //     (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
+                                        //     // 2. Reject Validation (Updated to use new fields!)
+                                        //     (proofData.to_status === "Rejected" && (
+                                        //         !proofData.event_type || 
+                                        //         !proofData.remarks || 
+                                        //         proofData.documents.length < 1||
+                                        //         (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
+                                        //     ))
+                                        // }
 
-disabled={
-        loder ||
-        // 1. Submit Validation
-        (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
-        // 2. Reject Validation
-        (proofData.to_status === "Rejected" && (
-            !proofData.event_type || 
-            !proofData.remarks || 
-            !proofData.remarks.trim() ||
-            proofData.documents.length < 1|| // Prevents just typing spaces
-            (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
-        )) ||
-        // 3. Approve Validation: BOTH remarks AND documents are MANDATORY
-        (proofData.to_status === "Approved" && (
-            !proofData.remarks || 
-            !proofData.remarks.trim() || 
-            !proofData.documents || 
-            proofData.documents.length < 1
-        ))
-    }
+                                        disabled={
+                                            loder ||
+                                            // 1. Submit Validation
+                                            (proofData.to_status === "Submitted" && (!proofData.documents || proofData.documents.length < 1)) ||
+                                            // 2. Reject Validation
+                                            (proofData.to_status === "Rejected" && (
+                                                !proofData.event_type ||
+                                                !proofData.remarks ||
+                                                !proofData.remarks.trim() ||
+                                                proofData.documents.length < 1 || // Prevents just typing spaces
+                                                (proofData.event_type === "client_change" && !proofData.extra_payment_percent)
+                                            )) ||
+                                            // 3. Approve Validation: BOTH remarks AND documents are MANDATORY
+                                            (proofData.to_status === "Approved" && (
+                                                !proofData.remarks ||
+                                                !proofData.remarks.trim() ||
+                                                !proofData.documents ||
+                                                proofData.documents.length < 1
+                                            ))
+                                        }
 
-        className={`flex-1 px-4 py-2 rounded-lg text-white transition disabled:opacity-50 ${
-            proofData.to_status === "Approved"
-                ? "bg-green-600 hover:bg-green-700"
-                : proofData.to_status === "Rejected"
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-        }`}
-    >
-        {loder ? <Loader2 size={16} className="animate-spin mx-auto" /> :
-            proofData.to_status === "Approved" ? "Confirm Approval" :
-                proofData.to_status === "Rejected" ? "Confirm Rejection" : "Submit Proof"
-        }
-    </button>
-</div>
+                                        className={`flex-1 px-4 py-2 rounded-lg text-white transition disabled:opacity-50 ${proofData.to_status === "Approved"
+                                            ? "bg-green-600 hover:bg-green-700"
+                                            : proofData.to_status === "Rejected"
+                                                ? "bg-red-600 hover:bg-red-700"
+                                                : "bg-blue-600 hover:bg-blue-700"
+                                            }`}
+                                    >
+                                        {loder ? <Loader2 size={16} className="animate-spin mx-auto" /> :
+                                            proofData.to_status === "Approved" ? "Confirm Approval" :
+                                                proofData.to_status === "Rejected" ? "Confirm Rejection" : "Submit Proof"
+                                        }
+                                    </button>
+                                </div>
                             </motion.div>
                         </motion.div>
                     )}
@@ -2369,8 +2368,8 @@ disabled={
                                                                                                                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
 
                                                                                                                             {/* Physical Progress */}
-                                                                                                                            <div>
-                                                                                                                                <div className="flex justify-between text-xs mb-1">
+                                                                                                                            {/* <div> */}
+                                                                                                                            {/* <div className="flex justify-between text-xs mb-1">
                                                                                                                                     <span className="text-gray-500">Physical Progress</span>
                                                                                                                                     <span className="font-medium text-green-600">
                                                                                                                                         {activityProgress}%
@@ -2385,11 +2384,11 @@ disabled={
                                                                                                                                         className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
                                                                                                                                     />
                                                                                                                                 </div>
-                                                                                                                            </div>
+                                                                                                                            </div> */}
 
                                                                                                                             {/* Financial Progress */}
-                                                                                                                            <div>
-                                                                                                                                <div className="flex justify-between text-xs mb-1">
+                                                                                                                            {/* <div> */}
+                                                                                                                            {/* <div className="flex justify-between text-xs mb-1">
                                                                                                                                     <span className="text-gray-500">Financial Progress</span>
                                                                                                                                     <span className="font-medium text-blue-600">
                                                                                                                                         {financialProgress}%
@@ -2404,7 +2403,7 @@ disabled={
                                                                                                                                         className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                                                                                                                                     />
                                                                                                                                 </div>
-                                                                                                                            </div>
+                                                                                                                            </div> */}
 
                                                                                                                         </div>
                                                                                                                         {/* <div className="mt-2">

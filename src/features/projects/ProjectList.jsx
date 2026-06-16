@@ -2113,57 +2113,57 @@ const ProjectList = () => {
               <span className="text-sm font-medium text-gray-700">Work Log</span>
             </motion.button>
           </div> */}
-        <div className="mb-10 flex justify-between items-start">
-  <div>
-    <div className="flex items-center gap-3 mb-2">
-      <motion.h1
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
-      >
-        {isAdmin ? "Project Portfolio" : "AVAILABLE PROJECTS"}
-      </motion.h1>
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${isACCOUNT
-          ? "bg-purple-100 text-purple-600"
-          : isAdmin
-            ? "bg-blue-100 text-blue-600"
-            : "bg-green-100 text-green-600"
-          }`}
-      >
-        {getRoleIcon()}
-        {getRoleDisplay()}
-      </motion.div>
-    </div>
-    <motion.p
-      initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ delay: 0.1 }}
-      className="text-gray-500 text-lg"
-    >
-      {isAdmin
-        ? "Track and manage all your construction projects in one place"
-        : "Browse projects and pick tasks to work on"}
-    </motion.p>
-  </div>
+          <div className="mb-10 flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <motion.h1
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
+                >
+                  {isAdmin ? "Project Portfolio" : "AVAILABLE PROJECTS"}
+                </motion.h1>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${isACCOUNT
+                    ? "bg-purple-100 text-purple-600"
+                    : isAdmin
+                      ? "bg-blue-100 text-blue-600"
+                      : "bg-green-100 text-green-600"
+                    }`}
+                >
+                  {getRoleIcon()}
+                  {getRoleDisplay()}
+                </motion.div>
+              </div>
+              <motion.p
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="text-gray-500 text-lg"
+              >
+                {isAdmin
+                  ? "Track and manage all your construction projects in one place"
+                  : "Browse projects and pick tasks to work on"}
+              </motion.p>
+            </div>
 
-  <motion.button
-    initial={{ opacity: 0, x: 20 }}
-    animate={{ opacity: 1, x: 0 }}
-    onClick={handleRefresh}
-    disabled={showLoading}
-    className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
-  >
-    <RefreshCw
-      size={20}
-      className={`text-blue-600 ${refreshing ? "animate-spin" : ""}`}
-    />
-    <span className="text-sm font-medium text-gray-700">Refresh</span>
-  </motion.button>
-</div>
-          
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={handleRefresh}
+              disabled={showLoading}
+              className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
+            >
+              <RefreshCw
+                size={20}
+                className={`text-blue-600 ${refreshing ? "animate-spin" : ""}`}
+              />
+              <span className="text-sm font-medium text-gray-700">Refresh</span>
+            </motion.button>
+          </div>
+
 
           {/* Stats Cards - Removed Critical/Delayed for user, only shown to Admin */}
 
@@ -3320,7 +3320,7 @@ const ProjectList = () => {
                                                             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
 
                                                               {/* Physical Progress */}
-                                                              <div>
+                                                              {/* <div>
                                                                 <div className="flex justify-between text-xs mb-1">
                                                                   <span className="text-gray-500">Physical Progress</span>
                                                                   <span className="font-medium text-green-600">
@@ -3336,10 +3336,10 @@ const ProjectList = () => {
                                                                     className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
                                                                   />
                                                                 </div>
-                                                              </div>
+                                                              </div>  */}
 
                                                               {/* Financial Progress */}
-                                                              <div>
+                                                              {/* <div>
                                                                 <div className="flex justify-between text-xs mb-1">
                                                                   <span className="text-gray-500">Financial Progress</span>
                                                                   <span className="font-medium text-blue-600">
@@ -3355,7 +3355,7 @@ const ProjectList = () => {
                                                                     className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                                                                   />
                                                                 </div>
-                                                              </div>
+                                                              </div> */}
 
                                                             </div>
 
