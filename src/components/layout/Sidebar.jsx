@@ -30,6 +30,9 @@ import {
 
 import logo from "../../assets/aimantra.png";
 
+import { CustomImageModal } from "../../utils/CustomFunctions";
+import { IMAGE_URL } from "../../services/api";
+
 const Sidebar = () => {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -65,7 +68,7 @@ const Sidebar = () => {
     },
 
     {
-      name: "Track Work Log",
+      name: "Track Rework",
       icon: FileClock, // You already have this imported from lucide-react
       path: "/track-work-log",
       roles: ["TL", "ACCOUNT"], // Visible only to TL and Account
@@ -250,7 +253,7 @@ const Sidebar = () => {
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support","Track Work Log"
+      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support","Track Rework"
       // "settings"
     ].includes(item.name)
   );
@@ -477,7 +480,7 @@ const Sidebar = () => {
           </div>
 
           {/* Footer user */}
-          {!desktopCollapsed || isMobile ? (
+          {/* {!desktopCollapsed || isMobile ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -511,6 +514,67 @@ const Sidebar = () => {
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
                   {user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </motion.aside> */}
+
+      {!desktopCollapsed || isMobile ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="relative p-3 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-slate-900/40 backdrop-blur-sm"
+            >
+              <div className="flex items-center gap-2">
+                <div className="relative shrink-0">
+                  {user?.profilepic ? (
+                    <CustomImageModal customStyle>
+                      <img
+                        src={`${IMAGE_URL}${user?.profilepic}`}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-lg object-cover shadow-md"
+                      />
+                    </CustomImageModal>
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">
+                    {user?.name || "User"}
+                  </p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
+                    <Shield size={8} />
+                    {user?.role || "USER"}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="relative p-3 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-slate-900/40 backdrop-blur-sm flex justify-center"
+            >
+              <div className="relative">
+                {user?.profilepic ? (
+                  <CustomImageModal customStyle>
+                    <img
+                      src={`${IMAGE_URL}${user?.profilepic}`}
+                      alt={user.name}
+                      className="w-7 h-7 rounded-lg object-cover shadow-md"
+                    />
+                  </CustomImageModal>
+                ) : (
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                )}
                 <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
               </div>
             </motion.div>

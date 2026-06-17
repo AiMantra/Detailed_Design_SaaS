@@ -1069,6 +1069,11 @@ const CycleSection = ({ cycle }) => {
                 {cycle.event_type.replace('_', ' ')}
               </span>
             )}
+            {cycle.created_by && (
+        <span className="text-xs text-gray-600 bg-gray-200/50 px-2 py-1 rounded-md border border-gray-200">
+          Created by: <span className="font-medium">{cycle.created_by.name}</span> ({cycle.created_by.employee_code})
+        </span>
+      )}
           </div>
           <p className="text-sm text-gray-600 flex items-center gap-1">
             <CalendarDays size={14} /> {cycle.intimation_date || new Date(cycle.created_at).toLocaleDateString()}
@@ -1248,7 +1253,7 @@ const TrackWorkLog = () => {
       {/* --- Filter Section --- */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <AlertCircle className="text-red-500" /> Project Work & Rework Logs
+          <AlertCircle className="text-red-500" /> Project Reworks Logs
         </h1>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-5 rounded-xl border border-gray-100">

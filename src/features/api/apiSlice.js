@@ -1083,6 +1083,7 @@ const apiSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchProjectDetails.fulfilled, (state, action) => {
+        console.log('Project details fetched successfully:', action.payload);
         state.loading = false;
         state.projectDetails = action.payload;
       })
