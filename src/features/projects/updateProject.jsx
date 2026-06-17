@@ -114,9 +114,17 @@ const UpdateProject = () => {
     const [clientSearch, setClientSearch] = useState("");
     const [reportingHeadSearch, setReportingHeadSearch] = useState("");
     const [showClientDropdown, setShowClientDropdown] = useState(false);
+    const [showClientCode, setClientCode] = useState("");
     const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
     const clientDropdownRef = useRef(null);
     const ReportingHeadsDropdownRef = useRef(null);
+
+    const [companySearch, setCompanySearch] = useState("");
+    const [sectorSearch, setSectorSearch] = useState("");
+    const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+    const [showSectorDropdown, setShowSectorDropdown] = useState(false);
+    const companyDropdownRef = useRef(null);
+    const sectorDropdownRef = useRef(null);
 
     const [calculatedGST, setCalculatedGST] = useState({
         igst: 0,
@@ -185,6 +193,109 @@ const UpdateProject = () => {
     const [branches, setBranches] = useState([
         { name: "", gst: "", state: "", status: "Active" },
     ]);
+
+    const [workStages, setWorkStages] = useState({});
+
+    // --- Dynamic Work Stages Handlers ---
+    const handleAddStage = (subId) => {
+        setWorkStages((prev) => {
+            const existing = prev[subId] || [];
+            return {
+                ...prev,
+                [subId]: [
+                    ...existing,
+                    { id: `temp_stg_${subId}_${Date.now()}`, name: "", payment_percent: "" },
+                ],
+            };
+        });
+    };
+
+    const handleRemoveStage = (subId, stageId) => {
+        setWorkStages((prev) => {
+            const existing = prev[subId] || [];
+            return {
+                ...prev,
+                [subId]: existing.filter((s) => s.id !== stageId),
+            };
+        });
+    };
+
+    //   const handleStageUpdate = (subId, stageId, field, value) => {
+    //     setWorkStages((prev) => {
+    //       const existing = prev[subId] || [];
+    //       return {
+    //         ...prev,
+    //         [subId]: existing.map((s) =>
+    //           s.id === stageId ? { ...s, [field]: value } : s
+    //         ),
+    //       };
+    //     });
+    //   };
+
+
+    const handleStageUpdate = (subId, stageId, field, value) => {
+        // 1. Intercept weightage changes to prevent exceeding 100%
+        if (field === 'payment_percent') {
+            const newPercent = parseFloat(value) || 0;
+
+            let otherStagesTotal = 0;
+            let currentPercentOfThisStage = 0;
+
+            // Sum up percentages of all currently selected activities/sub-activities
+            selectedActivities.forEach(actId => {
+                const selectedSubs = selectedSubActivities[actId] || [];
+                selectedSubs.forEach(sId => {
+                    const stages = workStages[sId] || [];
+                    stages.forEach(stg => {
+                        if (sId === subId && stg.id === stageId) {
+                            currentPercentOfThisStage = parseFloat(stg.payment_percent) || 0;
+                        } else {
+                            otherStagesTotal += parseFloat(stg.payment_percent) || 0;
+                        }
+                    });
+                });
+            });
+
+            const projectedTotal = otherStagesTotal + newPercent;
+
+            // 2. Block if it exceeds 100% AND the user is trying to increase the value
+            // (We allow decreases so users can fix errors if they clone an activity and go over 100%)
+            if (projectedTotal > 100 && newPercent > currentPercentOfThisStage) {
+                const maxAllowed = Math.max(0, 100 - otherStagesTotal);
+
+                // Show user a warning that they hit the limit
+                dispatch(
+                    showSnackbar({
+                        message: `Total project weightage cannot exceed 100%. Capped at ${maxAllowed.toFixed(2)}%.`,
+                        type: "warning",
+                    })
+                );
+
+                // Auto-cap the value to whatever percentage is left
+                setWorkStages((prev) => {
+                    const existing = prev[subId] || [];
+                    return {
+                        ...prev,
+                        [subId]: existing.map((s) =>
+                            s.id === stageId ? { ...s, [field]: maxAllowed > 0 ? maxAllowed : "" } : s
+                        ),
+                    };
+                });
+                return; // Stop the standard update
+            }
+        }
+
+        // 3. Standard update if it's within the 100% limit (or if updating the stage name)
+        setWorkStages((prev) => {
+            const existing = prev[subId] || [];
+            return {
+                ...prev,
+                [subId]: existing.map((s) =>
+                    s.id === stageId ? { ...s, [field]: value } : s
+                ),
+            };
+        });
+    };
 
     const addBranch = () => {
         setBranches([
@@ -289,7 +400,12 @@ const UpdateProject = () => {
         if (selectedClientObj) {
             setClientSearch(`${selectedClientObj.client_name} - ${selectedClientObj.client_code || "N/A"}`);
         }
-
+        if (selectedCompanyObj) {
+            setCompanySearch(selectedCompanyObj?.name);
+        }
+        if (selectedSectorObj) {
+            setSectorSearch(selectedSectorObj?.name);
+        }
         setIsLoadingProject(false);
     }, [projectData, companies, sectors, clients]);
 
@@ -340,12 +456,34 @@ const UpdateProject = () => {
 
                     // Set planned quantities
                     subQtysMap[`${subId}_quantity`] = sub.total_quantity || 0;
-                    subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
-                    subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
+                    subQtysMap[`${subId}_start_date`] = sub.start_date || "";
+                    subQtysMap[`${subId}_end_date`] = sub.end_date || "";
+                    // subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
+                    // subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
                     subQtysMap[`${subId}_chainagestart`] = parseFloat(sub.chainage_start) || 0;
                     subQtysMap[`${subId}_chainageend`] = parseFloat(sub.chainage_end) || 0;
                     subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
                     subQtysMap[`${subId}_description`] = sub.description || "";
+                    // Initialize dynamic stages from backend data
+                    if (sub.stages && sub.stages.length > 0) {
+                        setWorkStages(prev => ({
+                            ...prev,
+                            [subId]: sub.stages.map((stg, i) => ({
+                                id: stg.id, // Preserve existing DB ID for updating
+                                name: stg.name || stg.stage_type || `Stage ${i + 1}`,
+                                payment_percent: stg.payment_percent || 0
+                            }))
+                        }));
+                    } else {
+                        // Fallback for older data that doesn't have the stages array yet
+                        setWorkStages(prev => ({
+                            ...prev,
+                            [subId]: [
+                                { id: `temp_stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+                                { id: `temp_stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+                            ]
+                        }));
+                    }
                 });
             }
             subSelectionsMap[activityId] = selectedSubs;
@@ -475,6 +613,18 @@ const UpdateProject = () => {
             ) {
                 setShowSupervisorDropdown(false);
             }
+            if (
+                companyDropdownRef.current &&
+                !companyDropdownRef.current.contains(event.target)
+            ) {
+                setShowCompanyDropdown(false);
+            }
+            if (
+                sectorDropdownRef.current &&
+                !sectorDropdownRef.current.contains(event.target)
+            ) {
+                setShowSectorDropdown(false);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -506,25 +656,44 @@ const UpdateProject = () => {
         }));
     };
 
-    const getActivityTotals = (activity, storeData) => {
-        let totalSubmission = 0;
-        let totalApproval = 0;
+    // const getActivityTotals = (activity, storeData) => {
+    //     let totalSubmission = 0;
+    //     let totalApproval = 0;
 
-        activity.subActivities.forEach((sub) => {
-            const subId = sub.id;
+    //     activity.subActivities.forEach((sub) => {
+    //         const subId = sub.id;
 
-            const submissionKey = `${subId}_subpayment`;
-            const approvalKey = `${subId}_approvalpayment`;
+    //         const submissionKey = `${subId}_subpayment`;
+    //         const approvalKey = `${subId}_approvalpayment`;
 
-            const submissionValue = parseFloat(storeData[submissionKey]) || 0;
-            const approvalValue = parseFloat(storeData[approvalKey]) || 0;
+    //         const submissionValue = parseFloat(storeData[submissionKey]) || 0;
+    //         const approvalValue = parseFloat(storeData[approvalKey]) || 0;
 
-            totalSubmission += submissionValue;
-            totalApproval += approvalValue;
+    //         totalSubmission += submissionValue;
+    //         totalApproval += approvalValue;
+    //     });
+
+    //     return totalSubmission + totalApproval;
+    // };
+
+
+    // Deriving Weightages Dynamically
+    useEffect(() => {
+        const newWeightages = {};
+        selectedActivities.forEach(activityId => {
+            let total = 0;
+            const selectedSubs = selectedSubActivities[activityId] || [];
+            selectedSubs.forEach(subId => {
+                const stages = workStages[subId] || [];
+                stages.forEach(stg => {
+                    total += parseFloat(stg.payment_percent) || 0;
+                });
+            });
+            newWeightages[activityId] = total;
         });
+        setActivityWeightages(newWeightages);
+    }, [workStages, selectedSubActivities, selectedActivities]);
 
-        return totalSubmission + totalApproval;
-    };
 
     const handleActivityWeightageChange = (activityId, value, subid) => {
         const numValue = parseFloat(value) || 0;
@@ -553,12 +722,12 @@ const UpdateProject = () => {
                 activitySubs.delete(subId);
             }
 
+
             const newSelectedSubs = Array.from(activitySubs);
 
             // Recalculate weightage for this activity based on selected sub-activities
             const activityObj = getAllActivities().find(a => a.id === activityId);
-            // if (activityObj) {
-            if (activityObj && selectedActivities.includes(activityId)) {
+            if (activityObj) {
                 let totalWeightage = 0;
 
                 newSelectedSubs.forEach(selectedSubId => {
@@ -641,7 +810,7 @@ const UpdateProject = () => {
     };
 
     const handleSubActivityPlannedQtyChange = (subId, field, value) => {
-        if (field === "description") {
+        if (field === "description" || field === "start_date" || field === "end_date") {
             setSubActivityPlannedQtys((prev) => ({
                 ...prev,
                 [`${subId}_${field}`]: value,
@@ -665,27 +834,21 @@ const UpdateProject = () => {
             for (const activity of allActivities) {
                 const subExists = activity.subActivities.some(s => s.id === subId);
                 if (subExists) {
-                    // Check if this activity is selected
-                    const isActivitySelected = selectedActivities.includes(activity.id);
-                    if (isActivitySelected) {
-                        // Check if this sub-activity is selected
-                        const selectedSubs = selectedSubActivities[activity.id] || [];
-                        if (selectedSubs.includes(subId)) {
-                            let totalWeightage = 0;
-                            selectedSubs.forEach(selectedSubId => {
-                                const subObj = activity.subActivities.find(s => s.id === selectedSubId);
-                                if (subObj) {
-                                    const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-                                    const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-                                    totalWeightage += submissionPayment + approvalPayment;
-                                }
-                            });
-                            console.log(`Recalculated weightage for activity ${activity.id}: ${totalWeightage}%`);
-                            setActivityWeightages(prev => ({
-                                ...prev,
-                                [activity.id]: totalWeightage
-                            }));
-                        }
+                    const selectedSubs = selectedSubActivities[activity.id] || [];
+                    if (selectedSubs.includes(subId)) {
+                        let totalWeightage = 0;
+                        selectedSubs.forEach(selectedSubId => {
+                            const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                            if (subObj) {
+                                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                                totalWeightage += submissionPayment + approvalPayment;
+                            }
+                        });
+                        setActivityWeightages(prev => ({
+                            ...prev,
+                            [activity.id]: totalWeightage
+                        }));
                     }
                     break;
                 }
@@ -1036,37 +1199,286 @@ const UpdateProject = () => {
         const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
         if (subObj) {
-            // Preserve ALL properties for multiple sub-activities
-            const cloneData = {
+            setCloningSubActivity({
                 activityId,
                 sourceSubId: subId,
                 subactivity_name: subObj.subactivity_name,
                 unit: subObj.unit,
-                activityType: subObj.activityType || (subObj.chainage_start ? "multiple" : "single"),
+                activityType: subObj.activityType || "single",
+                chainage_start: subObj.chainage_start || "",
+                covered_area: subObj.covered_area || "",
+                chainage_quantity: subObj.chainage_quantity || "",
+                lengthType: subObj.lengthType || "same",
+                chainageLengths: subObj.chainageLengths || [],
                 isCustom: true,
-            };
-
-            // Only add chainage properties if it's a multiple type
-            if (cloneData.activityType === "multiple") {
-                cloneData.chainage_start = subObj.chainage_start || "";
-                cloneData.covered_area = subObj.covered_area || "";
-                cloneData.chainage_quantity = subObj.chainage_quantity || "";
-                cloneData.lengthType = subObj.lengthType || "same";
-                // Make sure to properly copy chainageLengths array
-                cloneData.chainageLengths = subObj.chainageLengths ? [...subObj.chainageLengths] : [];
-            } else {
-                // For single type, set default values
-                cloneData.chainage_start = "";
-                cloneData.covered_area = "";
-                cloneData.chainage_quantity = "";
-                cloneData.lengthType = "same";
-                cloneData.chainageLengths = [];
-            }
-
-            setCloningSubActivity(cloneData);
+            });
             setShowCloneSubActivityModal(true);
         }
     };
+
+    // const handleCloneSubActivitySubmit = async (e) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+
+    //     if (!cloningSubActivity) return;
+
+    //     let newSubs = [];
+
+    //     if (cloningSubActivity.activityType === "single") {
+    //         newSubs = [
+    //             {
+    //                 // id: `custom-sub-${Date.now()}`,
+    //                 sorting_var: null,
+    //                 subactivity_name: cloningSubActivity.subactivity_name,
+    //                 unit: cloningSubActivity.unit,
+    //                 activityType: cloningSubActivity.activityType,
+    //                 chainage_start: null,
+    //                 chainage_end: null,
+    //                 covered_area: null,
+    //                 chainage_quantity: null,
+    //                 lengthType: "same",
+    //                 chainageLengths: [],
+    //                 isCustom: true,
+    //             },
+    //         ];
+    //     } else {
+    //         const start = Number(cloningSubActivity.chainage_start) || 0;
+    //         const count = Number(cloningSubActivity.chainage_quantity) || 0;
+
+    //         if (!count || start === undefined) {
+    //             dispatch(showSnackbar({ message: "Enter valid Chainage Details", type: "error" }));
+    //             return;
+    //         }
+
+    //         let currentStart = Number(start);
+
+    //         if (cloningSubActivity.lengthType === "same") {
+    //             const covered = Number(cloningSubActivity.covered_area) || 0;
+
+    //             if (!covered) {
+    //                 dispatch(
+    //                     showSnackbar({
+    //                         message: "Please enter Chainage Length",
+    //                         type: "error",
+    //                     })
+    //                 );
+    //                 return;
+    //             }
+
+    //             for (let i = 0; i < count; i++) {
+
+    //                 // same chainage logic as your working test(1), test(2)
+    //                 const chainageStart = Number(currentStart.toFixed(2));
+    //                 const currentEnd = Number(
+    //                     (chainageStart + covered).toFixed(2)
+    //                 );
+
+    //                 newSubs.push({
+    //                     // id: `custom-sub-${Date.now()}-${i}`,
+    //                     sorting_var: null,
+
+    //                     // same naming pattern
+    //                     subactivity_name:
+    //                         cloningSubActivity.subactivity_name +
+    //                         ` (${i + 1})`,
+
+    //                     unit: cloningSubActivity.unit,
+
+    //                     // updated chainage logic
+    //                     chainage_start: chainageStart,
+    //                     chainage_end: currentEnd,
+
+    //                     covered_area: covered,
+    //                     chainage_quantity: count,
+
+    //                     activityType: cloningSubActivity.activityType,
+    //                     lengthType: "same",
+    //                     chainageLengths: [],
+    //                     lengthIndex: i,
+    //                     isCustom: true,
+    //                     chainage_exist: cloningSubActivity.chainage_exist || true,
+
+    //                     // keep flags same as existing structure
+    //                     approval_exist:
+    //                         cloningSubActivity.approval_exist || true,
+
+    //                     // chainage_exist:
+    //                     //     cloningSubActivity.chainage_exist ?? true,
+
+    //                     length_exist:
+    //                         cloningSubActivity.length_exist || true,
+
+    //                     planned_quantity_exist:
+    //                         cloningSubActivity.planned_quantity_exist || true,
+
+    //                     submission_exist:
+    //                         cloningSubActivity.submission_exist || true,
+    //                 });
+
+    //                 // next start
+    //                 currentStart = currentEnd;
+    //             }
+    //         } else {
+
+    //             const lengths = cloningSubActivity.chainageLengths;
+
+    //             if (lengths.length !== count) {
+    //                 dispatch(
+    //                     showSnackbar({
+    //                         message: `Please enter lengths for all ${count} chainages`,
+    //                         type: "error",
+    //                     })
+    //                 );
+    //                 return;
+    //             }
+
+    //             for (let i = 0; i < count; i++) {
+
+    //                 const covered = Number(lengths[i]) || 0;
+
+    //                 if (!covered) {
+    //                     dispatch(
+    //                         showSnackbar({
+    //                             message: `Please enter valid length for chainage ${i + 1}`,
+    //                             type: "error",
+    //                         })
+    //                     );
+    //                     return;
+    //                 }
+
+    //                 // same chainage logic
+    //                 const chainageStart = Number(currentStart.toFixed(2));
+    //                 const currentEnd = Number(
+    //                     (chainageStart + covered).toFixed(2)
+    //                 );
+
+    //                 newSubs.push({
+    //                     // id: `custom-sub-${Date.now()}-${i}`,
+    //                     sorting_var: null,
+
+    //                     // same naming pattern
+    //                     subactivity_name:
+    //                         cloningSubActivity.subactivity_name +
+    //                         ` (${i + 1})`,
+
+    //                     unit: cloningSubActivity.unit,
+
+    //                     chainage_start: chainageStart,
+    //                     chainage_end: currentEnd,
+
+    //                     covered_area: covered,
+    //                     chainage_quantity: count,
+
+    //                     activityType: cloningSubActivity.activityType,
+    //                     chainageLengths: lengths,
+    //                     lengthType: "different",
+    //                     lengthIndex: i,
+    //                     isCustom: true,
+
+    //                     approval_exist:
+    //                         cloningSubActivity.approval_exist || true,
+
+    //                     chainage_exist:
+    //                         cloningSubActivity.chainage_exist ?? true,
+
+    //                     length_exist:
+    //                         cloningSubActivity.length_exist || true,
+
+    //                     planned_quantity_exist:
+    //                         cloningSubActivity.planned_quantity_exist || true,
+
+    //                     submission_exist:
+    //                         cloningSubActivity.submission_exist || true,
+    //                 });
+
+    //                 // next start
+    //                 currentStart = currentEnd;
+    //             }
+    //         }
+    //     }
+
+    //     const activityId = cloningSubActivity.activityId;
+    //     const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
+    //     const newSubIds = newSubs.map((s) => s.id);
+    //     const lastSubId = newSubIds[newSubIds.length - 1];
+
+    //     const existingSubs =
+    //         templateIndex !== -1
+    //             ? [...(templatesActivities[templateIndex]?.subActivities || [])]
+    //             : [...(customActivities.find((act) => act.id === activityId)?.subActivities || [])];
+
+    //     let insertIndex = existingSubs.length;
+    //     const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
+    //     for (let i = existingSubs.length - 1; i >= 0; i--) {
+    //         if (existingSubs[i]?.subactivity_name?.toLowerCase() === lowerNewName) {
+    //             insertIndex = i + 1;
+    //             break;
+    //         }
+    //     }
+
+    //     const updatedSubActivities = [...existingSubs];
+    //     updatedSubActivities.splice(insertIndex, 0, ...newSubs);
+
+    //     const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
+    //         ...sub,
+    //         sorting_var: idx + 1,
+    //     }));
+
+    //     if (templateIndex !== -1) {
+    //         setTemplateActivities((prev) =>
+    //             prev.map((act, index) => {
+    //                 if (index === templateIndex) {
+    //                     return { ...act, subActivities: reassignedSubActivities };
+    //                 }
+    //                 return act;
+    //             })
+    //         );
+    //     } else {
+    //         setCustomActivities((prev) =>
+    //             prev.map((act) => {
+    //                 if (act.id === activityId) {
+    //                     return { ...act, subActivities: reassignedSubActivities };
+    //                 }
+    //                 return act;
+    //             })
+    //         );
+    //     }
+
+    //     setSelectedSubActivities((prev) => ({
+    //         ...prev,
+    //         [activityId]: [...(prev[activityId] || []), ...newSubIds],
+    //     }));
+
+    //     // Recalculate weightage for this activity
+    //     const activityObj = getAllActivities().find(a => a.id === activityId);
+    //     if (activityObj) {
+    //         const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
+    //         let totalWeightage = 0;
+    //         updatedSelectedSubs.forEach(selectedSubId => {
+    //             const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+    //             if (subObj) {
+    //                 const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+    //                 const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+    //                 totalWeightage += submissionPayment + approvalPayment;
+    //             }
+    //         });
+    //         setActivityWeightages(prev => ({
+    //             ...prev,
+    //             [activityId]: totalWeightage
+    //         }));
+    //     }
+
+    //     setTimeout(() => {
+    //         const lastSubElement = document.getElementById(`sub-${lastSubId}`);
+    //         if (lastSubElement) {
+    //             lastSubElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    //         }
+    //     }, 100);
+
+    //     setShowCloneSubActivityModal(false);
+    //     setCloningSubActivity(null);
+    //     dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
+    // };
 
     const handleCloneSubActivitySubmit = async (e) => {
         e.preventDefault();
@@ -1074,12 +1486,30 @@ const UpdateProject = () => {
 
         if (!cloningSubActivity) return;
 
+        // 1. Extract the missing source data from states to clone
+        const sourceId = cloningSubActivity.sourceSubId;
+        const activityId = cloningSubActivity.activityId;
+
+        const sourceDesc = subActivityPlannedQtys[`${sourceId}_description`] || "";
+        const sourceStartDate = subActivityPlannedQtys[`${sourceId}_start_date`] || "";
+        const sourceEndDate = subActivityPlannedQtys[`${sourceId}_end_date`] || "";
+        const sourceQty = subActivityPlannedQtys[`${sourceId}_quantity`] || "";
+        const sourceStages = workStages[sourceId] || [];
+
+        // Prepare batch updates for the states
+        const qtysToUpdate = {};
+        const unitsToUpdate = {};
+        const stagesToUpdate = {};
+
         let newSubs = [];
 
         if (cloningSubActivity.activityType === "single") {
+            // Generate a guaranteed unique ID
+            const newSubId = `custom-sub-clone-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
             newSubs = [
                 {
-                    // id: `custom-sub-${Date.now()}`,
+                    id: newSubId,
                     sorting_var: null,
                     subactivity_name: cloningSubActivity.subactivity_name,
                     unit: cloningSubActivity.unit,
@@ -1091,8 +1521,27 @@ const UpdateProject = () => {
                     lengthType: "same",
                     chainageLengths: [],
                     isCustom: true,
+                    // Keep visibility flags matching existing structure
+                    approval_exist: cloningSubActivity.approval_exist || true,
+                    chainage_exist: cloningSubActivity.chainage_exist ?? true,
+                    length_exist: cloningSubActivity.length_exist || true,
+                    planned_quantity_exist: cloningSubActivity.planned_quantity_exist || true,
+                    submission_exist: cloningSubActivity.submission_exist || true,
                 },
             ];
+
+            // 2. Map all extracted source fields to the NEW ID
+            unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+            qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+            qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+            qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+            qtysToUpdate[`${newSubId}_quantity`] = sourceQty;
+
+            stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+                ...stg,
+                id: `temp_stg_${newSubId}_${Date.now()}_${sIdx}`
+            }));
+
         } else {
             const start = Number(cloningSubActivity.chainage_start) || 0;
             const count = Number(cloningSubActivity.chainage_quantity) || 0;
@@ -1102,23 +1551,28 @@ const UpdateProject = () => {
                 return;
             }
 
-            let currentStart = start;
+            let currentStart = Number(start);
 
             if (cloningSubActivity.lengthType === "same") {
                 const covered = Number(cloningSubActivity.covered_area) || 0;
+
                 if (!covered) {
                     dispatch(showSnackbar({ message: "Please enter Chainage Length", type: "error" }));
                     return;
                 }
 
                 for (let i = 0; i < count; i++) {
-                    const currentEnd = Number((currentStart + covered).toFixed(2));
+                    const chainageStart = Number(currentStart.toFixed(2));
+                    const currentEnd = Number((chainageStart + covered).toFixed(2));
+
+                    const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
+
                     newSubs.push({
-                        // id: `custom-sub-${Date.now()}-${i}`,
+                        id: newSubId,
                         sorting_var: null,
-                        subactivity_name: cloningSubActivity.subactivity_name,
+                        subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: cloningSubActivity.unit,
-                        chainage_start: currentStart,
+                        chainage_start: chainageStart,
                         chainage_end: currentEnd,
                         covered_area: covered,
                         chainage_quantity: count,
@@ -1127,11 +1581,30 @@ const UpdateProject = () => {
                         chainageLengths: [],
                         lengthIndex: i,
                         isCustom: true,
+                        chainage_exist: cloningSubActivity.chainage_exist || true,
+                        approval_exist: cloningSubActivity.approval_exist || true,
+                        length_exist: cloningSubActivity.length_exist || true,
+                        planned_quantity_exist: cloningSubActivity.planned_quantity_exist || true,
+                        submission_exist: cloningSubActivity.submission_exist || true,
                     });
+
+                    // Map all extracted source fields to the NEW ID
+                    unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+                    qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+                    qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+                    qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+                    qtysToUpdate[`${newSubId}_quantity`] = 1; // Always 1 for separated chains
+
+                    stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+                        ...stg,
+                        id: `temp_stg_${newSubId}_${Date.now()}_${sIdx}`
+                    }));
+
                     currentStart = currentEnd;
                 }
             } else {
                 const lengths = cloningSubActivity.chainageLengths;
+
                 if (lengths.length !== count) {
                     dispatch(showSnackbar({ message: `Please enter lengths for all ${count} chainages`, type: "error" }));
                     return;
@@ -1139,17 +1612,23 @@ const UpdateProject = () => {
 
                 for (let i = 0; i < count; i++) {
                     const covered = Number(lengths[i]) || 0;
+
                     if (!covered) {
                         dispatch(showSnackbar({ message: `Please enter valid length for chainage ${i + 1}`, type: "error" }));
                         return;
                     }
-                    const currentEnd = Number((currentStart + covered).toFixed(2));
+
+                    const chainageStart = Number(currentStart.toFixed(2));
+                    const currentEnd = Number((chainageStart + covered).toFixed(2));
+
+                    const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
+
                     newSubs.push({
-                        // id: `custom-sub-${Date.now()}-${i}`,
+                        id: newSubId,
                         sorting_var: null,
-                        subactivity_name: cloningSubActivity.subactivity_name,
+                        subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: cloningSubActivity.unit,
-                        chainage_start: currentStart,
+                        chainage_start: chainageStart,
                         chainage_end: currentEnd,
                         covered_area: covered,
                         chainage_quantity: count,
@@ -1158,13 +1637,35 @@ const UpdateProject = () => {
                         lengthType: "different",
                         lengthIndex: i,
                         isCustom: true,
+                        approval_exist: cloningSubActivity.approval_exist || true,
+                        chainage_exist: cloningSubActivity.chainage_exist ?? true,
+                        length_exist: cloningSubActivity.length_exist || true,
+                        planned_quantity_exist: cloningSubActivity.planned_quantity_exist || true,
+                        submission_exist: cloningSubActivity.submission_exist || true,
                     });
+
+                    // Map all extracted source fields to the NEW ID
+                    unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+                    qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+                    qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+                    qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+                    qtysToUpdate[`${newSubId}_quantity`] = 1; // Always 1 for separated chains
+
+                    stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+                        ...stg,
+                        id: `temp_stg_${newSubId}_${Date.now()}_${sIdx}`
+                    }));
+
                     currentStart = currentEnd;
                 }
             }
         }
 
-        const activityId = cloningSubActivity.activityId;
+        // 3. Apply the state updates immediately
+        setSubActivityPlannedQtys(prev => ({ ...prev, ...qtysToUpdate }));
+        setSubActivityUnits(prev => ({ ...prev, ...unitsToUpdate }));
+        setWorkStages(prev => ({ ...prev, ...stagesToUpdate }));
+
         const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
         const newSubIds = newSubs.map((s) => s.id);
         const lastSubId = newSubIds[newSubIds.length - 1];
@@ -1216,7 +1717,7 @@ const UpdateProject = () => {
             [activityId]: [...(prev[activityId] || []), ...newSubIds],
         }));
 
-        // Recalculate weightage for this activity
+        // Trigger manual weightage recalculation (optional fallback as your useEffect handles it)
         const activityObj = getAllActivities().find(a => a.id === activityId);
         if (activityObj) {
             const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
@@ -1246,6 +1747,7 @@ const UpdateProject = () => {
         setCloningSubActivity(null);
         dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
     };
+
 
     const handleEditSubActivity = (activityId, subId) => {
         const activityObj = getAllActivities().find((a) => a.id === activityId);
@@ -1669,19 +2171,8 @@ const UpdateProject = () => {
             if (!selectedSubs.length) {
                 return showError(`Please select at least one sub-activity for ${activityLabel}`);
             }
-
-            // Check unit selection for each selected sub-activity
-            for (const subId of selectedSubs) {
-                const subObj = activityObj?.subActivities.find((s) => s.id === subId);
-                if (subObj && (!subObj.unit || subObj.unit === "")) {
-                    return showError(
-                        `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
-                    );
-                }
-            }
         }
 
-        // 🔹 Global Date Validation
         if (!validateDates()) {
             return false;
         }
@@ -1727,24 +2218,53 @@ const UpdateProject = () => {
                     const chainageend = subActivityPlannedQtys[`${subId}_chainageend`] || 0;
                     const coveredarea = subActivityPlannedQtys[`${subId}_coveredarea`] || 0;
                     const description = subActivityPlannedQtys[`${subId}_description`] || "";
+                    const start_date = subActivityPlannedQtys[`${subId}_start_date`] || null;
+                    const end_date = subActivityPlannedQtys[`${subId}_end_date`] || null;
                     const isStatusBased = unit === "status";
                     const subSortingVar = subObj?.sorting_var || 0;
 
                     const isNewSub = subId?.toString().startsWith('custom-sub-');
 
+                    // return {
+                    //     // id: subId,
+                    //     ...(isNewSub ? {} : { id: subId }),
+                    //     subactivity_name: subObj?.subactivity_name || String(subId),
+                    //     description: description,
+                    //     total_quantity: isStatusBased ? 1 : plannedQty,
+                    //     unit: isStatusBased ? "status" : unit,
+                    //     submission_payment: submissionpayment,
+                    //     approval_payment: approvalpayment,
+                    //     chainage_start: chainagestart,
+                    //     chainage_end: chainageend,
+                    //     covered_area: coveredarea || "0.00",
+                    //     sorting_var: subSortingVar,
+                    // };
+
+                    const work_stages = workStages[subId] || [];
+                    const mappedStages = work_stages.map((stg, sIdx) => {
+                        // Check if it's a newly added stage (has a temp_stg_ ID)
+                        const isNewStage = String(stg.id).startsWith("temp_stg_");
+                        return {
+                            ...(isNewStage ? {} : { id: stg.id }), // Include the ID only if it already exists in the DB
+                            name: stg.name || `Stage ${sIdx + 1}`,
+                            payment_percent: parseFloat(stg.payment_percent) || 0,
+                            sorting_var: sIdx + 1
+                        };
+                    });
+
                     return {
-                        // id: subId,
                         ...(isNewSub ? {} : { id: subId }),
                         subactivity_name: subObj?.subactivity_name || String(subId),
                         description: description,
+                        start_date: start_date, // ADD THIS
+                        end_date: end_date,     // ADD THIS
                         total_quantity: isStatusBased ? 1 : plannedQty,
                         unit: isStatusBased ? "status" : unit,
-                        submission_payment: submissionpayment,
-                        approval_payment: approvalpayment,
                         chainage_start: chainagestart,
                         chainage_end: chainageend,
                         covered_area: coveredarea || "0.00",
                         sorting_var: subSortingVar,
+                        work_stages: mappedStages // Pass the dynamic stages array to the backend!
                     };
                 });
 
@@ -1763,7 +2283,7 @@ const UpdateProject = () => {
             const selectedCompany = companies.find((c) => c.name === form.company);
 
             const formData = new FormData();
-
+            console.log("Activities Payload:", activitiesPayload);
             const payload = {
                 project_name: form.project_name,
                 project_code: form.project_code,
@@ -1785,21 +2305,25 @@ const UpdateProject = () => {
                 project_confirmation_date: form.project_confirmation_date || null,
                 sector: sectorsMap[form.sector] || null,
                 client: form.client || null,
+                // workorder_document: form.workorder_document ? form.workorder_document : form.existing_workorder_document,
                 activities: activitiesPayload,
+                ...(form.workorder_document && {
+                    workorder_document: form.workorder_document
+                })
             };
 
-            // // Add to FormData for file upload
-            // Object.keys(payload).forEach((key) => {
-            //     if (key === 'activities') {
-            //         formData.append(key, JSON.stringify(payload[key]));
-            //     } else {
-            //         formData.append(key, payload[key]);
-            //     }
-            // });
+            // Add to FormData for file upload
+            Object.keys(payload).forEach((key) => {
+                if (key === 'activities') {
+                    formData.append(key, JSON.stringify(payload[key]));
+                } else {
+                    formData.append(key, payload[key]);
+                }
+            });
 
-            // if (form.workorder_document) {
-            //     formData.append("workorder_document", form.workorder_document);
-            // }
+            if (form.workorder_document) {
+                formData.append("workorder_document", form.workorder_document);
+            }
 
             const apiResult = await dispatch(updateProjectApi({ projectId: projectId, projectData: payload })).unwrap();
 
@@ -1814,7 +2338,7 @@ const UpdateProject = () => {
             setProjectData(refreshedProject);
 
             // navigate("/all-projects");
-            setTimeout(() => navigate("/all-projects"), 2000);
+            // setTimeout(() => navigate("/all-projects"), 2000);
         } catch (error) {
             console.error("Project update error:", error);
             dispatch(
@@ -1957,7 +2481,7 @@ const UpdateProject = () => {
             recalculateActivityStages();
         }
     }, [selectedActivities, recalculateActivityStages]);
-
+    const [showAllFields, setShowAllFields] = useState({});
     if (isLoadingProject || !projectData) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -1969,6 +2493,55 @@ const UpdateProject = () => {
         );
     }
 
+
+
+    // Add click outside handler with clear logic
+    // useEffect(() => {
+    //     function handleClickOutside(event) {
+    //         // Handle Company dropdown
+    //         if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+    //             setShowCompanyDropdown(false);
+    //             // Check if current search value matches any company
+    //             const hasMatchingCompany = companies.some(c =>
+    //                 c.name?.toLowerCase() === companySearch?.toLowerCase()
+    //             );
+    //             // If no match and no company selected, clear the search
+    //             if (!hasMatchingCompany && !form.company && companySearch) {
+    //                 setCompanySearch("");
+    //             }
+    //         }
+
+    //         // Handle Sector dropdown
+    //         if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
+    //             setShowSectorDropdown(false);
+    //             // Check if current search value matches any sector
+    //             const hasMatchingSector = sectorsList.some(s =>
+    //                 s.name?.toLowerCase() === sectorSearch?.toLowerCase()
+    //             );
+    //             // If no match and no sector selected, clear the search
+    //             if (!hasMatchingSector && !form.sector && sectorSearch) {
+    //                 setSectorSearch("");
+    //             }
+    //         }
+
+    //         // Handle Client dropdown
+    //         if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
+    //             setShowClientDropdown(false);
+    //             // Check if current search value matches any client
+    //             const hasMatchingClient = clients.some(c =>
+    //                 c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
+    //                 c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
+    //             );
+    //             // If no match and no client selected, clear the search
+    //             if (!hasMatchingClient && !form.client && clientSearch) {
+    //                 setClientSearch("");
+    //             }
+    //         }
+    //     }
+
+    //     document.addEventListener("mousedown", handleClickOutside);
+    //     return () => document.removeEventListener("mousedown", handleClickOutside);
+    // }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
     // Rest of the component remains the same (all the JSX with modals and form)...
     return (
         <motion.div
@@ -2039,7 +2612,6 @@ const UpdateProject = () => {
                                 />
                                 <input
                                     type="number"
-                                    onWheel={(e) => e.target.blur()}
                                     placeholder="Contact Number"
                                     className="p-3 border rounded-xl"
                                     value={newClient.contact}
@@ -2435,7 +3007,6 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    onWheel={(e) => e.target.blur()}
                                                     step="0.01"
                                                     placeholder="0.00"
                                                     value={newSubActivity.chainage_start}
@@ -2456,7 +3027,6 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    onWheel={(e) => e.target.blur()}
                                                     min="1"
                                                     placeholder="Enter quantity"
                                                     value={newSubActivity.chainage_quantity}
@@ -2527,7 +3097,6 @@ const UpdateProject = () => {
                                                         </label>
                                                         <input
                                                             type="number"
-                                                            onWheel={(e) => e.target.blur()}
                                                             step="0.01"
                                                             placeholder="Enter length"
                                                             value={newSubActivity.covered_area}
@@ -2599,7 +3168,6 @@ const UpdateProject = () => {
                                                                             <div className="col-span-5">
                                                                                 <input
                                                                                     type="number"
-                                                                                    onWheel={(e) => e.target.blur()}
                                                                                     step="0.01"
                                                                                     placeholder="Length"
                                                                                     value={
@@ -2833,7 +3401,6 @@ const UpdateProject = () => {
                                         <select
                                             value={cloningSubActivity.unit}
                                             disabled
-                                            required
                                             className="w-full p-3 border rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
                                         >
                                             {UNIT_OPTIONS.map((option) => (
@@ -2854,10 +3421,9 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    onWheel={(e) => e.target.blur()}
                                                     step="0.01"
                                                     placeholder="0.00"
-                                                    value={cloningSubActivity.chainage_start || ""}
+                                                    value={cloningSubActivity.chainage_start}
                                                     onChange={(e) =>
                                                         setCloningSubActivity({
                                                             ...cloningSubActivity,
@@ -2875,16 +3441,15 @@ const UpdateProject = () => {
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    onWheel={(e) => e.target.blur()}
                                                     min="1"
                                                     placeholder="Enter quantity"
-                                                    value={cloningSubActivity.chainage_quantity || ""}
+                                                    value={cloningSubActivity.chainage_quantity}
                                                     onChange={(e) => {
                                                         const qty = e.target.value;
                                                         setCloningSubActivity({
                                                             ...cloningSubActivity,
                                                             chainage_quantity: qty,
-                                                            chainageLengths: qty ? new Array(Number(qty)).fill("") : [],
+                                                            chainageLengths: new Array(Number(qty)).fill(""),
                                                         });
                                                     }}
                                                     className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
@@ -2948,7 +3513,6 @@ const UpdateProject = () => {
                                                         </label>
                                                         <input
                                                             type="number"
-                                                            onWheel={(e) => e.target.blur()}
                                                             step="0.01"
                                                             placeholder="Enter length"
                                                             value={cloningSubActivity.covered_area}
@@ -3020,7 +3584,6 @@ const UpdateProject = () => {
                                                                             <div className="col-span-5">
                                                                                 <input
                                                                                     type="number"
-                                                                                    onWheel={(e) => e.target.blur()}
                                                                                     step="0.01"
                                                                                     placeholder="Length"
                                                                                     value={
@@ -3443,7 +4006,6 @@ const UpdateProject = () => {
                                             />
                                             <input
                                                 type="number"
-                                                onWheel={(e) => e.target.blur()}
                                                 placeholder="Quantity"
                                                 value={editingSubActivity.chainage_quantity}
                                                 onChange={(e) =>
@@ -3501,7 +4063,8 @@ const UpdateProject = () => {
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+            {/* <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8"> */}
+            <form className="space-y-6 md:space-y-8">
                 {/* Step 1: Basic Information */}
                 <motion.div
                     initial={false}
@@ -3572,31 +4135,97 @@ const UpdateProject = () => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Company *</label>
-                            <div className="relative">
-                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <select
-                                    name="company"
-                                    value={form.company}
-                                    onChange={handleChange}
-                                    className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                                >
-                                    <option value="">Select Company</option>
-                                    {companies.map((company) => (
-                                        <option key={company.id} value={company.name}>
-                                            {company.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {/* <button
+                        <div className="relative" ref={companyDropdownRef}>
+                            <Building2
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={16}
+                            />
+
+                            <input
+                                type="text"
+                                value={companySearch || (form.company ? form.company : "")}
+                                placeholder="Select Company"
+                                onFocus={() => {
+                                    setShowCompanyDropdown(true);
+                                }}
+                                onChange={(e) => {
+                                    setCompanySearch(e.target.value);
+                                    if (form.company) {
+                                        setForm({
+                                            ...form,
+                                            company: ""
+                                        });
+                                    }
+                                    setShowCompanyDropdown(true);
+                                }}
+                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                            />
+
+                            {/* Clear button */}
+                            {form.company && (
+                                <button
                                     type="button"
-                                    onClick={() => setShowAddCompanyModal(true)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors z-10"
+                                    onClick={() => {
+                                        setForm({
+                                            ...form,
+                                            company: ''
+                                        });
+                                        setCompanySearch('');
+                                        setShowCompanyDropdown(false);
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                                 >
-                                    <Plus size={14} />
-                                </button> */}
-                            </div>
+                                    <X size={20} />
+                                </button>
+                            )}
+
+                            {/* Dropdown */}
+                            {showCompanyDropdown && (
+                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const filteredCompanies = companies.filter((c) =>
+                                            !companySearch ||
+                                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                                        );
+
+                                        if (filteredCompanies.length === 0) {
+                                            return (
+                                                <div className="px-3 py-2 text-gray-400 text-sm">
+                                                    No matching companies - This will clear when you click outside
+                                                </div>
+                                            );
+                                        }
+
+                                        return filteredCompanies.map((company) => {
+                                            const companyName = company.name || "";
+
+                                            return (
+                                                <div
+                                                    key={company.id}
+                                                    onClick={() => {
+                                                        setForm({
+                                                            ...form,
+                                                            company: company.name,
+                                                        });
+                                                        setCompanySearch(company.name);
+                                                        setShowCompanyDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                >
+                                                    <div>
+                                                        {companyName}
+                                                        {company.gst_no && (
+                                                            <span className="text-xs text-gray-400 ml-2">
+                                                                (GST: {company.gst_no})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
                         {form.company && (
@@ -3608,7 +4237,7 @@ const UpdateProject = () => {
                                         type="text"
                                         name="gst_no"
                                         disabled
-                                        value={companies.filter((data) => data?.name == form.company)[0]?.gst_no || ""}
+                                        value={companies.find((data) => data?.name == form.company)?.gst_no || ""}
                                         onChange={handleChange}
                                         className="cursor-not-allowed w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                     />
@@ -3616,179 +4245,194 @@ const UpdateProject = () => {
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Sector *</label>
-                            <div className="relative">
-                                <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <select
-                                    name="sector"
-                                    value={form.sector}
-                                    onChange={handleChange}
-                                    className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                                >
-                                    <option value="">Select Sector</option>
-                                    {sectorsList.map((sector, i) => (
-                                        <option key={i} value={sector?.name}>
-                                            {sector?.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {/* <button
+                        <div className="relative" ref={sectorDropdownRef}>
+                            <Factory
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={16}
+                            />
+
+                            <input
+                                type="text"
+                                value={sectorSearch || (form.sector ? form.sector : "")}
+                                placeholder="Select Sector"
+                                onFocus={() => {
+                                    setShowSectorDropdown(true);
+                                }}
+                                onChange={(e) => {
+                                    setSectorSearch(e.target.value);
+                                    if (form.sector) {
+                                        setForm({
+                                            ...form,
+                                            sector: ""
+                                        });
+                                    }
+                                    setShowSectorDropdown(true);
+                                }}
+                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                            />
+
+                            {/* Clear button */}
+                            {form.sector && (
+                                <button
                                     type="button"
-                                    onClick={() => setShowAddSectorModal(true)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                                >
-                                    <Plus size={14} />
-                                </button> */}
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Client *</label>
-                            <div className="relative" ref={clientDropdownRef} onClick={(e) => e.stopPropagation()}>
-                                <Handshake className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                    type="text"
-                                    value={clientSearch}
-                                    placeholder="Select Client"
-                                    onFocus={() => setShowClientDropdown(true)}
-                                    onChange={(e) => {
-                                        setClientSearch(e.target.value);
-                                        setForm(prev => ({
-                                            ...prev,
-                                            clientbranch: ''
-                                        }));
-                                        setShowClientDropdown(true);
+                                    onClick={() => {
+                                        setForm({
+                                            ...form,
+                                            sector: ''
+                                        });
+                                        setSectorSearch('');
+                                        setShowSectorDropdown(false);
                                     }}
-                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                                />
-
-                                {/* <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowAddClientModal(true);
-                                    }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                                 >
-                                    <Plus size={14} />
-                                </button> */}
+                                    <X size={20} />
+                                </button>
+                            )}
 
-                                {/* Clear button */}
-                                {form.client && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setForm({
-                                                ...form,
-                                                client: '',
-                                                clientbranch: ''
-                                            });
-                                            setClientSearch('');
-                                            setShowClientDropdown(true);
-                                        }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                        title="Clear client"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                )}
-                                {/* Dropdown with sorting and highlighting */}
-                                {showClientDropdown && (
-                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                        }
-                                        }
-                                    >
-                                        {clientSearch && clients.filter(c =>
-                                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
-                                        ).length > 0 && (
-                                                <div className="px-3 py-2 border-t border-gray-100 text-xs text-gray-400 bg-gray-50">
-                                                    Showing {clients.filter(c =>
-                                                        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
-                                                    ).length} of {clients.length} clients
+                            {/* Dropdown */}
+                            {showSectorDropdown && (
+                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const filteredSectors = sectorsList.filter((s) =>
+                                            !sectorSearch ||
+                                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                                        );
+
+                                        if (filteredSectors.length === 0) {
+                                            return (
+                                                <div className="px-3 py-2 text-gray-400 text-sm">
+                                                    No matching sectors - This will clear when you click outside
                                                 </div>
-                                            )}
-                                        {clients.length > 0 ? (
-                                            [...clients].sort((a, b) => {
-                                                const aName = a.client_name || '';
-                                                const bName = b.client_name || '';
-                                                const searchTerm = clientSearch?.toLowerCase() || '';
+                                            );
+                                        }
 
-                                                const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                                                const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+                                        return filteredSectors.map((sector) => {
+                                            const sectorName = sector.name || "";
+                                            const sectorUnit = sector.unit || "";
 
-                                                // Matching items come first
-                                                if (aMatches && !bMatches) return -1;
-                                                if (!aMatches && bMatches) return 1;
-
-                                                // For items with same match status, sort alphabetically
-                                                return aName.localeCompare(bName);
-                                            })
-                                                .map((client) => {
-                                                    const clientName = client.client_name || '';
-                                                    const clientCode = client.client_code || "N/A";
-                                                    const searchTerm = clientSearch?.toLowerCase() || '';
-                                                    const isMatching = searchTerm && clientName.toLowerCase().includes(searchTerm);
-
-                                                    // Function to highlight matching text
-                                                    const getHighlightedText = (text, highlight) => {
-                                                        if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                                                            return text;
-                                                        }
-
-                                                        const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                                        const parts = text.split(regex);
-
-                                                        return parts.map((part, i) =>
-                                                            regex.test(part) ?
-                                                                <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                                                                part
-                                                        );
-                                                    };
-
-                                                    return (
-                                                        <div
-                                                            key={client.id}
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setForm({
-                                                                    ...form,
-                                                                    client: client.id,
-                                                                    clientbranch: ''
-                                                                });
-                                                                setClientSearch(`${clientName} - ${clientCode}`);
-                                                                setShowClientDropdown(false);
-                                                            }}
-                                                            className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                                                                }`}
-                                                        >
-                                                            <div>
-                                                                {getHighlightedText(clientName, clientSearch)} - {clientCode}
-                                                            </div>
-                                                            {isMatching && (
-                                                                <div className="text-xs text-green-600 mt-0.5">
-                                                                    Press Enter to select
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })
-                                        ) : (
-                                            <div className="px-3 py-2 text-gray-400 text-sm">
-                                                No Clients Available
-                                            </div>
-                                        )}
-
-                                    </div>
-                                )}
-                            </div>
+                                            return (
+                                                <div
+                                                    key={sector.id || sector.name}
+                                                    onClick={() => {
+                                                        setForm({
+                                                            ...form,
+                                                            sector: sector.name,
+                                                        });
+                                                        setSectorSearch(sector.name);
+                                                        setShowSectorDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                >
+                                                    <div>
+                                                        {sectorName}
+                                                        {sectorUnit && (
+                                                            <span className="text-xs text-gray-400 ml-2">
+                                                                (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
+                        <div className="relative" ref={clientDropdownRef}>
+                            <Handshake
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={16}
+                            />
+
+                            <input
+                                type="text"
+                                value={clientSearch}
+                                placeholder="Select Client"
+                                onFocus={() => {
+                                    setShowClientDropdown(true);
+                                }}
+                                onChange={(e) => {
+                                    setClientSearch(e.target.value);
+                                    if (form.client) {
+                                        setForm({
+                                            ...form,
+                                            client: "",
+                                            clientbranch: ""
+                                        });
+                                    }
+                                    setShowClientDropdown(true);
+                                }}
+                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                            />
+
+                            {/* Clear button */}
+                            {form.client && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setForm({
+                                            ...form,
+                                            client: '',
+                                            clientbranch: ''
+                                        });
+                                        setClientSearch('');
+                                        setClientCode('');
+                                        setShowClientDropdown(false);
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            )}
+
+                            {/* Dropdown */}
+                            {showClientDropdown && (
+                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const filteredClients = clients.filter((c) =>
+                                            !clientSearch ||
+                                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                            c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
+                                        );
+
+                                        if (filteredClients.length === 0) {
+                                            return (
+                                                <div className="px-3 py-2 text-gray-400 text-sm">
+                                                    No matching clients - This will clear when you click outside
+                                                </div>
+                                            );
+                                        }
+
+                                        return filteredClients.map((client) => {
+                                            const clientName = client.client_name || "";
+                                            const clientCode = client.client_code || "";
+
+                                            return (
+                                                <div
+                                                    key={client.id}
+                                                    onClick={() => {
+                                                        setForm({
+                                                            ...form,
+                                                            client: client.id,
+                                                            clientbranch: "",
+                                                        });
+                                                        setClientSearch(`${clientName} - ${clientCode}`);
+                                                        setClientCode(clientCode);
+                                                        setShowClientDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                >
+                                                    <div>
+                                                        {clientName} - {clientCode}
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            )}
+                        </div>
                         {form.client && (
                             <>
                                 <div className="flex flex-col gap-1">
@@ -3999,7 +4643,6 @@ const UpdateProject = () => {
                                 <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="number"
-                                    onWheel={(e) => e.target.blur()}
                                     name="total_length"
                                     step="0.01"
                                     value={form.total_length}
@@ -4018,7 +4661,6 @@ const UpdateProject = () => {
                                 <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="number"
-                                    onWheel={(e) => e.target.blur()}
                                     name="workorder_Amount"
                                     value={form.workorder_Amount}
                                     onChange={handleChange}
@@ -4034,7 +4676,6 @@ const UpdateProject = () => {
                                 <BadgePercent className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="number"
-                                    onWheel={(e) => e.target.blur()}
                                     name="igst_percentage"
                                     step="0.1"
                                     min="0"
@@ -4057,9 +4698,11 @@ const UpdateProject = () => {
                                 type="date"
                                 name="loa_date"
                                 value={form.loa_date}
+                                min="1000-01-01"
+                                max={form.completion_date || "9999-12-31"}
                                 // onChange={handleChange}
                                 disabled
-                                max={form.completion_date}
+                                // max={form.completion_date}
                                 className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
@@ -4075,6 +4718,8 @@ const UpdateProject = () => {
                                 min={form.loa_date}
                                 value={form.completion_date}
                                 // onChange={handleChange}
+
+                                max={"9999-12-31"}
                                 disabled
                                 className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
@@ -4232,15 +4877,7 @@ const UpdateProject = () => {
                                                         delete newState[activity.id];
                                                         return newState;
                                                     });
-
-                                                    // setActivityDates((prev) => {
-                                                    //     const newState = { ...prev };
-                                                    //     delete newState[activity.id];
-                                                    //     return newState;
-                                                    // });
-
-                                                    // Clear selected sub-activities for this activity
-                                                    setSelectedSubActivities((prev) => {
+                                                    setActivityDates((prev) => {
                                                         const newState = { ...prev };
                                                         delete newState[activity.id];
                                                         return newState;
@@ -4248,29 +4885,11 @@ const UpdateProject = () => {
                                                 } else {
                                                     setSelectedActivities((prev) => [...prev, activity.id]);
 
-                                                    // Auto-select ALL sub-activities when adding activity
-                                                    const allSubIds = activity.subActivities.map((sub) => sub.id);
+                                                    // Initialize weightage for the activity
                                                     setActivityWeightages((prev) => ({
                                                         ...prev,
-                                                        [activity.id]: allSubIds,
+                                                        [activity.id]: 0
                                                     }));
-
-                                                    // Recalculate weightage for this activity based on all selected sub-activities
-                                                    let totalWeightage = 0;
-                                                    allSubIds.forEach(selectedSubId => {
-                                                        const subObj = activity.subActivities.find(s => s.id === selectedSubId);
-                                                        if (subObj) {
-                                                            const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-                                                            const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-                                                            totalWeightage += submissionPayment + approvalPayment;
-                                                        }
-                                                    });
-
-                                                    setActivityWeightages(prev => ({
-                                                        ...prev,
-                                                        [activity.id]: totalWeightage
-                                                    }));
-
                                                 }
                                             }}
                                             className={`cursor-pointer p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all shadow-sm ${isSelected
@@ -4335,462 +4954,1064 @@ const UpdateProject = () => {
                                     <Calendar size={16} className="text-blue-600" />
                                     Configure Activities
                                 </h4>
-                                {selectedActivities
-                                    .map((id) => getAllActivities().find((a) => a.id === id))
-                                    .filter(Boolean)
-                                    .sort((a, b) => parseInt(a.sorting_var, 10) - parseInt(b.sorting_var, 10))
-                                    .map((activityData) => {
-                                        const activityObj = getAllActivities().find((a) => a.id === activityData?.id);
-                                        let activityId = activityData?.id;
-                                        if (!activityObj) return null;
-                                        const isExpanded = expandedActivity === activityId;
-                                        const selectedSubs = selectedSubActivities[activityId] || [];
+                                {selectedActivities.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        className="space-y-3 md:space-y-4"
+                                    >
+                                        {selectedActivities
+                                            .map((id) => getAllActivities().find((a) => a.id === id))
+                                            .filter(Boolean)
+                                            .sort(
+                                                (a, b) =>
+                                                    parseInt(a.sorting_var, 10) - parseInt(b.sorting_var, 10),
+                                            )
+                                            .map((activityData) => {
+                                                const activityObj = getAllActivities().find(
+                                                    (a) => a.id === activityData?.id,
+                                                );
+                                                let activityId = activityData?.id;
+                                                if (!activityObj) return null;
+                                                const isExpanded = expandedActivity === activityId;
+                                                const selectedSubs =
+                                                    selectedSubActivities[activityId] || [];
 
-                                        return (
-                                            <motion.div
-                                                key={`config-${activityId}`}
-                                                layout
-                                                className="border border-gray-200 rounded-xl md:rounded-2xl overflow-hidden bg-gray-50"
-                                            >
-                                                <div
-                                                    onClick={() => setExpandedActivity(isExpanded ? null : activityId)}
-                                                    className="flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-                                                >
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isExpanded ? "bg-blue-600" : "bg-gray-400"}`} />
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setEditingActivityStage({
-                                                                    activityId: activityId,
-                                                                    currentStage: activityObj.sorting_var || 0,
-                                                                });
-                                                            }}
-                                                            className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
-                                                            title="Edit Activity Stage"
+                                                return (
+                                                    <motion.div
+                                                        key={`config-${activityId}`}
+                                                        layout
+                                                        className="border border-gray-200 rounded-xl md:rounded-2xl overflow-hidden bg-gray-50"
+                                                    >
+                                                        <div
+                                                            onClick={() =>
+                                                                setExpandedActivity(isExpanded ? null : activityId)
+                                                            }
+                                                            className="flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                                                         >
-                                                            <Edit3 size={12} />
-                                                            <span>Activity {activityObj.sorting_var || "?"}</span>
-                                                        </button>
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div
+                                                                    className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isExpanded ? "bg-blue-600" : "bg-gray-400"}`}
+                                                                />
 
-                                                        <h5 className="font-medium md:font-semibold text-gray-800 text-sm md:text-base truncate">
-                                                            {activityObj.activity_name}
-                                                        </h5>
-
-                                                        <span className="text-[10px] md:text-xs bg-blue-100 text-blue-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
-                                                            {selectedSubs.length}/{activityObj?.subActivities.length || 0} selected
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 md:gap-3 ml-2">
-                                                        {activityDates[activityId]?.startDate && activityDates[activityId]?.endDate && (
-                                                            <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
-                                                                {new Date(activityDates[activityId].startDate).toLocaleDateString()} →{" "}
-                                                                {new Date(activityDates[activityId].endDate).toLocaleDateString()}
-                                                            </div>
-                                                        )}
-                                                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                                    </div>
-                                                </div>
-
-                                                <AnimatePresence>
-                                                    {isExpanded && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            className="border-t border-gray-200 bg-white p-3 md:p-4"
-                                                        >
-                                                            <div className="mb-3 md:mb-4 cursor-not-allowed">
-                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                                    Activity Weightage (% of total project) *
-                                                                </label>
-                                                                <div className="relative">
-                                                                    <input
-                                                                        type="number"
-                                                                        onWheel={(e) => e.target.blur()}
-                                                                        min="0"
-                                                                        max="100"
-                                                                        step="0.1"
-                                                                        value={activityWeightages[activityId]?.toFixed(2) || ""}
-                                                                        disabled
-                                                                        className="cursor-not-allowed w-full px-3 py-1.5 md:py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8"
-                                                                        placeholder="Weightage as per SubActivities"
-                                                                    />
-                                                                    <Percent size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
-                                                                <div className="space-y-1">
-                                                                    <label className="text-xs font-medium text-gray-600">Start Date *</label>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={activityDates[activityId]?.startDate || ""}
-                                                                        min={form.loa_date}
-                                                                        max={activityDates[activityId]?.endDate || form.completion_date}
-                                                                        onChange={(e) => handleActivityDateChange(activityId, "startDate", e.target.value)}
-                                                                        className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <label className="text-xs font-medium text-gray-600">End Date *</label>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={activityDates[activityId]?.endDate || ""}
-                                                                        min={activityDates[activityId]?.startDate || form.loa_date}
-                                                                        max={form.completion_date}
-                                                                        onChange={(e) => handleActivityDateChange(activityId, "endDate", e.target.value)}
-                                                                        className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <h6 className="font-medium text-gray-700 text-xs md:text-sm">Sub-Activities:</h6>
+                                                                {/* Activity Stage Edit Button */}
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => {
-                                                                        setSelectedActivityForSub(activityId);
-                                                                        setShowAddSubActivityModal(true);
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setEditingActivityStage({
+                                                                            activityId: activityId,
+                                                                            currentStage: activityObj.sorting_var || 0
+                                                                        });
                                                                     }}
-                                                                    className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-xs"
+                                                                    className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
+                                                                    title="Edit Activity Stage"
                                                                 >
-                                                                    <Plus size={12} />
-                                                                    Add New Sub-Activity
+                                                                    <Edit3 size={12} />
+                                                                    <span>Activity {activityObj.sorting_var || '?'}</span>
                                                                 </button>
+
+                                                                <h5 className="font-medium md:font-semibold text-gray-800 text-sm md:text-base truncate">
+                                                                    {/* {activityObj.sorting_var}. */}
+                                                                    {activityObj.activity_name}
+                                                                </h5>
+
+                                                                {/* {isCustom && (
+                                                           <span className="text-[10px] md:text-xs bg-yellow-100 text-yellow-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                             Custom
+                                                           </span>
+                                                         )} */}
+                                                                <span className="text-[10px] md:text-xs bg-blue-100 text-blue-600 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                                    {selectedSubs.length}/
+                                                                    {activityObj?.subActivities.length || 0} selected
+                                                                </span>
                                                             </div>
 
-                                                            <div className="space-y-2 md:space-y-3">
-                                                                {activityObj?.subActivities.length > 0 && (
-                                                                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={getSelectAllStatus(activityId).isAllSelected}
-                                                                                ref={(el) => {
-                                                                                    if (el) {
-                                                                                        el.indeterminate = getSelectAllStatus(activityId).isIndeterminate;
-                                                                                    }
-                                                                                }}
-                                                                                onChange={(e) => handleSelectAllSubActivities(activityId, e.target.checked)}
-                                                                                className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                            />
-                                                                            <span className="text-xs font-medium text-gray-500">
-                                                                                {selectedSubs.length} of {activityObj.subActivities.length} selected
-                                                                            </span>
+                                                            <div className="flex items-center gap-2 md:gap-3 ml-2">
+                                                                {activityDates[activityId]?.startDate &&
+                                                                    activityDates[activityId]?.endDate && (
+                                                                        <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
+                                                                            {new Date(
+                                                                                activityDates[activityId].startDate,
+                                                                            ).toLocaleDateString()}{" "}
+                                                                            →{" "}
+                                                                            {new Date(
+                                                                                activityDates[activityId].endDate,
+                                                                            ).toLocaleDateString()}
                                                                         </div>
-                                                                        <div className="flex gap-2">
-                                                                            {!getSelectAllStatus(activityId).isAllSelected ? (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleSelectAllSubActivities(activityId, true)}
-                                                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                                                                >
-                                                                                    Select All
-                                                                                </button>
-                                                                            ) : (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleSelectAllSubActivities(activityId, false)}
-                                                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                                                                >
-                                                                                    Unselect All
-                                                                                </button>
-                                                                            )}
+                                                                    )}
+                                                                {isExpanded ? (
+                                                                    <ChevronUp size={16} />
+                                                                ) : (
+                                                                    <ChevronDown size={16} />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <AnimatePresence>
+                                                            {isExpanded && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    className="border-t border-gray-200 bg-white p-3 md:p-4"
+                                                                >
+                                                                    <div className="mb-3 md:mb-4 cursor-not-allowed">
+                                                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                            Activity Weightage (% of total project) *
+                                                                        </label>
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                max="100"
+                                                                                step="0.1"
+                                                                                value={
+                                                                                    activityWeightages[activityId]?.toFixed(
+                                                                                        2,
+                                                                                    ) || ""
+                                                                                }
+                                                                                disabled
+                                                                                className="cursor-not-allowed w-full px-3 py-1.5 md:py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8"
+                                                                                placeholder="Weightage as per SubActivities"
+                                                                            />
+                                                                            <Percent
+                                                                                size={14}
+                                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                                            />
                                                                         </div>
                                                                     </div>
-                                                                )}
+                                                                    <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-xs font-medium text-gray-600">
+                                                                                Start Date *
+                                                                            </label>
+                                                                            <input
+                                                                                type="date"
+                                                                                value={
+                                                                                    activityDates[activityId]?.startDate || ""
+                                                                                }
+                                                                                min={form.loa_date}
+                                                                                max={activityDates[activityId]?.endDate || form.completion_date}
+                                                                                onChange={(e) =>
+                                                                                    handleActivityDateChange(
+                                                                                        activityId,
+                                                                                        "startDate",
+                                                                                        e.target.value,
+                                                                                    )
+                                                                                }
+                                                                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <label className="text-xs font-medium text-gray-600">
+                                                                                End Date *
+                                                                            </label>
+                                                                            <input
+                                                                                type="date"
+                                                                                value={
+                                                                                    activityDates[activityId]?.endDate || ""
+                                                                                }
+                                                                                min={activityDates[activityId]?.startDate || form.loa_date}
+                                                                                max={form.completion_date}
+                                                                                onChange={(e) =>
+                                                                                    handleActivityDateChange(
+                                                                                        activityId,
+                                                                                        "endDate",
+                                                                                        e.target.value,
+                                                                                    )
+                                                                                }
+                                                                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <h6 className="font-medium text-gray-700 text-xs md:text-sm">
+                                                                            Sub-Activities:
+                                                                        </h6>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSelectedActivityForSub(activityId);
+                                                                                setShowAddSubActivityModal(true);
+                                                                            }}
+                                                                            className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-xs"
+                                                                        >
+                                                                            <Plus size={12} />
+                                                                            Add New Sub-Activity
+                                                                        </button>
+                                                                    </div>
 
-                                                                {(() => {
-                                                                    const grouped = {};
+                                                                    <div className="space-y-2 md:space-y-3">
+                                                                        {activityObj?.subActivities.length > 0 && (
+                                                                            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={
+                                                                                            getSelectAllStatus(activityId)
+                                                                                                .isAllSelected
+                                                                                        }
+                                                                                        ref={(el) => {
+                                                                                            if (el) {
+                                                                                                el.indeterminate =
+                                                                                                    getSelectAllStatus(
+                                                                                                        activityId,
+                                                                                                    ).isIndeterminate;
+                                                                                            }
+                                                                                        }}
+                                                                                        onChange={(e) =>
+                                                                                            handleSelectAllSubActivities(
+                                                                                                activityId,
+                                                                                                e.target.checked,
+                                                                                            )
+                                                                                        }
+                                                                                        className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                                                    />
+                                                                                    <span className="text-xs font-medium text-gray-500">
+                                                                                        {selectedSubs.length} of{" "}
+                                                                                        {activityObj.subActivities.length}{" "}
+                                                                                        selected
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                    {!getSelectAllStatus(activityId)
+                                                                                        .isAllSelected ? (
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() =>
+                                                                                                handleSelectAllSubActivities(
+                                                                                                    activityId,
+                                                                                                    true,
+                                                                                                )
+                                                                                            }
+                                                                                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                                                        >
+                                                                                            Select All
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        // <span className="text-gray-300">|</span>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() =>
+                                                                                                handleSelectAllSubActivities(
+                                                                                                    activityId,
+                                                                                                    false,
+                                                                                                )
+                                                                                            }
+                                                                                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                                                        >
+                                                                                            Unselect All
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
 
-                                                                    activityObj?.subActivities.forEach((sub, idx) => {
-                                                                        if (!grouped[sub.subactivity_name]) {
-                                                                            grouped[sub.subactivity_name] = [];
-                                                                        }
-                                                                        grouped[sub.subactivity_name].push({ ...sub, originalIndex: idx });
-                                                                    });
+                                                                        {(() => {
+                                                                            const grouped = {};
+                                                                            { console.log(activityObj?.subActivities, 'subactivities') }
+                                                                            activityObj?.subActivities.forEach(
+                                                                                (sub, idx) => {
+                                                                                    if (!grouped[sub.subactivity_name]) {
+                                                                                        grouped[sub.subactivity_name] = [];
+                                                                                    }
+                                                                                    grouped[sub.subactivity_name].push({
+                                                                                        ...sub,
+                                                                                        originalIndex: idx,
+                                                                                    });
+                                                                                },
+                                                                            );
 
-                                                                    const allRendered = [];
+                                                                            const allRendered = [];
 
-                                                                    Object.keys(grouped).forEach((name) => {
-                                                                        const items = grouped[name];
 
-                                                                        items.forEach((sub, serialIndex) => {
-                                                                            const displayName = items.length > 1 ? `${sub.subactivity_name}` : sub.subactivity_name;
-                                                                            const isSelected = selectedSubs.includes(sub.id);
-                                                                            const key = `${activityId}_${sub.id}`;
-                                                                            const currentUnit = subActivityUnits[key] || sub.unit;
-                                                                            const subUniqueKey = `sub-${serialIndex}-${sub.originalIndex}-${sub.id}`;
+                                                                            Object.keys(grouped).forEach((name) => {
+                                                                                const items = grouped[name];
 
-                                                                            allRendered.push(
-                                                                                <div
-                                                                                    key={subUniqueKey}
-                                                                                    id={`sub-${sub.id}`}
-                                                                                    className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
-                                                                                >
-                                                                                    <div className="flex items-center justify-between mb-2">
-                                                                                        <div className="flex items-center gap-2 flex-1">
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={isSelected}
-                                                                                                onChange={(e) => handleSubActivitySelection(activityId, sub.id, e.target.checked)}
-                                                                                                className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                                            />
-                                                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                                                {isSelected && (
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        onClick={(e) => {
-                                                                                                            e.stopPropagation();
-                                                                                                            setEditingStage({
-                                                                                                                activityId: activityId,
-                                                                                                                subId: sub.id,
-                                                                                                                currentStage: sub.sorting_var || 0,
-                                                                                                            });
-                                                                                                        }}
-                                                                                                        className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
-                                                                                                        title="Edit Stage"
-                                                                                                    >
-                                                                                                        <Edit3 size={12} />
-                                                                                                        <span>Stage {sub.sorting_var || "?"}</span>
-                                                                                                    </button>
-                                                                                                )}
-                                                                                                <span
-                                                                                                    className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        handleSubActivitySelection(activityId, sub.id, !isSelected);
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {displayName}
-                                                                                                </span>
-                                                                                            </div>
-                                                                                            {sub.isCustom && (
-                                                                                                <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">Custom</span>
-                                                                                            )}
-                                                                                        </div>
+                                                                                items.forEach((sub, serialIndex) => {
+                                                                                    const displayName =
+                                                                                        items.length > 1
+                                                                                            ? `${sub.subactivity_name}`
+                                                                                            : sub.subactivity_name;
+                                                                                    const isSelected = selectedSubs.includes(
+                                                                                        sub.id,
+                                                                                    );
+                                                                                    const key = `${activityId}_${sub.id}`;
+                                                                                    console.log(key, 'keyyy')
+                                                                                    // const key = `${activityId}_${sub.subactivity_name}`;
+                                                                                    // const key2 = `${sub?.id}_${sub.subactivity_name}`;
+                                                                                    const currentUnit =
+                                                                                        subActivityUnits[key] || sub.unit;
+                                                                                    // const subUniqueKey = `sub-${serialIndex}-${sub.originalIndex}-${sub.subactivity_name}`;
+                                                                                    const subUniqueKey = `sub-${serialIndex}-${sub.originalIndex}-${sub.id}`;
 
-                                                                                        <div className="flex items-center gap-1">
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                onClick={() => handleCloneSubActivity(activityId, sub.id)}
-                                                                                                className="text-blue-500 hover:text-blue-700"
-                                                                                                title="Add Similar Sub-Activity"
-                                                                                            >
-                                                                                                <Copy size={14} />
-                                                                                            </button>
-                                                                                            {(sub.isCustom || activityObj.isCustom) && (
-                                                                                                <button
-                                                                                                    type="button"
-                                                                                                    onClick={() => handleDeleteSubActivity(activityId, sub.id)}
-                                                                                                    className="text-red-500 hover:text-red-700"
-                                                                                                >
-                                                                                                    <X size={14} />
-                                                                                                </button>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
+                                                                                    allRendered.push(
+                                                                                        <div
+                                                                                            key={subUniqueKey}
+                                                                                            id={`sub-${sub.id}`}
+                                                                                            className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
+                                                                                        >
 
-                                                                                    {isSelected && (
-                                                                                        <div>
-                                                                                            <div className="grid grid-cols-3 gap-2 mt-2 pl-5">
-                                                                                                <div>
-                                                                                                    <label className="block text-[10px] text-gray-500 mb-1">Unit *</label>
-                                                                                                    <select
-                                                                                                        value={currentUnit}
+                                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                                {/* <div className="flex items-center gap-2">
+                                                                             <input
+                                                                               type="checkbox"
+                                                                               checked={isSelected}
+                                                                               onChange={(e) =>
+                                                                                 handleSubActivitySelection(
+                                                                                   activityId,
+                                                                                   sub.id,
+                                                                                   e.target.checked,
+                                                                                 )
+                                                                               }
+                                                                               className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                                             />
+                                                                             <span
+                                                                               className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
+                                                                               onClick={(e) => {
+                                                                                 e.stopPropagation();
+                                                                                 handleSubActivitySelection(
+                                                                                   activityId,
+                                                                                   sub.id,
+                                                                                   !isSelected,
+                                                                                 );
+                                                                               }}
+                                                                             >
+                                                                               Stage {sub.sorting_var}: {displayName}
+                                                                             </span>
+                               
+                               
+                                                                             {sub.isCustom && (
+                                                                               <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
+                                                                                 Custom
+                                                                               </span>
+                                                                             )}
+                                                                           </div> */}
+                                                                                                <div className="flex items-center gap-2 flex-1">
+                                                                                                    <input
+                                                                                                        type="checkbox"
+                                                                                                        checked={isSelected}
                                                                                                         onChange={(e) =>
-                                                                                                            handleSubActivityUnitChange(activityId, sub.id, e.target.value)
+                                                                                                            handleSubActivitySelection(
+                                                                                                                activityId,
+                                                                                                                sub.id,
+                                                                                                                e.target.checked,
+                                                                                                            )
                                                                                                         }
-                                                                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                    >
-                                                                                                        {UNIT_OPTIONS.map((option) => (
-                                                                                                            <option key={option.value} value={option.value}>
-                                                                                                                {option.label}
-                                                                                                            </option>
-                                                                                                        ))}
-                                                                                                    </select>
+                                                                                                        className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                                                                    />
+                                                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                                                        {/* Stage Edit Button */}
+                                                                                                        {isSelected && (
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={(e) => {
+                                                                                                                    e.stopPropagation();
+                                                                                                                    setEditingStage({
+                                                                                                                        activityId: activityId,
+                                                                                                                        subId: sub.id,
+                                                                                                                        currentStage: sub.sorting_var || 0
+                                                                                                                    });
+                                                                                                                }}
+                                                                                                                className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full"
+                                                                                                                title="Edit Stage"
+                                                                                                            >
+                                                                                                                <Edit3 size={12} />
+                                                                                                                <span>Stage {sub.sorting_var || '?'}</span>
+                                                                                                            </button>
+                                                                                                        )}
+
+                                                                                                        <span
+                                                                                                            className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
+                                                                                                            onClick={(e) => {
+                                                                                                                e.stopPropagation();
+                                                                                                                handleSubActivitySelection(
+                                                                                                                    activityId,
+                                                                                                                    sub.id,
+                                                                                                                    !isSelected,
+                                                                                                                );
+                                                                                                            }}
+                                                                                                        >
+                                                                                                            {/* {sub.sorting_var}. {displayName} */}
+                                                                                                            {displayName}
+                                                                                                        </span>
+
+                                                                                                    </div>
+                                                                                                    {sub.isCustom && (
+                                                                                                        <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
+                                                                                                            Custom
+                                                                                                        </span>
+                                                                                                    )}
                                                                                                 </div>
 
-                                                                                                {currentUnit !== "status" && sub?.planned_quantity_exist && (
-                                                                                                    <div>
-                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">Planned Quantity</label>
-                                                                                                        <input
-                                                                                                            type="number"
-                                                                                                            onWheel={(e) => e.target.blur()}
-                                                                                                            min="0"
-                                                                                                            step="0.01"
-                                                                                                            value={subActivityPlannedQtys[`${sub.id}_quantity`] || ""}
-                                                                                                            onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "quantity", e.target.value)}
-                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                            placeholder="Enter qty"
-                                                                                                        />
-                                                                                                    </div>
-                                                                                                )}
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    {/* Clone Button */}
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        onClick={() =>
+                                                                                                            handleCloneSubActivity(
+                                                                                                                activityId,
+                                                                                                                sub.id,
+                                                                                                            )
+                                                                                                        }
+                                                                                                        className="text-blue-500 hover:text-blue-700"
+                                                                                                        title="Add Similar Sub-Activity"
+                                                                                                    >
+                                                                                                        <Copy size={14} />
+                                                                                                    </button>
 
-                                                                                                {sub?.submission_exist && (
-                                                                                                    <div>
-                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">Submission Payment (%)</label>
-                                                                                                        <div className="relative">
+
+                                                                                                    <div className="flex items-center gap-2 mr-2">
+                                                                                                        <label className="text-[10px] text-gray-600 flex items-center gap-1 cursor-pointer">
                                                                                                             <input
-                                                                                                                type="number"
-                                                                                                                onWheel={(e) => e.target.blur()}
-                                                                                                                min="0"
-                                                                                                                step="0.01"
-                                                                                                                value={subActivityPlannedQtys[`${sub.id}_subpayment`] || ""}
+                                                                                                                type="checkbox"
+                                                                                                                checked={showAllFields[key] || false}
                                                                                                                 onChange={(e) =>
-                                                                                                                    handleSubActivityPlannedQtyChange(sub.id, "subpayment", e.target.value)
+                                                                                                                    setShowAllFields((prev) => ({
+                                                                                                                        ...prev,
+                                                                                                                        [key]: e.target.checked,
+                                                                                                                    }))
                                                                                                                 }
-                                                                                                                onBlur={(e) =>
-                                                                                                                    handleActivityWeightageChange(
+                                                                                                                className="w-3 h-3"
+                                                                                                            />
+                                                                                                            Show All
+                                                                                                        </label>
+                                                                                                        {console.log(showAllFields[key], '')}
+
+
+                                                                                                    </div>
+                                                                                                    {/* Edit Button */}
+                                                                                                    {/* <button
+                                                                               type="button"
+                                                                               onClick={() => handleEditSubActivity(activityId, sub.id)}
+                                                                               className="text-blue-500 hover:text-blue-700"
+                                                                               title="Edit sub-activity"
+                                                                             >
+                                                                               <Edit3 size={14} />
+                                                                             </button> */}
+
+                                                                                                    {/* Doubt : need this? */}
+                                                                                                    {/* Edit Button */}
+                                                                                                    {(sub.isCustom ||
+                                                                                                        activityObj.isCustom) && (
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() =>
+                                                                                                                    handleDeleteSubActivity(
                                                                                                                         activityId,
-                                                                                                                        getActivityTotals(activityData, subActivityPlannedQtys),
-                                                                                                                        sub.id
+                                                                                                                        sub.id,
                                                                                                                     )
                                                                                                                 }
-                                                                                                                className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                placeholder="Enter payment in %"
-                                                                                                            />
-                                                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                <Percent className="text-gray-400" size={16} />
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                )}
-
-                                                                                                {sub?.approval_exist && (
-                                                                                                    <div>
-                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">Approval Payment (%)</label>
-                                                                                                        <div className="relative">
-                                                                                                            <input
-                                                                                                                type="number"
-                                                                                                                onWheel={(e) => e.target.blur()}
-                                                                                                                min="0"
-                                                                                                                step="0.01"
-                                                                                                                value={subActivityPlannedQtys[`${sub.id}_approvalpayment`] || ""}
-                                                                                                                onChange={(e) =>
-                                                                                                                    handleSubActivityPlannedQtyChange(sub.id, "approvalpayment", e.target.value)
-                                                                                                                }
-                                                                                                                onBlur={(e) =>
-                                                                                                                    handleActivityWeightageChange(
-                                                                                                                        activityId,
-                                                                                                                        getActivityTotals(activityData, subActivityPlannedQtys),
-                                                                                                                        sub.id
-                                                                                                                    )
-                                                                                                                }
-                                                                                                                className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                placeholder="Enter payment in %"
-                                                                                                            />
-                                                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                <Percent className="text-gray-400" size={16} />
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                )}
-
-                                                                                                <div className="col-span-3 mt-2">
-                                                                                                    {(parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0 ||
-                                                                                                        parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0) && (
-                                                                                                            <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl overflow-x-auto">
-                                                                                                                <div className="min-w-[280px]">
-                                                                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                                                                                        {parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0 && (
-                                                                                                                            <div key={`${sub.id}-submission`} className="rounded-lg">
-                                                                                                                                <p className="text-[10px] text-gray-500 truncate">
-                                                                                                                                    Submission ({subActivityPlannedQtys[`${sub.id}_subpayment`]}%)
-                                                                                                                                </p>
-                                                                                                                                <p className="text-sm font-semibold text-blue-600 break-words">
-                                                                                                                                    ₹{" "}
-                                                                                                                                    {(
-                                                                                                                                        (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`])) /
-                                                                                                                                        100
-                                                                                                                                    ).toLocaleString("en-IN", {
-                                                                                                                                        minimumFractionDigits: 2,
-                                                                                                                                        maximumFractionDigits: 2,
-                                                                                                                                    })}{" "}
-                                                                                                                                    Lakhs
-                                                                                                                                </p>
-                                                                                                                            </div>
-                                                                                                                        )}
-
-                                                                                                                        {parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0 && (
-                                                                                                                            <div key={`${sub.id}-approval`} className="rounded-lg">
-                                                                                                                                <p className="text-[10px] text-gray-500 truncate">
-                                                                                                                                    Approval ({subActivityPlannedQtys[`${sub.id}_approvalpayment`]}%)
-                                                                                                                                </p>
-                                                                                                                                <p className="text-sm font-semibold text-blue-600 break-words">
-                                                                                                                                    ₹{" "}
-                                                                                                                                    {(
-                                                                                                                                        (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`])) /
-                                                                                                                                        100
-                                                                                                                                    ).toLocaleString("en-IN", {
-                                                                                                                                        minimumFractionDigits: 2,
-                                                                                                                                        maximumFractionDigits: 2,
-                                                                                                                                    })}{" "}
-                                                                                                                                    Lakhs
-                                                                                                                                </p>
-                                                                                                                            </div>
-                                                                                                                        )}
-
-                                                                                                                        <div key={`${sub.id}-total`} className="rounded-lg">
-                                                                                                                            <p className="text-[10px] text-gray-500">Total Amount</p>
-                                                                                                                            <p className="text-sm font-bold text-green-600 break-words">
-                                                                                                                                ₹{" "}
-                                                                                                                                {(
-                                                                                                                                    (parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`]) > 0
-                                                                                                                                        ? (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_subpayment`])) /
-                                                                                                                                        100
-                                                                                                                                        : 0) +
-                                                                                                                                    (parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`]) > 0
-                                                                                                                                        ? (parseFloat(form.workorder_Amount) *
-                                                                                                                                            parseFloat(subActivityPlannedQtys[`${sub.id}_approvalpayment`])) /
-                                                                                                                                        100
-                                                                                                                                        : 0)
-                                                                                                                                ).toLocaleString("en-IN", {
-                                                                                                                                    minimumFractionDigits: 2,
-                                                                                                                                    maximumFractionDigits: 2,
-                                                                                                                                })}{" "}
-                                                                                                                                Lakhs
-                                                                                                                            </p>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
+                                                                                                                className="text-red-500 hover:text-red-700"
+                                                                                                            >
+                                                                                                                <X size={14} />
+                                                                                                            </button>
                                                                                                         )}
                                                                                                 </div>
                                                                                             </div>
-                                                                                            <div className="ml-4">
-                                                                                                <label className="block text-[10px] text-gray-500 mb-1">Description</label>
-                                                                                                <textarea
-                                                                                                    value={subActivityPlannedQtys[`${sub.id}_description`] || ""}
-                                                                                                    onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "description", e.target.value)}
-                                                                                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 mt-2"
-                                                                                                    placeholder="Enter any specific details or instructions for this sub-activity"
-                                                                                                    rows={2}
-                                                                                                />
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        });
-                                                                    });
+                                                                                            {isSelected && (
+                                                                                                <div>
+                                                                                                    <div className="grid grid-cols-3 gap-2 mt-2 pl-5">
+                                                                                                        <div>
+                                                                                                            <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                Unit *
+                                                                                                            </label>
+                                                                                                            <select
+                                                                                                                value={currentUnit}
+                                                                                                                onChange={(e) =>
+                                                                                                                    handleSubActivityUnitChange(
+                                                                                                                        activityId,
+                                                                                                                        sub.id,
+                                                                                                                        e.target.value,
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                            >
+                                                                                                                {UNIT_OPTIONS.map(
+                                                                                                                    (option) => (
+                                                                                                                        <option
+                                                                                                                            key={option.value}
+                                                                                                                            value={option.value}
+                                                                                                                        >
+                                                                                                                            {option.label}
+                                                                                                                        </option>
+                                                                                                                    ),
+                                                                                                                )}
+                                                                                                            </select>
+                                                                                                        </div>
+                                                                                                        {currentUnit !== "status" && (sub?.planned_quantity_exist || showAllFields[key]) && (
+                                                                                                            <div>
+                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                    Planned Quantity
+                                                                                                                </label>
+                                                                                                                <input
+                                                                                                                    type="number"
+                                                                                                                    min="0"
+                                                                                                                    step="0.01"
+                                                                                                                    // value={subActivityPlannedQtys[key2] || ''}
+                                                                                                                    value={
+                                                                                                                        subActivityPlannedQtys[
+                                                                                                                        `${sub.id}_quantity`
+                                                                                                                        ] || ""
+                                                                                                                    }
+                                                                                                                    // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, sub.subactivity_name, e.target.value)}
+                                                                                                                    onChange={(e) =>
+                                                                                                                        handleSubActivityPlannedQtyChange(
+                                                                                                                            sub.id,
+                                                                                                                            "quantity",
+                                                                                                                            e.target.value,
+                                                                                                                        )
+                                                                                                                    }
+                                                                                                                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                    placeholder="Enter qty"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        )}
 
-                                                                    return allRendered;
-                                                                })()}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </motion.div>
-                                        );
-                                    })}
+                                                                                                        {(sub?.chainage_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                    <div>
+                                                                                                                        <div className="flex flex-row justify-between items-center">
+                                                                                                                            <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                                Chainage Start
+                                                                                                                            </label>
+                                                                                                                            {currentUnit ===
+                                                                                                                                "status" && (
+                                                                                                                                    // <div className="col-span-3">
+                                                                                                                                    //   <div className="text-[10px] text-blue-600 bg-blue-50 p-1 rounded flex items-center gap-1">
+                                                                                                                                    //     <Info size={10} />
+                                                                                                                                    //     Status-based - no quantity needed
+                                                                                                                                    //   </div>
+                                                                                                                                    // </div>
+                                                                                                                                    <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
+                                                                                                                                        <Info size={10} />
+                                                                                                                                        Status-based - no
+                                                                                                                                        quantity needed
+                                                                                                                                    </div>
+                                                                                                                                )}
+                                                                                                                        </div>
+
+                                                                                                                        <input
+                                                                                                                            type="number"
+                                                                                                                            min="0"
+                                                                                                                            step="0.01"
+                                                                                                                            defaultValue={
+                                                                                                                                sub.chainage_start ||
+                                                                                                                                ""
+                                                                                                                            } // Read from sub object directly
+                                                                                                                            // disabled // Make it read-only as it's calculated
+                                                                                                                            onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
+                                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
+                                                                                                                            placeholder="001"
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        }
+
+                                                                                                        {(sub?.length_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                    <div>
+                                                                                                                        <div className="flex flex-row justify-between items-center">
+                                                                                                                            <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                                Chainage Length
+                                                                                                                            </label>
+                                                                                                                            {currentUnit ===
+                                                                                                                                "status" && (
+                                                                                                                                    <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
+                                                                                                                                        <Info size={10} />
+                                                                                                                                        Status-based - no
+                                                                                                                                        quantity needed
+                                                                                                                                    </div>
+                                                                                                                                )}
+                                                                                                                        </div>
+                                                                                                                        {/* <input
+                                                                                     type="number"
+                                                                                     min="0"
+                                                                                     step="0.01"
+                                                                                     value={subActivityPlannedQtys[`${sub.id}_coveredarea`] || ''}
+                                                                                     onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'coveredarea', e.target.value)}
+                                                                                     className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                     placeholder="001"
+                                                                                   /> */}
+                                                                                                                        <input
+                                                                                                                            type="number"
+                                                                                                                            min="0"
+                                                                                                                            step="0.01"
+                                                                                                                            value={
+                                                                                                                                sub.covered_area || ""
+                                                                                                                            } // Read from sub object directly
+                                                                                                                            onChange={(e) => {
+                                                                                                                                // Update the sub-activity's covered_area in the state
+                                                                                                                                const newValue =
+                                                                                                                                    e.target.value;
+                                                                                                                                const templateIndex =
+                                                                                                                                    templatesActivities.findIndex(
+                                                                                                                                        (act) =>
+                                                                                                                                            act.id ===
+                                                                                                                                            activityId,
+                                                                                                                                    );
+                                                                                                                                if (
+                                                                                                                                    templateIndex !== -1
+                                                                                                                                ) {
+                                                                                                                                    setTemplateActivities(
+                                                                                                                                        (prev) =>
+                                                                                                                                            prev.map(
+                                                                                                                                                (act) => {
+                                                                                                                                                    if (
+                                                                                                                                                        act.id ===
+                                                                                                                                                        activityId
+                                                                                                                                                    ) {
+                                                                                                                                                        return {
+                                                                                                                                                            ...act,
+                                                                                                                                                            subActivities:
+                                                                                                                                                                act.subActivities.map(
+                                                                                                                                                                    (
+                                                                                                                                                                        s,
+                                                                                                                                                                    ) =>
+                                                                                                                                                                        s.id ===
+                                                                                                                                                                            sub.id
+                                                                                                                                                                            ? {
+                                                                                                                                                                                ...s,
+                                                                                                                                                                                covered_area:
+                                                                                                                                                                                    newValue,
+                                                                                                                                                                            }
+                                                                                                                                                                            : s,
+                                                                                                                                                                ),
+                                                                                                                                                        };
+                                                                                                                                                    }
+                                                                                                                                                    return act;
+                                                                                                                                                },
+                                                                                                                                            ),
+                                                                                                                                    );
+                                                                                                                                } else {
+                                                                                                                                    setCustomActivities(
+                                                                                                                                        (prev) =>
+                                                                                                                                            prev.map(
+                                                                                                                                                (act) => {
+                                                                                                                                                    if (
+                                                                                                                                                        act.id ===
+                                                                                                                                                        activityId
+                                                                                                                                                    ) {
+                                                                                                                                                        return {
+                                                                                                                                                            ...act,
+                                                                                                                                                            subActivities:
+                                                                                                                                                                act.subActivities.map(
+                                                                                                                                                                    (
+                                                                                                                                                                        s,
+                                                                                                                                                                    ) =>
+                                                                                                                                                                        s.id ===
+                                                                                                                                                                            sub.id
+                                                                                                                                                                            ? {
+                                                                                                                                                                                ...s,
+                                                                                                                                                                                covered_area:
+                                                                                                                                                                                    newValue,
+                                                                                                                                                                            }
+                                                                                                                                                                            : s,
+                                                                                                                                                                ),
+                                                                                                                                                        };
+                                                                                                                                                    }
+                                                                                                                                                    return act;
+                                                                                                                                                },
+                                                                                                                                            ),
+                                                                                                                                    );
+                                                                                                                                }
+                                                                                                                            }}
+                                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                            placeholder="Length"
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>}
+
+                                                                                                        {/* {(sub?.submission_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                    Submission Payment (%)
+                                                                                                                </label>
+                                                                                                                <div className="relative">
+                                                                                                                    <input
+                                                                                                                        type="number"
+                                                                                                                        min="0"
+                                                                                                                        step="0.01"
+                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_subpayment")] || ''}
+                                                                                                                        value={
+                                                                                                                            subActivityPlannedQtys[
+                                                                                                                            `${sub.id}_subpayment`
+                                                                                                                            ] || ""
+                                                                                                                        }
+                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_subpayment"), e.target.value)}
+                                                                                                                        onChange={(e) =>
+                                                                                                                            handleSubActivityPlannedQtyChange(
+                                                                                                                                sub.id,
+                                                                                                                                "subpayment",
+                                                                                                                                e.target.value,
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        onBlur={(e) =>
+                                                                                                                            handleActivityWeightageChange(
+                                                                                                                                activityId,
+                                                                                                                                getActivityTotals(
+                                                                                                                                    activityData,
+                                                                                                                                    subActivityPlannedQtys,
+                                                                                                                                ),
+                                                                                                                                sub.id
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                        placeholder="Enter payment in %"
+                                                                                                                    />
+                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                                                                                                                        <Percent
+                                                                                                                            className=" text-gray-400"
+                                                                                                                            size={16}
+                                                                                                                        />
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            </div>} */}
+
+                                                                                                        {/* {(sub?.approval_exist || showAllFields[key]) &&
+                                                                                                            <div>
+                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                                    Approval Payment (%)
+                                                                                                                </label>
+                                                                                                                <div className="relative">
+                                                                                                                    <input
+                                                                                                                        type="number"
+                                                                                                                        min="0"
+                                                                                                                        step="0.01"
+                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_approvalpayment")] || ''}
+                                                                                                                        value={
+                                                                                                                            subActivityPlannedQtys[
+                                                                                                                            `${sub.id}_approvalpayment`
+                                                                                                                            ] || ""
+                                                                                                                        }
+                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_approvalpayment"), e.target.value)}
+                                                                                                                        onChange={(e) =>
+                                                                                                                            handleSubActivityPlannedQtyChange(
+                                                                                                                                sub.id,
+                                                                                                                                "approvalpayment",
+                                                                                                                                e.target.value,
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        onBlur={(e) =>
+                                                                                                                            handleActivityWeightageChange(
+                                                                                                                                activityId,
+                                                                                                                                getActivityTotals(
+                                                                                                                                    activityData,
+                                                                                                                                    subActivityPlannedQtys,
+                                                                                                                                ),
+                                                                                                                                sub.id
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                        placeholder="Enter payment in %"
+                                                                                                                    />
+                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                                                                                                                        <Percent
+                                                                                                                            className=" text-gray-400"
+                                                                                                                            size={16}
+                                                                                                                        />
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            </div>} */}
+
+
+
+                                                                                                        {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+                                                                                                        <div >
+                                                                                                            <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                <label className="block text-[10px] text-gray-500 ">
+                                                                                                                    Start Date
+                                                                                                                </label>
+                                                                                                                <input
+                                                                                                                    type="date"
+                                                                                                                    value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
+                                                                                                                    min={activityDates[activityId]?.startDate || form.loa_date}
+                                                                                                                    max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
+                                                                                                                    onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
+                                                                                                                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                            <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                                                                                <label className="block text-[10px] text-gray-500 ">
+                                                                                                                    End Date
+                                                                                                                </label>
+                                                                                                                <input
+                                                                                                                    type="date"
+                                                                                                                    value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
+                                                                                                                    min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+                                                                                                                    max={activityDates[activityId]?.endDate || form.completion_date}
+                                                                                                                    onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
+                                                                                                                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        </div>
+
+
+                                                                                                        <div className="col-span-3 mt-4 pl-5">
+                                                                                                            <label className="block text-[10px] text-gray-500 mb-1 font-medium">
+                                                                                                                Work Stages & Payment (%) *
+                                                                                                            </label>
+                                                                                                            <div className="space-y-2">
+                                                                                                                {(workStages[sub.id] || []).map((stage, idx) => (
+                                                                                                                    <div key={stage.id} className="flex items-center gap-2">
+                                                                                                                        <input
+                                                                                                                            type="text"
+                                                                                                                            placeholder="Stage Name (e.g. Submission)"
+                                                                                                                            value={stage.name}
+                                                                                                                            onChange={(e) =>
+                                                                                                                                handleStageUpdate(sub.id, stage.id, "name", e.target.value)
+                                                                                                                            }
+                                                                                                                            className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                        />
+                                                                                                                        <div className="relative w-28">
+                                                                                                                            <input
+                                                                                                                                type="number"
+                                                                                                                                min="0"
+                                                                                                                                step="0.01"
+                                                                                                                                placeholder="%"
+                                                                                                                                value={stage.payment_percent}
+                                                                                                                                onChange={(e) =>
+                                                                                                                                    handleStageUpdate(
+                                                                                                                                        sub.id,
+                                                                                                                                        stage.id,
+                                                                                                                                        "payment_percent",
+                                                                                                                                        e.target.value
+                                                                                                                                    )
+                                                                                                                                }
+                                                                                                                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 pr-6"
+                                                                                                                            />
+                                                                                                                            <Percent
+                                                                                                                                size={12}
+                                                                                                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+                                                                                                                            />
+                                                                                                                        </div>
+                                                                                                                        <button
+                                                                                                                            type="button"
+                                                                                                                            onClick={() => handleRemoveStage(sub.id, stage.id)}
+                                                                                                                            className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+                                                                                                                            title="Remove Stage"
+                                                                                                                        >
+                                                                                                                            <X size={14} />
+                                                                                                                        </button>
+                                                                                                                    </div>
+                                                                                                                ))}
+                                                                                                                <button
+                                                                                                                    type="button"
+                                                                                                                    onClick={() => handleAddStage(sub.id)}
+                                                                                                                    className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-1"
+                                                                                                                >
+                                                                                                                    <Plus size={10} /> Add Work Stage
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        </div>
+
+                                                                                                        <div className="col-span-3 mt-2">
+                                                                                                            {(parseFloat(
+                                                                                                                subActivityPlannedQtys[
+                                                                                                                `${sub.id}_subpayment`
+                                                                                                                ],
+                                                                                                            ) > 0 ||
+                                                                                                                parseFloat(
+                                                                                                                    subActivityPlannedQtys[
+                                                                                                                    `${sub.id}_approvalpayment`
+                                                                                                                    ],
+                                                                                                                ) > 0) && (
+                                                                                                                    <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl overflow-x-auto">
+                                                                                                                        <div className="min-w-[280px]">
+                                                                                                                            {/* Payment Cards Grid */}
+                                                                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                                                                                                {/* Submission Payment Card */}
+                                                                                                                                {parseFloat(
+                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                    `${sub.id}_subpayment`
+                                                                                                                                    ],
+                                                                                                                                ) > 0 && (
+                                                                                                                                        <div
+                                                                                                                                            key={`${sub.id}-submission`}
+                                                                                                                                            className="rounded-lg"
+                                                                                                                                        >
+                                                                                                                                            <p className="text-[10px] text-gray-500 truncate">
+                                                                                                                                                Submission (
+                                                                                                                                                {
+                                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                                    `${sub.id}_subpayment`
+                                                                                                                                                    ]
+                                                                                                                                                }
+                                                                                                                                                %)
+                                                                                                                                            </p>
+                                                                                                                                            <p className="text-sm font-semibold text-blue-600 break-words">
+                                                                                                                                                ₹{" "}
+                                                                                                                                                {(
+                                                                                                                                                    (parseFloat(
+                                                                                                                                                        form.workorder_Amount,
+                                                                                                                                                    ) *
+                                                                                                                                                        parseFloat(
+                                                                                                                                                            subActivityPlannedQtys[
+                                                                                                                                                            `${sub.id}_subpayment`
+                                                                                                                                                            ],
+                                                                                                                                                        )) /
+                                                                                                                                                    100
+                                                                                                                                                ).toLocaleString(
+                                                                                                                                                    "en-IN",
+                                                                                                                                                    {
+                                                                                                                                                        minimumFractionDigits: 2,
+                                                                                                                                                        maximumFractionDigits: 2,
+                                                                                                                                                    },
+                                                                                                                                                )}{" "}
+                                                                                                                                                Lakhs
+                                                                                                                                            </p>
+                                                                                                                                        </div>
+                                                                                                                                    )}
+
+                                                                                                                                {/* Approval Payment Card */}
+                                                                                                                                {parseFloat(
+                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                    `${sub.id}_approvalpayment`
+                                                                                                                                    ],
+                                                                                                                                ) > 0 && (
+                                                                                                                                        <div
+                                                                                                                                            key={`${sub.id}-approval`}
+                                                                                                                                            className="rounded-lg"
+                                                                                                                                        >
+                                                                                                                                            <p className="text-[10px] text-gray-500 truncate">
+                                                                                                                                                Approval (
+                                                                                                                                                {
+                                                                                                                                                    subActivityPlannedQtys[
+                                                                                                                                                    `${sub.id}_approvalpayment`
+                                                                                                                                                    ]
+                                                                                                                                                }
+                                                                                                                                                %)
+                                                                                                                                            </p>
+                                                                                                                                            <p className="text-sm font-semibold text-blue-600 break-words">
+                                                                                                                                                ₹{" "}
+                                                                                                                                                {(
+                                                                                                                                                    (parseFloat(
+                                                                                                                                                        form.workorder_Amount,
+                                                                                                                                                    ) *
+                                                                                                                                                        parseFloat(
+                                                                                                                                                            subActivityPlannedQtys[
+                                                                                                                                                            `${sub.id}_approvalpayment`
+                                                                                                                                                            ],
+                                                                                                                                                        )) /
+                                                                                                                                                    100
+                                                                                                                                                ).toLocaleString(
+                                                                                                                                                    "en-IN",
+                                                                                                                                                    {
+                                                                                                                                                        minimumFractionDigits: 2,
+                                                                                                                                                        maximumFractionDigits: 2,
+                                                                                                                                                    },
+                                                                                                                                                )}{" "}
+                                                                                                                                                Lakhs
+                                                                                                                                            </p>
+                                                                                                                                        </div>
+                                                                                                                                    )}
+
+                                                                                                                                {/* Total Amount Card */}
+                                                                                                                                <div
+                                                                                                                                    key={`${sub.id}-total`}
+                                                                                                                                    className="rounded-lg"
+                                                                                                                                >
+                                                                                                                                    <p className="text-[10px] text-gray-500">
+                                                                                                                                        Total Amount
+                                                                                                                                    </p>
+                                                                                                                                    <p className="text-sm font-bold text-green-600 break-words">
+                                                                                                                                        ₹{" "}
+                                                                                                                                        {(
+                                                                                                                                            (parseFloat(
+                                                                                                                                                subActivityPlannedQtys[
+                                                                                                                                                `${sub.id}_subpayment`
+                                                                                                                                                ],
+                                                                                                                                            ) > 0
+                                                                                                                                                ? (parseFloat(
+                                                                                                                                                    form.workorder_Amount,
+                                                                                                                                                ) *
+                                                                                                                                                    parseFloat(
+                                                                                                                                                        subActivityPlannedQtys[
+                                                                                                                                                        `${sub.id}_subpayment`
+                                                                                                                                                        ],
+                                                                                                                                                    )) /
+                                                                                                                                                100
+                                                                                                                                                : 0) +
+                                                                                                                                            (parseFloat(
+                                                                                                                                                subActivityPlannedQtys[
+                                                                                                                                                `${sub.id}_approvalpayment`
+                                                                                                                                                ],
+                                                                                                                                            ) > 0
+                                                                                                                                                ? (parseFloat(
+                                                                                                                                                    form.workorder_Amount,
+                                                                                                                                                ) *
+                                                                                                                                                    parseFloat(
+                                                                                                                                                        subActivityPlannedQtys[
+                                                                                                                                                        `${sub.id}_approvalpayment`
+                                                                                                                                                        ],
+                                                                                                                                                    )) /
+                                                                                                                                                100
+                                                                                                                                                : 0)
+                                                                                                                                        ).toLocaleString(
+                                                                                                                                            "en-IN",
+                                                                                                                                            {
+                                                                                                                                                minimumFractionDigits: 2,
+                                                                                                                                                maximumFractionDigits: 2,
+                                                                                                                                            },
+                                                                                                                                        )}{" "}
+                                                                                                                                        Lakhs
+                                                                                                                                    </p>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                )}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div className="ml-4">
+                                                                                                        <label className="block text-[10px] text-gray-500 mb-1">
+                                                                                                            Description
+                                                                                                        </label>
+                                                                                                        <textarea
+                                                                                                            // value={subActivityPlannedQtys[key2 + "_description"] || ''}
+                                                                                                            value={
+                                                                                                                subActivityPlannedQtys[
+                                                                                                                `${sub.id}_description`
+                                                                                                                ] || ""
+                                                                                                            }
+                                                                                                            // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_description"), e.target.value)}
+                                                                                                            onChange={(e) =>
+                                                                                                                handleSubActivityPlannedQtyChange(
+                                                                                                                    sub.id,
+                                                                                                                    "description",
+                                                                                                                    e.target.value,
+                                                                                                                )
+                                                                                                            }
+                                                                                                            className="w-full px-3 py-2 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 mt-2"
+                                                                                                            placeholder="Enter any specific details or instructions for this sub-activity"
+                                                                                                            rows={2}
+                                                                                                        />
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>,
+                                                                                    );
+                                                                                });
+                                                                            });
+
+                                                                            return allRendered;
+                                                                        })()}
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                    </motion.div>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -4819,6 +6040,7 @@ const UpdateProject = () => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
+
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? (
@@ -4840,8 +6062,9 @@ const UpdateProject = () => {
                 {!isMobile && (
                     <div className="flex justify-center">
                         <button
-                            type="submit"
+                            type="button"
                             disabled={isSubmitting}
+                            onClick={handleSubmit}
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 md:px-16 py-4 md:py-5 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-bold text-base md:text-xl flex items-center gap-2 md:gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
@@ -4859,7 +6082,6 @@ const UpdateProject = () => {
                     </div>
                 )}
             </form>
-
             {/* All modals remain the same - keeping them to save space but they would be included in the actual file */}
         </motion.div>
     );

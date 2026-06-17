@@ -27,6 +27,27 @@ export const subActivityService = {
     }
   },
 
+  // ---> NEW METHOD ADDED HERE <---
+  getSubActivityDetails: async (subActivityId) => {
+    try {
+      const response = await api.get(`/subactivity/${subActivityId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sub activity details:', error);
+      throw error;
+    }
+  },
+
+  getSubActivityDetailsworklog: async (subActivityId) => {
+    try {
+      const response = await api.get(`/subactivity-detail/${subActivityId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sub activity details:', error);
+      throw error;
+    }
+  },
+
 
   getSubActivity: async (subactivityId) => {
     try {
@@ -106,16 +127,16 @@ export const subActivityService = {
   },
 
 
-  updateSubActivity: async (subActivityId, subActivityData) => {
-    try {
-      // subactivity-submission/
-      const response = await api.post(`subactivity-submission/`, subActivityData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating sub activity:', error);
-      throw error;
-    }
-  },
+  // updateSubActivity: async (subActivityId, subActivityData) => {
+  //   try {
+  //     // subactivity-submission/
+  //     const response = await api.post(`subactivity-submission/`, subActivityData);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error updating sub activity:', error);
+  //     throw error;
+  //   }
+  // },
 
 
   deleteSubActivity: async (subactivityId) => {

@@ -195,6 +195,118 @@ const CreateProject = () => {
     { name: "", gst: "", state: "", status: "Active" },
   ]);
 
+  const [companySearch, setCompanySearch] = useState("");
+  const [sectorSearch, setSectorSearch] = useState("");
+
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showSectorDropdown, setShowSectorDropdown] = useState(false);
+  const companyDropdownRef = useRef(null);
+  const sectorDropdownRef = useRef(null);
+  const [workStages, setWorkStages] = useState({});
+
+
+  // --- Dynamic Work Stages Handlers ---
+  const handleAddStage = (subId) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: [
+          ...existing,
+          { id: `stg_${subId}_${Date.now()}`, name: "", payment_percent: "" },
+        ],
+      };
+    });
+  };
+
+  const handleRemoveStage = (subId, stageId) => {
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: existing.filter((s) => s.id !== stageId),
+      };
+    });
+  };
+
+  // const handleStageUpdate = (subId, stageId, field, value) => {
+  //   setWorkStages((prev) => {
+  //     const existing = prev[subId] || [];
+  //     return {
+  //       ...prev,
+  //       [subId]: existing.map((s) =>
+  //         s.id === stageId ? { ...s, [field]: value } : s
+  //       ),
+  //     };
+  //   });
+  // };
+
+
+  const handleStageUpdate = (subId, stageId, field, value) => {
+    // 1. Intercept weightage changes to prevent exceeding 100%
+    if (field === 'payment_percent') {
+      const newPercent = parseFloat(value) || 0;
+
+      let otherStagesTotal = 0;
+      let currentPercentOfThisStage = 0;
+
+      // Sum up percentages of all currently selected activities/sub-activities
+      selectedActivities.forEach(actId => {
+        const selectedSubs = selectedSubActivities[actId] || [];
+        selectedSubs.forEach(sId => {
+          const stages = workStages[sId] || [];
+          stages.forEach(stg => {
+            if (sId === subId && stg.id === stageId) {
+              currentPercentOfThisStage = parseFloat(stg.payment_percent) || 0;
+            } else {
+              otherStagesTotal += parseFloat(stg.payment_percent) || 0;
+            }
+          });
+        });
+      });
+
+      const projectedTotal = otherStagesTotal + newPercent;
+
+      // 2. Block if it exceeds 100% AND the user is trying to increase the value
+      // (We allow decreases so users can fix errors if they clone an activity and go over 100%)
+      if (projectedTotal > 100 && newPercent > currentPercentOfThisStage) {
+        const maxAllowed = Math.max(0, 100 - otherStagesTotal);
+
+        // Show user a warning that they hit the limit
+        dispatch(
+          showSnackbar({
+            message: `Total project weightage cannot exceed 100%. Capped at ${maxAllowed.toFixed(2)}%.`,
+            type: "warning",
+          })
+        );
+
+        // Auto-cap the value to whatever percentage is left
+        setWorkStages((prev) => {
+          const existing = prev[subId] || [];
+          return {
+            ...prev,
+            [subId]: existing.map((s) =>
+              s.id === stageId ? { ...s, [field]: maxAllowed > 0 ? maxAllowed : "" } : s
+            ),
+          };
+        });
+        return; // Stop the standard update
+      }
+    }
+
+    // 3. Standard update if it's within the 100% limit (or if updating the stage name)
+    setWorkStages((prev) => {
+      const existing = prev[subId] || [];
+      return {
+        ...prev,
+        [subId]: existing.map((s) =>
+          s.id === stageId ? { ...s, [field]: value } : s
+        ),
+      };
+    });
+  };
+
+
   const addBranch = () => {
     setBranches([
       ...branches,
@@ -256,7 +368,59 @@ const CreateProject = () => {
   }, [sectors]);
 
   //Activity,Sub-Activity Template
+  // useEffect(() => {
+  //   if (stageTemplates && stageTemplates.length > 0) {
+  //     const transformedActivities = stageTemplates
+  //       .filter((act) => !act.is_deleted)
+  //       .map((template, index) => ({
+  //         id:
+  //           template.id ||
+  //           `template-activity-${template.sorting_var}` ||
+  //           `template-activity-${index}`,
+  //         sorting_var: template.sorting_var,
+  //         activity_name: template.activity_name,
+  //         start_date: template.start_date,
+  //         end_date: template.end_date,
+  //         weightage: template.weightage,
+  //         isFromTemplate: true,
+  //         isCustom: false,
+  //         subActivities: template.subactivities
+  //           .filter((sub) => !sub.is_deleted) // Only include non-deleted sub-activities
+  //           .map((sub) => ({
+  //             id:
+  //               sub.id ||
+  //               `template-subactivity-${sub.sorting_var}` ||
+  //               `template-subactivity-${index}`,
+  //             sorting_var: sub.sorting_var,
+  //             subactivity_name: sub.subactivity_name,
+  //             description: sub.description,
+  //             unit: sub.unit,
+  //             total_quantity: sub.total_quantity,
+  //             submission_payment: sub.submission_payment,
+  //             approval_payment: sub.approval_payment,
+  //             chainage_start: sub.chainage_start,
+  //             chainage_end: sub.chainage_end,
+  //             covered_area: sub.covered_area,
+  //             chainage_exist: sub.chainage_exist,
+  //             planned_quantity_exist: sub.planned_quantity_exist,
+  //             length_exist: sub.length_exist,
+  //             submission_exist: sub.submission_exist,
+  //             approval_exist: sub.approval_exist,
+  //             // activityType: sub.chainage_start ? 'multiple' : 'single',
+  //           }))
+  //           .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)), // Sort Sub-Activities by sorting_var
+  //       }))
+  //       .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)); // Sort Activities by sorting_var
+  //     setTemplateActivities(transformedActivities);
+  //   } else {
+  //     setTemplateActivities([]);
+  //   }
+  // }, [stageTemplates]);
+
+
   useEffect(() => {
+    const initialStages = {};
+
     if (stageTemplates && stageTemplates.length > 0) {
       const transformedActivities = stageTemplates
         .filter((act) => !act.is_deleted)
@@ -273,37 +437,76 @@ const CreateProject = () => {
           isFromTemplate: true,
           isCustom: false,
           subActivities: template.subactivities
-            .filter((sub) => !sub.is_deleted) // Only include non-deleted sub-activities
-            .map((sub) => ({
-              id:
+            .filter((sub) => !sub.is_deleted)
+            .map((sub) => {
+              // 1. Define the subId first
+              const subId =
                 sub.id ||
                 `template-subactivity-${sub.sorting_var}` ||
-                `template-subactivity-${index}`,
-              sorting_var: sub.sorting_var,
-              subactivity_name: sub.subactivity_name,
-              description: sub.description,
-              unit: sub.unit,
-              total_quantity: sub.total_quantity,
-              submission_payment: sub.submission_payment,
-              approval_payment: sub.approval_payment,
-              chainage_start: sub.chainage_start,
-              chainage_end: sub.chainage_end,
-              covered_area: sub.covered_area,
-              chainage_exist: sub.chainage_exist,
-              planned_quantity_exist: sub.planned_quantity_exist,
-              length_exist: sub.length_exist,
-              submission_exist: sub.submission_exist,
-              approval_exist: sub.approval_exist,
-              // activityType: sub.chainage_start ? 'multiple' : 'single',
-            }))
-            .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)), // Sort Sub-Activities by sorting_var
+                `template-subactivity-${index}`;
+
+              // 2. Perform the assignment
+              initialStages[subId] = sub.work_stages?.length > 0
+                ? sub.work_stages.map((ws, i) => ({
+                  id: `stg_${subId}_${i}`,
+                  name: ws.name,
+                  payment_percent: ws.payment_percent || 0
+                }))
+                : [
+                  { id: `stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+                  { id: `stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+                ];
+
+              // 3. Return the mapped object
+              return {
+                id: subId,
+                sorting_var: sub.sorting_var,
+                subactivity_name: sub.subactivity_name,
+                description: sub.description,
+                unit: sub.unit,
+                total_quantity: sub.total_quantity,
+                submission_payment: sub.submission_payment,
+                approval_payment: sub.approval_payment,
+                chainage_start: sub.chainage_start,
+                chainage_end: sub.chainage_end,
+                covered_area: sub.covered_area,
+                chainage_exist: sub.chainage_exist,
+                planned_quantity_exist: sub.planned_quantity_exist,
+                length_exist: sub.length_exist,
+                submission_exist: sub.submission_exist,
+                approval_exist: sub.approval_exist,
+              };
+            })
+            .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)),
         }))
-        .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)); // Sort Activities by sorting_var
+        .sort((a, b) => (a.sorting_var || 0) - (b.sorting_var || 0));
+
       setTemplateActivities(transformedActivities);
+      // Don't forget to update the state with the mapped stages!
+      setWorkStages((prev) => ({ ...prev, ...initialStages }));
     } else {
       setTemplateActivities([]);
+      setWorkStages({});
     }
   }, [stageTemplates]);
+
+
+  // Deriving Weightages Dynamically
+  useEffect(() => {
+    const newWeightages = {};
+    selectedActivities.forEach(activityId => {
+      let total = 0;
+      const selectedSubs = selectedSubActivities[activityId] || [];
+      selectedSubs.forEach(subId => {
+        const stages = workStages[subId] || [];
+        stages.forEach(stg => {
+          total += parseFloat(stg.payment_percent) || 0;
+        });
+      });
+      newWeightages[activityId] = total;
+    });
+    setActivityWeightages(newWeightages);
+  }, [workStages, selectedSubActivities, selectedActivities]);
 
   //GST Calculation
   useEffect(() => {
@@ -558,8 +761,9 @@ const CreateProject = () => {
   //   }
   // };
 
+
   const handleSubActivityPlannedQtyChange = (subId, field, value) => {
-    if (field === "description") {
+    if (field === "description" || field === "start_date" || field === "end_date") {
       setSubActivityPlannedQtys((prev) => ({
         ...prev,
         [`${subId}_${field}`]: value,
@@ -1131,42 +1335,325 @@ const CreateProject = () => {
     );
   };
 
+  //   const handleCloneSubActivity = (activityId, subId) => {
+
+  //     const activityObj = getAllActivities().find((a) => a.id === activityId);
+  //     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+
+  //     if (subObj) {
+  // // Get latest typed values from state dictionary first!
+  //       const latestStart = subActivityPlannedQtys[`${subId}_chainagestart`] ?? subObj.chainage_start ?? "";
+  //       const latestCovered = subActivityPlannedQtys[`${subId}_coveredarea`] ?? subObj.covered_area ?? "";
+  //       const latestQty = subActivityPlannedQtys[`${subId}_quantity`] ?? subObj.chainage_quantity ?? "";
+
+  //       // Prepare clone data with name and unit pre-filled and locked
+  //       setCloningSubActivity({
+  //         activityId,
+  //         sourceSubId: subId,
+  //         subactivity_name: subObj.subactivity_name,
+  //         unit: subObj.unit,
+  //         activityType: subObj.activityType || "single",
+  //         chainage_start: latestStart,
+  //         covered_area: subObj.covered_area || "",
+  //         chainage_quantity: subObj.chainage_quantity || "",
+  //         lengthType: subObj.lengthType || "same",
+  //         chainageLengths: subObj.chainageLengths || [],
+  //         isCustom: true,
+
+  //         approval_exist: subObj.approval_exist || '',
+  //         length_exist: subObj.length_exist || '',
+  //         submission_exist: subObj.submission_exist || ''
+
+
+  //       });
+  //       setShowCloneSubActivityModal(true);
+  //     }
+  //   };
+
+
+
+
+
   const handleCloneSubActivity = (activityId, subId) => {
     const activityObj = getAllActivities().find((a) => a.id === activityId);
     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
     if (subObj) {
-      // Preserve ALL properties for multiple sub-activities
-      const cloneData = {
+      // Get latest typed values from state dictionary first!
+      const latestStart = subActivityPlannedQtys[`${subId}_chainagestart`] ?? subObj.chainage_start ?? "";
+      const latestCovered = subActivityPlannedQtys[`${subId}_coveredarea`] ?? subObj.covered_area ?? "";
+      const latestQty = subActivityPlannedQtys[`${subId}_quantity`] ?? subObj.chainage_quantity ?? "";
+
+      setCloningSubActivity({
         activityId,
         sourceSubId: subId,
         subactivity_name: subObj.subactivity_name,
         unit: subObj.unit,
-        activityType: subObj.activityType || (subObj.chainage_start ? "multiple" : "single"),
+        activityType: subObj.activityType || "single",
+        chainage_start: latestStart,
+        covered_area: latestCovered, // Use latest covered area here too!
+        chainage_quantity: latestQty,
+        lengthType: subObj.lengthType || "same",
+        chainageLengths: subObj.chainageLengths || [],
         isCustom: true,
-      };
 
-      // Only add chainage properties if it's a multiple type
-      if (cloneData.activityType === "multiple") {
-        cloneData.chainage_start = subObj.chainage_start || "";
-        cloneData.covered_area = subObj.covered_area || "";
-        cloneData.chainage_quantity = subObj.chainage_quantity || "";
-        cloneData.lengthType = subObj.lengthType || "same";
-        // Make sure to properly copy chainageLengths array
-        cloneData.chainageLengths = subObj.chainageLengths ? [...subObj.chainageLengths] : [];
-      } else {
-        // For single type, set default values
-        cloneData.chainage_start = "";
-        cloneData.covered_area = "";
-        cloneData.chainage_quantity = "";
-        cloneData.lengthType = "same";
-        cloneData.chainageLengths = [];
-      }
-
-      setCloningSubActivity(cloneData);
+        // 🚀 FIX: Add the missing visibility flags here!
+        chainage_exist: subObj.chainage_exist ?? true,
+        planned_quantity_exist: subObj.planned_quantity_exist ?? true,
+        approval_exist: subObj.approval_exist ?? true,
+        length_exist: subObj.length_exist ?? true,
+        submission_exist: subObj.submission_exist ?? true
+      });
       setShowCloneSubActivityModal(true);
     }
   };
+
+  // const handleCloneSubActivitySubmit = async (e) => {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+
+  //   if (!cloningSubActivity) return;
+
+  //   let newSubs = [];
+
+  //   if (cloningSubActivity.activityType === "single") {
+  //     console.log(cloningSubActivity, 'subactivity')
+  //     const numberclone = (cloningSubActivity?.sorting_var || 0) + 1;
+
+  //     newSubs = [
+  //       {
+  //         id: `custom-sub-${Date.now()}`,
+  //         sorting_var: null,
+  //         subactivity_name: `${cloningSubActivity.subactivity_name} ${numberclone}`,
+  //         unit: cloningSubActivity.unit,
+  //         activityType: cloningSubActivity.activityType,
+  //         chainage_start: null,
+  //         planned_quantity_exist: true,
+  //         chainage_end: null,
+  //         covered_area: null,
+  //         chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : false,
+  //         chainage_quantity: null,
+  //         lengthType: "same",
+  //         chainageLengths: [],
+  //         isCustom: true,
+  //         approval_exist: cloningSubActivity.approval_exist || '',
+  //         length_exist: cloningSubActivity.length_exist || '',
+  //         submission_exist: cloningSubActivity.submission_exist || '',
+
+  //       },
+  //     ];
+
+  //     console.log(newSubs, 'new subss')
+  //   } else {
+  //     const start = Number(cloningSubActivity.chainage_start) || 0;
+  //     const count = Number(cloningSubActivity.chainage_quantity) || 0;
+
+  //     if (!count || start === undefined) {
+  //       dispatch(
+  //         showSnackbar({
+  //           message:
+  //             "Enter valid Chainage Details (Start Chainage and Quantity)",
+  //           type: "error",
+  //         }),
+  //       );
+  //       return;
+  //     }
+
+  //     let currentStart = start;
+
+  //     if (cloningSubActivity.lengthType === "same") {
+  //       const covered = Number(cloningSubActivity.covered_area) || 0;
+  //       if (!covered) {
+  //         dispatch(
+  //           showSnackbar({
+  //             message: "Please enter Chainage Length",
+  //             type: "error",
+  //           }),
+  //         );
+  //         return;
+  //       }
+
+  //       for (let i = 0; i < count; i++) {
+  //         const currentEnd = Number((currentStart + covered).toFixed(2));
+  //         newSubs.push({
+  //           id: `custom-sub-${Date.now()}-${i}`,
+  //           sorting_var: null,
+  //           subactivity_name: cloningSubActivity.subactivity_name,
+  //           unit: cloningSubActivity.unit,
+  //           chainage_start: currentStart,
+  //           chainage_end: currentEnd,
+  //           covered_area: covered,
+  //           chainage_quantity: count,
+  //           planned_quantity_exist: true,
+  //           chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
+  //           activityType: cloningSubActivity.activityType,
+  //           lengthType: "same",
+  //           chainageLengths: [],
+  //           lengthIndex: i,
+  //           isCustom: true,
+  //           approval_exist: cloningSubActivity.approval_exist || '',
+  //           length_exist: cloningSubActivity.length_exist || '',
+  //           submission_exist: cloningSubActivity.submission_exist || '',
+
+  //         });
+  //         currentStart = currentEnd;
+  //       }
+  //     } else {
+  //       const lengths = cloningSubActivity.chainageLengths;
+  //       if (lengths.length !== count) {
+  //         dispatch(
+  //           showSnackbar({
+  //             message: `Please enter lengths for all ${count} chainages`,
+  //             type: "error",
+  //           }),
+  //         );
+  //         return;
+  //       }
+
+  //       for (let i = 0; i < count; i++) {
+  //         const covered = Number(lengths[i]) || 0;
+  //         if (!covered) {
+  //           dispatch(
+  //             showSnackbar({
+  //               message: `Please enter valid length for chainage ${i + 1}`,
+  //               type: "error",
+  //             }),
+  //           );
+  //           return;
+  //         }
+  //         const currentEnd = Number((currentStart + covered).toFixed(2));
+  //         newSubs.push({
+  //           id: `custom-sub-${Date.now()}-${i}`,
+  //           sorting_var: null,
+  //           subactivity_name: cloningSubActivity.subactivity_name,
+  //           unit: cloningSubActivity.unit,
+  //           chainage_start: currentStart,
+  //           chainage_end: currentEnd,
+  //           covered_area: covered,
+  //           chainage_quantity: count,
+  //           activityType: cloningSubActivity.activityType,
+  //           chainageLengths: lengths,
+  //           planned_quantity_exist: true,
+  //           chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
+  //           lengthType: "different",
+  //           lengthIndex: i,
+  //           isCustom: true,
+  //           approval_exist: cloningSubActivity.approval_exist || '',
+  //           length_exist: cloningSubActivity.length_exist || '',
+  //           submission_exist: cloningSubActivity.submission_exist || '',
+
+  //         });
+  //         currentStart = currentEnd;
+  //       }
+  //     }
+  //   }
+
+  //   const activityId = cloningSubActivity.activityId;
+  //   const templateIndex = templatesActivities.findIndex(
+  //     (act) => act.id === activityId,
+  //   );
+
+  //   const newSubIds = newSubs.map((s) => s.id);
+  //   const lastSubId = newSubIds[newSubIds.length - 1];
+
+  //   // Get existing sub-activities
+  //   const existingSubs =
+  //     templateIndex !== -1
+  //       ? [...(templatesActivities[templateIndex]?.subActivities || [])]
+  //       : [
+  //         ...(customActivities.find((act) => act.id === activityId)
+  //           ?.subActivities || []),
+  //       ];
+
+  //   // Find insertion position for same name sub-activities (case-insensitive)
+  //   let insertIndex = existingSubs.length;
+  //   const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
+  //   for (let i = existingSubs.length - 1; i >= 0; i--) {
+  //     if (existingSubs[i]?.subactivity_name?.toLowerCase() === lowerNewName) {
+  //       insertIndex = i + 1;
+  //       break;
+  //     }
+  //   }
+
+  //   // Create updated sub-activities array with new items inserted
+  //   const updatedSubActivities = [...existingSubs];
+  //   updatedSubActivities.splice(insertIndex, 0, ...newSubs);
+
+  //   // Reassign sorting_var values based on new order
+  //   const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
+  //     ...sub,
+  //     sorting_var: idx + 1,
+  //   }));
+
+  //   if (templateIndex !== -1) {
+  //     setTemplateActivities((prev) =>
+  //       prev.map((act, index) => {
+  //         if (index === templateIndex) {
+  //           return {
+  //             ...act,
+  //             subActivities: reassignedSubActivities,
+  //           };
+  //         }
+  //         return act;
+  //       }),
+  //     );
+  //   } else {
+  //     setCustomActivities((prev) =>
+  //       prev.map((act) => {
+  //         if (act.id === activityId) {
+  //           return {
+  //             ...act,
+  //             subActivities: reassignedSubActivities,
+  //           };
+  //         }
+  //         return act;
+  //       }),
+  //     );
+  //   }
+
+  //   // Auto-select the new sub-activities
+  //   setSelectedSubActivities((prev) => ({
+  //     ...prev,
+  //     [activityId]: [...(prev[activityId] || []), ...newSubIds],
+  //   }));
+
+  //   const activityObj = getAllActivities().find(a => a.id === activityId);
+  //   if (activityObj) {
+  //     const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
+  //     let totalWeightage = 0;
+  //     updatedSelectedSubs.forEach(selectedSubId => {
+  //       const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
+  //       if (subObj) {
+  //         const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+  //         const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+  //         totalWeightage += submissionPayment + approvalPayment;
+  //       }
+  //     });
+  //     setActivityWeightages(prev => ({
+  //       ...prev,
+  //       [activityId]: totalWeightage
+  //     }));
+  //   }
+
+  //   // Scroll to the newly added sub-activity
+  //   setTimeout(() => {
+  //     const lastSubElement = document.getElementById(`sub-${lastSubId}`);
+  //     if (lastSubElement) {
+  //       lastSubElement.scrollIntoView({ behavior: "smooth", block: "center" });
+  //     }
+  //   }, 100);
+
+  //   setShowCloneSubActivityModal(false);
+  //   setCloningSubActivity(null);
+
+  //   dispatch(
+  //     showSnackbar({
+  //       message: "Sub-activity cloned successfully",
+  //       type: "success",
+  //     }),
+  //   );
+  // };
+
 
   const handleCloneSubActivitySubmit = async (e) => {
     e.preventDefault();
@@ -1174,12 +1661,36 @@ const CreateProject = () => {
 
     if (!cloningSubActivity) return;
 
+    // 1. Extract the missing source data from states to clone
+    const sourceId = cloningSubActivity.sourceSubId;
+    const activityId = cloningSubActivity.activityId;
+
+    // Pull text and date fields
+    const sourceDesc = subActivityPlannedQtys[`${sourceId}_description`] || "";
+    const sourceStartDate = subActivityPlannedQtys[`${sourceId}_start_date`] || "";
+    const sourceEndDate = subActivityPlannedQtys[`${sourceId}_end_date`] || "";
+    const sourceQty = subActivityPlannedQtys[`${sourceId}_quantity`] || "";
+
+    // Pull payment fields to duplicate
+    const sourceSubPayment = subActivityPlannedQtys[`${sourceId}_subpayment`] || 0;
+    const sourceAppPayment = subActivityPlannedQtys[`${sourceId}_approvalpayment`] || 0;
+
+    const sourceStages = workStages[sourceId] || [];
+
+    // Prepare batch updates for the states
+    const qtysToUpdate = {};
+    const unitsToUpdate = {};
+    const stagesToUpdate = {};
+
     let newSubs = [];
 
     if (cloningSubActivity.activityType === "single") {
+      const numberclone = (cloningSubActivity?.sorting_var || 0) + 1;
+      const newSubId = `custom-sub-clone-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
       newSubs = [
         {
-          id: `custom-sub-${Date.now()}`,
+          id: newSubId,
           sorting_var: null,
           subactivity_name: cloningSubActivity.subactivity_name,
           unit: cloningSubActivity.unit,
@@ -1187,24 +1698,42 @@ const CreateProject = () => {
           chainage_start: null,
           chainage_end: null,
           covered_area: null,
+          chainage_exist: cloningSubActivity.chainage_exist,
+          planned_quantity_exist: cloningSubActivity.planned_quantity_exist,
           chainage_quantity: null,
           lengthType: "same",
           chainageLengths: [],
           isCustom: true,
+          approval_exist: cloningSubActivity.approval_exist || '',
+          length_exist: cloningSubActivity.length_exist || '',
+          submission_exist: cloningSubActivity.submission_exist || '',
         },
       ];
+
+      unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+
+      // Inject all mapped states for a Single Clone
+      qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+      qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+      qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+      qtysToUpdate[`${newSubId}_quantity`] = sourceQty;
+      qtysToUpdate[`${newSubId}_subpayment`] = sourceSubPayment;
+      qtysToUpdate[`${newSubId}_approvalpayment`] = sourceAppPayment;
+      qtysToUpdate[`${newSubId}_chainagestart`] = subActivityPlannedQtys[`${sourceId}_chainagestart`] || "";
+      qtysToUpdate[`${newSubId}_chainageend`] = subActivityPlannedQtys[`${sourceId}_chainageend`] || "";
+      qtysToUpdate[`${newSubId}_coveredarea`] = subActivityPlannedQtys[`${sourceId}_coveredarea`] || "";
+
+      stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+        ...stg,
+        id: `stg_${newSubId}_${Date.now()}_${sIdx}`
+      }));
+
     } else {
       const start = Number(cloningSubActivity.chainage_start) || 0;
       const count = Number(cloningSubActivity.chainage_quantity) || 0;
 
       if (!count || start === undefined) {
-        dispatch(
-          showSnackbar({
-            message:
-              "Enter valid Chainage Details (Start Chainage and Quantity)",
-            type: "error",
-          }),
-        );
+        dispatch(showSnackbar({ message: "Enter valid Chainage Details", type: "error" }));
         return;
       }
 
@@ -1213,23 +1742,21 @@ const CreateProject = () => {
       if (cloningSubActivity.lengthType === "same") {
         const covered = Number(cloningSubActivity.covered_area) || 0;
         if (!covered) {
-          dispatch(
-            showSnackbar({
-              message: "Please enter Chainage Length",
-              type: "error",
-            }),
-          );
+          dispatch(showSnackbar({ message: "Please enter Chainage Length", type: "error" }));
           return;
         }
 
         for (let i = 0; i < count; i++) {
-          const currentEnd = Number((currentStart + covered).toFixed(2));
+          const chainageStart = Number(currentStart.toFixed(2));
+          const currentEnd = Number((chainageStart + covered).toFixed(2));
+          const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
+
           newSubs.push({
-            id: `custom-sub-${Date.now()}-${i}`,
+            id: newSubId,
             sorting_var: null,
-            subactivity_name: cloningSubActivity.subactivity_name,
+            subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
             unit: cloningSubActivity.unit,
-            chainage_start: currentStart,
+            chainage_start: chainageStart,
             chainage_end: currentEnd,
             covered_area: covered,
             chainage_quantity: count,
@@ -1238,39 +1765,53 @@ const CreateProject = () => {
             chainageLengths: [],
             lengthIndex: i,
             isCustom: true,
+            approval_exist: cloningSubActivity.approval_exist || '',
+            length_exist: cloningSubActivity.length_exist || '',
+            submission_exist: cloningSubActivity.submission_exist || '',
           });
+
+          // Inject all mapped states for Multiple Same Length
+          unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+          qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+          qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+          qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+          qtysToUpdate[`${newSubId}_quantity`] = 1;
+          qtysToUpdate[`${newSubId}_chainagestart`] = chainageStart;
+          qtysToUpdate[`${newSubId}_chainageend`] = currentEnd;
+          qtysToUpdate[`${newSubId}_coveredarea`] = covered;
+          qtysToUpdate[`${newSubId}_subpayment`] = sourceSubPayment;
+          qtysToUpdate[`${newSubId}_approvalpayment`] = sourceAppPayment;
+
+          stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+            ...stg,
+            id: `stg_${newSubId}_${Date.now()}_${sIdx}`
+          }));
+
           currentStart = currentEnd;
         }
       } else {
         const lengths = cloningSubActivity.chainageLengths;
         if (lengths.length !== count) {
-          dispatch(
-            showSnackbar({
-              message: `Please enter lengths for all ${count} chainages`,
-              type: "error",
-            }),
-          );
+          dispatch(showSnackbar({ message: `Please enter lengths for all ${count} chainages`, type: "error" }));
           return;
         }
 
         for (let i = 0; i < count; i++) {
           const covered = Number(lengths[i]) || 0;
           if (!covered) {
-            dispatch(
-              showSnackbar({
-                message: `Please enter valid length for chainage ${i + 1}`,
-                type: "error",
-              }),
-            );
+            dispatch(showSnackbar({ message: `Please enter valid length for chainage ${i + 1}`, type: "error" }));
             return;
           }
-          const currentEnd = Number((currentStart + covered).toFixed(2));
+          const chainageStart = Number(currentStart.toFixed(2));
+          const currentEnd = Number((chainageStart + covered).toFixed(2));
+          const newSubId = `custom-sub-clone-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`;
+
           newSubs.push({
-            id: `custom-sub-${Date.now()}-${i}`,
+            id: newSubId,
             sorting_var: null,
-            subactivity_name: cloningSubActivity.subactivity_name,
+            subactivity_name: cloningSubActivity.subactivity_name + ` (${i + 1})`,
             unit: cloningSubActivity.unit,
-            chainage_start: currentStart,
+            chainage_start: chainageStart,
             chainage_end: currentEnd,
             covered_area: covered,
             chainage_quantity: count,
@@ -1279,30 +1820,46 @@ const CreateProject = () => {
             lengthType: "different",
             lengthIndex: i,
             isCustom: true,
+            approval_exist: cloningSubActivity.approval_exist || '',
+            length_exist: cloningSubActivity.length_exist || '',
+            submission_exist: cloningSubActivity.submission_exist || '',
           });
+
+          // Inject all mapped states for Multiple Different Lengths
+          unitsToUpdate[`${activityId}_${newSubId}`] = cloningSubActivity.unit;
+          qtysToUpdate[`${newSubId}_description`] = sourceDesc;
+          qtysToUpdate[`${newSubId}_start_date`] = sourceStartDate;
+          qtysToUpdate[`${newSubId}_end_date`] = sourceEndDate;
+          qtysToUpdate[`${newSubId}_quantity`] = 1;
+          qtysToUpdate[`${newSubId}_chainagestart`] = chainageStart;
+          qtysToUpdate[`${newSubId}_chainageend`] = currentEnd;
+          qtysToUpdate[`${newSubId}_coveredarea`] = covered;
+          qtysToUpdate[`${newSubId}_subpayment`] = sourceSubPayment;
+          qtysToUpdate[`${newSubId}_approvalpayment`] = sourceAppPayment;
+
+          stagesToUpdate[newSubId] = sourceStages.map((stg, sIdx) => ({
+            ...stg,
+            id: `stg_${newSubId}_${Date.now()}_${sIdx}`
+          }));
+
           currentStart = currentEnd;
         }
       }
     }
 
-    const activityId = cloningSubActivity.activityId;
-    const templateIndex = templatesActivities.findIndex(
-      (act) => act.id === activityId,
-    );
+    // 3. Apply the state updates immediately
+    setSubActivityPlannedQtys(prev => ({ ...prev, ...qtysToUpdate }));
+    setSubActivityUnits(prev => ({ ...prev, ...unitsToUpdate }));
+    setWorkStages(prev => ({ ...prev, ...stagesToUpdate }));
 
+    const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
     const newSubIds = newSubs.map((s) => s.id);
     const lastSubId = newSubIds[newSubIds.length - 1];
 
-    // Get existing sub-activities
-    const existingSubs =
-      templateIndex !== -1
-        ? [...(templatesActivities[templateIndex]?.subActivities || [])]
-        : [
-          ...(customActivities.find((act) => act.id === activityId)
-            ?.subActivities || []),
-        ];
+    const existingSubs = templateIndex !== -1
+      ? [...(templatesActivities[templateIndex]?.subActivities || [])]
+      : [...(customActivities.find((act) => act.id === activityId)?.subActivities || [])];
 
-    // Find insertion position for same name sub-activities (case-insensitive)
     let insertIndex = existingSubs.length;
     const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
     for (let i = existingSubs.length - 1; i >= 0; i--) {
@@ -1312,11 +1869,9 @@ const CreateProject = () => {
       }
     }
 
-    // Create updated sub-activities array with new items inserted
     const updatedSubActivities = [...existingSubs];
     updatedSubActivities.splice(insertIndex, 0, ...newSubs);
 
-    // Reassign sorting_var values based on new order
     const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
       ...sub,
       sorting_var: idx + 1,
@@ -1325,52 +1880,23 @@ const CreateProject = () => {
     if (templateIndex !== -1) {
       setTemplateActivities((prev) =>
         prev.map((act, index) => {
-          if (index === templateIndex) {
-            return {
-              ...act,
-              subActivities: reassignedSubActivities,
-            };
-          }
+          if (index === templateIndex) return { ...act, subActivities: reassignedSubActivities };
           return act;
-        }),
+        })
       );
     } else {
       setCustomActivities((prev) =>
         prev.map((act) => {
-          if (act.id === activityId) {
-            return {
-              ...act,
-              subActivities: reassignedSubActivities,
-            };
-          }
+          if (act.id === activityId) return { ...act, subActivities: reassignedSubActivities };
           return act;
-        }),
+        })
       );
     }
 
-    // Auto-select the new sub-activities
     setSelectedSubActivities((prev) => ({
       ...prev,
       [activityId]: [...(prev[activityId] || []), ...newSubIds],
     }));
-
-    const activityObj = getAllActivities().find(a => a.id === activityId);
-    if (activityObj) {
-      const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
-      let totalWeightage = 0;
-      updatedSelectedSubs.forEach(selectedSubId => {
-        const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
-        if (subObj) {
-          const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-          const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-          totalWeightage += submissionPayment + approvalPayment;
-        }
-      });
-      setActivityWeightages(prev => ({
-        ...prev,
-        [activityId]: totalWeightage
-      }));
-    }
 
     // Scroll to the newly added sub-activity
     setTimeout(() => {
@@ -1382,13 +1908,7 @@ const CreateProject = () => {
 
     setShowCloneSubActivityModal(false);
     setCloningSubActivity(null);
-
-    dispatch(
-      showSnackbar({
-        message: "Sub-activity cloned successfully",
-        type: "success",
-      }),
-    );
+    dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
   };
 
   const handleEditSubActivity = (activityId, subId) => {
@@ -2041,22 +2561,45 @@ const CreateProject = () => {
           const chainageend = subActivityPlannedQtys[`${subId}_chainageend`] || 0;
           const coveredarea = subActivityPlannedQtys[`${subId}_coveredarea`] || 0;
           const description = subActivityPlannedQtys[`${subId}_description`] || "";
+          const start_date = subActivityPlannedQtys[`${subId}_start_date`] || null;
+          const end_date = subActivityPlannedQtys[`${subId}_end_date`] || null;
           const isStatusBased = unit === "status";
           const subSortingVar = subObj?.sorting_var || 0;
 
+          const stages = workStages[subId] || [];
+          const mappedStages = stages.map((stg, sIdx) => ({
+            name: stg.name || `Stage ${sIdx + 1}`,
+            payment_percent: parseFloat(stg.payment_percent) || 0,
+            sorting_var: sIdx
+          }));
+
+          // -> Return the SUBACTIVITY object
           return {
             subactivity_name: subObj?.subactivity_name || String(subId),
             description: description,
+            start_date: start_date, // ADD THIS
+            end_date: end_date,     // ADD THIS
             total_quantity: isStatusBased ? 1 : plannedQty,
             unit: isStatusBased ? "status" : unit,
-            submission_payment: submissionpayment,
-            approval_payment: approvalpayment,
             chainage_start: chainagestart,
             chainage_end: chainageend,
             covered_area: coveredarea || "0.00",
-            sorting_var: subSortingVar
+            sorting_var: subSortingVar,
+            work_stages: mappedStages
           };
         });
+
+
+
+
+        // return {
+        //   activity_name: activityObj?.activity_name,
+        //   start_date: dates.startDate,
+        //   end_date: dates.endDate,
+        //   weightage: weightage,
+        //   sorting_var: activitySortingVar,
+        //   subactivities: subactivities,
+        // };
 
         return {
           activity_name: activityObj?.activity_name,
@@ -2548,7 +3091,60 @@ const CreateProject = () => {
     console.log("=================");
   };
 
+  const [showAllFields, setShowAllFields] = useState({});
+  // Add these refs at the top of your component
 
+
+  // Add these state variables
+
+
+  // Add click outside handler with clear logic
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Handle Company dropdown
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+        setShowCompanyDropdown(false);
+        // Check if current search value matches any company
+        const hasMatchingCompany = companies.some(c =>
+          c.name?.toLowerCase() === companySearch?.toLowerCase()
+        );
+        // If no match and no company selected, clear the search
+        if (!hasMatchingCompany && !form.company && companySearch) {
+          setCompanySearch("");
+        }
+      }
+
+      // Handle Sector dropdown
+      if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
+        setShowSectorDropdown(false);
+        // Check if current search value matches any sector
+        const hasMatchingSector = sectorsList.some(s =>
+          s.name?.toLowerCase() === sectorSearch?.toLowerCase()
+        );
+        // If no match and no sector selected, clear the search
+        if (!hasMatchingSector && !form.sector && sectorSearch) {
+          setSectorSearch("");
+        }
+      }
+
+      // Handle Client dropdown
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
+        setShowClientDropdown(false);
+        // Check if current search value matches any client
+        const hasMatchingClient = clients.some(c =>
+          c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
+          c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
+        );
+        // If no match and no client selected, clear the search
+        if (!hasMatchingClient && !form.client && clientSearch) {
+          setClientSearch("");
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -4167,33 +4763,63 @@ const CreateProject = () => {
 
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Company *</label>
-              <div className="relative">
-                <Building2
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
+              <div className="relative" ref={companyDropdownRef}>
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  value={companySearch || (form.company ? form.company : "")}
+                  placeholder="Select Company"
+                  onFocus={() => setShowCompanyDropdown(true)}
+                  onChange={(e) => {
+                    setCompanySearch(e.target.value);
+                    if (form.company) {
+                      setForm({ ...form, company: "" });
+                    }
+                    setShowCompanyDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
-                <select
-                  name="company"
-                  value={form.company}
-                  onChange={handleChange}
-                  className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.name}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-                {/* <button
-                  type="button"
-                  onClick={() => setShowAddCompanyModal(true)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors z-10"
-                >
-                  <Plus size={14} />
-                </button> */}
+                {form.company && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, company: '' });
+                      setCompanySearch('');
+                      setShowCompanyDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+                {showCompanyDropdown && (
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {/* ... existing company dropdown logic ... */}
+                    {(() => {
+                      const filteredCompanies = companies.filter((c) =>
+                        !companySearch || c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                      );
+                      if (filteredCompanies.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching companies</div>;
+                      return filteredCompanies.map((company) => (
+                        <div
+                          key={company.id}
+                          onClick={() => {
+                            setForm({ ...form, company: company.name });
+                            setCompanySearch(company.name);
+                            setShowCompanyDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          <div>{company.name} {company.gst_no && <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>}</div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
+
+
             {form.company && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-500">Company GST</label>
@@ -4217,48 +4843,67 @@ const CreateProject = () => {
               </div>
             )}
 
+            {/* Sector Field */}
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Sector *</label>
-              <div className="relative">
-                <Factory
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
+              <div className="relative" ref={sectorDropdownRef}>
+                <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  value={sectorSearch || (form.sector ? form.sector : "")}
+                  placeholder="Select Sector"
+                  onFocus={() => setShowSectorDropdown(true)}
+                  onChange={(e) => {
+                    setSectorSearch(e.target.value);
+                    if (form.sector) {
+                      setForm({ ...form, sector: "" });
+                    }
+                    setShowSectorDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
-                <select
-                  name="sector"
-                  value={form.sector}
-                  onChange={handleChange}
-                  className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                >
-                  <option value="">Select Sector</option>
-                  {sectorsList.map((sector, i) => (
-                    <option key={i} value={sector?.name}>
-                      {sector?.name}
-                    </option>
-                  ))}
-                </select>
-                {/* <button
+                {form.sector && (
+                  <button
                     type="button"
-                    onClick={() => setShowAdvancedSectorModal(true)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                    onClick={() => {
+                      setForm({ ...form, sector: '' });
+                      setSectorSearch('');
+                      setShowSectorDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                   >
-                    <Plus size={14} />
-                  </button> */}
-                {/* <AddSectorButton
-                  onSuccess={handleRefresh}
-                  loadData={loadSectorsData}
-                  sectors={sectors}
-                  BasicButtonView={true} /> */}
+                    <X size={20} />
+                  </button>
+                )}
+                {showSectorDropdown && (
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {/* ... existing sector dropdown logic ... */}
+                    {(() => {
+                      const filteredSectors = sectorsList.filter((s) =>
+                        !sectorSearch || s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                      );
+                      if (filteredSectors.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching sectors</div>;
+                      return filteredSectors.map((sector) => (
+                        <div
+                          key={sector.id || sector.name}
+                          onClick={() => {
+                            setForm({ ...form, sector: sector.name });
+                            setSectorSearch(sector.name);
+                            setShowSectorDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          <div>{sector.name} {sector.unit && <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sector.unit] || sector.unit})</span>}</div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Client *</label>
-              <div
-                className="relative"
-                ref={clientDropdownRef}
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="relative" ref={clientDropdownRef}>
                 <Handshake
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={16}
@@ -4268,162 +4913,94 @@ const CreateProject = () => {
                   type="text"
                   value={clientSearch}
                   placeholder="Select Client"
-                  onFocus={() => setShowClientDropdown(true)}
+                  onFocus={() => {
+                    setShowClientDropdown(true);
+                  }}
                   onChange={(e) => {
                     setClientSearch(e.target.value);
-                    setForm(prev => ({
-                      ...prev,
-                      clientbranch: ''
-                    }));
+                    if (form.client) {
+                      setForm({
+                        ...form,
+                        client: "",
+                        clientbranch: ""
+                      });
+                    }
                     setShowClientDropdown(true);
                   }}
                   className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 />
 
-                {/* <button
-                      type="button"
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          setShowAddClientModal(true);
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
-                  >
-                      <Plus size={14} />
-                  </button> */}
-
-
                 {/* Clear button */}
                 {form.client && (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={() => {
                       setForm({
                         ...form,
                         client: '',
                         clientbranch: ''
                       });
                       setClientSearch('');
-                      setShowClientDropdown(true);
+                      setClientCode('');
+                      setShowClientDropdown(false);
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                    title="Clear client"
                   >
                     <X size={20} />
                   </button>
                 )}
 
-                {/* Dropdown with sorting and highlighting */}
+                {/* Dropdown */}
                 {showClientDropdown && (
-                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }
-                    }
-                  >
-                    {clientSearch && clients.filter(c =>
-                      c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
-                    ).length > 0 && (
-                        <div className="px-3 py-2 border-t border-gray-100 text-xs text-gray-400 bg-gray-50">
-                          Showing {clients.filter(c =>
-                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase())
-                          ).length} of {clients.length} clients
-                        </div>
-                      )}
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {(() => {
+                      const filteredClients = clients.filter((c) =>
+                        !clientSearch ||
+                        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
+                      );
 
-                    {clients.length > 0 ? (
-                      [...clients].sort((a, b) => {
-                        const aName = a.client_name || '';
-                        const bName = b.client_name || '';
-                        const searchTerm = clientSearch?.toLowerCase() || '';
+                      if (filteredClients.length === 0) {
+                        return (
+                          <div className="px-3 py-2 text-gray-400 text-sm">
+                            No matching clients
+                          </div>
+                        );
+                      }
 
-                        const aMatches = searchTerm && aName.toLowerCase().includes(searchTerm);
-                        const bMatches = searchTerm && bName.toLowerCase().includes(searchTerm);
+                      return filteredClients.map((client) => {
+                        const clientName = client.client_name || "";
+                        const clientCode = client.client_code || "";
 
-                        // Matching items come first
-                        if (aMatches && !bMatches) return -1;
-                        if (!aMatches && bMatches) return 1;
-
-                        // For items with same match status, sort alphabetically
-                        return aName.localeCompare(bName);
-                      })
-                        .map((client) => {
-                          const clientName = client.client_name || '';
-                          const clientCode = client.client_code || "N/A";
-                          const searchTerm = clientSearch?.toLowerCase() || '';
-                          const isMatching = searchTerm && clientName.toLowerCase().includes(searchTerm);
-
-                          // Function to highlight matching text
-                          const getHighlightedText = (text, highlight) => {
-                            if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
-                              return text;
-                            }
-
-                            const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                            const parts = text.split(regex);
-
-                            return parts.map((part, i) =>
-                              regex.test(part) ?
-                                <span key={i} className="bg-yellow-200 font-semibold">{part}</span> :
-                                part
-                            );
-                          };
-
-                          return (
-                            <div
-                              key={client.id}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setForm({
-                                  ...form,
-                                  client: client.id,
-                                  clientbranch: ''
-                                });
-                                setClientSearch(`${clientName} - ${clientCode}`);
-                                setShowClientDropdown(false);
-                              }}
-                              className={`px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm transition-colors ${isMatching ? 'bg-yellow-50/50' : ''
-                                }`}
-                            >
-                              <div>
-                                {getHighlightedText(clientName, clientSearch)} - {clientCode}
-                              </div>
-                              {isMatching && (
-                                <div className="text-xs text-green-600 mt-0.5">
-                                  Press Enter to select
-                                </div>
-                              )}
+                        return (
+                          <div
+                            key={client.id}
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                client: client.id,
+                                clientbranch: "",
+                              });
+                              setClientSearch(`${clientName} - ${clientCode}`);
+                              setClientCode(clientCode);
+                              setShowClientDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                          >
+                            <div>
+                              {clientName} - {clientCode}
                             </div>
-                          );
-                        })
-                    ) : (
-                      <div className="px-3 py-2 text-gray-400 text-sm">
-                        No Clients Available
-                      </div>
-                    )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
             </div>
-
             {form.client && (
               <>
-                {/* <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Client PAN</label>
-                  <div className="relative">
-                    <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <input
-                      type="text"
-                      name="location"
-                      disabled
-                      value={(clients.filter((data) => data?.id == form.client)[0]?.pan_no)}
-                      onChange={handleChange}
-                      className="w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div> */}
+
 
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-500">Branch *</label>
@@ -5638,57 +6215,58 @@ const CreateProject = () => {
                                                   </div>
                                                 )}
 
-                                                {sub?.chainage_exist && <div>
-                                                  <div className="grid grid-cols-1 gap-1 col-span-3">
-                                                    <div>
-                                                      <div className="flex flex-row justify-between items-center">
-                                                        <label className="block text-[10px] text-gray-500 mb-1">
-                                                          Chainage Start
-                                                        </label>
-                                                        {currentUnit ===
-                                                          "status" && (
-                                                            // <div className="col-span-3">
-                                                            //   <div className="text-[10px] text-blue-600 bg-blue-50 p-1 rounded flex items-center gap-1">
-                                                            //     <Info size={10} />
-                                                            //     Status-based - no quantity needed
-                                                            //   </div>
-                                                            // </div>
-                                                            <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
-                                                              <Info size={10} />
-                                                              Status-based - no
-                                                              quantity needed
-                                                            </div>
-                                                          )}
+                                                {(sub?.chainage_exist || showAllFields[key]) &&
+                                                  <div>
+                                                    <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                      <div>
+                                                        <div className="flex flex-row justify-between items-center">
+                                                          <label className="block text-[10px] text-gray-500 mb-1">
+                                                            Chainage Start
+                                                          </label>
+                                                          {currentUnit ===
+                                                            "status" && (
+                                                              // <div className="col-span-3">
+                                                              //   <div className="text-[10px] text-blue-600 bg-blue-50 p-1 rounded flex items-center gap-1">
+                                                              //     <Info size={10} />
+                                                              //     Status-based - no quantity needed
+                                                              //   </div>
+                                                              // </div>
+                                                              <div className="text-[10px] text-blue-600 bg-blue-50 rounded flex items-center gap-1">
+                                                                <Info size={10} />
+                                                                Status-based - no
+                                                                quantity needed
+                                                              </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* <input
+                                                          type="number"
+                                                          min="0"
+                                                          step="0.01"
+                                                          defaultValue={
+                                                            sub.chainage_start ||
+                                                            ""
+                                                          } // Read from sub object directly
+                                                          // disabled // Make it read-only as it's calculated
+                                                          onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
+                                                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
+                                                          placeholder="001"
+                                                        /> */}
+
+                                                        <input
+                                                          type="number"
+                                                          min="0"
+                                                          step="0.01"
+                                                          // 🚀 FIX: Bind to the state dictionary, falling back to the object
+                                                          value={subActivityPlannedQtys[`${sub.id}_chainagestart`] ?? sub.chainage_start ?? ""}
+                                                          onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
+                                                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                          placeholder="001"
+                                                        />
                                                       </div>
-                                                      {/* <input
-                                                      type="number"
-                                                      onWheel={(e) => e.target.blur()}
-                                                      min="0"
-                                                      step="0.01"
-                                                      // value={subActivityPlannedQtys[(key2 + "_chainagestart")] || ''}
-                                                      value={subActivityPlannedQtys[`${sub.id}_chainagestart`] || ''}
-                                                      // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_chainagestart"), e.target.value)}
-                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
-                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                      placeholder="001"
-                                                    /> */}
-                                                      <input
-                                                        type="number"
-                                                        onWheel={(e) => e.target.blur()}
-                                                        min="0"
-                                                        step="0.01"
-                                                        defaultValue={
-                                                          sub.chainage_start ||
-                                                          ""
-                                                        } // Read from sub object directly
-                                                        // disabled // Make it read-only as it's calculated
-                                                        onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
-                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
-                                                        placeholder="001"
-                                                      />
                                                     </div>
                                                   </div>
-                                                </div>}
+                                                }
 
                                                 {sub?.length_exist &&
                                                   <div>
@@ -5807,7 +6385,7 @@ const CreateProject = () => {
                                                       </div>
                                                     </div>
                                                   </div>}
-                                                {sub?.submission_exist &&
+                                                {/* {(sub?.submission_exist || showAllFields[key]) &&
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Submission Payment (%)
@@ -5852,9 +6430,9 @@ const CreateProject = () => {
                                                         />
                                                       </span>
                                                     </div>
-                                                  </div>}
+                                                  </div>} */}
 
-                                                {sub?.approval_exist &&
+                                                {/* {(sub?.approval_exist || showAllFields[key]) &&
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Approval Payment (%)
@@ -5899,7 +6477,113 @@ const CreateProject = () => {
                                                         />
                                                       </span>
                                                     </div>
-                                                  </div>}
+                                                  </div>} */}
+
+                                                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-2 col-span-3 mt-2">
+  <div>
+    <label className="block text-[10px] text-gray-500 mb-1">
+      Start Date
+    </label>
+    <input
+      type="date"
+      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
+      min={activityDates[activityId]?.startDate || form.loa_date}
+      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
+      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
+      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+  <div>
+    <label className="block text-[10px] text-gray-500 mb-1">
+      End Date
+    </label>
+    <input
+      type="date"
+      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
+      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+      max={activityDates[activityId]?.endDate || form.completion_date}
+      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
+      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+</div> */}
+                                                {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+                                                <div >
+                                                  <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                    <label className="block text-[10px] text-gray-500 ">
+                                                      Start Date
+                                                    </label>
+                                                    <input
+                                                      type="date"
+                                                      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
+                                                      min={activityDates[activityId]?.startDate || form.loa_date}
+                                                      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
+                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
+                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                  </div>
+                                                </div>
+                                                <div>
+                                                  <div className="grid grid-cols-1 gap-1 col-span-3">
+                                                    <label className="block text-[10px] text-gray-500 ">
+                                                      End Date
+                                                    </label>
+                                                    <input
+                                                      type="date"
+                                                      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
+                                                      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+                                                      max={activityDates[activityId]?.endDate || form.completion_date}
+                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
+                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                  </div> </div>
+
+
+
+                                                {/* Dynamic Work Stages Section */}
+                                                <div className="col-span-3 mt-4 pl-5">
+                                                  <label className="block text-[10px] text-gray-500 mb-1 font-medium">Work Stages & Payment (%) *</label>
+                                                  <div className="space-y-2">
+                                                    {(workStages[sub.id] || []).map((stage, idx) => (
+                                                      <div key={stage.id} className="flex items-center gap-2">
+                                                        <input
+                                                          type="text"
+                                                          placeholder="Stage Name (e.g. Submission)"
+                                                          value={stage.name}
+                                                          onChange={(e) => handleStageUpdate(sub.id, stage.id, 'name', e.target.value)}
+                                                          className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                        <div className="relative w-28">
+                                                          <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            placeholder="%"
+                                                            value={stage.payment_percent}
+                                                            onChange={(e) => handleStageUpdate(sub.id, stage.id, 'payment_percent', e.target.value)}
+                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 pr-6"
+                                                          />
+                                                          <Percent size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                        </div>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleRemoveStage(sub.id, stage.id)}
+                                                          className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+                                                          title="Remove Stage"
+                                                        >
+                                                          <X size={14} />
+                                                        </button>
+                                                      </div>
+                                                    ))}
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleAddStage(sub.id)}
+                                                      className="text-[10px] text-blue-600 flex items-center gap-1 hover:underline mt-1"
+                                                    >
+                                                      <Plus size={10} /> Add Work Stage
+                                                    </button>
+                                                  </div>
+                                                </div>
 
                                                 <div className="col-span-3 mt-2">
                                                   {(parseFloat(
@@ -6083,6 +6767,7 @@ const CreateProject = () => {
                                                   rows={2}
                                                 />
                                               </div>
+
                                             </div>
                                           )}
                                         </div>,

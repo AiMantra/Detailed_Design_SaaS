@@ -227,7 +227,7 @@ const ticketSlice = createSlice({
         },
 
         calculateMyTicketsStats: (state) => {
-            const tickets = state.filteredMyTickets;
+            const tickets = state.filteredMyTickets.filter(ticket => ticket.ticket_for?.trim() === "Aimantra Timesheet");
             state.myTicketsStats = {
                 total: tickets.length,
                 pending: tickets.filter(t => t.status === 'pending').length,
@@ -241,7 +241,7 @@ const ticketSlice = createSlice({
         },
 
         calculateRaisedTicketsStats: (state) => {
-            const tickets = state.filteredRaisedTickets;
+            const tickets = state.filteredRaisedTickets.filter(ticket => ticket.ticket_for?.trim() === "Aimantra Timesheet");
             state.raisedTicketsStats = {
                 total: tickets.length,
                 pending: tickets.filter(t => t.status === 'pending').length,
@@ -256,8 +256,10 @@ const ticketSlice = createSlice({
 
         filterMyTickets: (state, action) => {
             const { searchTerm, startDate, endDate } = action.payload;
-            let filtered = [...state.myTickets];
-            // console.log("Filtering My Tickets with:", { searchTerm, startDate, endDate, filtered });
+            let filtered = state.raisedTickets.filter(ticket =>
+                ticket.ticket_for?.trim() === "Aimantra Timesheet"
+            );
+
             if (searchTerm) {
                 const term = searchTerm.toLowerCase();
                 filtered = filtered.filter(ticket =>
@@ -284,7 +286,12 @@ const ticketSlice = createSlice({
 
         filterRaisedTickets: (state, action) => {
             const { searchTerm, startDate, endDate } = action.payload;
-            let filtered = [...state.raisedTickets];
+            console.log("Raised Tickets Before Filter:", state.raisedTickets.length);
+
+            let filtered = state.raisedTickets.filter(ticket =>
+                ticket.ticket_for?.trim() === "Aimantra Timesheet"
+            );
+            console.log("Raised Tickets After Initial Filter:", filtered.length);
 
             if (searchTerm) {
                 const term = searchTerm.toLowerCase();

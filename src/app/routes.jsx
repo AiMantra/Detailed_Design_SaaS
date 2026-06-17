@@ -26,6 +26,8 @@ import SettingsComponent from "../features/setupsettings/settings";
 import ProjectReport from "../features/projects/projectreport";
 import UpdateProject from "../features/projects/updateProject";
 import TicketsManagement from "../features/ticketsManagement/TicketsManagement";
+import TaskPlanner from "../features/projects/Taskplanner";
+import TrackWorkLog from "../features/projects/TrackWorkLog";
 
 export default function AppRoutes() {
   return (
@@ -50,6 +52,7 @@ export default function AppRoutes() {
         <Route path="/projects/:id/logs" element={<ProjectLogs />} />
         <Route path="/ticket" element={<TicketsManagement />} />
         {/*For Users */}
+
         <Route
           path="/my-tasks"
           element={
@@ -98,11 +101,27 @@ export default function AppRoutes() {
             <UserProjectList />
           </ProtectedRoute>
         } />
+        <Route path="/task-planner" element={
+          <ProtectedRoute allowedRoles={["USER", "TL", "ADMIN", "ACCOUNT"]}>
+            <TaskPlanner />
+          </ProtectedRoute>
+        } />
         <Route path="/my-projects/:id" element={
           <ProtectedRoute allowedRoles={["USER"]}>
             <UserProjectDetails />
           </ProtectedRoute>
         } />
+
+
+
+        <Route path="/track-work-log" element={
+          <ProtectedRoute allowedRoles={["TL", "ACCOUNT"]}>
+            <TrackWorkLog />
+          </ProtectedRoute>
+        } />
+
+
+
         {/* <Route path="/my-picked-projects/:id" element={
             <ProtectedRoute allowedRoles={["USER"]}>
               <UserPickedProjectDetails />

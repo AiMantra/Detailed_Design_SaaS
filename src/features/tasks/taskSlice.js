@@ -1,6 +1,3 @@
-
-
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
 import { showSuccess, showError } from "../../utils/toast";
@@ -84,7 +81,7 @@ export const fetchUserWorkSummary = createAsyncThunk(
 // Save daily work log directly (no picking required)
 export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
-  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status }, { getState, rejectWithValue }) => {
+  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status, phase = "R0", submission_po_status = "", submission_invoice_status = "", approval_po_status = "", approval_invoice_status = "", stage }, { getState, rejectWithValue }) => {
     try {
       const userUUID = getEmpCode();
 
@@ -120,15 +117,21 @@ export const saveDailyWorkLog = createAsyncThunk(
         project: projectId,
         user: userUUID,
         subactivity: subActivityId,
+        stage: stage,
         entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
         status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
         start_time: startDateTime,
         end_time: endDateTime,
         duration: durationSeconds,
         work_type: work_type,
-        note: note || (status === 'WORKED' ? `Worked on task` : `No work done`)
+        note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+        // phase: phase,
+        // submission_po_status: submission_po_status,
+        // submission_invoice_status: submission_invoice_status,
+        // approval_po_status: approval_po_status,
+        // approval_invoice_status: approval_invoice_status
       };
-
+      console.log("Saving time log with data:", timeLogData);
       const response = await api.post('/employee-timelog/', timeLogData);
 
       showSuccess(status === 'WORKED' ?
@@ -141,16 +144,347 @@ export const saveDailyWorkLog = createAsyncThunk(
         project_id: projectId,
         subactivity_id: subActivityId,
         date: date,
+        stage: stage,
         duration: durationSeconds,
         hours: durationSeconds / 3600
       };
+      // } catch (error) {
+      //   console.error('Error saving work log:', error);
+      //   showError(error.message || 'Failed to save record');
+      //   return rejectWithValue(error.message);
+      // }
     } catch (error) {
       console.error('Error saving work log:', error);
-      showError(error.message || 'Failed to save record');
-      return rejectWithValue(error.message);
+
+      // Safely extract the backend error response
+      const backendData = error.response?.data;
+
+      // 1. Try to get the specific inner error ("Your total work log exceeds 24 hours.")
+      const specificError = backendData?.errors?.non_field_errors?.[0];
+
+      // 2. Try to get the general backend message ("Failed to add time log.")
+      const generalMessage = backendData?.message;
+
+      // Prioritize the specific error, fallback to the general message, then fallback to a default string.
+      const errorMessage = specificError || generalMessage || 'Failed to save record';
+
+      showError(errorMessage);
+      return rejectWithValue(errorMessage);
+    }
+  }
+
+);
+
+export const updateDailyWorkplan = createAsyncThunk(
+  'tasks/updateDailyWorkLog',
+  async (logs, { getState, rejectWithValue }) => {
+    // "logs" is an array of objects to update from the UpdateGroupModal
+    try {
+      const userUUID = getEmpCode();
+
+      if (!userUUID) throw new Error('User not authenticated');
+
+      console.log("Updating logs:", logs);
+
+      // 1. Map over the incoming array and process each log
+      const timeLogDataArray = logs.map((log) => {
+        const {
+          id, // IMPORTANT: The ID of the task being updated
+          project, subactivity, date, start_time, end_time,
+          work_type, note, status, phase = "R0",
+          submission_po_status = "", submission_invoice_status = "",
+          approval_po_status = "", approval_invoice_status = ""
+        } = log;
+
+        // if (!id) {
+        //   throw new Error('Task ID is missing for the update operation');
+        // }
+
+        let durationSeconds = 0;
+        let startDateTime = start_time ? `${date}T${start_time}:00` : null;
+        let endDateTime = end_time ? `${date}T${end_time}:00` : null;
+
+        if (status === 'WORKED') {
+          if (!start_time || !end_time) {
+            throw new Error('Please enter both start and end time');
+          }
+
+          startDateTime = `${date}T${start_time}:00`;
+          endDateTime = `${date}T${end_time}:00`;
+
+          const start = new Date(startDateTime);
+          const end = new Date(endDateTime);
+
+          if (start >= end) {
+            throw new Error('End time must be after start time');
+          }
+
+          durationSeconds = Math.round((end - start) / 1000);
+        } else {
+          startDateTime = `${date}T00:00:00`;
+          endDateTime = `${date}T23:59:59`;
+          durationSeconds = 86400; // 24 hours
+        }
+
+        // Return the formatted object including the ID
+        return {
+          id: id,
+          project: project,
+          user: userUUID,
+          subactivity: subactivity,
+          entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
+          status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
+          start_time: startDateTime,
+          end_time: endDateTime,
+          duration: durationSeconds,
+          work_type: work_type,
+          date: date,
+          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          phase: phase,
+          submission_po_status: submission_po_status,
+          submission_invoice_status: submission_invoice_status,
+          approval_po_status: approval_po_status,
+          approval_invoice_status: approval_invoice_status
+        };
+      });
+
+      // 2. Send the array to your bulk update API endpoint
+      // Note: Adjust the method (.put vs .patch) and URL if your backend uses a specific route for updates 
+      const response = await api.put('/time-planer/bulk-update/', { "planners": timeLogDataArray });
+
+      // 3. Show a bulk success message
+      // showSuccess();
+
+      // 4. Return the response data
+      return response;
+
+    }
+    // catch (error) {
+    //   console.error('Error updating work log:', error);
+    //   // dispatch(
+    //   //   showSnackbar({
+    //   //     message: error?.message || "Failed to Saved Plan",
+    //   //     type: "error",
+    //   //   })
+    //   // );
+    //   // showError(error.message || 'Failed to update records');
+    //   return rejectWithValue(error.message);
+    // }
+    catch (error) {
+      console.error('Error saving work log:', error);
+
+      const errorMessage =
+        error?.response?.status === 400
+          ? "Duplicate Sub Activity is not allowed."
+          : error?.message || "Failed to save records";
+
+      showError(errorMessage);
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
+
+export const saveDailyWorkLogBulk = createAsyncThunk(
+  'tasks/time-logs/bulk/',
+  async (logs, { getState, rejectWithValue }) => {
+    // "logs" is an array of objects to update from the UpdateGroupModal
+    try {
+      const userUUID = getEmpCode();
+
+      if (!userUUID) throw new Error('User not authenticated');
+
+      console.log("Updating logs:", logs);
+
+      // 1. Map over the incoming array and process each log
+      const timeLogDataArray = logs.map((log) => {
+        const {
+          id, // IMPORTANT: The ID of the task being updated
+          project, subactivity, date, start_time, end_time,
+          work_type, note, status, phase = "R0",
+          submission_po_status = "", submission_invoice_status = "",
+          approval_po_status = "", approval_invoice_status = ""
+        } = log;
+
+        // if (!id) {
+        //   throw new Error('Task ID is missing for the update operation');
+        // }
+
+        let durationSeconds = 0;
+        let startDateTime = start_time ? `${date}T${start_time}:00` : null;
+        let endDateTime = end_time ? `${date}T${end_time}:00` : null;
+
+        if (status === 'WORKED') {
+          if (!start_time || !end_time) {
+            throw new Error('Please enter both start and end time');
+          }
+
+          startDateTime = `${date}T${start_time}:00`;
+          endDateTime = `${date}T${end_time}:00`;
+
+          const start = new Date(startDateTime);
+          const end = new Date(endDateTime);
+
+          if (start >= end) {
+            throw new Error('End time must be after start time');
+          }
+
+          durationSeconds = Math.round((end - start) / 1000);
+        } else {
+          startDateTime = `${date}T00:00:00`;
+          endDateTime = `${date}T23:59:59`;
+          durationSeconds = 86400; // 24 hours
+        }
+
+        // Return the formatted object including the ID
+        return {
+          id: id,
+          project: project,
+          user: userUUID,
+          subactivity: subactivity,
+          entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
+          status: status === 'WORKED' ? 'COMPLETED' : 'ABSENT',
+          start_time: startDateTime,
+          end_time: endDateTime,
+          duration: durationSeconds,
+          work_type: work_type,
+          date: date,
+          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          phase: phase,
+          submission_po_status: submission_po_status,
+          submission_invoice_status: submission_invoice_status,
+          approval_po_status: approval_po_status,
+          approval_invoice_status: approval_invoice_status
+        };
+      });
+
+      // 2. Send the array to your bulk update API endpoint
+      // Note: Adjust the method (.put vs .patch) and URL if your backend uses a specific route for updates 
+      const response = await api.post('/time-logs/bulk/', timeLogDataArray);
+
+      // 3. Show a bulk success message
+      // showSuccess();
+
+      // 4. Return the response data
+      return response;
+
+    }
+    // catch (error) {
+    //   console.error('Error updating work log:', error);
+    //   // dispatch(
+    //   //   showSnackbar({
+    //   //     message: error?.message || "Failed to Saved Plan",
+    //   //     type: "error",
+    //   //   })
+    //   // );
+    //   // showError(error.message || 'Failed to update records');
+    //   return rejectWithValue(error.message);
+    // }
+    catch (error) {
+      console.error('Error saving work log:', error);
+
+      const errorMessage =
+        error?.response?.status === 400
+          ? "Duplicate Sub Activity is not allowed."
+          : error?.message || "Failed to save records";
+
+      showError(errorMessage);
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const saveDailyWorkplan = createAsyncThunk(
+  'tasks/saveDailyWorkLog',
+  async (logs, { getState, rejectWithValue }) => {
+    // "logs" is now an array of objects
+    try {
+      const userUUID = getEmpCode();
+
+      if (!userUUID) throw new Error('User not authenticated');
+      console.log("Saving logs:", logs);
+      // 1. Map over the incoming array and process each log
+      const timeLogDataArray = logs.map((log) => {
+        const {
+          projectId, subActivityId, date, startTime, endTime,
+          workType, note, status, phase = "R0",
+          submission_po_status = "", submission_invoice_status = "",
+          approval_po_status = "", approval_invoice_status = ""
+        } = log;
+
+        let durationSeconds = 0;
+        let startDateTime = null;
+        let endDateTime = null;
+
+        if (status === 'WORKED') {
+          if (!startTime || !endTime) {
+            throw new Error('Please enter both start and end time');
+          }
+
+          startDateTime = `${date}T${startTime}:00`;
+          endDateTime = `${date}T${endTime}:00`;
+
+          const start = new Date(startDateTime);
+          const end = new Date(endDateTime);
+
+          if (start >= end) {
+            throw new Error('End time must be after start time');
+          }
+
+          durationSeconds = Math.round((end - start) / 1000);
+        } else {
+          startDateTime = `${date}T00:00:00`;
+          endDateTime = `${date}T23:59:59`;
+          durationSeconds = 86400; // 24 hours
+        }
+
+        // Return the formatted object for this specific row
+        return {
+          project: projectId,
+          user: userUUID,
+          subactivity: subActivityId,
+          entry_type: status === 'WORKED' ? 'WORK_LOG' : 'LEAVE',
+          status: "not_done",
+          start_time: startDateTime,
+          end_time: endDateTime,
+          duration: durationSeconds,
+          work_type: workType,
+          date: date,
+          note: note,
+          phase: phase,
+          submission_po_status: submission_po_status,
+          submission_invoice_status: submission_invoice_status,
+          approval_po_status: approval_po_status,
+          approval_invoice_status: approval_invoice_status
+        };
+      });
+      console.log("Formatted time log data array:", timeLogDataArray);
+      // 2. Send the entire array in a SINGLE API request
+      const response = await api.post('/time-planer/', timeLogDataArray);
+
+      // 3. Show a bulk success message
+      showSuccess(`Successfully saved ${timeLogDataArray.length} work log(s)`);
+
+      // 4. Return the response data
+      return response.data;
+
+    } catch (error) {
+      console.error('Error saving work log:', error);
+
+      const errorMessage =
+        error?.response?.status === 400
+          ? "Duplicate Sub Activity is not allowed."
+          : error?.message || "Failed to save records";
+
+      showError(errorMessage);
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+
 
 // DEPRECATED: Kept for backward compatibility with TaskPicker components
 // This functionality is no longer used as users can directly log time
@@ -206,7 +540,7 @@ export const fetchUserSubmittedTask = createAsyncThunk(
   'tasks/fetchUserSubmittedTask',
   async (empCode, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/subactivity-submission/?emp_code=${empCode}`);
+      const response = await api.get(`/stages/work-logs/?emp_code=${empCode}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching user work summary:', error);
@@ -323,6 +657,8 @@ const taskSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+
+
       // Fetch User Work Logs
       .addCase(fetchUserWorkLogs.pending, (state) => {
         state.loading = true;
@@ -392,15 +728,28 @@ const taskSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Save Daily Work Log
-      .addCase(saveDailyWorkLog.pending, (state) => {
+      // Update Daily Work Log
+      .addCase(updateDailyWorkplan.pending, (state) => {
         state.updating = true;
       })
-      .addCase(saveDailyWorkLog.fulfilled, (state, action) => {
+      .addCase(updateDailyWorkplan.fulfilled, (state, action) => {
+        state.updating = false;
+        // Optionally update the specific logs in state.userWorkLogs here if needed,
+        // though typically fetching the list again from the component is safer.
+      })
+      .addCase(updateDailyWorkplan.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload;
+      })
+      // Save Daily Work Plan
+      .addCase(saveDailyWorkplan.pending, (state) => {
+        state.updating = true;
+      })
+      .addCase(saveDailyWorkplan.fulfilled, (state, action) => {
         state.updating = false;
         state.userWorkLogs.unshift(action.payload);
       })
-      .addCase(saveDailyWorkLog.rejected, (state, action) => {
+      .addCase(saveDailyWorkplan.rejected, (state, action) => {
         state.updating = false;
         state.error = action.payload;
       });
