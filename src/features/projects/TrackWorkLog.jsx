@@ -62,7 +62,7 @@
 // //             Total Time: {data.work_summary?.total_hours || "00:00:00"}
 // //           </div>
 // //         </div>
-        
+
 // //         <div className="flex gap-4 mt-6">
 // //           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
 // //             data.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
@@ -81,7 +81,7 @@
 // //           <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
 // //             <User className="text-blue-500" /> Team Work Summary
 // //           </h2>
-          
+
 // //           {data.work_summary?.users?.map((user, index) => (
 // //             <UserLogCard key={index} user={user} />
 // //           ))}
@@ -92,7 +92,7 @@
 // //           <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
 // //             <Activity className="text-purple-500" /> Stage Breakdown
 // //           </h2>
-          
+
 // //           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 space-y-4">
 // //             {data.cycles?.[0]?.stages?.map((stage) => (
 // //               <div key={stage.stage_id} className="border-b border-gray-100 dark:border-slate-700 last:border-0 pb-3 last:pb-0">
@@ -102,7 +102,7 @@
 // //                     {stage.total_time_spent}
 // //                   </span>
 // //                 </div>
-                
+
 // //                 {/* Status time breakdown */}
 // //                 <div className="space-y-1">
 // //                   {stage.work_status_logs
@@ -151,7 +151,7 @@
 // //             <p className="text-xs text-gray-500">{user.emp_code} • {user.days_worked} days worked</p>
 // //           </div>
 // //         </div>
-        
+
 // //         <div className="flex items-center gap-4">
 // //           <div className="text-right">
 // //             <span className="block font-bold text-blue-600 dark:text-blue-400 font-mono">
@@ -176,7 +176,7 @@
 // //                   {dayRecord.total_time_spent}
 // //                 </span>
 // //               </div>
-              
+
 // //               <div className="space-y-3">
 // //                 {dayRecord.logs?.map((log, logIdx) => (
 // //                   <div key={logIdx} className="pl-4 border-l-2 border-blue-200 dark:border-blue-800 relative">
@@ -228,7 +228,7 @@
 // // --- 1. Event Log Table (Lowest Level) ---
 // const EventLogTable = ({ eventlogs }) => {
 //   if (!eventlogs || eventlogs.length === 0) return <p className="text-gray-500 text-sm">No rework logs found.</p>;
-  
+
 //   return (
 //     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '14px' }}>
 //       <thead>
@@ -302,7 +302,7 @@
 
 //   return (
 //     <div style={{ padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif', maxWidth: '1000px' }}>
-      
+
 //       {/* Renders if level is 'project' */}
 //       {data.level === 'project' && (
 //         <div>
@@ -371,7 +371,7 @@
 // // --- 1. Event Log Table (Lowest Level) ---
 // const EventLogTable = ({ eventlogs }) => {
 //   if (!eventlogs || eventlogs.length === 0) return <p className="text-gray-500 text-sm py-2 italic">No rework logs found.</p>;
-  
+
 //   return (
 //     <div className="overflow-x-auto mt-3 border border-gray-200 rounded-lg">
 //       <table className="w-full text-sm text-left">
@@ -440,7 +440,7 @@
 // // NOTE: We pass `projectsList` as a prop so the dropdown has projects to show!
 // const ReworkSummaryViewer = ({ projectsList = [] }) => {
 //   const dispatch = useDispatch();
-  
+
 //   // Get data from Redux
 //   const { trackWorkLogData: data, loading, error } = useSelector((state) => state.api || {});
 
@@ -465,7 +465,7 @@
 //   const handleProjectChange = (e) => {
 //     const projectId = e.target.value;
 //     setSelectedProject(projectId);
-    
+
 //     // Reset lower-level dropdowns
 //     setSelectedActivity("");
 //     setSelectedSubactivity("");
@@ -479,7 +479,7 @@
 //   const handleActivityChange = (e) => {
 //     const activityId = e.target.value;
 //     setSelectedActivity(activityId);
-    
+
 //     // Reset subactivity dropdown
 //     setSelectedSubactivity("");
 
@@ -513,13 +513,13 @@
 
 //   return (
 //     <div className="p-6 font-sans max-w-6xl mx-auto bg-white rounded-xl shadow-lg border border-gray-100">
-      
+
 //       <div className="mb-6">
 //         <h2 className="text-2xl font-bold text-gray-800 mb-4">Rework Logs</h2>
-        
+
 //         {/* --- The 3 Filters --- */}
 //         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-          
+
 //           {/* Project Filter */}
 //           <div>
 //             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">1. Select Project</label>
@@ -580,7 +580,7 @@
 //       <div className="min-h-[300px]">
 //         {loading && <div className="text-center py-20 text-blue-600 font-medium animate-pulse">Loading rework data...</div>}
 //         {error && <div className="text-center py-10 bg-red-50 text-red-600 rounded-lg border border-red-200">Error loading data: {typeof error === 'string' ? error : 'Something went wrong.'}</div>}
-        
+
 //         {!loading && !error && !selectedProject && (
 //           <div className="text-center py-20 text-gray-400">
 //             <p>Please select a project from the dropdown to view rework logs.</p>
@@ -589,7 +589,7 @@
 
 //         {!loading && !error && data && selectedProject && (
 //           <div className="space-y-6">
-            
+
 //             {/* Renders if level is 'project' */}
 //             {data.level === 'project' && (
 //               <div>
@@ -642,7 +642,7 @@
 // // --- 1. Event Log Table (Lowest Level) ---
 // const EventLogTable = ({ eventlogs }) => {
 //   if (!eventlogs || eventlogs.length === 0) return <p className="text-gray-500 text-sm py-2 italic">No rework logs found.</p>;
-  
+
 //   return (
 //     <div className="overflow-x-auto mt-3 border border-gray-200 rounded-lg">
 //       <table className="w-full text-sm text-left">
@@ -712,7 +712,7 @@
 // // --- 4. Main Standalone Component ---
 // const TrackWorkLog = () => {
 //   const dispatch = useDispatch();
-  
+
 //   // Pull projects list AND rework data from Redux
 //   const { 
 //     projectsOnly = [], 
@@ -747,7 +747,7 @@
 //   const handleProjectChange = (e) => {
 //     const projectId = e.target.value;
 //     setSelectedProject(projectId);
-    
+
 //     // Reset lower dropdowns
 //     setSelectedActivity("");
 //     setSelectedSubactivity("");
@@ -794,15 +794,15 @@
 
 //   return (
 //     <div className="p-6 font-sans max-w-7xl mx-auto space-y-6">
-      
+
 //       {/* --- Filter Section --- */}
 //       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
 //         <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
 //           <AlertCircle className="text-red-500" /> Rework Tracking Logs
 //         </h1>
-        
+
 //         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-5 rounded-xl border border-gray-100">
-          
+
 //           {/* Project Filter */}
 //           <div>
 //             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">1. Select Project</label>
@@ -867,14 +867,14 @@
 //             <p className="text-gray-500 font-medium">Fetching Rework Logs...</p>
 //           </div>
 //         )}
-        
+
 //         {!loading && error && (
 //           <div className="text-center py-10 bg-red-50 text-red-600 rounded-lg border border-red-200">
 //              <AlertCircle className="mx-auto mb-2" size={32} />
 //              {typeof error === 'string' ? error : "Error loading rework data"}
 //           </div>
 //         )}
-        
+
 //         {!loading && !error && !selectedProject && (
 //           <div className="text-center py-24 text-gray-400 flex flex-col items-center">
 //             <FolderOpen size={64} className="mb-4 opacity-50" />
@@ -884,7 +884,7 @@
 
 //         {!loading && !error && data && selectedProject && (
 //           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            
+
 //             {/* Level 1: Project View */}
 //             {data.level === 'project' && (
 //               <div>
@@ -934,11 +934,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrackWorkLog, fetchOnlyProjectsList } from "../api/apiSlice"; 
-import { 
-  AlertCircle, FolderOpen, Briefcase, Layers, Loader2, 
-  Clock, CalendarDays, User, ChevronDown, ChevronUp, 
-  FileText 
+import { fetchTrackWorkLog, fetchOnlyProjectsList } from "../api/apiSlice";
+import {
+  AlertCircle, FolderOpen, Briefcase, Layers, Loader2,
+  Clock, CalendarDays, User, ChevronDown, ChevronUp,
+  FileText
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -947,13 +947,13 @@ const processUserLogs = (employees = [], worklogs = []) => {
   return employees.map(emp => {
     // Find logs for this specific employee
     const empLogs = worklogs.filter(w => w.user === emp.employee_code);
-    
+
     // Group their logs by date
     const logsByDate = {};
     empLogs.forEach(log => {
       const dateStr = log.start_time ? log.start_time.split('T')[0] : 'N/A';
-      if(!logsByDate[dateStr]) {
-        logsByDate[dateStr] = { date: dateStr, logs: [], total_time: log.duration_display }; 
+      if (!logsByDate[dateStr]) {
+        logsByDate[dateStr] = { date: dateStr, logs: [], total_time: log.duration_display };
       }
       logsByDate[dateStr].logs.push({
         work_type: log.work_type,
@@ -963,7 +963,7 @@ const processUserLogs = (employees = [], worklogs = []) => {
         end_time: log.end_time
       });
     });
-    
+
     return {
       name: emp.name,
       emp_code: emp.employee_code,
@@ -981,20 +981,20 @@ const UserLogCard = ({ user }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* User Header */}
-      <div 
+      <div
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-sm">
-             {user.name.charAt(0)}
+            {user.name.charAt(0)}
           </div>
           <div>
             <h3 className="font-bold text-gray-800">{user.name}</h3>
             <p className="text-xs text-gray-500">{user.emp_code} • {user.designation}</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="text-right">
             <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
@@ -1012,11 +1012,11 @@ const UserLogCard = ({ user }) => {
             <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-3 border-b border-gray-100 pb-2">
                 <span className="font-semibold text-gray-700 flex items-center gap-2">
-                  <CalendarDays size={16} className="text-blue-500"/>
+                  <CalendarDays size={16} className="text-blue-500" />
                   {dayRecord.date !== 'N/A' ? new Date(dayRecord.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Unknown Date'}
                 </span>
               </div>
-              
+
               <div className="space-y-3">
                 {dayRecord.logs?.map((log, logIdx) => (
                   <div key={logIdx} className="pl-4 border-l-2 border-blue-200 relative">
@@ -1027,7 +1027,7 @@ const UserLogCard = ({ user }) => {
                           Log Entry
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                          <FileText size={12}/> {log.description || "No description"}
+                          <FileText size={12} /> {log.description || "No description"}
                         </p>
                       </div>
                       <div className="text-right text-xs">
@@ -1035,8 +1035,8 @@ const UserLogCard = ({ user }) => {
                           {log.time_spent}
                         </span>
                         <span className="text-gray-400">
-                          {log.start_time ? new Date(log.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""} - 
-                          {log.end_time ? new Date(log.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
+                          {log.start_time ? new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""} -
+                          {log.end_time ? new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
                         </span>
                       </div>
                     </div>
@@ -1055,10 +1055,10 @@ const UserLogCard = ({ user }) => {
 const CycleSection = ({ cycle }) => {
   // Process the raw data into user-grouped blocks
   const users = processUserLogs(cycle.employees || [], cycle.worklogs || []);
-  
+
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-      
+
       {/* Header containing the Rework Event details */}
       <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -1069,42 +1069,47 @@ const CycleSection = ({ cycle }) => {
                 {cycle.event_type.replace('_', ' ')}
               </span>
             )}
+            {cycle.created_by && (
+              <span className="text-xs text-gray-600 bg-gray-200/50 px-2 py-1 rounded-md border border-gray-200">
+                Created by: <span className="font-medium">{cycle.created_by.name}</span> ({cycle.created_by.employee_code})
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-600 flex items-center gap-1">
             <CalendarDays size={14} /> {cycle.intimation_date || new Date(cycle.created_at).toLocaleDateString()}
           </p>
         </div>
-        
+
         <div className="flex gap-6 text-sm">
-           {cycle.extra_payment_percent && (
-             <div className="text-right">
-               <p className="text-xs text-gray-500 font-semibold uppercase">Extra Payment</p>
-               <p className="font-mono text-orange-600 font-bold">{cycle.extra_payment_percent}%</p>
-             </div>
-           )}
-           {cycle.reason && (
-             <div className="text-right max-w-xs">
-               <p className="text-xs text-gray-500 font-semibold uppercase">Reason</p>
-               <p className="text-gray-700 truncate" title={cycle.reason}>{cycle.reason}</p>
-             </div>
-           )}
+          {cycle.extra_payment_percent && (
+            <div className="text-right">
+              <p className="text-xs text-gray-500 font-semibold uppercase">Extra Payment</p>
+              <p className="font-mono text-orange-600 font-bold">{cycle.extra_payment_percent}%</p>
+            </div>
+          )}
+          {cycle.reason && (
+            <div className="text-right max-w-xs">
+              <p className="text-xs text-gray-500 font-semibold uppercase">Reason</p>
+              <p className="text-gray-700 truncate" title={cycle.reason}>{cycle.reason}</p>
+            </div>
+          )}
         </div>
       </div>
-      
+
       {/* Work Logs Body */}
       <div className="p-5">
-         <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-           <User size={16} className="text-blue-500" /> Work Logs ({cycle.worklog_count || 0})
-         </h5>
-         {users.length > 0 ? (
-            <div className="space-y-4">
-              {users.map((u, i) => <UserLogCard key={i} user={u} />)}
-            </div>
-         ) : (
-            <p className="text-sm text-gray-400 italic bg-gray-50 p-3 rounded-lg text-center border border-dashed border-gray-200">
-              No work logs recorded by employees in this cycle.
-            </p>
-         )}
+        <h5 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+          <User size={16} className="text-blue-500" /> Work Logs ({cycle.worklog_count || 0})
+        </h5>
+        {users.length > 0 ? (
+          <div className="space-y-4">
+            {users.map((u, i) => <UserLogCard key={i} user={u} />)}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 italic bg-gray-50 p-3 rounded-lg text-center border border-dashed border-gray-200">
+            No work logs recorded by employees in this cycle.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -1113,16 +1118,16 @@ const CycleSection = ({ cycle }) => {
 // --- 3. Subactivity Section ---
 const SubactivitySection = ({ subactivity }) => (
   <div className="mt-4 p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
-    
+
     {/* Subactivity Header */}
     <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
       <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
         <Layers size={20} className="text-purple-600" />
-        {subactivity.subactivity_name} 
+        {subactivity.subactivity_name}
       </h4>
       <div className="flex gap-3">
         <span className="text-xs font-bold bg-red-50 text-red-700 px-3 py-1.5 rounded-lg flex items-center gap-1">
-          <AlertCircle size={14}/> Total Reworks: {subactivity.rework_count || 0}
+          <AlertCircle size={14} /> Total Reworks: {subactivity.rework_count || 0}
         </span>
       </div>
     </div>
@@ -1130,7 +1135,7 @@ const SubactivitySection = ({ subactivity }) => (
     {/* Render every cycle (eventlog) inside this subactivity */}
     <div className="space-y-6">
       {subactivity.eventlogs?.map((cycle) => (
-         <CycleSection key={cycle.id} cycle={cycle} />
+        <CycleSection key={cycle.id} cycle={cycle} />
       ))}
       {(!subactivity.eventlogs || subactivity.eventlogs.length === 0) && (
         <p className="text-center text-gray-500 py-4 italic">No work cycles or reworks found.</p>
@@ -1146,7 +1151,7 @@ const ActivitySection = ({ activity }) => (
     <div className="flex items-center gap-3 mb-3">
       <Briefcase size={20} className="text-blue-600" />
       <h3 className="text-xl font-bold text-gray-800">
-        {activity.activity_name} 
+        {activity.activity_name}
       </h3>
       <span className="text-sm font-semibold bg-red-50 text-red-700 px-3 py-1 rounded-md border border-red-100">
         Total Reworks: {activity.total_reworks}
@@ -1163,13 +1168,13 @@ const ActivitySection = ({ activity }) => (
 // --- 5. Main Standalone Component ---
 const TrackWorkLog = () => {
   const dispatch = useDispatch();
-  
+
   // Pull projects list AND rework data from Redux
-  const { 
-    projectsOnly = [], 
-    trackWorkLogData: data, 
-    loading, 
-    error 
+  const {
+    projectsOnly = [],
+    trackWorkLogData: data,
+    loading,
+    error
   } = useSelector((state) => state.api || {});
 
   // Fetch projects on initial mount if not already loaded
@@ -1197,11 +1202,11 @@ const TrackWorkLog = () => {
   const handleProjectChange = (e) => {
     const projectId = e.target.value;
     setSelectedProject(projectId);
-    
+
     // Reset lower dropdowns
     setSelectedActivity("");
     setSelectedSubactivity("");
-    setCachedProjectTree(null); 
+    setCachedProjectTree(null);
 
     if (projectId) {
       dispatch(fetchTrackWorkLog({ project_id: projectId }));
@@ -1225,10 +1230,10 @@ const TrackWorkLog = () => {
     setSelectedSubactivity(subactivityId);
 
     if (subactivityId) {
-      dispatch(fetchTrackWorkLog({ 
-        project_id: selectedProject, 
-        activity_id: selectedActivity, 
-        subactivity_id: subactivityId 
+      dispatch(fetchTrackWorkLog({
+        project_id: selectedProject,
+        activity_id: selectedActivity,
+        subactivity_id: subactivityId
       }));
     } else if (selectedActivity) {
       dispatch(fetchTrackWorkLog({ project_id: selectedProject, activity_id: selectedActivity }));
@@ -1244,21 +1249,21 @@ const TrackWorkLog = () => {
 
   return (
     <div className="p-6 font-sans max-w-7xl mx-auto space-y-6">
-      
+
       {/* --- Filter Section --- */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <AlertCircle className="text-red-500" /> Project Work & Rework Logs
+          <AlertCircle className="text-red-500" /> Project Reworks Logs
         </h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-5 rounded-xl border border-gray-100">
-          
+
           {/* Project Filter */}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">1. Select Project</label>
-            <select 
-              value={selectedProject} 
-              onChange={handleProjectChange} 
+            <select
+              value={selectedProject}
+              onChange={handleProjectChange}
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer"
             >
               <option value="">-- Choose a Project --</option>
@@ -1273,10 +1278,10 @@ const TrackWorkLog = () => {
           {/* Activity Filter */}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">2. Select Activity</label>
-            <select 
-              value={selectedActivity} 
-              onChange={handleActivityChange} 
-              disabled={!selectedProject || availableActivities.length === 0} 
+            <select
+              value={selectedActivity}
+              onChange={handleActivityChange}
+              disabled={!selectedProject || availableActivities.length === 0}
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:bg-gray-100 cursor-pointer"
             >
               <option value="">All Activities</option>
@@ -1291,10 +1296,10 @@ const TrackWorkLog = () => {
           {/* Subactivity Filter */}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">3. Select Subactivity</label>
-            <select 
-              value={selectedSubactivity} 
-              onChange={handleSubactivityChange} 
-              disabled={!selectedActivity || availableSubactivities.length === 0} 
+            <select
+              value={selectedSubactivity}
+              onChange={handleSubactivityChange}
+              disabled={!selectedActivity || availableSubactivities.length === 0}
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:bg-gray-100 cursor-pointer"
             >
               <option value="">All Subactivities</option>
@@ -1317,14 +1322,14 @@ const TrackWorkLog = () => {
             <p className="text-gray-500 font-medium">Fetching Logs...</p>
           </div>
         )}
-        
+
         {!loading && error && (
           <div className="text-center py-10 bg-red-50 text-red-600 rounded-lg border border-red-200">
-             <AlertCircle className="mx-auto mb-2" size={32} />
-             {typeof error === 'string' ? error : "Error loading data"}
+            <AlertCircle className="mx-auto mb-2" size={32} />
+            {typeof error === 'string' ? error : "Error loading data"}
           </div>
         )}
-        
+
         {!loading && !error && !selectedProject && (
           <div className="text-center py-24 text-gray-400 flex flex-col items-center">
             <FolderOpen size={64} className="mb-4 opacity-50" />
@@ -1334,7 +1339,7 @@ const TrackWorkLog = () => {
 
         {!loading && !error && data && selectedProject && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            
+
             {/* Level 1: Project View */}
             {data.level === 'project' && (
               <div>
@@ -1356,8 +1361,8 @@ const TrackWorkLog = () => {
             {/* Level 2: Activity View */}
             {data.level === 'activity' && (
               <div className="bg-blue-50/30 p-2 rounded-xl">
-                 <h2 className="text-sm font-bold text-blue-500 uppercase tracking-wider mb-2 pl-4">Filtered to Activity Scope</h2>
-                 <ActivitySection activity={data} />
+                <h2 className="text-sm font-bold text-blue-500 uppercase tracking-wider mb-2 pl-4">Filtered to Activity Scope</h2>
+                <ActivitySection activity={data} />
               </div>
             )}
 
