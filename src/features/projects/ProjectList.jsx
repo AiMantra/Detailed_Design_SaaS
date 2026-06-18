@@ -717,6 +717,7 @@ const ProjectList = () => {
     document_type: "ref_doc",
     client_remarks: "",
     raised_amount: "",
+    extra_amount: "",
     received_amount: "",
   });
 
@@ -854,23 +855,27 @@ const ProjectList = () => {
     }
   }, [dispatch, expandedProjectDetails, loadingProjectDetails]);
 
-  const handleSubmissionapproveStatus = (status, sub, value, amount, projectId, url) => {
+  const handleSubmissionapproveStatus = (status, sub, value, amount, extraPayment, projectId, url) => {
     setShowProofModal(true);
+    console.log("Proof Data Before Setting:", parseFloat(amount) + parseFloat(extraPayment));
     setProofData({
       ...proofData,
       stage_type: status,
       stage: status,
       to_status: value,
-      raised_amount: amount,
-      received_amount: amount,
+      raised_amount: parseFloat(amount),
+      received_amount: parseFloat(amount),
+      extra_amount: parseFloat(extraPayment),
       subactivity: sub.id,
       projectId: projectId,
       url: url,
       created_by: user?.emp_code || "",
 
     })
-  };
 
+
+  };
+  console.log("Proof Data After Setting:", proofData);
   const handleSubmitProof = async () => {
     setLoder(true);
     const response = await dispatch(tlSubactivitySubmitwithProof(proofData)).unwrap();
@@ -893,6 +898,7 @@ const ProjectList = () => {
       received_amount: "",
       stage: '',
       created_by: '',
+      extra_amount: '',
     });
     setShowProofModal(false);
   };
@@ -1260,6 +1266,7 @@ const ProjectList = () => {
                 client_remarks: "",
                 raised_amount: "",
                 received_amount: "",
+                extra_amount: "",
               })
             }}
           >
@@ -1292,7 +1299,8 @@ const ProjectList = () => {
                       document_type: "ref_doc",
                       client_remarks: "",
                       received_amount: "",
-                      raised_amount: ""
+                      raised_amount: "",
+                      extra_amount: "",
                     })
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -1483,7 +1491,7 @@ const ProjectList = () => {
                 <label className="text-sm font-medium text-gray-700 block mb-1">
                   {proofData?.to_status === "Raised" ? "Raised Amount" : "Received Amount"}
                 </label>
-
+                {console.log("proofData?.to_status === 'Raised' ? parseFloat(proofData.raised_amount) + parseFloat(proofData.extra_amount) : proofData.received_amount", proofData.raised_amount, proofData.extra_amount)}
                 <input
                   type="number"
                   value={proofData?.to_status === "Raised" ? proofData.raised_amount : proofData.received_amount}
@@ -3662,7 +3670,7 @@ const ProjectList = () => {
                                                                                 sub.stages.map((stage, sIdx) => {
                                                                                   const rowSpanCount = Math.max(1, sub.stages?.length || 0);
                                                                                   const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
-
+                                                                                  console.log("Stage Amount Calculation:", project?.workorder_cost, stage.payment_percent, stageAmount);
                                                                                   const stageRaised = (stage.payment_logs || [])
                                                                                     .filter(log => log.to_status === "Raised")
                                                                                     .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
@@ -3671,8 +3679,8 @@ const ProjectList = () => {
                                                                                     .filter(log => log.to_status === "Received")
                                                                                     .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
 
-                                                                                  const stageRemaining = stageAmount - stageReceived;
-
+                                                                                  const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
+                                                                                  console.log("Stage Remaining Calculation:", stageAmount, stage.extra_payment_amount, stageReceived, stageRemaining);
                                                                                   const workStatus = stage.work_status || "Pending";
                                                                                   const paymentStatus = stage.payment_status || "Waiting";
 
@@ -3740,7 +3748,7 @@ const ProjectList = () => {
                                                                                       </td>
                                                                                       <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
                                                                                       <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
-                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L</td>
+                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
 
                                                                                       {/* Raised */}
                                                                                       <td className="text-center">
@@ -3835,6 +3843,7 @@ const ProjectList = () => {
                                                                                                 sub,
                                                                                                 e.target.value,
                                                                                                 stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
+                                                                                                stage.extra_payment_amount || 0,
                                                                                                 projectId,
                                                                                                 'payment'
                                                                                               );

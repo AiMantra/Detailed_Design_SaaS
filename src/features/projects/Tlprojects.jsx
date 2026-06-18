@@ -1319,10 +1319,10 @@ const TlProjectList = () => {
                                         }
 
                                         className={`flex-1 px-4 py-2 rounded-lg text-white transition disabled:opacity-50 ${proofData.to_status === "Approved"
-                                                ? "bg-green-600 hover:bg-green-700"
-                                                : proofData.to_status === "Rejected"
-                                                    ? "bg-red-600 hover:bg-red-700"
-                                                    : "bg-blue-600 hover:bg-blue-700"
+                                            ? "bg-green-600 hover:bg-green-700"
+                                            : proofData.to_status === "Rejected"
+                                                ? "bg-red-600 hover:bg-red-700"
+                                                : "bg-blue-600 hover:bg-blue-700"
                                             }`}
                                     >
                                         {loder ? <Loader2 size={16} className="animate-spin mx-auto" /> :
@@ -2522,12 +2522,23 @@ const TlProjectList = () => {
                                                                                                                                                                 sub.stages.map((stage, sIdx) => {
                                                                                                                                                                     // Stage Calculations
                                                                                                                                                                     const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
+                                                                                                                                                                    const raisedLogs = (stage.payment_logs || []).filter(
+                                                                                                                                                                        (log) => log.to_status === "Raised"
+                                                                                                                                                                    );
 
+                                                                                                                                                                    console.log("Raised Logs:", raisedLogs);
+
+                                                                                                                                                                    const stageRaised1 = raisedLogs.reduce(
+                                                                                                                                                                        (sum, item) => sum + (parseFloat(item.raised_amount) || 0),
+                                                                                                                                                                        0
+                                                                                                                                                                    );
+
+                                                                                                                                                                    console.log("Stage Raised Amount:", stageRaised1);
                                                                                                                                                                     // Extract Raised/Received directly from the stage's payment_logs if available
                                                                                                                                                                     const stageRaised = ((stage.payment_logs || [])
                                                                                                                                                                         .filter(log => log.to_status === "Raised")
                                                                                                                                                                         .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0))
-                                                                                                                                                                        + (parseFloat(stage.extra_payment_amount) || 0);
+                                                                                                                                                                    // + (parseFloat(stage.extra_payment_amount) || 0);
 
                                                                                                                                                                     const stageReceived = (stage.payment_logs || [])
                                                                                                                                                                         .filter(log => log.to_status === "Received")
@@ -2782,10 +2793,10 @@ const TlProjectList = () => {
                                                                                                                                                                                             }}
                                                                                                                                                                                             disabled={workStatus === "Completed"}
                                                                                                                                                                                             className={`text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Completed"
-                                                                                                                                                                                                    ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
-                                                                                                                                                                                                    : workStatus === "Rejected"
-                                                                                                                                                                                                        ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                                                                                                                                                                        : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                                                                                                                                ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
+                                                                                                                                                                                                : workStatus === "Rejected"
+                                                                                                                                                                                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                                                                                                                                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
                                                                                                                                                                                                 }`}
                                                                                                                                                                                             title={workStatus === "Rejected" ? "Resubmit with corrections" : "Submit Proof"}
                                                                                                                                                                                         >
