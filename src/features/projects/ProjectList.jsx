@@ -3737,6 +3737,7 @@ const ProjectList = () => {
                                             {formatNumber(sub.covered_area)}
                                           </td>
                                           
+                                          
                                           {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
                                           <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                             <button
