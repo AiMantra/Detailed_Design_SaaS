@@ -1280,9 +1280,17 @@ const ProjectList = () => {
 
               {/* HEADER */}
               <div className="flex justify-between items-center mb-5">
-                <h3 className="text-lg font-semibold text-gray-800">
+                {/* <h3 className="text-lg font-semibold text-gray-800">
                   📎 Submit Work Proof
-                </h3>
+                </h3> */}
+
+                <h3 className="text-lg font-semibold text-gray-800">
+    📎 {proofData?.to_status === "Raised" 
+          ? "Raised Work Proof" 
+          : proofData?.to_status === "Received" 
+            ? "Received Work Proof" 
+            : "Submit Work Proof"}
+  </h3>
                 <button
                   onClick={() => {
                     setShowProofModal(false)
@@ -3327,9 +3335,9 @@ const ProjectList = () => {
                                                           </div>
                                                           <div className="mt-2">
 
-                                                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {/* <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                                                              {/* Physical Progress */}
+                                                            
                                                               <div>
                                                                 <div className="flex justify-between text-xs mb-1">
                                                                   <span className="text-gray-500">Physical Progress</span>
@@ -3348,7 +3356,7 @@ const ProjectList = () => {
                                                                 </div>
                                                               </div>
 
-                                                              {/* Financial Progress */}
+                                                              
                                                               <div>
                                                                 <div className="flex justify-between text-xs mb-1">
                                                                   <span className="text-gray-500">Financial Progress</span>
@@ -3367,7 +3375,7 @@ const ProjectList = () => {
                                                                 </div>
                                                               </div>
 
-                                                            </div>
+                                                            </div> */}
 
 
                                                           </div>
@@ -3666,89 +3674,93 @@ const ProjectList = () => {
                                                                               // ==========================================
                                                                               // ADMIN / ACCOUNT VIEW (1 Row per Stage)
                                                                               // ==========================================
-                                                                              sub.stages && sub.stages.length > 0 ? (
-                                                                                sub.stages.map((stage, sIdx) => {
-                                                                                  const rowSpanCount = Math.max(1, sub.stages?.length || 0);
-                                                                                  const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
-                                                                                  console.log("Stage Amount Calculation:", project?.workorder_cost, stage.payment_percent, stageAmount);
-                                                                                  const stageRaised = (stage.payment_logs || [])
-                                                                                    .filter(log => log.to_status === "Raised")
-                                                                                    .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
+                                                                               sub.stages && sub.stages.length > 0 ? (
+                                sub.stages.map((stage, sIdx) => {
+                                  const rowSpanCount = Math.max(1, sub.stages?.length || 0);
+                                  const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
+                                  const stageRaised = (stage.payment_logs || [])
+                                    .filter(log => log.to_status === "Raised")
+                                    .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
 
-                                                                                  const stageReceived = (stage.payment_logs || [])
-                                                                                    .filter(log => log.to_status === "Received")
-                                                                                    .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
+                                  const stageReceived = (stage.payment_logs || [])
+                                    .filter(log => log.to_status === "Received")
+                                    .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
 
-                                                                                  const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
-                                                                                  console.log("Stage Remaining Calculation:", stageAmount, stage.extra_payment_amount, stageReceived, stageRemaining);
-                                                                                  const workStatus = stage.work_status || "Pending";
-                                                                                  const paymentStatus = stage.payment_status || "Waiting";
+                                  const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
+                                  const workStatus = stage.work_status || "Pending";
+                                  const paymentStatus = stage.payment_status || "Waiting";
 
-                                                                                  return (
-                                                                                    <tr
-                                                                                      key={stage.id}
-                                                                                      className="border-t text-[12px] bg-white hover:bg-gray-50 transition-colors"
-                                                                                      onClick={() => {
-                                                                                        if (sub.work_summary?.users?.length > 0) {
-                                                                                          setExpandedRow(expandedRow === sub.id ? null : sub.id);
-                                                                                        }
-                                                                                      }}
-                                                                                    >
-                                                                                      {/* 🟢 Render Sub-Activity Parent Info ONLY on the FIRST stage row */}
-                                                                                      {sIdx === 0 && (
-                                                                                        <>
-                                                                                          <td rowSpan={rowSpanCount} className="px-2 text-center align-middle border-r border-gray-100">
-                                                                                            {sub.work_summary?.users?.length > 0 ? (
-                                                                                              <motion.button
-                                                                                                onClick={(e) => {
-                                                                                                  e.stopPropagation();
-                                                                                                  setExpandedRow(expandedRow === sub.id ? null : sub.id);
-                                                                                                }}
-                                                                                                whileHover={{ scale: 1.1 }}
-                                                                                                whileTap={{ scale: 0.95 }}
-                                                                                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
-                                                                                                  ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                                                                  : "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                                                                                                  }`}
-                                                                                                title={expandedRow === sub.id ? "Collapse" : "Expand"}
-                                                                                              >
-                                                                                                {expandedRow === sub.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                                                                              </motion.button>
-                                                                                            ) : (
-                                                                                              <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
-                                                                                            )}
-                                                                                          </td>
+                                  return (
+                                    <tr
+                                      key={stage.id}
+                                      className="border-t text-[12px] bg-white hover:bg-gray-50 transition-colors"
+                                      onClick={() => {
+                                        if (sub.work_summary?.users?.length > 0) {
+                                          setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                                        }
+                                      }}
+                                    >
+                                      {/* 🟢 Render Sub-Activity Parent Info ONLY on the FIRST stage row */}
+                                      {sIdx === 0 && (
+                                        <>
+                                          <td rowSpan={rowSpanCount} className="px-2 text-center align-middle border-r border-gray-100">
+                                            {sub.work_summary?.users?.length > 0 ? (
+                                              <motion.button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                                                }}
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
+                                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                  }`}
+                                                title={expandedRow === sub.id ? "Collapse" : "Expand"}
+                                              >
+                                                {expandedRow === sub.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                              </motion.button>
+                                            ) : (
+                                              <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
+                                            )}
+                                          </td>
+                                          <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
+                                            {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
+                                          </td>
+                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                            {formatNumber(sub.chainage_start)}
+                                          </td>
+                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                            {sub.total_quantity}
+                                          </td>
+                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                            {formatNumber(sub.covered_area)}
+                                          </td>
+                                          
+                                          {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
+                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                            <button
+                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                                              onClick={(e) => handleViewSubActivity(sub.id, e)}
+                                              title="View Details"
+                                            >
+                                              <span className='flex flex-row items-center justify-center gap-1'>
+                                                <Eye size={16} />
+                                              </span>
+                                            </button>
+                                          </td>
+                                        </>
+                                      )}
 
-                                                                                          <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
-                                                                                            {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
-                                                                                          </td>
-                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                            {formatNumber(sub.chainage_start)}
-                                                                                          </td>
-                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                            {sub.total_quantity}
-                                                                                          </td>
-                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                            {formatNumber(sub.covered_area)}
-                                                                                          </td>
-                                                                                        </>
-                                                                                      )}
+                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
+                                      <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
+                                      <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
+                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>  
 
-                                                                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS */}
-                                                                                      <td className="text-center align-middle border-r border-gray-100">
-                                                                                        <button
-                                                                                          className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
-                                                                                          onClick={(e) => handleViewSubActivity(sub.id, e)}
-                                                                                          title="View Details"
-                                                                                        >
-                                                                                          <span className='flex flex-row items-center justify-center gap-1'>
-                                                                                            <Eye size={16} />
-                                                                                          </span>
-                                                                                        </button>
-                                                                                      </td>
-                                                                                      <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
-                                                                                      <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
-                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
+                                                                                      
+
+
+
 
                                                                                       {/* Raised */}
                                                                                       <td className="text-center">

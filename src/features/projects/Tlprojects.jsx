@@ -2395,9 +2395,9 @@ const TlProjectList = () => {
                                                                                                                                 {activityProgress == 100 ? "Completed" : daysLeft < 0 ? "Delayed" : "Ongoing"}
                                                                                                                             </span>
                                                                                                                         </div>
-                                                                                                                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                                                        {/* <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                                                                                                                            {/* Physical Progress */}
+                                                                                                                           
                                                                                                                             <div>
                                                                                                                                 <div className="flex justify-between text-xs mb-1">
                                                                                                                                     <span className="text-gray-500">Physical Progress</span>
@@ -2416,7 +2416,7 @@ const TlProjectList = () => {
                                                                                                                                 </div>
                                                                                                                             </div>
 
-                                                                                                                            {/* Financial Progress */}
+                                                                                                                            
                                                                                                                             <div>
                                                                                                                                 <div className="flex justify-between text-xs mb-1">
                                                                                                                                     <span className="text-gray-500">Financial Progress</span>
@@ -2435,7 +2435,7 @@ const TlProjectList = () => {
                                                                                                                                 </div>
                                                                                                                             </div>
 
-                                                                                                                        </div>
+                                                                                                                        </div> */}
                                                                                                                         {/* <div className="mt-2">
                                                                                                                             <div className="flex justify-between text-xs mb-1">
                                                                                                                                 <span className="text-gray-500">Financial Progress</span>
