@@ -41,6 +41,8 @@ const DailyLogs = () => {
 
   const { user } = useSelector((state) => state.auth);
   const { projects = [] } = useSelector((state) => state.projects || { projects: [] });
+ 
+
   const { filteredLogs, loading, pagination, filters, stats, error } = useSelector((state) => state.logs);
 
   // Local state
@@ -360,13 +362,13 @@ const DailyLogs = () => {
             <Download size={18} />
             <span className="hidden sm:inline">Export</span>
           </button> */}
-          <button
+          {/* <button
             onClick={() => setShowAddLogModal(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center gap-2 flex-1 md:flex-none"
           >
             <FileText size={20} />
             <span className="hidden sm:inline">Add Log</span>
-          </button>
+          </button> */}
         </div>
       </div>
 

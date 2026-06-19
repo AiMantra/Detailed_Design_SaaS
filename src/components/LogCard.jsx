@@ -320,7 +320,7 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
               {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             </button>
 
-            {userRole === "ACCOUNT" && (
+            {/* {userRole === "ACCOUNT" && (
               <button
                 onClick={() => onDelete(log)}
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -328,7 +328,7 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
               >
                 <Trash2 size={18} />
               </button>
-            )}
+            )} */}
           </div>
         </div>
       </div>

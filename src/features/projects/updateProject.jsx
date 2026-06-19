@@ -10225,8 +10225,10 @@ console.log("Payload before dispatch:", payload);
                                 />
                             </div>
                         </div>
-
+                        <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-500">Company *</label>
                         <div className="relative" ref={companyDropdownRef}>
+                            
                             <Building2
                                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                                 size={16}
@@ -10318,6 +10320,7 @@ console.log("Payload before dispatch:", payload);
                                 </div>
                             )}
                         </div>
+                        </div>
 
                         {form.company && (
                             <div className="flex flex-col gap-1">
@@ -10336,6 +10339,8 @@ console.log("Payload before dispatch:", payload);
                             </div>
                         )}
 
+<div className="flex flex-col gap-1">
+    <label className="text-xs text-gray-500">Sector *</label>
                         <div className="relative" ref={sectorDropdownRef}>
                             <Factory
                                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -10429,6 +10434,10 @@ console.log("Payload before dispatch:", payload);
                                 </div>
                             )}
                         </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+    <label className="text-xs text-gray-500">Client *</label>
 
                         <div className="relative" ref={clientDropdownRef}>
                             <Handshake
@@ -10523,6 +10532,7 @@ console.log("Payload before dispatch:", payload);
                                     })()}
                                 </div>
                             )}
+                        </div>
                         </div>
                         {form.client && (
                             <>
