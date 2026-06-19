@@ -383,7 +383,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
 
     const workTypesFor = (pid) =>
         detailFor(pid)?.sector_detail?.stage_work_types || [];
-
+// console.log(workTypesFor,)
     // ── row helpers ────────────────────────────────────────────────────────────
 
     const updateRow = useCallback((id, field, value) => {
