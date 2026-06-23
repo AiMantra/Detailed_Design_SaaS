@@ -3592,7 +3592,7 @@ const ProjectList = () => {
                                                                                       </tr>
 
                                                                                       {/* 🟡 Expanded Time Logs Row (Same for everyone) - Only show on first stage or as a separate row */}
-                                                                                      {expandedRow === sub.id && sIdx === 0 && (
+                                                                                      {/* {expandedRow === sub.id && sIdx === 0 && (
                                                                                         <tr className="bg-gray-50/80">
                                                                                           <td colSpan="9" className="px-4 py-4 w-full">
                                                                                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -3643,7 +3643,7 @@ const ProjectList = () => {
                                                                                             </div>
                                                                                           </td>
                                                                                         </tr>
-                                                                                      )}
+                                                                                      )} */}
                                                                                     </Fragment>
                                                                                   );
                                                                                 })
