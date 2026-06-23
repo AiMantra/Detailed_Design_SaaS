@@ -317,7 +317,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         const act = activitiesFor(pid).find((a) => a.id === aid);
         return [...(act?.subactivities || [])].sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0));
     };
-    const workTypesFor = (pid) => detailFor(pid)?.sector_detail?.sector_work_types || [];
+    const workTypesFor = (pid) => detailFor(pid)?.sector_detail?.stage_work_types || [];
 
     const updateRow = useCallback((id, field, value) => {
         setRows((prev) => prev.map((r) => {
