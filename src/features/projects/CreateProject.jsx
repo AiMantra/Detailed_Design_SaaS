@@ -858,7 +858,7 @@ const CreateProject = () => {
           message:
             "Please enter " +
             ((!trimmedName && "Company name") ||
-              (!trimpancard && "PAN NO.") ||
+              (!trimpancard && "PAN No.") ||
               (!trimmedgst && "GST")),
           type: "error",
         }),
@@ -4656,7 +4656,7 @@ const CreateProject = () => {
 
       {/* Header with Mobile Step Indicator */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        {/* <div>
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Create New Project
           </h2>
@@ -4664,7 +4664,17 @@ const CreateProject = () => {
             <AlertCircle size={14} />
             Fields marked with * are required
           </p>
-        </div>
+        </div> */}
+
+        <div>
+  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1 md:pb-2">
+    Create New Project
+  </h2>
+  <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-1">
+    <AlertCircle size={14} />
+    Fields marked with * are required
+  </p>
+</div>
         {isMobile && (
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <motion.div
@@ -6803,7 +6813,7 @@ const CreateProject = () => {
               </div>
             </motion.div>
           )}
-          {isMobile && (
+          {/* {isMobile && (
             <div className="flex justify-between mt-6">
               <button
                 type="button"
@@ -6831,9 +6841,55 @@ const CreateProject = () => {
                 )}
               </button>
             </div>
-          )}
+          )} */}
+
+          {isMobile && (
+    <div className="flex flex-col gap-3 mt-6">
+        {/* Row 1: Actions */}
+        <div className="flex gap-3">
+            {/* Cancel Button */}
+            <button
+                type="button"
+                onClick={() => navigate("/all-projects")}
+                className="flex-1 bg-white text-gray-700 border border-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+            >
+                <X size={16} />
+                Cancel
+            </button>
+
+            {/* Create/Submit Button */}
+            <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="animate-spin" size={16} />
+                        Creating...
+                    </>
+                ) : (
+                    <>
+                        Create
+                        <CheckCircle size={16} />
+                    </>
+                )}
+            </button>
+        </div>
+
+        {/* Previous Button (kept separate or below as needed) */}
+        <button
+            type="button"
+            onClick={prevStep}
+            className="w-full bg-gray-600 text-white px-6 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
+        >
+            <ChevronLeft size={16} />
+            Previous
+        </button>
+    </div>
+)}
         </motion.div>
-        {!isMobile && (
+        {/* {!isMobile && (
           <div className="flex justify-center">
             <button
               type="submit"
@@ -6853,7 +6909,40 @@ const CreateProject = () => {
               )}
             </button>
           </div>
-        )}
+        )} */}
+
+        {!isMobile && (
+    <div className="flex justify-center gap-4">
+        {/* Cancel Button */}
+        <button
+            type="button"
+            onClick={() => navigate("/all-projects")}
+            className="w-56 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2"
+        >
+            <X size={18} />
+            Cancel
+        </button>
+
+        {/* Create Button */}
+        <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-56 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            {isSubmitting ? (
+                <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Creating...
+                </>
+            ) : (
+                <>
+                    <CheckCircle size={18} />
+                    Create Project
+                </>
+            )}
+        </button>
+    </div>
+)}
       </form>
     </motion.div>
   );

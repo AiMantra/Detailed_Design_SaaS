@@ -393,7 +393,7 @@ const CompanyModalContent = ({
 
                             <div>
                                 <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
-                                    GST Number
+                                    GST Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -408,7 +408,7 @@ const CompanyModalContent = ({
 
                             <div>
                                 <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
-                                    PAN Number
+                                    PAN Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -945,137 +945,141 @@ const SectorModalContent = ({
 
     return (
         <>
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
-                        onClick={onClose}
+           <AnimatePresence>
+    {isOpen && (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.95, y: 30 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 30 }}
+                /* 1. Changed main wrapper: Added flex flex-col overflow-hidden, removed p-6 and overflow-y-auto */
+                className="bg-white rounded-2xl max-w-md w-full shadow-2xl border relative z-[10000] max-h-[90vh] flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* 2. Header: Now a static block with its own padding and bottom border */}
+                <div className="flex justify-between items-center p-6 pb-4 bg-white border-b border-gray-100 shrink-0">
+                    <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-blue-600" />
+                        {title}
+                    </h3>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {/* 3. Body: This is now the ONLY area that scrolls (flex-1 overflow-y-auto) */}
+                <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
+                                Sector Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => onFormChange("name", restrictToLetters(e.target.value))}
+                                placeholder="Enter sector name (e.g., Highway, Bridge, Building)"
+                                maxLength={50}
+                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
+                                Unit Type <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={formData.unit}
+                                onChange={(e) => onFormChange("unit", e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            >
+                                <option value="">Select unit type</option>
+                                {unitOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-400 mt-1">
+                                Unit type determines the measurement system for this sector
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Work Types Section */}
+                    <div className="border-t border-gray-200 pt-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <label className="text-sm font-medium text-gray-700">
+                                Work Types
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleAddWorkType}
+                                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm flex items-center gap-1 transition"
+                            >
+                                <Plus size={14} />
+                                Add Work Type
+                            </button>
+                        </div>
+
+                        {workTypes.length === 0 ? (
+                            <div className="text-center py-6 bg-gray-50 rounded-lg">
+                                <p className="text-gray-400 text-sm">No work types added yet</p>
+                                <p className="text-xs text-gray-400 mt-1">Click "Add Work Type" to add work types for this sector</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {workTypes.map((workType, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-gray-700">{workType.name}</span>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => handleEditWorkType(index)}
+                                                className="p-1.5 hover:bg-blue-100 rounded-lg transition text-blue-600"
+                                                title="Edit Work Type"
+                                            >
+                                                <Edit size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleRemoveWorkType(index)}
+                                                className="p-1.5 hover:bg-red-100 rounded-lg transition text-red-600"
+                                                title="Remove Work Type"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 4. Footer: Static block locked to the bottom, removed sticky */}
+                <div className="flex gap-3 p-6 pt-4 bg-white border-t border-gray-100 shrink-0">
+                    <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onSubmit}
+                        disabled={loading || !formData.name.trim() || !formData.unit}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                     >
-                        <motion.div
-                            initial={{ scale: 0.95, y: 30 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.95, y: 30 }}
-                            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border relative z-[10000] max-h-[90vh] overflow-y-auto"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex justify-between items-center mb-5 sticky top-0 bg-white pb-3">
-                                <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                                    <TrendingUp size={20} className="text-blue-600" />
-                                    {title}
-                                </h3>
-                                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition">
-                                    <X size={18} />
-                                </button>
-                            </div>
-
-                            <div className="space-y-6">
-                                {/* Basic Information */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
-                                            Sector Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => onFormChange("name", restrictToLetters(e.target.value))}
-                                            placeholder="Enter sector name (e.g., Highway, Bridge, Building)"
-                                            maxLength={50}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
-                                            Unit Type <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            value={formData.unit}
-                                            onChange={(e) => onFormChange("unit", e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                        >
-                                            <option value="">Select unit type</option>
-                                            {unitOptions.map((option) => (
-                                                <option key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Unit type determines the measurement system for this sector
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Work Types Section */}
-                                <div className="border-t border-gray-200 pt-4">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <label className="text-sm font-medium text-gray-700">
-                                            Work Types
-                                        </label>
-                                        <button
-                                            type="button"
-                                            onClick={handleAddWorkType}
-                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm flex items-center gap-1 transition"
-                                        >
-                                            <Plus size={14} />
-                                            Add Work Type
-                                        </button>
-                                    </div>
-
-                                    {workTypes.length === 0 ? (
-                                        <div className="text-center py-6 bg-gray-50 rounded-lg">
-                                            <p className="text-gray-400 text-sm">No work types added yet</p>
-                                            <p className="text-xs text-gray-400 mt-1">Click "Add Work Type" to add work types for this sector</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {workTypes.map((workType, index) => (
-                                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                    <span className="text-gray-700">{workType.name}</span>
-                                                    <div className="flex gap-1">
-                                                        <button
-                                                            onClick={() => handleEditWorkType(index)}
-                                                            className="p-1.5 hover:bg-blue-100 rounded-lg transition text-blue-600"
-                                                            title="Edit Work Type"
-                                                        >
-                                                            <Edit size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleRemoveWorkType(index)}
-                                                            className="p-1.5 hover:bg-red-100 rounded-lg transition text-red-600"
-                                                            title="Remove Work Type"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6 sticky bottom-0 bg-white pt-3">
-                                <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={onSubmit}
-                                    disabled={loading || !formData.name.trim() || !formData.unit}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
-                                >
-                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                    {editingSector ? "Update" : "Add Sector"}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        {editingSector ? "Update" : "Add Sector"}
+                    </button>
+                </div>
+            </motion.div>
+        </motion.div>
+    )}
+</AnimatePresence>
 
             <WorkTypeModal
                 isOpen={showWorkTypeModal}

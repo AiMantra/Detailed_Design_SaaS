@@ -44,6 +44,8 @@ const ProjectReport = () => {
     const dispatch = useDispatch();
 
     // State
+    const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
+    const [isStatusOpen, setIsStatusOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedProject, setSelectedProject] = useState("all");
     const [selectedStatus, setSelectedStatus] = useState("all");
@@ -56,6 +58,9 @@ const ProjectReport = () => {
     // Get data from Redux store
     const { projectsReport, loading } = useSelector((state) => state.tasks || {});
     const user = sessionStorage.getItem("emp_code");
+
+    // 1. Add this state at the top of your component
+const [isProjectOpen, setIsProjectOpen] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -1148,69 +1153,197 @@ const ProjectReport = () => {
                 </div> */}
 
                 {/* Filters Bar */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 mb-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                        <div className="relative">
-                            <Search
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={18}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Search by sub-activity, employee, or description..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-                        </div>
+               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 mb-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="relative">
+            <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+            />
+            <input
+                type="text"
+                placeholder="Search by sub-activity, employee, or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+        </div>
 
-                        <select
-                            value={selectedProject}
-                            onChange={(e) => setSelectedProject(e.target.value)}
-                            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
-                        >
-                            <option value="all">📊 All Projects</option>
-                            {reportData.projects?.map((project) => (
-                                <option key={project.project_id} value={project.project_id}>
-                                    📁{" "}
-                                    {project.project_name.length > 50
-                                        ? project.project_name.substring(0, 50) + "..."
-                                        : project.project_name}
-                                </option>
-                            ))}
-                        </select>
+        {/* <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            // Added max-h-60 and overflow-y-auto here
+            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white max-h-60 overflow-y-auto"
+        >
+            <option value="all">📊 All Projects</option>
+            {reportData.projects?.map((project) => (
+                <option key={project.project_id} value={project.project_id}>
+                    📁{" "}
+                    {project.project_name.length > 50
+                        ? project.project_name.substring(0, 50) + "..."
+                        : project.project_name}
+                </option>
+            ))}
+        </select> */}
 
-                        <select
-                            value={selectedEmployee}
-                            onChange={(e) => setSelectedEmployee(e.target.value)}
-                            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
-                        >
-                            <option value="all">👥 All Employees</option>
-                            {reportData.allEmployees?.map((emp) => (
-                                <option key={emp.emp_code} value={emp.emp_code}>
-                                    👤 {emp.name} ({emp.total_hours} - {emp.total_tasks} tasks)
-                                </option>
-                            ))}
-                        </select>
 
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
+{/* Custom Scrollable Dropdown */}
+<div className="relative">
+    {/* The "Select" Button */}
+    <div
+        onClick={() => setIsProjectOpen(!isProjectOpen)}
+        className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer flex justify-between items-center"
+    >
+        <span className="truncate">
+            {selectedProject === "all" 
+                ? "📊 All Projects" 
+                : `📁 ${reportData.projects?.find(p => p.project_id === selectedProject)?.project_name || ""}`
+            }
+        </span>
+        {/* A simple arrow icon */}
+        <span className="text-gray-400 text-xs ml-2">▼</span>
+    </div>
 
-                        >
-                            <option value="all">🎯 All Status</option>
-                            <option value="Approved">✅ Approved</option>
-                            <option value="Submitted">📤 Submitted</option>
-                            <option value="Inprogress">⏳ In Progress</option>
-                            <option value="Rejected">❌ Rejected</option>
+    {/* The Dropdown Options (This is where the scrollbar happens!) */}
+    {isProjectOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+            
+            <div 
+                onClick={() => { setSelectedProject("all"); setIsProjectOpen(false); }}
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                📊 All Projects
+            </div>
 
-                            {/* <option value="Completed">✨ Completed</option>
-                            <option value="Pending">🕐 Pending</option>
-                            <option value="OnHold">⏸ On Hold</option> */}
-                        </select>
-                    </div>
+            {reportData.projects?.map((project) => (
+                <div 
+                    key={project.project_id} 
+                    onClick={() => { setSelectedProject(project.project_id); setIsProjectOpen(false); }}
+                    className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors truncate"
+                >
+                    📁{" "}
+                    {project.project_name.length > 50
+                        ? project.project_name.substring(0, 50) + "..."
+                        : project.project_name}
                 </div>
+            ))}
+        </div>
+    )}
+</div>
+        {/* <select
+            value={selectedEmployee}
+            onChange={(e) => setSelectedEmployee(e.target.value)}
+            // Added max-h-60 and overflow-y-auto here
+            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white max-h-60 overflow-y-auto"
+        >
+            <option value="all">👥 All Employees</option>
+            {reportData.allEmployees?.map((emp) => (
+                <option key={emp.emp_code} value={emp.emp_code}>
+                    👤 {emp.name} ({emp.total_hours} - {emp.total_tasks} tasks)
+                </option>
+            ))}
+        </select>
+
+        <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
+        >
+            <option value="all">🎯 All Status</option>
+            <option value="Approved">✅ Approved</option>
+            <option value="Submitted">📤 Submitted</option>
+            <option value="Inprogress">⏳ In Progress</option>
+            <option value="Rejected">❌ Rejected</option>
+        </select> */}
+
+        {/* Custom Scrollable Employee Dropdown */}
+<div className="relative">
+    <div
+        onClick={() => setIsEmployeeOpen(!isEmployeeOpen)}
+        className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer flex justify-between items-center"
+    >
+        <span className="truncate">
+            {selectedEmployee === "all"
+                ? "👥 All Employees"
+                : `👤 ${reportData.allEmployees?.find(emp => emp.emp_code === selectedEmployee)?.name || "Employee"}`}
+        </span>
+        <span className="text-gray-400 text-xs ml-2">▼</span>
+    </div>
+
+    {isEmployeeOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+            <div
+                onClick={() => { setSelectedEmployee("all"); setIsEmployeeOpen(false); }}
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                👥 All Employees
+            </div>
+            {reportData.allEmployees?.map((emp) => (
+                <div
+                    key={emp.emp_code}
+                    onClick={() => { setSelectedEmployee(emp.emp_code); setIsEmployeeOpen(false); }}
+                    className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors truncate"
+                >
+                    👤 {emp.name} ({emp.total_hours} - {emp.total_tasks} tasks)
+                </div>
+            ))}
+        </div>
+    )}
+</div>
+
+{/* Custom Scrollable Status Dropdown */}
+<div className="relative">
+    <div
+        onClick={() => setIsStatusOpen(!isStatusOpen)}
+        className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer flex justify-between items-center"
+    >
+        <span className="truncate">
+            {selectedStatus === "all" ? "🎯 All Status" :
+             selectedStatus === "Approved" ? "✅ Approved" :
+             selectedStatus === "Submitted" ? "📤 Submitted" :
+             selectedStatus === "Inprogress" ? "⏳ In Progress" :
+             selectedStatus === "Rejected" ? "❌ Rejected" : "🎯 All Status"}
+        </span>
+        <span className="text-gray-400 text-xs ml-2">▼</span>
+    </div>
+
+    {isStatusOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+            <div 
+                onClick={() => { setSelectedStatus("all"); setIsStatusOpen(false); }} 
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                🎯 All Status
+            </div>
+            <div 
+                onClick={() => { setSelectedStatus("Approved"); setIsStatusOpen(false); }} 
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                ✅ Approved
+            </div>
+            <div 
+                onClick={() => { setSelectedStatus("Submitted"); setIsStatusOpen(false); }} 
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                📤 Submitted
+            </div>
+            <div 
+                onClick={() => { setSelectedStatus("Inprogress"); setIsStatusOpen(false); }} 
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                ⏳ In Progress
+            </div>
+            <div 
+                onClick={() => { setSelectedStatus("Rejected"); setIsStatusOpen(false); }} 
+                className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+            >
+                ❌ Rejected
+            </div>
+        </div>
+    )}
+</div>
+    </div>
+</div>
 
                 {/* Results Count */}
                 <div className="mb-4 flex justify-between items-center">
@@ -1337,246 +1470,297 @@ const ProjectReport = () => {
                                 </div>
 
                                 {/* Expanded Content - Shows only when clicked */}
-                                <AnimatePresence>
-                                    {isProjectExpanded && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: "auto", opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="border-t border-gray-200 bg-gray-50"
-                                        >
-                                            <div className="p-6">
-                                                {/* Activities Section */}
-                                                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                    <Activity size={18} className="text-purple-600" />
-                                                    Activities & Tasks
-                                                </h3>
+                               {/* Expanded Content - Shows only when clicked */}
+<AnimatePresence>
+    {isProjectExpanded && (
+        <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="border-t border-gray-200 bg-gray-50"
+        >
+            <div className="p-6">
+                {/* Activities Section */}
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Activity size={18} className="text-purple-600" />
+                    Activities & Tasks
+                </h3>
 
-                                                <div className="space-y-3">
-                                                    {project.activities.map((activity) => {
-                                                        const isActivityExpanded =
-                                                            expandedActivity ===
-                                                            `${project.project_id}-${activity.activity_id}`;
+                <div className="space-y-3">
+                    {project.activities.map((activity) => {
+                        const isActivityExpanded =
+                            expandedActivity ===
+                            `${project.project_id}-${activity.activity_id}`;
 
-                                                        return (
-                                                            <div
-                                                                key={activity.activity_id}
-                                                                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
-                                                            >
-                                                                <div
-                                                                    className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                                                                    onClick={() =>
-                                                                        setExpandedActivity(
-                                                                            isActivityExpanded
-                                                                                ? null
-                                                                                : `${project.project_id}-${activity.activity_id}`,
-                                                                        )
-                                                                    }
+                        return (
+                            <div
+                                key={activity.activity_id}
+                                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
+                            >
+                                <div
+                                    className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                    onClick={() =>
+                                        setExpandedActivity(
+                                            isActivityExpanded
+                                                ? null
+                                                : `${project.project_id}-${activity.activity_id}`,
+                                        )
+                                    }
+                                >
+                                    <div className="flex items-center gap-3">
+                                        {isActivityExpanded ? (
+                                            <ChevronDown
+                                                size={18}
+                                                className="text-purple-500"
+                                            />
+                                        ) : (
+                                            <ChevronRight
+                                                size={18}
+                                                className="text-gray-400"
+                                            />
+                                        )}
+                                        <div>
+                                            <h4 className="font-medium text-gray-800">
+                                                {activity.activity_name}
+                                            </h4>
+                                            <p className="text-xs text-gray-500">
+                                                {activity.subactivities.length}{" "}
+                                                sub-activities
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex gap-2">
+                                            {activity.statusCount.Approved > 0 && (
+                                                <span title={`${activity.statusCount.Approved} Approved Task(s)`} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg">
+                                                    ✓ {activity.statusCount.Approved}
+                                                </span>
+                                            )}
+                                            {activity.statusCount.Submitted > 0 && (
+                                                <span title={`${activity.statusCount.Submitted} Submitted Task(s)`} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
+                                                    📤 {activity.statusCount.Submitted}
+                                                </span>
+                                            )}
+                                            {activity.statusCount.Inprogress > 0 && (
+                                                <span title={`${activity.statusCount.Inprogress} InProgress Task(s)`} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">
+                                                    ⏳ {activity.statusCount.Inprogress}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="font-semibold text-purple-600">
+                                            {activity.total_hours_formatted}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {isActivityExpanded && (
+                                    <div className="border-t border-gray-100 p-4 space-y-2">
+                                        {activity.subactivities.map((sub) => (
+                                            <div
+                                                key={sub.subactivity_id}
+                                                className="border border-gray-100 rounded-lg overflow-hidden mb-2"
+                                            >
+                                                <div className="p-3 bg-gray-50">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                                <span className="font-medium text-gray-800">
+                                                                    {sub.subactivity_name}
+                                                                </span>
+                                                                <span
+                                                                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getStatusColor(sub.status)}`}
                                                                 >
-                                                                    <div className="flex items-center gap-3">
-                                                                        {isActivityExpanded ? (
-                                                                            <ChevronDown
-                                                                                size={18}
-                                                                                className="text-purple-500"
-                                                                            />
-                                                                        ) : (
-                                                                            <ChevronRight
-                                                                                size={18}
-                                                                                className="text-gray-400"
-                                                                            />
-                                                                        )}
-                                                                        <div>
-                                                                            <h4 className="font-medium text-gray-800">
-                                                                                {activity.activity_name}
-                                                                            </h4>
-                                                                            <p className="text-xs text-gray-500">
-                                                                                {activity.subactivities.length}{" "}
-                                                                                sub-activities
-                                                                            </p>
+                                                                    {getStatusIcon(sub.status)}
+                                                                    {sub.status}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Team Members */}
+                                                            <div className="mt-2">
+                                                                <p className="text-xs text-gray-500 mb-1">
+                                                                    Team Members:
+                                                                </p>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {sub.users.map((user) => (
+                                                                        <div
+                                                                            key={user.emp_code}
+                                                                            className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-gray-200"
+                                                                        >
+                                                                            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                                                                                <span className="text-xs font-medium text-purple-600">
+                                                                                    {user.name.charAt(0)}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className="text-sm">
+                                                                                {user.name}
+                                                                            </span>
+                                                                            <span className="text-xs text-purple-600 font-medium">
+                                                                                {user.hours_formatted}
+                                                                            </span>
                                                                         </div>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-4">
-                                                                        <div className="flex gap-2">
-                                                                            {activity.statusCount.Approved > 0 && (
-                                                                                <span title={`${activity.statusCount.Approved} Approved Task(s)`} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg">
-                                                                                    ✓ {activity.statusCount.Approved}
-                                                                                </span>
-                                                                            )}
-                                                                            {activity.statusCount.Submitted > 0 && (
-                                                                                <span title={`${activity.statusCount.Submitted} Submitted Task(s)`} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-lg">
-                                                                                    📤 {activity.statusCount.Submitted}
-                                                                                </span>
-                                                                            )}
-                                                                            {activity.statusCount.Inprogress > 0 && (
-                                                                                <span title={`${activity.statusCount.Inprogress} InProgress Task(s)`} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">
-                                                                                    ⏳ {activity.statusCount.Inprogress}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <span className="font-semibold text-purple-600">
-                                                                            {activity.total_hours_formatted}
-                                                                        </span>
-                                                                    </div>
+                                                                    ))}
                                                                 </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-lg font-bold text-purple-600">
+                                                                {sub.total_hours_formatted}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400">
+                                                                {sub.users.length} members
+                                                            </p>
+                                                        </div>
+                                                    </div>
 
-                                                                {isActivityExpanded && (
-                                                                    <div className="border-t border-gray-100 p-4 space-y-2">
-                                                                        {activity.subactivities.map((sub) => (
-                                                                            <div
-                                                                                key={sub.subactivity_id}
-                                                                                className="border border-gray-100 rounded-lg overflow-hidden mb-2"
-                                                                            >
-                                                                                <div className="p-3 bg-gray-50">
-                                                                                    <div className="flex justify-between items-start">
-                                                                                        <div className="flex-1">
-                                                                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                                                                <span className="font-medium text-gray-800">
-                                                                                                    {sub.subactivity_name}
-                                                                                                </span>
-                                                                                                <span
-                                                                                                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getStatusColor(sub.status)}`}
-                                                                                                >
-                                                                                                    {getStatusIcon(sub.status)}
-                                                                                                    {sub.status}
-                                                                                                </span>
-                                                                                            </div>
+                                                    {/* Description Logs (New UI format grouped by user and date) */}
+                                                    {showDescriptions &&
+                                                        sub.users &&
+                                                        sub.users.some(u => u.logs && u.logs.length > 0) && (
+                                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                <p className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                                                                    <MessageSquare size={12} />
+                                                                    Detailed Activity Logs
+                                                                </p>
+                                                                <div className="max-h-[400px] overflow-y-auto rounded-xl border border-gray-200 bg-white custom-scrollbar">
+                                                                    <div className="divide-y divide-gray-100">
+                                                                        {sub.users.map((userLog, userIdx) => {
+                                                                            if (!userLog.logs || userLog.logs.length === 0) return null;
 
-                                                                                            {/* Team Members */}
-                                                                                            <div className="mt-2">
-                                                                                                <p className="text-xs text-gray-500 mb-1">
-                                                                                                    Team Members:
-                                                                                                </p>
-                                                                                                <div className="flex flex-wrap gap-2">
-                                                                                                    {sub.users.map((user) => (
-                                                                                                        <div
-                                                                                                            key={user.emp_code}
-                                                                                                            className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-gray-200"
-                                                                                                        >
-                                                                                                            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                                                                                                                <span className="text-xs font-medium text-purple-600">
-                                                                                                                    {user.name.charAt(0)}
-                                                                                                                </span>
-                                                                                                            </div>
-                                                                                                            <span className="text-sm">
-                                                                                                                {user.name}
-                                                                                                            </span>
-                                                                                                            <span className="text-xs text-purple-600 font-medium">
-                                                                                                                {user.hours_formatted}
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                    ))}
-                                                                                                </div>
-                                                                                            </div>
+                                                                            return (
+                                                                                <div key={userIdx} className="bg-white relative">
+                                                                                    {/* User Header for daily logs */}
+                                                                                    <div className="px-4 py-2.5 bg-gray-50 flex items-center gap-3 sticky top-0 z-10 shadow-sm border-b border-gray-100">
+                                                                                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                                                                            {userLog.name?.charAt(0)?.toUpperCase() || "U"}
                                                                                         </div>
-                                                                                        <div className="text-right">
-                                                                                            <p className="text-lg font-bold text-purple-600">
-                                                                                                {sub.total_hours_formatted}
-                                                                                            </p>
-                                                                                            <p className="text-xs text-gray-400">
-                                                                                                {sub.users.length} members
-                                                                                            </p>
+                                                                                        <span className="text-sm font-medium text-gray-800">{userLog.name}</span>
+                                                                                        <div className="flex gap-2 ml-auto items-center">
+                                                                                            <span className="text-xs text-gray-500">
+                                                                                                {userLog.logs.length} day{userLog.logs.length !== 1 ? 's' : ''}
+                                                                                            </span>
+                                                                                            <span className="text-gray-300">•</span>
+                                                                                            <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                                                                                                {userLog.hours_formatted}
+                                                                                            </span>
                                                                                         </div>
                                                                                     </div>
 
-                                                                                    {/* Description Logs */}
-                                                                                    {showDescriptions &&
-                                                                                        sub.logs &&
-                                                                                        sub.logs.length > 0 && (
-                                                                                            <div className="mt-3 pt-3 border-t border-gray-200">
-                                                                                                <p className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
-                                                                                                    <MessageSquare size={12} />
-                                                                                                    Activity Logs & Descriptions
-                                                                                                </p>
-                                                                                                <div className="space-y-1 max-h-40 overflow-y-auto">
-                                                                                                    {sub.logs?.map((log, idx) => (
-                                                                                                        <div
-                                                                                                            key={idx}
-                                                                                                            className="bg-white rounded-lg p-2 text-sm border border-gray-100"
-                                                                                                        >
-                                                                                                            <div className="flex justify-between items-start mb-1">
-                                                                                                                <span className="text-xs font-medium text-gray-600">
-                                                                                                                    {log.user}
-                                                                                                                </span>
-                                                                                                                <span className="text-xs text-gray-400">
-                                                                                                                    {formatDate(log.date)}
-                                                                                                                </span>
-                                                                                                            </div>
-                                                                                                            <div className="flex flex-row gap-2">
-                                                                                                                <p className="text-gray-700 text-sm">
-                                                                                                                    {log.work_type ||
-                                                                                                                        "No work type provided"}{" "}
-                                                                                                                    -
-                                                                                                                </p>
-                                                                                                                <p className="text-gray-700 text-sm">
-                                                                                                                    {log.description ||
-                                                                                                                        "No description provided"}
-                                                                                                                </p>
-                                                                                                            </div>
-                                                                                                            <p className="text-xs text-purple-600 mt-1">
-                                                                                                                Time:{" "}
-                                                                                                                {formatDurationDetailed(
-                                                                                                                    log.time_spent,
-                                                                                                                )}
-                                                                                                            </p>
-                                                                                                        </div>
-                                                                                                    ))}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        )}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                                                                    {/* Date-wise logs for this user */}
+                                                                                    <div className="px-4 py-3 space-y-4">
+                                                                                        {userLog.logs.map((dayLog, dayIdx) => {
+                                                                                            const dayTotalSeconds = dayLog.logs.reduce((sum, log) => sum + timeToSeconds(log.time_spent), 0);
+                                                                                            const dayTotalFormatted = formatSecondsToDuration(dayTotalSeconds);
 
-                                                {/* Team Members Grid */}
-                                                {project.employees.length > 0 && (
-                                                    <div className="mt-6">
-                                                        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                                            <Users size={18} className="text-purple-600" />
-                                                            Project Team ({project.employees.length})
-                                                        </h3>
-                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                                            {project.employees.map((emp) => (
-                                                                <div
-                                                                    key={emp.emp_code}
-                                                                    className="bg-white rounded-xl border border-gray-200 p-3 flex items-center justify-between hover:shadow-md transition-shadow"
-                                                                >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                                                            {emp.name.charAt(0)}
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="font-medium text-gray-800 text-sm">
-                                                                                {emp.name}
-                                                                            </p>
-                                                                            <p className="text-xs text-gray-400">
-                                                                                {emp.emp_code}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <p className="font-semibold text-purple-600 text-sm">
-                                                                            {emp.total_hours}
-                                                                        </p>
-                                                                        <p className="text-xs text-gray-400">
-                                                                            {emp.total_tasks} tasks
-                                                                        </p>
+                                                                                            return (
+                                                                                                <div key={dayIdx} className="border-l-2 border-blue-200 pl-3">
+                                                                                                    {/* Date Header */}
+                                                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                                                        <Calendar size={12} className="text-gray-400" />
+                                                                                                        <span className="text-xs font-medium text-gray-500">
+                                                                                                            {new Date(dayLog.date).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                                                                                        </span>
+                                                                                                        <span className="text-[10px] font-mono font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                                                                                                            {dayTotalFormatted}
+                                                                                                        </span>
+                                                                                                    </div>
+
+                                                                                                    {/* Log entries for this date */}
+                                                                                                    <div className="space-y-2 ml-2">
+                                                                                                        {dayLog.logs?.map((log, logIdx) => (
+                                                                                                            <div key={logIdx} className="bg-gray-50 rounded-lg p-3 hover:bg-white hover:shadow-sm border border-gray-100 transition-all">
+                                                                                                                <div className="flex justify-between items-start gap-4">
+                                                                                                                    <div className="flex-1">
+                                                                                                                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                                                                                                            {log.work_type && (
+                                                                                                                                <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 uppercase tracking-wider">
+                                                                                                                                    {log.work_type}
+                                                                                                                                </span>
+                                                                                                                            )}
+                                                                                                                            {log.start_time && log.end_time && (
+                                                                                                                                <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                                                                                    <Clock size={10} />
+                                                                                                                                    {log.start_time} - {log.end_time}
+                                                                                                                                </span>
+                                                                                                                            )}
+                                                                                                                        </div>
+                                                                                                                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                                                                                                            {log.description || <span className="italic text-gray-400 text-xs">No description provided</span>}
+                                                                                                                        </p>
+                                                                                                                    </div>
+                                                                                                                    <div className="text-right shrink-0">
+                                                                                                                        <span className="text-xs font-mono font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100 whitespace-nowrap">
+                                                                                                                            {formatSecondsToDuration(timeToSeconds(log.time_spent))}
+                                                                                                                        </span>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                            </div>
+                                                        )}
+                                                </div>
                                             </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Team Members Grid */}
+                {project.employees.length > 0 && (
+                    <div className="mt-6">
+                        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            <Users size={18} className="text-purple-600" />
+                            Project Team ({project.employees.length})
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {project.employees.map((emp) => (
+                                <div
+                                    key={emp.emp_code}
+                                    className="bg-white rounded-xl border border-gray-200 p-3 flex items-center justify-between hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                            {emp.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-800 text-sm">
+                                                {emp.name}
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                {emp.emp_code}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-semibold text-purple-600 text-sm">
+                                            {emp.total_hours}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {emp.total_tasks} tasks
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    )}
+</AnimatePresence>
                             </motion.div>
                         );
                     })}
@@ -1611,3 +1795,4 @@ const ProjectReport = () => {
 };
 
 export default ProjectReport;
+

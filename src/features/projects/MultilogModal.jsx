@@ -748,7 +748,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             <span className="text-xs font-semibold text-gray-500">Total Duration:</span>
                                         </td>
                                         <td className="px-2 pt-2 pb-1 text-center">
-                                            <span className={`text-xs font-bold px-2 py-1 rounded-full
+                                            <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap
 ${totalHours > 9
                                                     ? "bg-red-50 text-red-700"
                                                     : totalHours > 0
