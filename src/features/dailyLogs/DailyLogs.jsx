@@ -347,14 +347,28 @@ const DailyLogs = () => {
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
-          <button
+          {/* <button
             onClick={handleRefresh}
             disabled={loading}
             className="bg-gray-600 text-white px-4 py-2 rounded-xl hover:bg-gray-700 flex items-center gap-2"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             <span className="hidden sm:inline">Refresh</span>
-          </button>
+          </button> */}
+          <button
+  onClick={handleRefresh}
+  disabled={loading}
+  className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <RefreshCw
+    size={20}
+    className={`text-blue-600 ${loading ? "animate-spin" : ""}`}
+  />
+  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+    Refresh
+  </span>
+</button>
+
           {/* <button
             onClick={handleExport}
             className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 flex items-center gap-2"

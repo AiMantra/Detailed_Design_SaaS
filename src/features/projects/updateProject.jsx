@@ -4492,7 +4492,7 @@ console.log("Payload before dispatch:", payload);
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-1">
+                        {/* <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Workorder Document</label>
                             <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
                                 <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -4514,8 +4514,57 @@ console.log("Payload before dispatch:", payload);
                                     <FileText size={12} /> View Current Document
                                 </a>
                             )}
-                        </div>
+                        </div> */}
+                        <div className="flex flex-col gap-1">
+    <label className="text-xs text-gray-500">Workorder Document</label>
+    
+    {/* If a document is already uploaded or a new one is selected, show the file with an X button */}
+    {(form?.workorder_document || form.existing_workorder_document) ? (
+        <div className="relative flex items-center justify-between w-full pl-9 pr-3 h-11 border border-blue-200 rounded-lg bg-blue-50">
+            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
+            <span className="text-sm text-blue-700 truncate mr-4">
+                {form?.workorder_document?.name || "Current document uploaded"}
+            </span>
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    // Clear both the new file and the existing reference to allow a fresh upload
+                    setForm((prev) => ({
+                        ...prev,
+                        workorder_document: null,
+                        existing_workorder_document: ""
+                    }));
+                }}
+                className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors"
+                title="Remove document"
+            >
+                <X size={16} />
+            </button>
+        </div>
+    ) : (
+        /* If no document is selected, show the upload box */
+        <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
+            <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <div className="text-gray-500">
+                <span className="text-sm">Click to upload or drag & drop</span>
+            </div>
+            <input type="file" name="workorder_document" onChange={handleChange} className="hidden" />
+        </label>
+    )}
 
+    {/* Only show the link if an existing document is present on the server */}
+    {form.existing_workorder_document && !form.workorder_document && (
+        <a
+            href={form.existing_workorder_document}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+        >
+            <FileText size={12} /> View Current Document
+        </a>
+    )}
+</div>
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Assign Project Owners *</label>
 
