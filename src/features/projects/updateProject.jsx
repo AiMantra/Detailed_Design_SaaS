@@ -1,3 +1,5 @@
+
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
@@ -882,7 +884,7 @@ const UpdateProject = () => {
         if (!trimmedName || !trimmedgst || !trimpancard) {
             dispatch(
                 showSnackbar({
-                    message: "Please enter " + ((!trimmedName && "Company name") || (!trimpancard && "PAN NO.") || (!trimmedgst && "GST")),
+                    message: "Please enter " + ((!trimmedName && "Company name") || (!trimpancard && "PAN No.") || (!trimmedgst && "GST")),
                     type: "error",
                 })
             );
@@ -2264,7 +2266,7 @@ const UpdateProject = () => {
                         chainage_end: chainageend,
                         covered_area: coveredarea || "0.00",
                         sorting_var: subSortingVar,
-                        stages: mappedStages // Pass the dynamic stages array to the backend!
+                        work_stages: mappedStages // Pass the dynamic stages array to the backend!
                     };
                 });
 
@@ -2311,7 +2313,7 @@ const UpdateProject = () => {
                     workorder_document: form.workorder_document
                 })
             };
-
+            console.log("Payload before dispatch:", payload);
             // // Add to FormData for file upload
             // Object.keys(payload).forEach((key) => {
             //     if (key === 'activities') {
@@ -2496,52 +2498,52 @@ const UpdateProject = () => {
 
 
     // Add click outside handler with clear logic
-    useEffect(() => {
-        function handleClickOutside(event) {
-            // Handle Company dropdown
-            if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
-                setShowCompanyDropdown(false);
-                // Check if current search value matches any company
-                const hasMatchingCompany = companies.some(c =>
-                    c.name?.toLowerCase() === companySearch?.toLowerCase()
-                );
-                // If no match and no company selected, clear the search
-                if (!hasMatchingCompany && !form.company && companySearch) {
-                    setCompanySearch("");
-                }
-            }
+    // useEffect(() => {
+    //     function handleClickOutside(event) {
+    //         // Handle Company dropdown
+    //         if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+    //             setShowCompanyDropdown(false);
+    //             // Check if current search value matches any company
+    //             const hasMatchingCompany = companies.some(c =>
+    //                 c.name?.toLowerCase() === companySearch?.toLowerCase()
+    //             );
+    //             // If no match and no company selected, clear the search
+    //             if (!hasMatchingCompany && !form.company && companySearch) {
+    //                 setCompanySearch("");
+    //             }
+    //         }
 
-            // Handle Sector dropdown
-            if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
-                setShowSectorDropdown(false);
-                // Check if current search value matches any sector
-                const hasMatchingSector = sectorsList.some(s =>
-                    s.name?.toLowerCase() === sectorSearch?.toLowerCase()
-                );
-                // If no match and no sector selected, clear the search
-                if (!hasMatchingSector && !form.sector && sectorSearch) {
-                    setSectorSearch("");
-                }
-            }
+    //         // Handle Sector dropdown
+    //         if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
+    //             setShowSectorDropdown(false);
+    //             // Check if current search value matches any sector
+    //             const hasMatchingSector = sectorsList.some(s =>
+    //                 s.name?.toLowerCase() === sectorSearch?.toLowerCase()
+    //             );
+    //             // If no match and no sector selected, clear the search
+    //             if (!hasMatchingSector && !form.sector && sectorSearch) {
+    //                 setSectorSearch("");
+    //             }
+    //         }
 
-            // Handle Client dropdown
-            if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
-                setShowClientDropdown(false);
-                // Check if current search value matches any client
-                const hasMatchingClient = clients.some(c =>
-                    c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
-                    c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
-                );
-                // If no match and no client selected, clear the search
-                if (!hasMatchingClient && !form.client && clientSearch) {
-                    setClientSearch("");
-                }
-            }
-        }
+    //         // Handle Client dropdown
+    //         if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
+    //             setShowClientDropdown(false);
+    //             // Check if current search value matches any client
+    //             const hasMatchingClient = clients.some(c =>
+    //                 c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
+    //                 c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
+    //             );
+    //             // If no match and no client selected, clear the search
+    //             if (!hasMatchingClient && !form.client && clientSearch) {
+    //                 setClientSearch("");
+    //             }
+    //         }
+    //     }
 
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
+    //     document.addEventListener("mousedown", handleClickOutside);
+    //     return () => document.removeEventListener("mousedown", handleClickOutside);
+    // }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
     // Rest of the component remains the same (all the JSX with modals and form)...
     return (
         <motion.div
@@ -4134,98 +4136,101 @@ const UpdateProject = () => {
                                 />
                             </div>
                         </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Company *</label>
+                            <div className="relative" ref={companyDropdownRef}>
 
-                        <div className="relative" ref={companyDropdownRef}>
-                            <Building2
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={16}
-                            />
+                                <Building2
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    size={16}
+                                />
 
-                            <input
-                                type="text"
-                                value={companySearch || (form.company ? form.company : "")}
-                                placeholder="Select Company"
-                                onFocus={() => {
-                                    setShowCompanyDropdown(true);
-                                }}
-                                onChange={(e) => {
-                                    setCompanySearch(e.target.value);
-                                    if (form.company) {
-                                        setForm({
-                                            ...form,
-                                            company: ""
-                                        });
-                                    }
-                                    setShowCompanyDropdown(true);
-                                }}
-                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                            />
-
-                            {/* Clear button */}
-                            {form.company && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm({
-                                            ...form,
-                                            company: ''
-                                        });
-                                        setCompanySearch('');
-                                        setShowCompanyDropdown(false);
+                                <input
+                                    type="text"
+                                    value={companySearch || (form.company ? form.company : "")}
+                                    placeholder="Select Company"
+                                    onFocus={() => {
+                                        setShowCompanyDropdown(true);
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            )}
-
-                            {/* Dropdown */}
-                            {showCompanyDropdown && (
-                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {(() => {
-                                        const filteredCompanies = companies.filter((c) =>
-                                            !companySearch ||
-                                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                                        );
-
-                                        if (filteredCompanies.length === 0) {
-                                            return (
-                                                <div className="px-3 py-2 text-gray-400 text-sm">
-                                                    No matching companies - This will clear when you click outside
-                                                </div>
-                                            );
+                                    onChange={(e) => {
+                                        setCompanySearch(e.target.value);
+                                        if (form.company) {
+                                            setForm({
+                                                ...form,
+                                                company: ""
+                                            });
                                         }
+                                        setShowCompanyDropdown(true);
+                                    }}
+                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                />
 
-                                        return filteredCompanies.map((company) => {
-                                            const companyName = company.name || "";
+                                {/* Clear button */}
+                                {form.company && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({
+                                                ...form,
+                                                company: ''
+                                            });
+                                            setCompanySearch('');
+                                            setShowCompanyDropdown(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={company.id}
-                                                    onClick={() => {
-                                                        setForm({
-                                                            ...form,
-                                                            company: company.name,
-                                                        });
-                                                        setCompanySearch(company.name);
-                                                        setShowCompanyDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    <div>
-                                                        {companyName}
-                                                        {company.gst_no && (
-                                                            <span className="text-xs text-gray-400 ml-2">
-                                                                (GST: {company.gst_no})
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                {/* Dropdown */}
+                                {showCompanyDropdown && (
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            const filteredCompanies = companies.filter((c) =>
+                                                !companySearch ||
+                                                c.name?.toLowerCase().includes(companySearch.toLowerCase())
                                             );
-                                        });
-                                    })()}
-                                </div>
-                            )}
+
+                                            if (filteredCompanies.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching companies - This will clear when you click outside
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filteredCompanies.map((company) => {
+                                                const companyName = company.name || "";
+
+                                                return (
+                                                    <div
+                                                        key={company.id}
+                                                        onClick={() => {
+                                                            setForm({
+                                                                ...form,
+                                                                company: company.name,
+                                                            });
+                                                            setCompanySearch(company.name);
+                                                            setShowCompanyDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    >
+                                                        <div>
+                                                            {companyName}
+                                                            {company.gst_no && (
+                                                                <span className="text-xs text-gray-400 ml-2">
+                                                                    (GST: {company.gst_no})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {form.company && (
@@ -4245,193 +4250,200 @@ const UpdateProject = () => {
                             </div>
                         )}
 
-                        <div className="relative" ref={sectorDropdownRef}>
-                            <Factory
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={16}
-                            />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Sector *</label>
+                            <div className="relative" ref={sectorDropdownRef}>
+                                <Factory
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    size={16}
+                                />
 
-                            <input
-                                type="text"
-                                value={sectorSearch || (form.sector ? form.sector : "")}
-                                placeholder="Select Sector"
-                                onFocus={() => {
-                                    setShowSectorDropdown(true);
-                                }}
-                                onChange={(e) => {
-                                    setSectorSearch(e.target.value);
-                                    if (form.sector) {
-                                        setForm({
-                                            ...form,
-                                            sector: ""
-                                        });
-                                    }
-                                    setShowSectorDropdown(true);
-                                }}
-                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                            />
-
-                            {/* Clear button */}
-                            {form.sector && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm({
-                                            ...form,
-                                            sector: ''
-                                        });
-                                        setSectorSearch('');
-                                        setShowSectorDropdown(false);
+                                <input
+                                    type="text"
+                                    value={sectorSearch || (form.sector ? form.sector : "")}
+                                    placeholder="Select Sector"
+                                    onFocus={() => {
+                                        setShowSectorDropdown(true);
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            )}
-
-                            {/* Dropdown */}
-                            {showSectorDropdown && (
-                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {(() => {
-                                        const filteredSectors = sectorsList.filter((s) =>
-                                            !sectorSearch ||
-                                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                                        );
-
-                                        if (filteredSectors.length === 0) {
-                                            return (
-                                                <div className="px-3 py-2 text-gray-400 text-sm">
-                                                    No matching sectors - This will clear when you click outside
-                                                </div>
-                                            );
+                                    onChange={(e) => {
+                                        setSectorSearch(e.target.value);
+                                        if (form.sector) {
+                                            setForm({
+                                                ...form,
+                                                sector: ""
+                                            });
                                         }
+                                        setShowSectorDropdown(true);
+                                    }}
+                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                />
 
-                                        return filteredSectors.map((sector) => {
-                                            const sectorName = sector.name || "";
-                                            const sectorUnit = sector.unit || "";
+                                {/* Clear button */}
+                                {form.sector && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({
+                                                ...form,
+                                                sector: ''
+                                            });
+                                            setSectorSearch('');
+                                            setShowSectorDropdown(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={sector.id || sector.name}
-                                                    onClick={() => {
-                                                        setForm({
-                                                            ...form,
-                                                            sector: sector.name,
-                                                        });
-                                                        setSectorSearch(sector.name);
-                                                        setShowSectorDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    <div>
-                                                        {sectorName}
-                                                        {sectorUnit && (
-                                                            <span className="text-xs text-gray-400 ml-2">
-                                                                (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                {/* Dropdown */}
+                                {showSectorDropdown && (
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            const filteredSectors = sectorsList.filter((s) =>
+                                                !sectorSearch ||
+                                                s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
                                             );
-                                        });
-                                    })()}
-                                </div>
-                            )}
+
+                                            if (filteredSectors.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching sectors - This will clear when you click outside
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filteredSectors.map((sector) => {
+                                                const sectorName = sector.name || "";
+                                                const sectorUnit = sector.unit || "";
+
+                                                return (
+                                                    <div
+                                                        key={sector.id || sector.name}
+                                                        onClick={() => {
+                                                            setForm({
+                                                                ...form,
+                                                                sector: sector.name,
+                                                            });
+                                                            setSectorSearch(sector.name);
+                                                            setShowSectorDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    >
+                                                        <div>
+                                                            {sectorName}
+                                                            {sectorUnit && (
+                                                                <span className="text-xs text-gray-400 ml-2">
+                                                                    (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="relative" ref={clientDropdownRef}>
-                            <Handshake
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={16}
-                            />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Client *</label>
 
-                            <input
-                                type="text"
-                                value={clientSearch}
-                                placeholder="Select Client"
-                                onFocus={() => {
-                                    setShowClientDropdown(true);
-                                }}
-                                onChange={(e) => {
-                                    setClientSearch(e.target.value);
-                                    if (form.client) {
-                                        setForm({
-                                            ...form,
-                                            client: "",
-                                            clientbranch: ""
-                                        });
-                                    }
-                                    setShowClientDropdown(true);
-                                }}
-                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                            />
+                            <div className="relative" ref={clientDropdownRef}>
+                                <Handshake
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    size={16}
+                                />
 
-                            {/* Clear button */}
-                            {form.client && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm({
-                                            ...form,
-                                            client: '',
-                                            clientbranch: ''
-                                        });
-                                        setClientSearch('');
-                                        setClientCode('');
-                                        setShowClientDropdown(false);
+                                <input
+                                    type="text"
+                                    value={clientSearch}
+                                    placeholder="Select Client"
+                                    onFocus={() => {
+                                        setShowClientDropdown(true);
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            )}
-
-                            {/* Dropdown */}
-                            {showClientDropdown && (
-                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {(() => {
-                                        const filteredClients = clients.filter((c) =>
-                                            !clientSearch ||
-                                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                            c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
-                                        );
-
-                                        if (filteredClients.length === 0) {
-                                            return (
-                                                <div className="px-3 py-2 text-gray-400 text-sm">
-                                                    No matching clients - This will clear when you click outside
-                                                </div>
-                                            );
+                                    onChange={(e) => {
+                                        setClientSearch(e.target.value);
+                                        if (form.client) {
+                                            setForm({
+                                                ...form,
+                                                client: "",
+                                                clientbranch: ""
+                                            });
                                         }
+                                        setShowClientDropdown(true);
+                                    }}
+                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                />
 
-                                        return filteredClients.map((client) => {
-                                            const clientName = client.client_name || "";
-                                            const clientCode = client.client_code || "";
+                                {/* Clear button */}
+                                {form.client && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({
+                                                ...form,
+                                                client: '',
+                                                clientbranch: ''
+                                            });
+                                            setClientSearch('');
+                                            setClientCode('');
+                                            setShowClientDropdown(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={client.id}
-                                                    onClick={() => {
-                                                        setForm({
-                                                            ...form,
-                                                            client: client.id,
-                                                            clientbranch: "",
-                                                        });
-                                                        setClientSearch(`${clientName} - ${clientCode}`);
-                                                        setClientCode(clientCode);
-                                                        setShowClientDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    <div>
-                                                        {clientName} - {clientCode}
-                                                    </div>
-                                                </div>
+                                {/* Dropdown */}
+                                {showClientDropdown && (
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            const filteredClients = clients.filter((c) =>
+                                                !clientSearch ||
+                                                c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                                c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
                                             );
-                                        });
-                                    })()}
-                                </div>
-                            )}
+
+                                            if (filteredClients.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching clients - This will clear when you click outside
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filteredClients.map((client) => {
+                                                const clientName = client.client_name || "";
+                                                const clientCode = client.client_code || "";
+
+                                                return (
+                                                    <div
+                                                        key={client.id}
+                                                        onClick={() => {
+                                                            setForm({
+                                                                ...form,
+                                                                client: client.id,
+                                                                clientbranch: "",
+                                                            });
+                                                            setClientSearch(`${clientName} - ${clientCode}`);
+                                                            setClientCode(clientCode);
+                                                            setShowClientDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    >
+                                                        <div>
+                                                            {clientName} - {clientCode}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         {form.client && (
                             <>
@@ -4480,7 +4492,7 @@ const UpdateProject = () => {
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-1">
+                        {/* <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Workorder Document</label>
                             <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
                                 <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -4502,8 +4514,57 @@ const UpdateProject = () => {
                                     <FileText size={12} /> View Current Document
                                 </a>
                             )}
-                        </div>
+                        </div> */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Workorder Document</label>
 
+                            {/* If a document is already uploaded or a new one is selected, show the file with an X button */}
+                            {(form?.workorder_document || form.existing_workorder_document) ? (
+                                <div className="relative flex items-center justify-between w-full pl-9 pr-3 h-11 border border-blue-200 rounded-lg bg-blue-50">
+                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
+                                    <span className="text-sm text-blue-700 truncate mr-4">
+                                        {form?.workorder_document?.name || "Current document uploaded"}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            // Clear both the new file and the existing reference to allow a fresh upload
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                workorder_document: null,
+                                                existing_workorder_document: ""
+                                            }));
+                                        }}
+                                        className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors"
+                                        title="Remove document"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                /* If no document is selected, show the upload box */
+                                <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
+                                    <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <div className="text-gray-500">
+                                        <span className="text-sm">Click to upload or drag & drop</span>
+                                    </div>
+                                    <input type="file" name="workorder_document" onChange={handleChange} className="hidden" />
+                                </label>
+                            )}
+
+                            {/* Only show the link if an existing document is present on the server */}
+                            {form.existing_workorder_document && !form.workorder_document && (
+                                <a
+                                    href={form.existing_workorder_document}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
+                                >
+                                    <FileText size={12} /> View Current Document
+                                </a>
+                            )}
+                        </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Assign Project Owners *</label>
 
@@ -6027,7 +6088,7 @@ const UpdateProject = () => {
                         </motion.div>
                     )}
 
-                    {isMobile && (
+                    {/* {isMobile && (
                         <div className="flex justify-between mt-6">
                             <button
                                 type="button"
@@ -6055,25 +6116,83 @@ const UpdateProject = () => {
                                 )}
                             </button>
                         </div>
+                    )} */}
+
+                    {isMobile && (
+                        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-6">
+                            <div className="flex justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                                {/* New Cancel Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/all-projects")}
+                                    className="flex-1 sm:flex-none bg-white text-gray-700 border border-gray-200 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <X size={16} />
+                                    Cancel
+                                </button>
+
+                                {/* Existing Previous Button */}
+                                <button
+                                    type="button"
+                                    onClick={prevStep}
+                                    className="flex-1 sm:flex-none bg-gray-600 text-white px-4 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <ChevronLeft size={16} />
+                                    Previous
+                                </button>
+                            </div>
+
+                            {/* Existing Update Button */}
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={handleSubmit}
+                                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    <>
+                                        Update Project
+                                        <Save size={16} />
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     )}
                 </motion.div>
 
+
                 {!isMobile && (
-                    <div className="flex justify-center">
+                    <div className="flex justify-center gap-4">
+                        {/* Cancel Button */}
+                        <button
+                            type="button"
+                            onClick={() => navigate("/all-projects")}
+                            className="w-56 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2"
+                        >
+                            <X size={18} />
+                            Cancel
+                        </button>
+
+                        {/* Update Button */}
                         <button
                             type="button"
                             disabled={isSubmitting}
                             onClick={handleSubmit}
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 md:px-16 py-4 md:py-5 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-bold text-base md:text-xl flex items-center gap-2 md:gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-56 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <>
-                                    <Loader2 className="animate-spin" size={20} />
-                                    Updating Project...
+                                    <Loader2 className="animate-spin" size={18} />
+                                    Updating...
                                 </>
                             ) : (
                                 <>
-                                    <Save size={20} />
+                                    <Save size={18} />
                                     Update Project
                                 </>
                             )}

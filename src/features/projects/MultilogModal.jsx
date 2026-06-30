@@ -382,8 +382,8 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     };
 
     const workTypesFor = (pid) =>
-        detailFor(pid)?.sector_detail?.sector_work_types || [];
-
+        detailFor(pid)?.sector_detail?.stage_work_types || [];
+    // console.log(workTypesFor,)
     // ── row helpers ────────────────────────────────────────────────────────────
 
     const updateRow = useCallback((id, field, value) => {
@@ -507,7 +507,10 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                         onClick={(e) => e.stopPropagation()}
                     >
 
-                        {/* header */}
+
+
+
+
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-blue-50 rounded-xl">
@@ -745,7 +748,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             <span className="text-xs font-semibold text-gray-500">Total Duration:</span>
                                         </td>
                                         <td className="px-2 pt-2 pb-1 text-center">
-                                            <span className={`text-xs font-bold px-2 py-1 rounded-full
+                                            <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap
 ${totalHours > 9
                                                     ? "bg-red-50 text-red-700"
                                                     : totalHours > 0

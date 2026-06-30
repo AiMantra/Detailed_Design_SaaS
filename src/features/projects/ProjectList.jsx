@@ -717,6 +717,7 @@ const ProjectList = () => {
     document_type: "ref_doc",
     client_remarks: "",
     raised_amount: "",
+    extra_amount: "",
     received_amount: "",
   });
 
@@ -854,23 +855,27 @@ const ProjectList = () => {
     }
   }, [dispatch, expandedProjectDetails, loadingProjectDetails]);
 
-  const handleSubmissionapproveStatus = (status, sub, value, amount, projectId, url) => {
+  const handleSubmissionapproveStatus = (status, sub, value, amount, extraPayment, projectId, url) => {
     setShowProofModal(true);
+    console.log("Proof Data Before Setting:", parseFloat(amount) + parseFloat(extraPayment));
     setProofData({
       ...proofData,
       stage_type: status,
       stage: status,
       to_status: value,
-      raised_amount: amount,
-      received_amount: amount,
+      raised_amount: parseFloat(amount),
+      received_amount: parseFloat(amount),
+      extra_amount: parseFloat(extraPayment),
       subactivity: sub.id,
       projectId: projectId,
       url: url,
       created_by: user?.emp_code || "",
 
     })
-  };
 
+
+  };
+  console.log("Proof Data After Setting:", proofData);
   const handleSubmitProof = async () => {
     setLoder(true);
     const response = await dispatch(tlSubactivitySubmitwithProof(proofData)).unwrap();
@@ -893,6 +898,7 @@ const ProjectList = () => {
       received_amount: "",
       stage: '',
       created_by: '',
+      extra_amount: '',
     });
     setShowProofModal(false);
   };
@@ -1154,7 +1160,7 @@ const ProjectList = () => {
                 </div>
               )}
 
-              {/* Work Type Dropdown - Dynamic from sector_detail.sector_work_types */}
+              {/* Work Type Dropdown - Dynamic from sector_detail.stage_work_types */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                   Work Type <span className="text-red-500">*</span>
@@ -1168,9 +1174,9 @@ const ProjectList = () => {
                   required
                 >
                   <option value="">Select work type</option>
-                  {/* You need to get the current project's sector_detail.sector_work_types */}
+                  {/* You need to get the current project's sector_detail.stage_work_types */}
                   {(() => {
-                    const workTypes = selectedTaskfortimelog.sector_work_types || [];
+                    const workTypes = selectedTaskfortimelog.stage_work_types || [];
                     if (workTypes.length > 0) {
                       return workTypes.map((workType) => (
                         <option key={workType.id} value={workType.id}>
@@ -1260,7 +1266,8 @@ const ProjectList = () => {
                 client_remarks: "",
                 raised_amount: "",
                 received_amount: "",
-              })
+                extra_amount: "",
+              });
             }}
           >
             <motion.div
@@ -1270,15 +1277,19 @@ const ProjectList = () => {
               className="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl border"
               onClick={(e) => e.stopPropagation()}
             >
-
               {/* HEADER */}
               <div className="flex justify-between items-center mb-5">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  📎 {proofData?.to_status === "Raised" ? 'Raise' : 'Receive'} Invoice
+                  📎{" "}
+                  {proofData?.to_status === "Raised"
+                    ? "Raised Work Proof"
+                    : proofData?.to_status === "Received"
+                      ? "Received Work Proof"
+                      : "Submit Work Proof"}
                 </h3>
                 <button
                   onClick={() => {
-                    setShowProofModal(false)
+                    setShowProofModal(false);
                     setProofData({
                       stage_type: "",
                       documents: [],
@@ -1292,8 +1303,9 @@ const ProjectList = () => {
                       document_type: "ref_doc",
                       client_remarks: "",
                       received_amount: "",
-                      raised_amount: ""
-                    })
+                      raised_amount: "",
+                      extra_amount: "",
+                    });
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
                 >
@@ -1302,6 +1314,14 @@ const ProjectList = () => {
               </div>
 
               {/* UPLOAD AREA */}
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Upload Documents{" "}
+                  {proofData?.to_status === "Raised" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </label>
+              </div>
               <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-blue-400 transition">
                 <input
                   type="file"
@@ -1317,9 +1337,7 @@ const ProjectList = () => {
                 <p className="text-sm text-gray-500">
                   <span className="text-blue-600 font-medium">browse</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  JPG, PNG, PDF, DOC
-                </p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF, DOC</p>
               </label>
 
               {/* FILE PREVIEW GRID */}
@@ -1350,7 +1368,9 @@ const ProjectList = () => {
                         onClick={() =>
                           setProofData({
                             ...proofData,
-                            documents: proofData.documents.filter((_, index) => index !== i),
+                            documents: proofData.documents.filter(
+                              (_, index) => index !== i
+                            ),
                           })
                         }
                         className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
@@ -1366,11 +1386,14 @@ const ProjectList = () => {
               {proofData.to_status !== "Rejected" && (
                 <div className="mt-5">
                   <label className="text-sm font-medium text-gray-700 block mb-1">
-                    Message
+                    Message{" "}
+                    {proofData?.to_status === "Raised" && (
+                      <span className="text-red-500">*</span>
+                    )}
                   </label>
                   <textarea
-                    defaultValue={proofData.remarks}
-                    onBlur={(e) =>
+                    value={proofData.remarks}
+                    onChange={(e) =>
                       setProofData({ ...proofData, remarks: e.target.value })
                     }
                     placeholder="Describe your proof..."
@@ -1394,10 +1417,14 @@ const ProjectList = () => {
                       }
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
                     >
-                      <option value="" disabled>Select Rejection Type</option>
+                      <option value="" disabled>
+                        Select Rejection Type
+                      </option>
                       <option value="Quality Issue">Quality Issue</option>
                       <option value="Incomplete Work">Incomplete Work</option>
-                      <option value="Client Requirement Mismatch">Client Requirement Mismatch</option>
+                      <option value="Client Requirement Mismatch">
+                        Client Requirement Mismatch
+                      </option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
@@ -1407,8 +1434,8 @@ const ProjectList = () => {
                       Rejection Reason <span className="text-red-500">*</span>
                     </label>
                     <textarea
-                      defaultValue={proofData.rejection_reason || ""}
-                      onBlur={(e) =>
+                      value={proofData.rejection_reason || ""}
+                      onChange={(e) =>
                         setProofData({ ...proofData, rejection_reason: e.target.value })
                       }
                       placeholder="Enter reason for rejection..."
@@ -1429,12 +1456,17 @@ const ProjectList = () => {
                         onChange={(e) =>
                           setProofData({
                             ...proofData,
-                            rejection_proof: [...(proofData.rejection_proof || []), ...Array.from(e.target.files)],
+                            rejection_proof: [
+                              ...(proofData.rejection_proof || []),
+                              ...Array.from(e.target.files),
+                            ],
                           })
                         }
                       />
                       <p className="text-sm text-gray-500">
-                        <span className="text-red-600 font-medium">browse rejection proofs</span>
+                        <span className="text-red-600 font-medium">
+                          browse rejection proofs
+                        </span>
                       </p>
                     </label>
 
@@ -1464,7 +1496,9 @@ const ProjectList = () => {
                               onClick={() =>
                                 setProofData({
                                   ...proofData,
-                                  rejection_proof: proofData.rejection_proof.filter((_, index) => index !== i),
+                                  rejection_proof: proofData.rejection_proof.filter(
+                                    (_, index) => index !== i
+                                  ),
                                 })
                               }
                               className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
@@ -1481,19 +1515,27 @@ const ProjectList = () => {
 
               <div className="mt-5 relative">
                 <label className="text-sm font-medium text-gray-700 block mb-1">
-                  {proofData?.to_status === "Raised" ? "Raised Amount" : "Received Amount"}
+                  {proofData?.to_status === "Raised"
+                    ? "Raised Amount"
+                    : "Received Amount"}
                 </label>
-
                 <input
                   type="number"
-                  value={proofData?.to_status === "Raised" ? proofData.raised_amount : proofData.received_amount}
+                  value={
+                    proofData?.to_status === "Raised"
+                      ? proofData.raised_amount
+                      : proofData.received_amount
+                  }
                   onChange={(e) =>
                     setProofData({
                       ...proofData,
-                      [proofData?.to_status === "Raised" ? "raised_amount" : "received_amount"]: e.target.value,
+                      [proofData?.to_status === "Raised"
+                        ? "raised_amount"
+                        : "received_amount"]: e.target.value,
                     })
                   }
-                  placeholder={`Enter the ${proofData?.to_status === "Raised" ? "raised" : "received"} amount...`}
+                  placeholder={`Enter the ${proofData?.to_status === "Raised" ? "raised" : "received"
+                    } amount...`}
                   className="w-full px-3 py-2 pr-14 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
 
@@ -1520,8 +1562,8 @@ const ProjectList = () => {
                       document_type: "ref_doc",
                       client_remarks: "",
                       raised_amount: "",
-                      received_amount: ""
-                    })
+                      received_amount: "",
+                    });
                   }}
                   className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
                 >
@@ -1530,13 +1572,16 @@ const ProjectList = () => {
 
                 <button
                   onClick={handleSubmitProof}
-                  disabled={!proofData?.documents?.length || loder}
+                  disabled={
+                    loder ||
+                    !proofData?.documents?.length ||
+                    (proofData?.to_status === "Raised" && !proofData?.remarks?.trim())
+                  }
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loder ? "Submitting..." : "Submit Proof"}
                 </button>
               </div>
-
             </motion.div>
           </motion.div>
         )}
@@ -2218,6 +2263,8 @@ const ProjectList = () => {
                 <p className="text-3xl font-bold">{ProjectListStats.completed}</p>
                 <p className="text-sm opacity-90">Completed</p>
               </motion.div>
+
+              {/* <hr /> */}
 
               {/* Critical - Warning/Urgent */}
               <motion.div
@@ -3317,10 +3364,10 @@ const ProjectList = () => {
                                                           </div>
                                                           <div className="mt-2">
 
-                                                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {/* <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                                                              {/* Physical Progress */}
-                                                              {/* <div>
+                                                            
+                                                              <div>
                                                                 <div className="flex justify-between text-xs mb-1">
                                                                   <span className="text-gray-500">Physical Progress</span>
                                                                   <span className="font-medium text-green-600">
@@ -3336,10 +3383,10 @@ const ProjectList = () => {
                                                                     className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
                                                                   />
                                                                 </div>
-                                                              </div>  */}
+                                                              </div>
 
-                                                              {/* Financial Progress */}
-                                                              {/* <div>
+                                                              
+                                                              <div>
                                                                 <div className="flex justify-between text-xs mb-1">
                                                                   <span className="text-gray-500">Financial Progress</span>
                                                                   <span className="font-medium text-blue-600">
@@ -3355,9 +3402,9 @@ const ProjectList = () => {
                                                                     className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                                                                   />
                                                                 </div>
-                                                              </div> */}
+                                                              </div>
 
-                                                            </div>
+                                                            </div> */}
 
 
                                                           </div>
@@ -3555,7 +3602,7 @@ const ProjectList = () => {
                                                                                                 subactivity_name: sub.subactivity_name,
                                                                                                 stage_name: stage.name,  // ✅ ADDED stage_name for display
                                                                                                 project_name: project.short_name || project.project_name,
-                                                                                                sector_work_types: expandedProjectDetails[projectId]?.sector_detail?.sector_work_types || []
+                                                                                                stage_work_types: expandedProjectDetails[projectId]?.sector_detail?.stage_work_types || []
                                                                                               });
                                                                                               setTimeLogData({
                                                                                                 date: new Date().toISOString().split("T")[0],
@@ -3574,7 +3621,7 @@ const ProjectList = () => {
                                                                                       </tr>
 
                                                                                       {/* 🟡 Expanded Time Logs Row (Same for everyone) - Only show on first stage or as a separate row */}
-                                                                                      {expandedRow === sub.id && sIdx === 0 && (
+                                                                                      {/* {expandedRow === sub.id && sIdx === 0 && (
                                                                                         <tr className="bg-gray-50/80">
                                                                                           <td colSpan="9" className="px-4 py-4 w-full">
                                                                                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -3625,7 +3672,7 @@ const ProjectList = () => {
                                                                                             </div>
                                                                                           </td>
                                                                                         </tr>
-                                                                                      )}
+                                                                                      )} */}
                                                                                     </Fragment>
                                                                                   );
                                                                                 })
@@ -3660,7 +3707,6 @@ const ProjectList = () => {
                                                                                 sub.stages.map((stage, sIdx) => {
                                                                                   const rowSpanCount = Math.max(1, sub.stages?.length || 0);
                                                                                   const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
-
                                                                                   const stageRaised = (stage.payment_logs || [])
                                                                                     .filter(log => log.to_status === "Raised")
                                                                                     .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
@@ -3669,8 +3715,7 @@ const ProjectList = () => {
                                                                                     .filter(log => log.to_status === "Received")
                                                                                     .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
 
-                                                                                  const stageRemaining = stageAmount - stageReceived;
-
+                                                                                  const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
                                                                                   const workStatus = stage.work_status || "Pending";
                                                                                   const paymentStatus = stage.payment_status || "Waiting";
 
@@ -3708,7 +3753,6 @@ const ProjectList = () => {
                                                                                               <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
                                                                                             )}
                                                                                           </td>
-
                                                                                           <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
                                                                                             {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                           </td>
@@ -3721,24 +3765,32 @@ const ProjectList = () => {
                                                                                           <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                             {formatNumber(sub.covered_area)}
                                                                                           </td>
+
+
+                                                                                          {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
+                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                            <button
+                                                                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                                                                                              onClick={(e) => handleViewSubActivity(sub.id, e)}
+                                                                                              title="View Details"
+                                                                                            >
+                                                                                              <span className='flex flex-row items-center justify-center gap-1'>
+                                                                                                <Eye size={16} />
+                                                                                              </span>
+                                                                                            </button>
+                                                                                          </td>
                                                                                         </>
                                                                                       )}
 
-                                                                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS */}
-                                                                                      <td className="text-center align-middle border-r border-gray-100">
-                                                                                        <button
-                                                                                          className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
-                                                                                          onClick={(e) => handleViewSubActivity(sub.id, e)}
-                                                                                          title="View Details"
-                                                                                        >
-                                                                                          <span className='flex flex-row items-center justify-center gap-1'>
-                                                                                            <Eye size={16} />
-                                                                                          </span>
-                                                                                        </button>
-                                                                                      </td>
+                                                                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
                                                                                       <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
                                                                                       <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
-                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L</td>
+                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
+
+
+
+
+
 
                                                                                       {/* Raised */}
                                                                                       <td className="text-center">
@@ -3833,6 +3885,7 @@ const ProjectList = () => {
                                                                                                 sub,
                                                                                                 e.target.value,
                                                                                                 stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
+                                                                                                stage.extra_payment_amount || 0,
                                                                                                 projectId,
                                                                                                 'payment'
                                                                                               );

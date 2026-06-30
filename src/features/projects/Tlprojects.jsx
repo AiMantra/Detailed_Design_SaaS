@@ -1622,210 +1622,240 @@ const TlProjectList = () => {
                                                     Work Cycles & Stages
                                                 </h4>
 
-                                                {subActivityModalData.cycles?.map((cycle, cycleIdx) => (
-                                                    <div
-                                                        key={cycleIdx}
-                                                        className="bg-white border rounded-xl shadow-sm overflow-hidden"
-                                                    >
-                                                        {/* Cycle Header */}
-                                                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                                                            <h5 className="font-bold text-gray-700 flex items-center gap-2">
-                                                                <RefreshCw
-                                                                    size={16}
-                                                                    className={
-                                                                        cycle.cycle_number === 0
-                                                                            ? "text-green-500"
-                                                                            : "text-orange-500"
-                                                                    }
-                                                                />
-                                                                {cycle.cycle_name}
-                                                                {cycle.cycle_number > 0 && cycle.rejection_details && (
-                                                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                                                                        Rework
+                                                {subActivityModalData.cycles?.map((cycle, cycleIdx) => {
+
+                                                    // 🟢 NEW: Match the cycle_number to rework_details to fetch the name
+                                                    const reworkInfo = subActivityModalData.rework_details?.find(
+                                                        (rework) => rework.cycle_number === cycle.cycle_number
+                                                    );
+                                                    const rejectedByName = reworkInfo?.rejected_by_name;
+
+                                                    return (
+                                                        <div
+                                                            key={cycleIdx}
+                                                            className="bg-white border rounded-xl shadow-sm overflow-hidden"
+                                                        >
+                                                            {/* Cycle Header */}
+                                                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b flex justify-between items-center">
+                                                                <h5 className="font-bold text-gray-700 flex items-center gap-2">
+                                                                    <RefreshCw
+                                                                        size={16}
+                                                                        className={
+                                                                            cycle.cycle_number === 0
+                                                                                ? "text-green-500"
+                                                                                : "text-orange-500"
+                                                                        }
+                                                                    />
+                                                                    {cycle.cycle_name}
+                                                                    {cycle.cycle_number > 0 && cycle.rejection_details && (
+                                                                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                                                                            Rework
+                                                                        </span>
+                                                                    )}
+                                                                </h5>
+                                                                {cycle.cycle_total_time && (
+                                                                    <span className="text-xs font-semibold bg-white border border-gray-200 px-2 py-1 rounded-md text-gray-600 shadow-sm">
+                                                                        Total: {formatDuration(cycle.cycle_total_time)}
                                                                     </span>
                                                                 )}
-                                                            </h5>
-                                                            {cycle.cycle_total_time && (
-                                                                <span className="text-xs font-semibold bg-white border border-gray-200 px-2 py-1 rounded-md text-gray-600 shadow-sm">
-                                                                    Total: {formatDuration(cycle.cycle_total_time)}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Rejection Details (if any) */}
-                                                        {cycle.rejection_details && (
-                                                            <div className="bg-red-50 p-4 border-b border-red-100">
-                                                                <p className="text-sm font-semibold text-red-700 flex items-center gap-2 mb-1">
-                                                                    <XCircle size={16} /> Rejection Details
-                                                                </p>
-                                                                <p className="text-sm text-red-600">
-                                                                    <span className="font-semibold">Reason:</span>{" "}
-                                                                    {cycle.rejection_details.reason}
-                                                                </p>
-                                                                <p className="text-xs text-red-500 mt-1">
-                                                                    Rejected by {cycle.rejection_details.rejected_by} on{" "}
-                                                                    {new Date(cycle.rejection_details.rejected_at).toLocaleString("en-IN")}
-                                                                </p>
                                                             </div>
-                                                        )}
 
-                                                        {/* Stages within Cycle */}
-                                                        <div className="divide-y divide-gray-100">
-                                                            {cycle.stages?.map((stage, stageIdx) => {
-                                                                // Find current work status (the one with logs)
-                                                                const currentWorkStatus = stage.work_status_logs?.find(
-                                                                    (status) => status.total_time_spent !== "00:00:00" && status.logs?.length > 0
-                                                                );
+                                                            {/* Rejection Details (if any) */}
+                                                            {/* Rejection Details (if any) */}
+                                                            {cycle.rejection_details && (
+                                                                <div className="bg-red-50 p-4 border-b border-red-100">
+                                                                    <p className="text-sm font-semibold text-red-700 flex items-center gap-2 mb-3">
+                                                                        <XCircle size={16} /> Rejection Details
+                                                                    </p>
 
-                                                                // Get all statuses that have logs
-                                                                const statusesWithLogs = stage.work_status_logs?.filter(
-                                                                    (status) => status.logs?.length > 0
-                                                                ) || [];
+                                                                    {/* Added Grid for Reason, Type, and Extra Amount */}
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                                                                        <p className="text-sm text-red-600">
+                                                                            <span className="font-semibold block text-xs uppercase tracking-wider opacity-80 mb-0.5">Reason</span>
+                                                                            {cycle.rejection_details.reason || "Not specified"}
+                                                                        </p>
 
-                                                                // If no logs at all for this stage, skip rendering
-                                                                if (statusesWithLogs.length === 0 && (!currentWorkStatus || currentWorkStatus.logs?.length === 0)) {
-                                                                    return null;
-                                                                }
+                                                                        <p className="text-sm text-red-600">
+                                                                            <span className="font-semibold block text-xs uppercase tracking-wider opacity-80 mb-0.5">Type</span>
+                                                                            <span className="capitalize">{cycle.rejection_details.type?.replace('_', ' ')}</span>
+                                                                        </p>
 
-                                                                return (
-                                                                    <div key={stage.stage_id || stageIdx} className="p-4">
-                                                                        {/* Stage Header */}
-                                                                        <div className="flex justify-between items-center mb-4">
-                                                                            <div>
-                                                                                <h6 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                                                                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                                                                        Stage
-                                                                                    </span>
-                                                                                    {stage.stage_name}
-                                                                                </h6>
-                                                                                {stage.sorting_var !== undefined && (
-                                                                                    <p className="text-xs text-gray-400 mt-1">
-                                                                                        Order: {stage.sorting_var}
-                                                                                    </p>
-                                                                                )}
+                                                                        <p className="text-sm text-red-600">
+                                                                            <span className="font-semibold block text-xs uppercase tracking-wider opacity-80 mb-0.5">Extra Amount</span>
+                                                                            {cycle.rejection_details.extra_amount?.toFixed(2) || "0.00"} %
+                                                                        </p>
+                                                                    </div>
+
+                                                                    <p className="text-xs text-red-500 pt-2 border-t border-red-200/60">
+                                                                        Rejected by {" "}
+                                                                        <span className="font-semibold">
+                                                                            {rejectedByName
+                                                                                ? `${rejectedByName} (${cycle.rejection_details.rejected_by})`
+                                                                                : cycle.rejection_details.rejected_by}
+                                                                        </span>{" "}
+                                                                        on {new Date(cycle.rejection_details.rejected_at).toLocaleString("en-IN")}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Stages within Cycle */}
+                                                            <div className="divide-y divide-gray-100">
+                                                                {cycle.stages?.map((stage, stageIdx) => {
+                                                                    // Find current work status (the one with logs)
+                                                                    const currentWorkStatus = stage.work_status_logs?.find(
+                                                                        (status) => status.total_time_spent !== "00:00:00" && status.logs?.length > 0
+                                                                    );
+
+                                                                    // Get all statuses that have logs
+                                                                    const statusesWithLogs = stage.work_status_logs?.filter(
+                                                                        (status) => status.logs?.length > 0
+                                                                    ) || [];
+
+                                                                    // If no logs at all for this stage, skip rendering
+                                                                    if (statusesWithLogs.length === 0 && (!currentWorkStatus || currentWorkStatus.logs?.length === 0)) {
+                                                                        return null;
+                                                                    }
+
+                                                                    return (
+                                                                        <div key={stage.stage_id || stageIdx} className="p-4">
+                                                                            {/* Stage Header */}
+                                                                            <div className="flex justify-between items-center mb-4">
+                                                                                <div>
+                                                                                    <h6 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                                                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                                                                                            Stage
+                                                                                        </span>
+                                                                                        {stage.stage_name}
+                                                                                    </h6>
+                                                                                    {stage.sorting_var !== undefined && (
+                                                                                        <p className="text-xs text-gray-400 mt-1">
+                                                                                            Order: {stage.sorting_var}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                                <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                                                                    Total: {formatDuration(stage.total_time_spent || "00:00:00")}
+                                                                                </span>
                                                                             </div>
-                                                                            <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                                                                Total: {formatDuration(stage.total_time_spent || "00:00:00")}
-                                                                            </span>
-                                                                        </div>
 
-                                                                        {/* Status-wise logs for this stage */}
-                                                                        <div className="space-y-4">
-                                                                            {statusesWithLogs.map((statusLog, statusIdx) => {
-                                                                                // Get status color
-                                                                                const getStatusColor = (status) => {
-                                                                                    switch (status) {
-                                                                                        case "Inprogress":
-                                                                                            return "bg-yellow-100 text-yellow-700 border-yellow-200";
-                                                                                        case "Submitted":
-                                                                                            return "bg-green-100 text-green-700 border-green-200";
-                                                                                        case "Rejected":
-                                                                                            return "bg-red-100 text-red-700 border-red-200";
-                                                                                        case "Approved":
-                                                                                            return "bg-blue-100 text-blue-700 border-blue-200";
-                                                                                        case "Completed":
-                                                                                            return "bg-purple-100 text-purple-700 border-purple-200";
-                                                                                        default:
-                                                                                            return "bg-gray-100 text-gray-600 border-gray-200";
-                                                                                    }
-                                                                                };
+                                                                            {/* Status-wise logs for this stage */}
+                                                                            <div className="space-y-4">
+                                                                                {statusesWithLogs.map((statusLog, statusIdx) => {
+                                                                                    // Get status color
+                                                                                    const getStatusColor = (status) => {
+                                                                                        switch (status) {
+                                                                                            case "Inprogress":
+                                                                                                return "bg-yellow-100 text-yellow-700 border-yellow-200";
+                                                                                            case "Submitted":
+                                                                                                return "bg-green-100 text-green-700 border-green-200";
+                                                                                            case "Rejected":
+                                                                                                return "bg-red-100 text-red-700 border-red-200";
+                                                                                            case "Approved":
+                                                                                                return "bg-blue-100 text-blue-700 border-blue-200";
+                                                                                            case "Completed":
+                                                                                                return "bg-purple-100 text-purple-700 border-purple-200";
+                                                                                            default:
+                                                                                                return "bg-gray-100 text-gray-600 border-gray-200";
+                                                                                        }
+                                                                                    };
 
-                                                                                return (
-                                                                                    <div key={statusIdx} className="ml-4">
-                                                                                        {/* Status Badge */}
-                                                                                        <div className="flex items-center justify-between mb-3">
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <div className={`text-xs font-semibold px-2 py-1 rounded-full border ${getStatusColor(statusLog.work_status)}`}>
-                                                                                                    {statusLog.work_status}
+                                                                                    return (
+                                                                                        <div key={statusIdx} className="ml-4">
+                                                                                            {/* Status Badge */}
+                                                                                            <div className="flex items-center justify-between mb-3">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={`text-xs font-semibold px-2 py-1 rounded-full border ${getStatusColor(statusLog.work_status)}`}>
+                                                                                                        {statusLog.work_status}
+                                                                                                    </div>
+                                                                                                    {statusLog.total_time_spent !== "00:00:00" && (
+                                                                                                        <span className="text-xs text-gray-500">
+                                                                                                            ({formatDuration(statusLog.total_time_spent)})
+                                                                                                        </span>
+                                                                                                    )}
                                                                                                 </div>
-                                                                                                {statusLog.total_time_spent !== "00:00:00" && (
-                                                                                                    <span className="text-xs text-gray-500">
-                                                                                                        ({formatDuration(statusLog.total_time_spent)})
-                                                                                                    </span>
-                                                                                                )}
                                                                                             </div>
-                                                                                        </div>
 
-                                                                                        {/* Logs for this status */}
-                                                                                        {statusLog.logs?.length > 0 ? (
-                                                                                            <div className="space-y-3 pl-4 border-l-2 border-gray-200">
-                                                                                                {statusLog.logs.map((log, logIdx) => (
-                                                                                                    <div
-                                                                                                        key={logIdx}
-                                                                                                        className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:shadow-sm transition-shadow"
-                                                                                                    >
-                                                                                                        <div className="flex justify-between items-start gap-4">
-                                                                                                            <div className="flex-1">
-                                                                                                                {/* User Info */}
-                                                                                                                <div className="flex items-center gap-2 mb-2">
-                                                                                                                    {log.user_name && (
-                                                                                                                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                                                                                                                            👤 {log.user_name}
-                                                                                                                        </span>
-                                                                                                                    )}
-                                                                                                                    {log.work_type && (
-                                                                                                                        <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                                                                                                                            📋 {log.work_type}
-                                                                                                                        </span>
-                                                                                                                    )}
-                                                                                                                    {log.date && (
-                                                                                                                        <span className="text-xs text-gray-400 flex items-center gap-1">
-                                                                                                                            <Calendar size={10} />
-                                                                                                                            {new Date(log.date).toLocaleDateString("en-IN")}
-                                                                                                                        </span>
+                                                                                            {/* Logs for this status */}
+                                                                                            {statusLog.logs?.length > 0 ? (
+                                                                                                <div className="space-y-3 pl-4 border-l-2 border-gray-200">
+                                                                                                    {statusLog.logs.map((log, logIdx) => (
+                                                                                                        <div
+                                                                                                            key={logIdx}
+                                                                                                            className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:shadow-sm transition-shadow"
+                                                                                                        >
+                                                                                                            <div className="flex justify-between items-start gap-4">
+                                                                                                                <div className="flex-1">
+                                                                                                                    {/* User Info */}
+                                                                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                                                                        {log.user_name && (
+                                                                                                                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                                                                                                                👤 {log.user_name}
+                                                                                                                            </span>
+                                                                                                                        )}
+                                                                                                                        {log.work_type && (
+                                                                                                                            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                                                                                                                                📋 {log.work_type}
+                                                                                                                            </span>
+                                                                                                                        )}
+                                                                                                                        {log.date && (
+                                                                                                                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                                                                                                                                <Calendar size={10} />
+                                                                                                                                {new Date(log.date).toLocaleDateString("en-IN")}
+                                                                                                                            </span>
+                                                                                                                        )}
+                                                                                                                    </div>
+
+                                                                                                                    {/* Description */}
+                                                                                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                                                                                        {log.description || (
+                                                                                                                            <span className="italic text-gray-400">No description</span>
+                                                                                                                        )}
+                                                                                                                    </p>
+
+                                                                                                                    {/* Time Range if available */}
+                                                                                                                    {(log.start_time || log.end_time) && (
+                                                                                                                        <p className="text-xs text-gray-400 mt-1">
+                                                                                                                            ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString() : "N/A"}
+                                                                                                                            {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString()}`}
+                                                                                                                        </p>
                                                                                                                     )}
                                                                                                                 </div>
 
-                                                                                                                {/* Description */}
-                                                                                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                                                                                    {log.description || (
-                                                                                                                        <span className="italic text-gray-400">No description</span>
-                                                                                                                    )}
-                                                                                                                </p>
-
-                                                                                                                {/* Time Range if available */}
-                                                                                                                {(log.start_time || log.end_time) && (
-                                                                                                                    <p className="text-xs text-gray-400 mt-1">
-                                                                                                                        ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString() : "N/A"}
-                                                                                                                        {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString()}`}
-                                                                                                                    </p>
-                                                                                                                )}
-                                                                                                            </div>
-
-                                                                                                            {/* Time Spent */}
-                                                                                                            <div className="text-right">
-                                                                                                                <span className="text-sm font-mono font-bold text-green-600 bg-green-50 px-2 py-1 rounded whitespace-nowrap">
-                                                                                                                    {formatDuration(log.time_spent)}
-                                                                                                                </span>
+                                                                                                                {/* Time Spent */}
+                                                                                                                <div className="text-right">
+                                                                                                                    <span className="text-sm font-mono font-bold text-green-600 bg-green-50 px-2 py-1 rounded whitespace-nowrap">
+                                                                                                                        {formatDuration(log.time_spent)}
+                                                                                                                    </span>
+                                                                                                                </div>
                                                                                                             </div>
                                                                                                         </div>
-                                                                                                    </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <div className="pl-4 text-center text-sm text-gray-400 py-2">
-                                                                                                No logs for {statusLog.work_status} status
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </div>
-                                                                                );
-                                                                            })}
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                <div className="pl-4 text-center text-sm text-gray-400 py-2">
+                                                                                                    No logs for {statusLog.work_status} status
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                );
-                                                            })}
+                                                                    );
+                                                                })}
 
-                                                            {/* If no stages have logs */}
-                                                            {(!cycle.stages || cycle.stages.filter(s =>
-                                                                s.work_status_logs?.some(w => w.logs?.length > 0)
-                                                            ).length === 0) && (
-                                                                    <div className="p-8 text-center text-sm text-gray-400">
-                                                                        No work logs recorded for this cycle
-                                                                    </div>
-                                                                )}
+                                                                {/* If no stages have logs */}
+                                                                {(!cycle.stages || cycle.stages.filter(s =>
+                                                                    s.work_status_logs?.some(w => w.logs?.length > 0)
+                                                                ).length === 0) && (
+                                                                        <div className="p-8 text-center text-sm text-gray-400">
+                                                                            No work logs recorded for this cycle
+                                                                        </div>
+                                                                    )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
 
                                                 {(!subActivityModalData.cycles || subActivityModalData.cycles.length === 0) && (
                                                     <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl">
@@ -2442,6 +2472,7 @@ const TlProjectList = () => {
                                                                                                                                                 <th className="px-2 py-3 text-center">Qty</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Area</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">View</th>
+                                                                                                                                                <th className="px-2 py-3 text-center">View</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Stage</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">%</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Amount ₹</th>
@@ -2492,11 +2523,23 @@ const TlProjectList = () => {
                                                                                                                                                                 sub.stages.map((stage, sIdx) => {
                                                                                                                                                                     // Stage Calculations
                                                                                                                                                                     const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
+                                                                                                                                                                    const raisedLogs = (stage.payment_logs || []).filter(
+                                                                                                                                                                        (log) => log.to_status === "Raised"
+                                                                                                                                                                    );
 
+                                                                                                                                                                    console.log("Raised Logs:", raisedLogs);
+
+                                                                                                                                                                    const stageRaised1 = raisedLogs.reduce(
+                                                                                                                                                                        (sum, item) => sum + (parseFloat(item.raised_amount) || 0),
+                                                                                                                                                                        0
+                                                                                                                                                                    );
+
+                                                                                                                                                                    console.log("Stage Raised Amount:", stageRaised1);
                                                                                                                                                                     // Extract Raised/Received directly from the stage's payment_logs if available
-                                                                                                                                                                    const stageRaised = (stage.payment_logs || [])
+                                                                                                                                                                    const stageRaised = ((stage.payment_logs || [])
                                                                                                                                                                         .filter(log => log.to_status === "Raised")
-                                                                                                                                                                        .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
+                                                                                                                                                                        .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0))
+                                                                                                                                                                    // + (parseFloat(stage.extra_payment_amount) || 0);
 
                                                                                                                                                                     const stageReceived = (stage.payment_logs || [])
                                                                                                                                                                         .filter(log => log.to_status === "Received")
@@ -2554,24 +2597,25 @@ const TlProjectList = () => {
                                                                                                                                                                                     <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                                                                                                                         {formatNumber(sub.covered_area)}
                                                                                                                                                                                     </td>
+                                                                                                                                                                                    <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                                                                                                        <button
+                                                                                                                                                                                            className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                                                                                                                                                                                            onClick={(e) => handleViewSubActivity(sub.id, e)}
+                                                                                                                                                                                            title="View Details"
+                                                                                                                                                                                        >
+                                                                                                                                                                                            <span className='flex flex-row items-center justify-center gap-1'>
+                                                                                                                                                                                                <Eye size={16} />
+                                                                                                                                                                                            </span>
+                                                                                                                                                                                        </button>
+                                                                                                                                                                                    </td>
                                                                                                                                                                                 </>
                                                                                                                                                                             )}
 
                                                                                                                                                                             {/* 🔵 Dynamic Stage Info Columns */}
-                                                                                                                                                                            <td className="text-center align-middle border-r border-gray-100">
-                                                                                                                                                                                <button
-                                                                                                                                                                                    className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
-                                                                                                                                                                                    onClick={(e) => handleViewSubActivity(sub.id, e)}
-                                                                                                                                                                                    title="View Details"
-                                                                                                                                                                                >
-                                                                                                                                                                                    <span className='flex flex-row items-center justify-center gap-1'>
-                                                                                                                                                                                        <Eye size={16} />
-                                                                                                                                                                                    </span>
-                                                                                                                                                                                </button>
-                                                                                                                                                                            </td>
+
                                                                                                                                                                             <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
                                                                                                                                                                             <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
-                                                                                                                                                                            <td className="text-center">₹ {stageAmount.toFixed(2)} L</td>
+                                                                                                                                                                            <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)}` : ''} L</td>
 
                                                                                                                                                                             {/* Raised */}
                                                                                                                                                                             <td className="text-center">
@@ -2628,7 +2672,7 @@ const TlProjectList = () => {
 
                                                                                                                                                                             {/* Action (Submit Button) */}
                                                                                                                                                                             {/* Action (Approve/Reject Dropdown for Submitted tasks, Submit button for others) */}
-                                                                                                                                                                            <td className="text-center">
+                                                                                                                                                                            {/* <td className="text-center">
                                                                                                                                                                                 {!isUser && (
                                                                                                                                                                                     workStatus === "Submitted" ? (
                                                                                                                                                                                         // Show Approve/Reject dropdown when status is Submitted
@@ -2680,6 +2724,76 @@ const TlProjectList = () => {
                                                                                                                                                                                             }}
                                                                                                                                                                                             disabled={workStatus === "Approved" || workStatus === "Completed"}
                                                                                                                                                                                             className={`text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Approved" || workStatus === "Completed"
+                                                                                                                                                                                                ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
+                                                                                                                                                                                                : workStatus === "Rejected"
+                                                                                                                                                                                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                                                                                                                                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                                                                                                                                }`}
+                                                                                                                                                                                            title={workStatus === "Rejected" ? "Resubmit with corrections" : "Submit Proof"}
+                                                                                                                                                                                        >
+                                                                                                                                                                                            <CheckCircle size={12} />
+                                                                                                                                                                                            {workStatus === "Rejected" ? "Resubmit" : "Submit"}
+                                                                                                                                                                                        </button>
+                                                                                                                                                                                    )
+                                                                                                                                                                                )}
+                                                                                                                                                                            </td> */}
+
+                                                                                                                                                                            {/* Action (Approve/Reject Dropdown for Submitted/Approved tasks, Submit button for others) */}
+                                                                                                                                                                            <td className="text-center">
+                                                                                                                                                                                {!isUser && (
+                                                                                                                                                                                    (workStatus === "Submitted" || workStatus === "Approved") ? (
+                                                                                                                                                                                        // Show Approve/Reject dropdown when status is Submitted OR Approved
+                                                                                                                                                                                        <div className="relative inline-block">
+                                                                                                                                                                                            <select
+                                                                                                                                                                                                onChange={(e) => {
+                                                                                                                                                                                                    e.stopPropagation();
+                                                                                                                                                                                                    const action = e.target.value;
+                                                                                                                                                                                                    if (action === "Approve") {
+                                                                                                                                                                                                        setShowProofModal(true);
+                                                                                                                                                                                                        setProofData({
+                                                                                                                                                                                                            ...proofData,
+                                                                                                                                                                                                            stage: stage.id,
+                                                                                                                                                                                                            to_status: "Approved",
+                                                                                                                                                                                                            projectId: projectId
+                                                                                                                                                                                                        });
+                                                                                                                                                                                                    } else if (action === "Reject") {
+                                                                                                                                                                                                        setShowProofModal(true);
+                                                                                                                                                                                                        setProofData({
+                                                                                                                                                                                                            ...proofData,
+                                                                                                                                                                                                            stage: stage.id,
+                                                                                                                                                                                                            to_status: "Rejected",
+                                                                                                                                                                                                            projectId: projectId
+                                                                                                                                                                                                        });
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    // Reset select value to default
+                                                                                                                                                                                                    e.target.value = "";
+                                                                                                                                                                                                }}
+                                                                                                                                                                                                defaultValue=""
+                                                                                                                                                                                                className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                                                                                                                            >
+                                                                                                                                                                                                <option value="" disabled>Action</option>
+                                                                                                                                                                                                {/* Hide Approve option if it's already Approved */}
+                                                                                                                                                                                                {workStatus !== "Approved" && (
+                                                                                                                                                                                                    <option value="Approve" className="text-green-600">✅ Approve</option>
+                                                                                                                                                                                                )}
+                                                                                                                                                                                                <option value="Reject" className="text-red-600">❌ Reject</option>
+                                                                                                                                                                                            </select>
+                                                                                                                                                                                        </div>
+                                                                                                                                                                                    ) : (
+                                                                                                                                                                                        // Show Submit button for other statuses (Pending, Inprogress, Rejected, etc.)
+                                                                                                                                                                                        <button
+                                                                                                                                                                                            onClick={(e) => {
+                                                                                                                                                                                                e.stopPropagation();
+                                                                                                                                                                                                setShowProofModal(true);
+                                                                                                                                                                                                setProofData({
+                                                                                                                                                                                                    ...proofData,
+                                                                                                                                                                                                    stage: stage.id,
+                                                                                                                                                                                                    to_status: "Submitted",
+                                                                                                                                                                                                    projectId: projectId
+                                                                                                                                                                                                });
+                                                                                                                                                                                            }}
+                                                                                                                                                                                            disabled={workStatus === "Completed"}
+                                                                                                                                                                                            className={`text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Completed"
                                                                                                                                                                                                 ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
                                                                                                                                                                                                 : workStatus === "Rejected"
                                                                                                                                                                                                     ? "bg-red-100 text-red-600 hover:bg-red-200"

@@ -41,6 +41,8 @@ const DailyLogs = () => {
 
   const { user } = useSelector((state) => state.auth);
   const { projects = [] } = useSelector((state) => state.projects || { projects: [] });
+ 
+
   const { filteredLogs, loading, pagination, filters, stats, error } = useSelector((state) => state.logs);
 
   // Local state
@@ -345,14 +347,28 @@ const DailyLogs = () => {
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
-          <button
+          {/* <button
             onClick={handleRefresh}
             disabled={loading}
             className="bg-gray-600 text-white px-4 py-2 rounded-xl hover:bg-gray-700 flex items-center gap-2"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             <span className="hidden sm:inline">Refresh</span>
-          </button>
+          </button> */}
+          <button
+  onClick={handleRefresh}
+  disabled={loading}
+  className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <RefreshCw
+    size={20}
+    className={`text-blue-600 ${loading ? "animate-spin" : ""}`}
+  />
+  <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+    Refresh
+  </span>
+</button>
+
           {/* <button
             onClick={handleExport}
             className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 flex items-center gap-2"
@@ -360,13 +376,13 @@ const DailyLogs = () => {
             <Download size={18} />
             <span className="hidden sm:inline">Export</span>
           </button> */}
-          <button
+          {/* <button
             onClick={() => setShowAddLogModal(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center gap-2 flex-1 md:flex-none"
           >
             <FileText size={20} />
             <span className="hidden sm:inline">Add Log</span>
-          </button>
+          </button> */}
         </div>
       </div>
 

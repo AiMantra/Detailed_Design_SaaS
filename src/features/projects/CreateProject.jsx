@@ -123,17 +123,9 @@ const CreateProject = () => {
   const [clientSearch, setClientSearch] = useState("");
   const [reportingHeadSearch, setReportingHeadSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const [showClientCode, setClientCode] = useState("");
   const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
   const clientDropdownRef = useRef(null);
   const ReportingHeadsDropdownRef = useRef(null);
-
-  const [companySearch, setCompanySearch] = useState("");
-  const [sectorSearch, setSectorSearch] = useState("");
-  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
-  const [showSectorDropdown, setShowSectorDropdown] = useState(false);
-  const companyDropdownRef = useRef(null);
-  const sectorDropdownRef = useRef(null);
 
   const [calculatedGST, setCalculatedGST] = useState({
     igst: 0,
@@ -203,7 +195,13 @@ const CreateProject = () => {
     { name: "", gst: "", state: "", status: "Active" },
   ]);
 
+  const [companySearch, setCompanySearch] = useState("");
+  const [sectorSearch, setSectorSearch] = useState("");
 
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showSectorDropdown, setShowSectorDropdown] = useState(false);
+  const companyDropdownRef = useRef(null);
+  const sectorDropdownRef = useRef(null);
   const [workStages, setWorkStages] = useState({});
 
 
@@ -552,18 +550,6 @@ const CreateProject = () => {
       ) {
         setShowSupervisorDropdown(false);
       }
-      if (
-        companyDropdownRef.current &&
-        !companyDropdownRef.current.contains(event.target)
-      ) {
-        setShowCompanyDropdown(false);
-      }
-      if (
-        sectorDropdownRef.current &&
-        !sectorDropdownRef.current.contains(event.target)
-      ) {
-        setShowSectorDropdown(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -652,7 +638,8 @@ const CreateProject = () => {
 
       // Recalculate weightage for this activity based on selected sub-activities
       const activityObj = getAllActivities().find(a => a.id === activityId);
-      if (activityObj) {
+      // if (activityObj) {
+      if (activityObj && selectedActivities.includes(activityId)) {
         let totalWeightage = 0;
 
         newSelectedSubs.forEach(selectedSubId => {
@@ -801,23 +788,27 @@ const CreateProject = () => {
       for (const activity of allActivities) {
         const subExists = activity.subActivities.some(s => s.id === subId);
         if (subExists) {
-          // Check if this sub-activity is selected
-          const selectedSubs = selectedSubActivities[activity.id] || [];
-          if (selectedSubs.includes(subId)) {
-            let totalWeightage = 0;
-            selectedSubs.forEach(selectedSubId => {
-              const subObj = activity.subActivities.find(s => s.id === selectedSubId);
-              if (subObj) {
-                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-                totalWeightage += submissionPayment + approvalPayment;
-              }
-            });
-            console.log(`Recalculated weightage for activity ${activity.id}: ${totalWeightage}%`);
-            setActivityWeightages(prev => ({
-              ...prev,
-              [activity.id]: totalWeightage
-            }));
+          // Check if this activity is selected
+          const isActivitySelected = selectedActivities.includes(activity.id);
+          if (isActivitySelected) {
+            // Check if this sub-activity is selected
+            const selectedSubs = selectedSubActivities[activity.id] || [];
+            if (selectedSubs.includes(subId)) {
+              let totalWeightage = 0;
+              selectedSubs.forEach(selectedSubId => {
+                const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                if (subObj) {
+                  const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                  const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                  totalWeightage += submissionPayment + approvalPayment;
+                }
+              });
+              console.log(`Recalculated weightage for activity ${activity.id}: ${totalWeightage}%`);
+              setActivityWeightages(prev => ({
+                ...prev,
+                [activity.id]: totalWeightage
+              }));
+            }
           }
           break;
         }
@@ -867,7 +858,7 @@ const CreateProject = () => {
           message:
             "Please enter " +
             ((!trimmedName && "Company name") ||
-              (!trimpancard && "PAN NO.") ||
+              (!trimpancard && "PAN No.") ||
               (!trimmedgst && "GST")),
           type: "error",
         }),
@@ -1226,11 +1217,6 @@ const CreateProject = () => {
             lengthType: "different",
             lengthIndex: i,
             isCustom: true,
-            approval_exist: true,
-            chainage_exist: true,
-            length_exist: true,
-            planned_quantity_exist: true,
-            submission_exist: true,
           });
           currentStart = currentEnd;
         }
@@ -1706,11 +1692,10 @@ const CreateProject = () => {
         {
           id: newSubId,
           sorting_var: null,
-          subactivity_name: `${cloningSubActivity.subactivity_name} ${numberclone}`,
+          subactivity_name: cloningSubActivity.subactivity_name,
           unit: cloningSubActivity.unit,
           activityType: cloningSubActivity.activityType,
           chainage_start: null,
-          planned_quantity_exist: true,
           chainage_end: null,
           covered_area: null,
           chainage_exist: cloningSubActivity.chainage_exist,
@@ -1775,8 +1760,6 @@ const CreateProject = () => {
             chainage_end: currentEnd,
             covered_area: covered,
             chainage_quantity: count,
-            planned_quantity_exist: true,
-            chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
             activityType: cloningSubActivity.activityType,
             lengthType: "same",
             chainageLengths: [],
@@ -1834,8 +1817,6 @@ const CreateProject = () => {
             chainage_quantity: count,
             activityType: cloningSubActivity.activityType,
             chainageLengths: lengths,
-            planned_quantity_exist: true,
-            chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
             lengthType: "different",
             lengthIndex: i,
             isCustom: true,
@@ -2465,7 +2446,6 @@ const CreateProject = () => {
     // 🔹 Required Fields
     const missingFields = [];
 
-
     if (!form.project_code) missingFields.push("Project Code");
     if (!form.project_name) missingFields.push("Project Name");
     if (!form.short_name) missingFields.push("Short Name");
@@ -2523,7 +2503,18 @@ const CreateProject = () => {
           `Please select at least one sub-activity for ${activityLabel}`
         );
       }
+
+      // Check unit selection for each selected sub-activity
+      for (const subId of selectedSubs) {
+        const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+        if (subObj && (!subObj.unit || subObj.unit === "")) {
+          return showError(
+            `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
+          );
+        }
+      }
     }
+
 
     // 🔹 Global Date Validation
     if (!validateDates()) {
@@ -3224,6 +3215,7 @@ const CreateProject = () => {
                 />
                 <input
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   placeholder="Contact Number"
                   className="p-3 border rounded-xl"
                   value={newClient.contact}
@@ -3619,6 +3611,7 @@ const CreateProject = () => {
                         </label>
                         <input
                           type="number"
+                          onWheel={(e) => e.target.blur()}
                           step="0.01"
                           placeholder="0.00"
                           value={newSubActivity.chainage_start}
@@ -3639,6 +3632,7 @@ const CreateProject = () => {
                         </label>
                         <input
                           type="number"
+                          onWheel={(e) => e.target.blur()}
                           min="1"
                           placeholder="Enter quantity"
                           value={newSubActivity.chainage_quantity}
@@ -3709,6 +3703,7 @@ const CreateProject = () => {
                             </label>
                             <input
                               type="number"
+                              onWheel={(e) => e.target.blur()}
                               step="0.01"
                               placeholder="Enter length"
                               value={newSubActivity.covered_area}
@@ -3780,6 +3775,7 @@ const CreateProject = () => {
                                       <div className="col-span-5">
                                         <input
                                           type="number"
+                                          onWheel={(e) => e.target.blur()}
                                           step="0.01"
                                           placeholder="Length"
                                           value={
@@ -3925,7 +3921,6 @@ const CreateProject = () => {
               className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              {console.log(cloningSubActivity, 'cloningsub')}
               <form onSubmit={handleCloneSubActivitySubmit}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg md:text-xl font-bold">
@@ -4014,6 +4009,7 @@ const CreateProject = () => {
                     <select
                       value={cloningSubActivity.unit}
                       disabled
+                      required
                       className="w-full p-3 border rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
                     >
                       {UNIT_OPTIONS.map((option) => (
@@ -4034,9 +4030,10 @@ const CreateProject = () => {
                         </label>
                         <input
                           type="number"
+                          onWheel={(e) => e.target.blur()}
                           step="0.01"
                           placeholder="0.00"
-                          value={cloningSubActivity.chainage_start}
+                          value={cloningSubActivity.chainage_start || ""}
                           onChange={(e) =>
                             setCloningSubActivity({
                               ...cloningSubActivity,
@@ -4054,15 +4051,16 @@ const CreateProject = () => {
                         </label>
                         <input
                           type="number"
+                          onWheel={(e) => e.target.blur()}
                           min="1"
                           placeholder="Enter quantity"
-                          value={cloningSubActivity.chainage_quantity}
+                          value={cloningSubActivity.chainage_quantity || ""}
                           onChange={(e) => {
                             const qty = e.target.value;
                             setCloningSubActivity({
                               ...cloningSubActivity,
                               chainage_quantity: qty,
-                              chainageLengths: new Array(Number(qty)).fill(""),
+                              chainageLengths: qty ? new Array(Number(qty)).fill("") : [],
                             });
                           }}
                           className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
@@ -4126,6 +4124,7 @@ const CreateProject = () => {
                             </label>
                             <input
                               type="number"
+                              onWheel={(e) => e.target.blur()}
                               step="0.01"
                               placeholder="Enter length"
                               value={cloningSubActivity.covered_area}
@@ -4197,6 +4196,7 @@ const CreateProject = () => {
                                       <div className="col-span-5">
                                         <input
                                           type="number"
+                                          onWheel={(e) => e.target.blur()}
                                           step="0.01"
                                           placeholder="Length"
                                           value={
@@ -4619,6 +4619,7 @@ const CreateProject = () => {
                       />
                       <input
                         type="number"
+                        onWheel={(e) => e.target.blur()}
                         placeholder="Quantity"
                         value={editingSubActivity.chainage_quantity}
                         onChange={(e) =>
@@ -4655,8 +4656,18 @@ const CreateProject = () => {
 
       {/* Header with Mobile Step Indicator */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        {/* <div>
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Create New Project
+          </h2>
+          <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-1">
+            <AlertCircle size={14} />
+            Fields marked with * are required
+          </p>
+        </div> */}
+
+        <div>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1 md:pb-2">
             Create New Project
           </h2>
           <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-1">
@@ -4675,8 +4686,7 @@ const CreateProject = () => {
           </div>
         )}
       </div>
-      {/* <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8"> */}
-      <form className="space-y-6 md:space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         {/* Step 1: Basic Information */}
         <motion.div
           initial={false}
@@ -4762,62 +4772,62 @@ const CreateProject = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-  <label className="text-xs text-gray-500">Company *</label>
-  <div className="relative" ref={companyDropdownRef}>
-    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-    <input
-      type="text"
-      value={companySearch || (form.company ? form.company : "")}
-      placeholder="Select Company"
-      onFocus={() => setShowCompanyDropdown(true)}
-      onChange={(e) => {
-        setCompanySearch(e.target.value);
-        if (form.company) {
-          setForm({ ...form, company: "" });
-        }
-        setShowCompanyDropdown(true);
-      }}
-      className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-    />
-    {form.company && (
-      <button
-        type="button"
-        onClick={() => {
-          setForm({ ...form, company: '' });
-          setCompanySearch('');
-          setShowCompanyDropdown(false);
-        }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-      >
-        <X size={20} />
-      </button>
-    )}
-    {showCompanyDropdown && (
-      <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-        {/* ... existing company dropdown logic ... */}
-        {(() => {
-          const filteredCompanies = companies.filter((c) =>
-            !companySearch || c.name?.toLowerCase().includes(companySearch.toLowerCase())
-          );
-          if (filteredCompanies.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching companies</div>;
-          return filteredCompanies.map((company) => (
-            <div
-              key={company.id}
-              onClick={() => {
-                setForm({ ...form, company: company.name });
-                setCompanySearch(company.name);
-                setShowCompanyDropdown(false);
-              }}
-              className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-            >
-              <div>{company.name} {company.gst_no && <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>}</div>
+              <label className="text-xs text-gray-500">Company *</label>
+              <div className="relative" ref={companyDropdownRef}>
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  value={companySearch || (form.company ? form.company : "")}
+                  placeholder="Select Company"
+                  onFocus={() => setShowCompanyDropdown(true)}
+                  onChange={(e) => {
+                    setCompanySearch(e.target.value);
+                    if (form.company) {
+                      setForm({ ...form, company: "" });
+                    }
+                    setShowCompanyDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
+                {form.company && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, company: '' });
+                      setCompanySearch('');
+                      setShowCompanyDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+                {showCompanyDropdown && (
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {/* ... existing company dropdown logic ... */}
+                    {(() => {
+                      const filteredCompanies = companies.filter((c) =>
+                        !companySearch || c.name?.toLowerCase().includes(companySearch.toLowerCase())
+                      );
+                      if (filteredCompanies.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching companies</div>;
+                      return filteredCompanies.map((company) => (
+                        <div
+                          key={company.id}
+                          onClick={() => {
+                            setForm({ ...form, company: company.name });
+                            setCompanySearch(company.name);
+                            setShowCompanyDropdown(false);
+                          }}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                        >
+                          <div>{company.name} {company.gst_no && <span className="text-xs text-gray-400 ml-2">(GST: {company.gst_no})</span>}</div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
-          ));
-        })()}
-      </div>
-    )}
-  </div>
-</div>
 
 
             {form.company && (
@@ -4832,12 +4842,9 @@ const CreateProject = () => {
                     type="text"
                     name="gst_no"
                     disabled
-                    // value={
-                    //   companies.filter((data) => data?.name == form.company)[0]
-                    //     ?.gst_no
-                    // }
                     value={
-                      companies.find((data) => data?.name == form.company)?.gst_no || ""
+                      companies.filter((data) => data?.name == form.company)[0]
+                        ?.gst_no
                     }
                     onChange={handleChange}
                     className="cursor-not-allowed w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
@@ -4847,160 +4854,160 @@ const CreateProject = () => {
             )}
 
             {/* Sector Field */}
-<div className="flex flex-col gap-1">
-  <label className="text-xs text-gray-500">Sector *</label>
-  <div className="relative" ref={sectorDropdownRef}>
-    <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-    <input
-      type="text"
-      value={sectorSearch || (form.sector ? form.sector : "")}
-      placeholder="Select Sector"
-      onFocus={() => setShowSectorDropdown(true)}
-      onChange={(e) => {
-        setSectorSearch(e.target.value);
-        if (form.sector) {
-          setForm({ ...form, sector: "" });
-        }
-        setShowSectorDropdown(true);
-      }}
-      className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-    />
-    {form.sector && (
-      <button
-        type="button"
-        onClick={() => {
-          setForm({ ...form, sector: '' });
-          setSectorSearch('');
-          setShowSectorDropdown(false);
-        }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-      >
-        <X size={20} />
-      </button>
-    )}
-    {showSectorDropdown && (
-      <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-        {/* ... existing sector dropdown logic ... */}
-        {(() => {
-          const filteredSectors = sectorsList.filter((s) =>
-            !sectorSearch || s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-          );
-          if (filteredSectors.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching sectors</div>;
-          return filteredSectors.map((sector) => (
-            <div
-              key={sector.id || sector.name}
-              onClick={() => {
-                setForm({ ...form, sector: sector.name });
-                setSectorSearch(sector.name);
-                setShowSectorDropdown(false);
-              }}
-              className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-            >
-              <div>{sector.name} {sector.unit && <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sector.unit] || sector.unit})</span>}</div>
-            </div>
-          ));
-        })()}
-      </div>
-    )}
-  </div>
-</div>
-<div className="flex flex-col gap-1">
-  <label className="text-xs text-gray-500">Client *</label>
-            <div className="relative" ref={clientDropdownRef}>
-              <Handshake
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={16}
-              />
-
-              <input
-                type="text"
-                value={clientSearch}
-                placeholder="Select Client"
-                onFocus={() => {
-                  setShowClientDropdown(true);
-                }}
-                onChange={(e) => {
-                  setClientSearch(e.target.value);
-                  if (form.client) {
-                    setForm({
-                      ...form,
-                      client: "",
-                      clientbranch: ""
-                    });
-                  }
-                  setShowClientDropdown(true);
-                }}
-                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-              />
-
-              {/* Clear button */}
-              {form.client && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm({
-                      ...form,
-                      client: '',
-                      clientbranch: ''
-                    });
-                    setClientSearch('');
-                    setClientCode('');
-                    setShowClientDropdown(false);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              )}
-
-              {/* Dropdown */}
-              {showClientDropdown && (
-                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {(() => {
-                    const filteredClients = clients.filter((c) =>
-                      !clientSearch ||
-                      c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                      c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
-                    );
-
-                    if (filteredClients.length === 0) {
-                      return (
-                        <div className="px-3 py-2 text-gray-400 text-sm">
-                          No matching clients
-                        </div>
-                      );
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Sector *</label>
+              <div className="relative" ref={sectorDropdownRef}>
+                <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  value={sectorSearch || (form.sector ? form.sector : "")}
+                  placeholder="Select Sector"
+                  onFocus={() => setShowSectorDropdown(true)}
+                  onChange={(e) => {
+                    setSectorSearch(e.target.value);
+                    if (form.sector) {
+                      setForm({ ...form, sector: "" });
                     }
-
-                    return filteredClients.map((client) => {
-                      const clientName = client.client_name || "";
-                      const clientCode = client.client_code || "";
-
-                      return (
+                    setShowSectorDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
+                {form.sector && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, sector: '' });
+                      setSectorSearch('');
+                      setShowSectorDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+                {showSectorDropdown && (
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {/* ... existing sector dropdown logic ... */}
+                    {(() => {
+                      const filteredSectors = sectorsList.filter((s) =>
+                        !sectorSearch || s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
+                      );
+                      if (filteredSectors.length === 0) return <div className="px-3 py-2 text-gray-400 text-sm">No matching sectors</div>;
+                      return filteredSectors.map((sector) => (
                         <div
-                          key={client.id}
+                          key={sector.id || sector.name}
                           onClick={() => {
-                            setForm({
-                              ...form,
-                              client: client.id,
-                              clientbranch: "",
-                            });
-                            setClientSearch(`${clientName} - ${clientCode}`);
-                            setClientCode(clientCode);
-                            setShowClientDropdown(false);
+                            setForm({ ...form, sector: sector.name });
+                            setSectorSearch(sector.name);
+                            setShowSectorDropdown(false);
                           }}
                           className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
                         >
-                          <div>
-                            {clientName} - {clientCode}
-                          </div>
+                          <div>{sector.name} {sector.unit && <span className="text-xs text-gray-400 ml-2">(Unit: {SECTOR_UNIT_MAPPING[sector.unit] || sector.unit})</span>}</div>
                         </div>
-                      );
-                    });
-                  })()}
-                </div>
-              )}
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
-</div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Client *</label>
+              <div className="relative" ref={clientDropdownRef}>
+                <Handshake
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
+
+                <input
+                  type="text"
+                  value={clientSearch}
+                  placeholder="Select Client"
+                  onFocus={() => {
+                    setShowClientDropdown(true);
+                  }}
+                  onChange={(e) => {
+                    setClientSearch(e.target.value);
+                    if (form.client) {
+                      setForm({
+                        ...form,
+                        client: "",
+                        clientbranch: ""
+                      });
+                    }
+                    setShowClientDropdown(true);
+                  }}
+                  className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
+
+                {/* Clear button */}
+                {form.client && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({
+                        ...form,
+                        client: '',
+                        clientbranch: ''
+                      });
+                      setClientSearch('');
+                      setClientCode('');
+                      setShowClientDropdown(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+
+                {/* Dropdown */}
+                {showClientDropdown && (
+                  <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {(() => {
+                      const filteredClients = clients.filter((c) =>
+                        !clientSearch ||
+                        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
+                      );
+
+                      if (filteredClients.length === 0) {
+                        return (
+                          <div className="px-3 py-2 text-gray-400 text-sm">
+                            No matching clients
+                          </div>
+                        );
+                      }
+
+                      return filteredClients.map((client) => {
+                        const clientName = client.client_name || "";
+                        const clientCode = client.client_code || "";
+
+                        return (
+                          <div
+                            key={client.id}
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                client: client.id,
+                                clientbranch: "",
+                              });
+                              setClientSearch(`${clientName} - ${clientCode}`);
+                              setClientCode(clientCode);
+                              setShowClientDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                          >
+                            <div>
+                              {clientName} - {clientCode}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
             {form.client && (
               <>
 
@@ -5301,6 +5308,7 @@ const CreateProject = () => {
                 />
                 <input
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   name="total_length"
                   step="0.01"
                   value={form.total_length}
@@ -5330,6 +5338,7 @@ const CreateProject = () => {
                 />
                 <input
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   name="workorder_Amount"
                   value={form.workorder_Amount}
                   onChange={handleChange}
@@ -5350,6 +5359,7 @@ const CreateProject = () => {
                 />
                 <input
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   name="igst_percentage"
                   step="0.1"
                   min="0"
@@ -5369,6 +5379,7 @@ const CreateProject = () => {
                 <Percent className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   name="cgst_percentage"
                   step="0.1"
                   min="0"
@@ -5418,9 +5429,7 @@ const CreateProject = () => {
                 name="loa_date"
                 value={form.loa_date}
                 onChange={handleChange}
-                min="1000-01-01"
-                max={form.completion_date || "9999-12-31"}
-                // max={form.completion_date}
+                max={form.completion_date}
                 className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -5434,9 +5443,7 @@ const CreateProject = () => {
                 type="date"
                 name="completion_date"
                 min={form.loa_date}
-                // min=
-                max={"9999-12-31"}
-                // value={form.completion_date}
+                value={form.completion_date}
                 onChange={handleChange}
                 className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 required
@@ -5618,11 +5625,13 @@ const CreateProject = () => {
                             delete newState[activity.id];
                             return newState;
                           });
-                          setActivityDates((prev) => {
-                            const newState = { ...prev };
-                            delete newState[activity.id];
-                            return newState;
-                          });
+
+                          // setActivityDates((prev) => {
+                          //   const newState = { ...prev };
+                          //   delete newState[activity.id];
+                          //   return newState;
+                          // });
+
                           // Clear selected sub-activities for this activity
                           setSelectedSubActivities((prev) => {
                             const newState = { ...prev };
@@ -5635,14 +5644,31 @@ const CreateProject = () => {
                             ...prev,
                             activity.id,
                           ]);
-                          // Auto-select all sub-activities (using name or id)
-                          // const allSubNames = activity.subActivities.map(
-                          //   (sub) => sub.id,
-                          // );
-                          // setSelectedSubActivities((prev) => ({
-                          //   ...prev,
-                          //   [activity.id]: allSubNames,
-                          // }));
+
+
+                          // Auto-select ALL sub-activities when adding activity
+                          const allSubIds = activity.subActivities.map((sub) => sub.id);
+                          setSelectedSubActivities((prev) => ({
+                            ...prev,
+                            [activity.id]: allSubIds,
+                          }));
+
+                          // Recalculate weightage for this activity based on all selected sub-activities
+                          let totalWeightage = 0;
+                          allSubIds.forEach(selectedSubId => {
+                            const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                            if (subObj) {
+                              const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                              const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                              totalWeightage += submissionPayment + approvalPayment;
+                            }
+                          });
+
+                          setActivityWeightages(prev => ({
+                            ...prev,
+                            [activity.id]: totalWeightage
+                          }));
+
                         }
                       }}
                       className={`cursor-pointer p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all shadow-sm
@@ -5813,6 +5839,7 @@ const CreateProject = () => {
                                 <div className="relative">
                                   <input
                                     type="number"
+                                    onWheel={(e) => e.target.blur()}
                                     min="0"
                                     max="100"
                                     step="0.1"
@@ -5960,7 +5987,7 @@ const CreateProject = () => {
 
                                 {(() => {
                                   const grouped = {};
-                                  { console.log(activityObj?.subActivities, 'subactivities') }
+
                                   activityObj?.subActivities.forEach(
                                     (sub, idx) => {
                                       if (!grouped[sub.subactivity_name]) {
@@ -5988,7 +6015,6 @@ const CreateProject = () => {
                                         sub.id,
                                       );
                                       const key = `${activityId}_${sub.id}`;
-                                      console.log(key, 'keyyy')
                                       // const key = `${activityId}_${sub.subactivity_name}`;
                                       // const key2 = `${sub?.id}_${sub.subactivity_name}`;
                                       const currentUnit =
@@ -6002,7 +6028,6 @@ const CreateProject = () => {
                                           id={`sub-${sub.id}`}
                                           className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
                                         >
-
                                           <div className="flex items-center justify-between mb-2">
                                             {/* <div className="flex items-center gap-2">
                                               <input
@@ -6111,26 +6136,6 @@ const CreateProject = () => {
                                                 <Copy size={14} />
                                               </button>
 
-
-                                              <div className="flex items-center gap-2 mr-2">
-                                                <label className="text-[10px] text-gray-600 flex items-center gap-1 cursor-pointer">
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={showAllFields[key] || false}
-                                                    onChange={(e) =>
-                                                      setShowAllFields((prev) => ({
-                                                        ...prev,
-                                                        [key]: e.target.checked,
-                                                      }))
-                                                    }
-                                                    className="w-3 h-3"
-                                                  />
-                                                  Show All
-                                                </label>
-                                                {console.log(showAllFields[key], '')}
-
-
-                                              </div>
                                               {/* Edit Button */}
                                               {/* <button
                                                 type="button"
@@ -6190,13 +6195,14 @@ const CreateProject = () => {
                                                     )}
                                                   </select>
                                                 </div>
-                                                {currentUnit !== "status" && (sub?.planned_quantity_exist || showAllFields[key]) && (
+                                                {currentUnit !== "status" && sub?.planned_quantity_exist && (
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Planned Quantity
                                                     </label>
                                                     <input
                                                       type="number"
+                                                      onWheel={(e) => e.target.blur()}
                                                       min="0"
                                                       step="0.01"
                                                       // value={subActivityPlannedQtys[key2] || ''}
@@ -6272,7 +6278,7 @@ const CreateProject = () => {
                                                   </div>
                                                 }
 
-                                                {(sub?.length_exist || showAllFields[key]) &&
+                                                {sub?.length_exist &&
                                                   <div>
                                                     <div className="grid grid-cols-1 gap-1 col-span-3">
                                                       <div>
@@ -6291,6 +6297,7 @@ const CreateProject = () => {
                                                         </div>
                                                         {/* <input
                                                       type="number"
+                                                      onWheel={(e) => e.target.blur()}
                                                       min="0"
                                                       step="0.01"
                                                       value={subActivityPlannedQtys[`${sub.id}_coveredarea`] || ''}
@@ -6300,6 +6307,7 @@ const CreateProject = () => {
                                                     /> */}
                                                         <input
                                                           type="number"
+                                                          onWheel={(e) => e.target.blur()}
                                                           min="0"
                                                           step="0.01"
                                                           value={
@@ -6395,6 +6403,7 @@ const CreateProject = () => {
                                                     <div className="relative">
                                                       <input
                                                         type="number"
+                                                        onWheel={(e) => e.target.blur()}
                                                         min="0"
                                                         step="0.01"
                                                         // value={subActivityPlannedQtys[(key2 + "_subpayment")] || ''}
@@ -6441,6 +6450,7 @@ const CreateProject = () => {
                                                     <div className="relative">
                                                       <input
                                                         type="number"
+                                                        onWheel={(e) => e.target.blur()}
                                                         min="0"
                                                         step="0.01"
                                                         // value={subActivityPlannedQtys[(key2 + "_approvalpayment")] || ''}
@@ -6803,7 +6813,7 @@ const CreateProject = () => {
               </div>
             </motion.div>
           )}
-          {isMobile && (
+          {/* {isMobile && (
             <div className="flex justify-between mt-6">
               <button
                 type="button"
@@ -6814,8 +6824,7 @@ const CreateProject = () => {
                 Previous
               </button>
               <button
-                // type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={isSubmitting}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -6832,14 +6841,59 @@ const CreateProject = () => {
                 )}
               </button>
             </div>
+          )} */}
+
+          {isMobile && (
+            <div className="flex flex-col gap-3 mt-6">
+              {/* Row 1: Actions */}
+              <div className="flex gap-3">
+                {/* Cancel Button */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/all-projects")}
+                  className="flex-1 bg-white text-gray-700 border border-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+
+                {/* Create/Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      Create
+                      <CheckCircle size={16} />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Previous Button (kept separate or below as needed) */}
+              <button
+                type="button"
+                onClick={prevStep}
+                className="w-full bg-gray-600 text-white px-6 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+            </div>
           )}
         </motion.div>
-        {!isMobile && (
+        {/* {!isMobile && (
           <div className="flex justify-center">
             <button
-              type="button"
+              type="submit"
               disabled={isSubmitting}
-              onClick={handleSubmit}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 md:px-16 py-4 md:py-5 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-bold text-base md:text-xl flex items-center gap-2 md:gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
@@ -6850,6 +6904,39 @@ const CreateProject = () => {
               ) : (
                 <>
                   <CheckCircle size={20} />
+                  Create Project
+                </>
+              )}
+            </button>
+          </div>
+        )} */}
+
+        {!isMobile && (
+          <div className="flex justify-center gap-4">
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={() => navigate("/all-projects")}
+              className="w-56 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2"
+            >
+              <X size={18} />
+              Cancel
+            </button>
+
+            {/* Create Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-56 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={18} />
                   Create Project
                 </>
               )}
