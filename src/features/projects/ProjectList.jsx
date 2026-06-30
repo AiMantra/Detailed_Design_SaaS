@@ -3582,7 +3582,9 @@ const ProjectList = () => {
                                                                                                         : "bg-gray-100 text-gray-600 border-gray-200"
                                                                                               }`}
                                                                                             >
-                                                                                              {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus}
+                                                                                              {/* {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus} */}
+
+                                                                                              {workStatus === "Pending" ? "Not Started" : workStatus}
                                                                                             </span>
                                                                                           </div>
                                                                                         </td>
@@ -3858,7 +3860,9 @@ const ProjectList = () => {
                                                                                                     workStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
                                                                                                       "bg-gray-100 text-gray-600 border-gray-200"}`}
                                                                                           >
-                                                                                            {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus}
+                                                                                            {/* {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus} */}
+                                                                                                {workStatus === "Pending" ? "Not Started" : workStatus}
+
                                                                                           </span>
                                                                                           {
                                                                                             (workStatus === "Submitted" || workStatus === "Approved") &&
