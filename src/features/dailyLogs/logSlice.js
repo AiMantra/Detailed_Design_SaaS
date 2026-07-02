@@ -34,6 +34,57 @@ const EVENT_TYPE_TO_BACKEND = {
 };
 
 
+// const transformLog = (log) => {
+//   let oldValue = log.old_value;
+//   let newValue = log.new_value;
+  
+//   try {
+//     if (typeof oldValue === 'string') oldValue = JSON.parse(oldValue);
+//     if (typeof newValue === 'string') newValue = JSON.parse(newValue);
+//   } catch (e) {
+//     // Ignore parsing errors
+//   }
+
+//   const displayEventType = REVERSE_EVENT_TYPE_MAP[log.event_type] || log.event_type;
+  
+//   let projectId = log.project;
+//   let projectDetail = log.project_detail;
+//   let projectName = 'Unknown Project';
+//   let projectCode = null;
+
+//   if (projectDetail) {
+//     projectName = projectDetail.project_name || 'Unknown Project';
+//     projectCode = projectDetail.project_code;
+//   } else if (log.activity_detail?.project_detail) {
+//     projectName = log.activity_detail.project_detail.project_name || 'Unknown Project';
+//     projectCode = log.activity_detail.project_detail.project_code;
+//     projectId = log.activity_detail.project;
+//   }
+
+//   return {
+//     id: log.id,
+//     event_type: displayEventType,
+//     original_event_type: log.event_type,
+//     message: log.message,
+//     old_value: oldValue,
+//     new_value: newValue,
+//     created_at: log.created_at,
+//     performed_by: log.performed_by,
+//     performed_by_detail: log.performed_by_detail,
+//     project: projectId,
+//     project_detail: projectDetail,
+//     activity: log.activity,
+//     activity_detail: log.activity_detail,
+//     subactivity: log.subactivity,
+//     subactivity_detail: log.subactivity_detail,
+//     date: log.created_at?.split('T')[0] || '',
+//     time: log.created_at?.split('T')[1]?.substring(0, 5) || '',
+//     user: log.performed_by_detail?.username || 'System',
+//     project_name: projectName,
+//     project_code: projectCode
+//   };
+// };
+
 const transformLog = (log) => {
   let oldValue = log.old_value;
   let newValue = log.new_value;
@@ -49,14 +100,17 @@ const transformLog = (log) => {
   
   let projectId = log.project;
   let projectDetail = log.project_detail;
-  let projectName = 'Unknown Project';
   let projectCode = null;
+  
+  // FIX IS HERE: Try grabbing it directly from the log first!
+  let projectName = log.project_name || 'Unknown Project'; 
 
+  // Keep these just in case the backend uses them for other event types
   if (projectDetail) {
-    projectName = projectDetail.project_name || 'Unknown Project';
+    projectName = projectDetail.project_name || projectName;
     projectCode = projectDetail.project_code;
   } else if (log.activity_detail?.project_detail) {
-    projectName = log.activity_detail.project_detail.project_name || 'Unknown Project';
+    projectName = log.activity_detail.project_detail.project_name || projectName;
     projectCode = log.activity_detail.project_detail.project_code;
     projectId = log.activity_detail.project;
   }

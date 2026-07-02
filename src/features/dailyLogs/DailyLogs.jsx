@@ -337,14 +337,25 @@ const DailyLogs = () => {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
+         {/* <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Daily Logs Management
-          </h1>
+          </h1> */}
           {/* <p className="text-gray-500 mt-2">
             Total: {filteredLogs.length} logs
           </p> */}
-        </div>
+        {/* </div>  */}
+
+        <div>
+  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1 md:pb-2">
+    Daily Logs Management
+  </h2>
+
+  
+  {/* <p className="text-xs md:text-sm text-gray-500 mt-1">
+    Total: {filteredLogs.length} logs
+  </p> */}
+</div>
 
         <div className="flex gap-2 w-full md:w-auto">
           {/* <button

@@ -2505,11 +2505,40 @@ const CreateProject = () => {
       }
 
       // Check unit selection for each selected sub-activity
+      // for (const subId of selectedSubs) {
+      //   const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+      //   if (subObj && (!subObj.unit || subObj.unit === "")) {
+      //     return showError(
+      //       `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
+      //     );
+      //   }
+      // }
+
+      // Check unit and dates for each selected sub-activity
       for (const subId of selectedSubs) {
         const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+        
+        // 1. Validate Unit
         if (subObj && (!subObj.unit || subObj.unit === "")) {
           return showError(
             `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
+          );
+        }
+
+        // 2. Validate Sub-Activity Dates (NEW ADDITION)
+        const subStartDate = subActivityPlannedQtys[`${subId}_start_date`];
+        const subEndDate = subActivityPlannedQtys[`${subId}_end_date`];
+        const subName = subObj?.subactivity_name || "Sub-activity";
+
+        if (!subStartDate || !subEndDate) {
+          return showError(
+            `Please select Start and End dates for "${subName}" in activity "${activityLabel}"`
+          );
+        }
+
+        if (new Date(subStartDate) > new Date(subEndDate)) {
+          return showError(
+            `End date must be after start date for "${subName}" in activity "${activityLabel}"`
           );
         }
       }
@@ -6521,7 +6550,7 @@ const CreateProject = () => {
                                                 <div >
                                                   <div className="grid grid-cols-1 gap-1 col-span-3">
                                                     <label className="block text-[10px] text-gray-500 ">
-                                                      Start Date
+                                                      Start Date *
                                                     </label>
                                                     <input
                                                       type="date"
@@ -6536,7 +6565,7 @@ const CreateProject = () => {
                                                 <div>
                                                   <div className="grid grid-cols-1 gap-1 col-span-3">
                                                     <label className="block text-[10px] text-gray-500 ">
-                                                      End Date
+                                                      End Date *
                                                     </label>
                                                     <input
                                                       type="date"
