@@ -2173,6 +2173,33 @@ const UpdateProject = () => {
             if (!selectedSubs.length) {
                 return showError(`Please select at least one sub-activity for ${activityLabel}`);
             }
+            for (const subId of selectedSubs) {
+                const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+                
+                // 1. Validate Unit
+                if (subObj && (!subObj.unit || subObj.unit === "")) {
+                    return showError(
+                        `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
+                    );
+                }
+
+                // 2. Validate Sub-Activity Dates
+                const subStartDate = subActivityPlannedQtys[`${subId}_start_date`];
+                const subEndDate = subActivityPlannedQtys[`${subId}_end_date`];
+                const subName = subObj?.subactivity_name || "Sub-activity";
+
+                if (!subStartDate || !subEndDate) {
+                    return showError(
+                        `Please select Start and End dates for "${subName}" in activity "${activityLabel}"`
+                    );
+                }
+
+                if (new Date(subStartDate) > new Date(subEndDate)) {
+                    return showError(
+                        `End date must be after start date for "${subName}" in activity "${activityLabel}"`
+                    );
+                }
+            }
         }
 
         if (!validateDates()) {
@@ -5786,7 +5813,7 @@ console.log("Payload before dispatch:", payload);
                                                                                                         <div >
                                                                                                             <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                 <label className="block text-[10px] text-gray-500 ">
-                                                                                                                    Start Date
+                                                                                                                    Start Date *
                                                                                                                 </label>
                                                                                                                 <input
                                                                                                                     type="date"
@@ -5801,12 +5828,12 @@ console.log("Payload before dispatch:", payload);
                                                                                                         <div>
                                                                                                             <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                 <label className="block text-[10px] text-gray-500 ">
-                                                                                                                    End Date
+                                                                                                                    End Date *
                                                                                                                 </label>
                                                                                                                 <input
                                                                                                                     type="date"
                                                                                                                     value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
-                                                                                                                    min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
+                                                                                                                      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
                                                                                                                     max={activityDates[activityId]?.endDate || form.completion_date}
                                                                                                                     onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
                                                                                                                     className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"

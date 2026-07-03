@@ -3884,17 +3884,44 @@ const ProjectList = () => {
                                                                                           <select
                                                                                             value={paymentStatus}
                                                                                             disabled={paymentStatus === "Waiting"}
+                                                                                            // onChange={(e) => {
+                                                                                            //   handleSubmissionapproveStatus(
+                                                                                            //     stage.id,
+                                                                                            //     sub,
+                                                                                            //     e.target.value,
+                                                                                            //     stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
+                                                                                            //     stage.extra_payment_amount || 0,
+                                                                                            //     projectId,
+                                                                                            //     'payment'
+                                                                                            //   );
+                                                                                            // }}
                                                                                             onChange={(e) => {
-                                                                                              handleSubmissionapproveStatus(
-                                                                                                stage.id,
-                                                                                                sub,
-                                                                                                e.target.value,
-                                                                                                stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
-                                                                                                stage.extra_payment_amount || 0,
-                                                                                                projectId,
-                                                                                                'payment'
-                                                                                              );
-                                                                                            }}
+        const selectedAction = e.target.value;
+
+        // 🔥 Intercept the action: Check if Account is trying to raise without TL approval
+        if (isACCOUNT && workStatus !== "Approved" && selectedAction === "Raised") {
+            // Show error message popup
+            dispatch(showSnackbar({ 
+                message: "Team Lead has not approved this yet. You cannot raise the amount.", 
+                type: "error" 
+            }));
+            
+            // Revert the dropdown back to its original value
+            e.target.value = invoiceStatus; 
+            return; // Stop the function here so the modal doesn't open
+        }
+
+        // If validation passes, open the modal normally
+        handleSubmissionapproveStatus(
+            stage.id,
+            sub,
+            selectedAction,
+            stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
+            stage.extra_payment_amount || 0,
+            projectId,
+            'payment'
+        );
+    }}
                                                                                             className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
                                                                                             style={{
                                                                                               backgroundColor:
