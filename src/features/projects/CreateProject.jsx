@@ -5100,25 +5100,48 @@ const CreateProject = () => {
                 Workorder Document *
               </label>
 
-              <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
-                <Upload
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
-                <div className=" text-gray-500">
-                  <span className="text-sm">
-                    {form?.workorder_document?.[0]?.name || "Click to upload or drag & drop"}
+              {(form?.workorder_document && form.workorder_document.length > 0) ? (
+                <div className="relative flex items-center justify-between w-full pl-9 pr-3 h-11 border border-blue-200 rounded-lg bg-blue-50">
+                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
+                  <span className="text-sm text-blue-700 truncate mr-4">
+                    {form.workorder_document[0].name}
                   </span>
-                  {/* <span className="text-xs text-gray-400">PDF, DOC, JPG (Max 5MB)</span> */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      // Clear the document to allow a fresh upload
+                      setForm((prev) => ({
+                        ...prev,
+                        workorder_document: ""
+                      }));
+                    }}
+                    className="p-1 hover:bg-blue-100 rounded text-red-600 transition-colors"
+                    title="Remove document"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
+              ) : (
+                <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
+                  <Upload
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={16}
+                  />
+                  <div className="text-gray-500">
+                    <span className="text-sm">
+                      Click to upload or drag & drop
+                    </span>
+                  </div>
 
-                <input
-                  type="file"
-                  name="workorder_document"
-                  onChange={handleChange}
-                  className="hidden"
-                />
-              </label>
+                  <input
+                    type="file"
+                    name="workorder_document"
+                    onChange={handleChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">

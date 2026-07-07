@@ -4563,10 +4563,10 @@ console.log("Payload before dispatch:", payload);
                         existing_workorder_document: ""
                     }));
                 }}
-                className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors"
+                className="p-1 hover:bg-blue-100 rounded text-red-600 transition-colors"
                 title="Remove document"
             >
-                <X size={16} />
+                <X size={20} />
             </button>
         </div>
     ) : (
