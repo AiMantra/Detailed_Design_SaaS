@@ -83,8 +83,7 @@ const SettingsComponentDisplay = () => {
                                 <motion.h1
                                     initial={{ x: -20, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
-                                    className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
-                                >
+className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent pb-1 md:pb-2"                                >
                                     Settings
                                 </motion.h1>
                                 <motion.div
