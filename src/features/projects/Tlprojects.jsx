@@ -41,6 +41,7 @@ import {
     Handshake,
     FileText,
     UserStar,
+    PlusCircle,
 } from "lucide-react";
 import { getProjectStatusInfo, getDaysUntilDeadline } from "../../utils/deadlineUtils";
 import {
@@ -96,6 +97,7 @@ const TlProjectList = () => {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
     const [showTimeLogModal, setShowTimeLogModal] = useState(false);
+    const [selectedTaskfortimelog, setSelectedTaskfortimelog] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [handleApprovalStatus, setHandleStatus] = useState({});
     const [showProofModal, setShowProofModal] = useState(false);
@@ -120,13 +122,13 @@ const TlProjectList = () => {
     });
 
     // const [selectedTaskfortimelog, setSelectedTaskfortimelog] = useState(null);
-    // const [worklogreturned, setWorkLogReturned] = useState([]);
-    // const [timeLogData, setTimeLogData] = useState({
-    //     date: new Date().toISOString().split('T')[0],
-    //     startTime: '',
-    //     endTime: '',
-    //     description: ''
-    // });
+    const [worklogreturned, setWorkLogReturned] = useState([]);
+    const [timeLogData, setTimeLogData] = useState({
+        date: new Date().toISOString().split('T')[0],
+        startTime: '',
+        endTime: '',
+        description: ''
+    });
 
     const [expandedProjectDetails, setExpandedProjectDetails] = useState({});
     const [loadingProjectDetails, setLoadingProjectDetails] = useState({});
@@ -486,39 +488,39 @@ const TlProjectList = () => {
         return hours + minutes / 60;
     };
 
-    // const handleSaveTimeLog = async () => {
-    //     if (!selectedTaskfortimelog) return;
-    //     if (!timeLogData.startTime || !timeLogData.endTime) {
-    //         dispatch(showSnackbar({ message: 'Please enter both start and end time', type: 'error' }));
-    //         return;
-    //     }
-    //     if (timeLogData.startTime >= timeLogData.endTime) {
-    //         dispatch(showSnackbar({ message: 'End time must be after start time', type: 'error' }));
-    //         return;
-    //     }
-    //     setIsSaving(true);
-    //     try {
-    //         await dispatch(saveDailyWorkLog({
-    //             projectId: selectedTaskfortimelog.project_id,
-    //             subActivityId: selectedTaskfortimelog.id,
-    //             date: timeLogData.date,
-    //             startTime: timeLogData.startTime,
-    //             endTime: timeLogData.endTime,
-    //             note: timeLogData.description,
-    //             status: 'WORKED'
-    //         })).unwrap();
-    //         dispatch(showSnackbar({ message: 'Work hours saved successfully!', type: 'success' }));
-    //         const mixedData = { ...selectedTaskfortimelog, date: timeLogData.date, startTime: timeLogData.startTime, endTime: timeLogData.endTime, description: timeLogData.description };
-    //         setWorkLogReturned((prev) => [...prev, mixedData]);
-    //         setShowTimeLogModal(false);
-    //         setSelectedTaskfortimelog(null);
-    //         setTimeLogData({ date: new Date().toISOString().split('T')[0], startTime: '', endTime: '', description: '' });
-    //     } catch (error) {
-    //         dispatch(showSnackbar({ message: error.message || 'Failed to save record', type: 'error' }));
-    //     } finally {
-    //         setIsSaving(false);
-    //     }
-    // };
+    const handleSaveTimeLog = async () => {
+        if (!selectedTaskfortimelog) return;
+        if (!timeLogData.startTime || !timeLogData.endTime) {
+            dispatch(showSnackbar({ message: 'Please enter both start and end time', type: 'error' }));
+            return;
+        }
+        if (timeLogData.startTime >= timeLogData.endTime) {
+            dispatch(showSnackbar({ message: 'End time must be after start time', type: 'error' }));
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await dispatch(saveDailyWorkLog({
+                projectId: selectedTaskfortimelog.project_id,
+                subActivityId: selectedTaskfortimelog.id,
+                date: timeLogData.date,
+                startTime: timeLogData.startTime,
+                endTime: timeLogData.endTime,
+                note: timeLogData.description,
+                status: 'WORKED'
+            })).unwrap();
+            dispatch(showSnackbar({ message: 'Work hours saved successfully!', type: 'success' }));
+            const mixedData = { ...selectedTaskfortimelog, date: timeLogData.date, startTime: timeLogData.startTime, endTime: timeLogData.endTime, description: timeLogData.description };
+            setWorkLogReturned((prev) => [...prev, mixedData]);
+            setShowTimeLogModal(false);
+            setSelectedTaskfortimelog(null);
+            setTimeLogData({ date: new Date().toISOString().split('T')[0], startTime: '', endTime: '', description: '' });
+        } catch (error) {
+            dispatch(showSnackbar({ message: error.message || 'Failed to save record', type: 'error' }));
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -723,7 +725,7 @@ const TlProjectList = () => {
                 )}
 
                 {/* Time Log Modal */}
-                {/* <AnimatePresence>
+                <AnimatePresence>
                     {showTimeLogModal && selectedTaskfortimelog && (
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -849,7 +851,7 @@ const TlProjectList = () => {
                             </motion.div>
                         </motion.div>
                     )}
-                </AnimatePresence> */}
+                </AnimatePresence>
                 {/* Submit Document */}
 
                 <AnimatePresence>
@@ -2482,7 +2484,7 @@ const TlProjectList = () => {
                                                                                                                                                 {/* <th className="px-2 py-3 text-center" >Status</th> */}
                                                                                                                                                 <th className="px-2 py-3 text-center">Action</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Invoice Status</th>
-                                                                                                                                                {/* <th className="px-2 py-3 text-center">Action</th> */}
+                                                                                                                                                <th className="px-2 py-3 text-center">Tl Work Log</th>
                                                                                                                                             </tr>
                                                                                                                                         </thead>
                                                                                                                                         <tbody>
@@ -2769,7 +2771,7 @@ const TlProjectList = () => {
                                                                                                                                                                                                     e.target.value = "";
                                                                                                                                                                                                 }}
                                                                                                                                                                                                 defaultValue=""
-className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"                                                                                                                                                                                            >
+                                                                                                                                                                                                className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"                                                                                                                                                                                            >
                                                                                                                                                                                                 <option value="" disabled>Action</option>
                                                                                                                                                                                                 {/* Hide Approve option if it's already Approved */}
                                                                                                                                                                                                 {workStatus !== "Approved" && (
@@ -2820,6 +2822,34 @@ className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray
                                                                                                                                                                                         {invoiceStatus === "Waiting" ? "Not Started" : invoiceStatus}
                                                                                                                                                                                     </span>
                                                                                                                                                                                 </div>
+                                                                                                                                                                            </td>
+                                                                                                                                                                            <td className="text-center align-middle px-2 py-2 border-l border-gray-100">
+                                                                                                                                                                                <button
+                                                                                                                                                                                    className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 inline-flex items-center gap-1"
+                                                                                                                                                                                    onClick={(e) => {
+                                                                                                                                                                                        e.stopPropagation();
+                                                                                                                                                                                        setSelectedTaskfortimelog({
+                                                                                                                                                                                            id: sub.id,
+                                                                                                                                                                                            stage: stage.id,  // ✅ ADDED stage_id
+                                                                                                                                                                                            project_id: projectId,
+                                                                                                                                                                                            subactivity_name: sub.subactivity_name,
+                                                                                                                                                                                            stage_name: stage.name,  // ✅ ADDED stage_name for display
+                                                                                                                                                                                            project_name: project.short_name || project.project_name,
+                                                                                                                                                                                            stage_work_types: expandedProjectDetails[projectId]?.sector_detail?.stage_work_types || []
+                                                                                                                                                                                        });
+                                                                                                                                                                                        setTimeLogData({
+                                                                                                                                                                                            date: new Date().toISOString().split("T")[0],
+                                                                                                                                                                                            startTime: "",
+                                                                                                                                                                                            endTime: "",
+                                                                                                                                                                                            description: "",
+                                                                                                                                                                                            work_type: ""
+                                                                                                                                                                                        });
+                                                                                                                                                                                        setShowTimeLogModal(true);
+                                                                                                                                                                                    }}
+                                                                                                                                                                                >
+                                                                                                                                                                                    <PlusCircle size={14} />
+                                                                                                                                                                                    Work Log
+                                                                                                                                                                                </button>
                                                                                                                                                                             </td>
                                                                                                                                                                         </tr>
                                                                                                                                                                     );

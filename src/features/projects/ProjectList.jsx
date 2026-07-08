@@ -1244,50 +1244,12 @@ const ProjectList = () => {
 
       {/* Submit Document */}
       <AnimatePresence>
-  {showProofModal && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={() => {
-        setShowProofModal(false);
-        setProofData({
-          stage_type: "",
-          documents: [],
-          rejection_proof: [],
-          rejection_reason: "",
-          rejection_type: "",
-          subactivity: "",
-          to_status: "",
-          changed_by: user?.emp_code || "",
-          remarks: "",
-          document_type: "ref_doc",
-          client_remarks: "",
-          raised_amount: "",
-          received_amount: "",
-          extra_amount: "",
-        });
-      }}
-    >
-      <motion.div
-        initial={{ scale: 0.95, y: 30 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 30 }}
-        className="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl border"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="text-lg font-semibold text-gray-800">
-            📎{" "}
-            {proofData?.to_status === "Raised"
-              ? "Raised Work Proof"
-              : proofData?.to_status === "Received"
-              ? "Received Work Proof"
-              : "Submit Work Proof"}
-          </h3>
-          <button
+        {showProofModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => {
               setShowProofModal(false);
               setProofData({
@@ -1302,153 +1264,65 @@ const ProjectList = () => {
                 remarks: "",
                 document_type: "ref_doc",
                 client_remarks: "",
-                received_amount: "",
                 raised_amount: "",
+                received_amount: "",
                 extra_amount: "",
               });
             }}
-            className="p-2 hover:bg-gray-100 rounded-lg"
           >
-            ✕
-          </button>
-        </div>
-
-        {/* UPLOAD AREA */}
-        <div className="mb-1">
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Upload Documents{" "}
-            {proofData?.to_status === "Raised" && (
-              <span className="text-red-500">*</span>
-            )}
-          </label>
-        </div>
-        <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-blue-400 transition">
-          <input
-            type="file"
-            multiple
-            className="hidden"
-            onChange={(e) =>
-              setProofData({
-                ...proofData,
-                documents: [...proofData.documents, ...Array.from(e.target.files)],
-              })
-            }
-          />
-          <p className="text-sm text-gray-500">
-            <span className="text-blue-600 font-medium">browse</span>
-          </p>
-          <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF, DOC</p>
-        </label>
-
-        {/* FILE PREVIEW GRID */}
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          {proofData?.documents?.map((file, i) => {
-            const isImage = file.type.startsWith("image/");
-            const url = URL.createObjectURL(file);
-
-            return (
-              <div
-                key={i}
-                className="relative border rounded-lg overflow-hidden group"
-              >
-                {isImage ? (
-                  <img
-                    src={url}
-                    alt="preview"
-                    className="w-full h-24 object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center p-2 text-center bg-gray-100 text-xs text-gray-600 h-full">
-                    📄 {file.name}
-                  </div>
-                )}
-
-                {/* REMOVE BUTTON */}
+            <motion.div
+              initial={{ scale: 0.95, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 30 }}
+              className="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl border"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* HEADER */}
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  📎{" "}
+                  {proofData?.to_status === "Raised"
+                    ? "Raised Work Proof"
+                    : proofData?.to_status === "Received"
+                      ? "Received Work Proof"
+                      : "Submit Work Proof"}
+                </h3>
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    setShowProofModal(false);
                     setProofData({
-                      ...proofData,
-                      documents: proofData.documents.filter(
-                        (_, index) => index !== i
-                      ),
-                    })
-                  }
-                  className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                      stage_type: "",
+                      documents: [],
+                      rejection_proof: [],
+                      rejection_reason: "",
+                      rejection_type: "",
+                      subactivity: "",
+                      to_status: "",
+                      changed_by: user?.emp_code || "",
+                      remarks: "",
+                      document_type: "ref_doc",
+                      client_remarks: "",
+                      received_amount: "",
+                      raised_amount: "",
+                      extra_amount: "",
+                    });
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
                 >
                   ✕
                 </button>
               </div>
-            );
-          })}
-        </div>
 
-        {/* MESSAGE */}
-        {proofData.to_status !== "Rejected" && (
-          <div className="mt-5">
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-              Message{" "}
-              {proofData?.to_status === "Raised" && (
-                <span className="text-red-500">*</span>
-              )}
-            </label>
-            <textarea
-              value={proofData.remarks}
-              onChange={(e) =>
-                setProofData({ ...proofData, remarks: e.target.value })
-              }
-              placeholder="Describe your proof..."
-              rows={3}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        )}
-
-        {/* REJECTION FIELDS */}
-        {proofData.to_status === "Rejected" && (
-          <>
-            <div className="mt-5">
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Rejection Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={proofData.rejection_type || ""}
-                onChange={(e) =>
-                  setProofData({ ...proofData, rejection_type: e.target.value })
-                }
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-              >
-                <option value="" disabled>
-                  Select Rejection Type
-                </option>
-                <option value="Quality Issue">Quality Issue</option>
-                <option value="Incomplete Work">Incomplete Work</option>
-                <option value="Client Requirement Mismatch">
-                  Client Requirement Mismatch
-                </option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div className="mt-5">
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Rejection Reason <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={proofData.rejection_reason || ""}
-                onChange={(e) =>
-                  setProofData({ ...proofData, rejection_reason: e.target.value })
-                }
-                placeholder="Enter reason for rejection..."
-                rows={3}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Rejection Proof
-              </label>
-              <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
+              {/* UPLOAD AREA */}
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Upload Documents{" "}
+                  {proofData?.to_status === "Raised" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </label>
+              </div>
+              <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-blue-400 transition">
                 <input
                   type="file"
                   multiple
@@ -1456,22 +1330,19 @@ const ProjectList = () => {
                   onChange={(e) =>
                     setProofData({
                       ...proofData,
-                      rejection_proof: [
-                        ...(proofData.rejection_proof || []),
-                        ...Array.from(e.target.files),
-                      ],
+                      documents: [...proofData.documents, ...Array.from(e.target.files)],
                     })
                   }
                 />
                 <p className="text-sm text-gray-500">
-                  <span className="text-red-600 font-medium">
-                    browse rejection proofs
-                  </span>
+                  <span className="text-blue-600 font-medium">browse</span>
                 </p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF, DOC</p>
               </label>
 
+              {/* FILE PREVIEW GRID */}
               <div className="grid grid-cols-3 gap-3 mt-4">
-                {proofData?.rejection_proof?.map((file, i) => {
+                {proofData?.documents?.map((file, i) => {
                   const isImage = file.type.startsWith("image/");
                   const url = URL.createObjectURL(file);
 
@@ -1492,11 +1363,12 @@ const ProjectList = () => {
                         </div>
                       )}
 
+                      {/* REMOVE BUTTON */}
                       <button
                         onClick={() =>
                           setProofData({
                             ...proofData,
-                            rejection_proof: proofData.rejection_proof.filter(
+                            documents: proofData.documents.filter(
                               (_, index) => index !== i
                             ),
                           })
@@ -1509,84 +1381,211 @@ const ProjectList = () => {
                   );
                 })}
               </div>
-            </div>
-          </>
+
+              {/* MESSAGE */}
+              {proofData.to_status !== "Rejected" && (
+                <div className="mt-5">
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Message{" "}
+                    {proofData?.to_status === "Raised" && (
+                      <span className="text-red-500">*</span>
+                    )}
+                  </label>
+                  <textarea
+                    value={proofData.remarks}
+                    onChange={(e) =>
+                      setProofData({ ...proofData, remarks: e.target.value })
+                    }
+                    placeholder="Describe your proof..."
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              {/* REJECTION FIELDS */}
+              {proofData.to_status === "Rejected" && (
+                <>
+                  <div className="mt-5">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Rejection Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={proofData.rejection_type || ""}
+                      onChange={(e) =>
+                        setProofData({ ...proofData, rejection_type: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="" disabled>
+                        Select Rejection Type
+                      </option>
+                      <option value="Quality Issue">Quality Issue</option>
+                      <option value="Incomplete Work">Incomplete Work</option>
+                      <option value="Client Requirement Mismatch">
+                        Client Requirement Mismatch
+                      </option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="mt-5">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Rejection Reason <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={proofData.rejection_reason || ""}
+                      onChange={(e) =>
+                        setProofData({ ...proofData, rejection_reason: e.target.value })
+                      }
+                      placeholder="Enter reason for rejection..."
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                      Rejection Proof
+                    </label>
+                    <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-red-400 transition">
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) =>
+                          setProofData({
+                            ...proofData,
+                            rejection_proof: [
+                              ...(proofData.rejection_proof || []),
+                              ...Array.from(e.target.files),
+                            ],
+                          })
+                        }
+                      />
+                      <p className="text-sm text-gray-500">
+                        <span className="text-red-600 font-medium">
+                          browse rejection proofs
+                        </span>
+                      </p>
+                    </label>
+
+                    <div className="grid grid-cols-3 gap-3 mt-4">
+                      {proofData?.rejection_proof?.map((file, i) => {
+                        const isImage = file.type.startsWith("image/");
+                        const url = URL.createObjectURL(file);
+
+                        return (
+                          <div
+                            key={i}
+                            className="relative border rounded-lg overflow-hidden group"
+                          >
+                            {isImage ? (
+                              <img
+                                src={url}
+                                alt="preview"
+                                className="w-full h-24 object-cover"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center p-2 text-center bg-gray-100 text-xs text-gray-600 h-full">
+                                📄 {file.name}
+                              </div>
+                            )}
+
+                            <button
+                              onClick={() =>
+                                setProofData({
+                                  ...proofData,
+                                  rejection_proof: proofData.rejection_proof.filter(
+                                    (_, index) => index !== i
+                                  ),
+                                })
+                              }
+                              className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="mt-5 relative">
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {proofData?.to_status === "Raised"
+                    ? "Raised Amount"
+                    : "Received Amount"}
+                </label>
+                <input
+                  type="number"
+                  value={
+                    proofData?.to_status === "Raised"
+                      ? proofData.raised_amount
+                      : proofData.received_amount
+                  }
+                  onChange={(e) =>
+                    setProofData({
+                      ...proofData,
+                      [proofData?.to_status === "Raised"
+                        ? "raised_amount"
+                        : "received_amount"]: e.target.value,
+                    })
+                  }
+                  placeholder={`Enter the ${proofData?.to_status === "Raised" ? "raised" : "received"
+                    } amount...`}
+                  className="w-full px-3 py-2 pr-14 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+
+                <span className="absolute right-3 top-9 text-xs text-gray-400">
+                  LAKH
+                </span>
+              </div>
+
+              {/* ACTIONS */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowProofModal(false);
+                    setProofData({
+                      stage_type: "",
+                      documents: [],
+                      rejection_proof: [],
+                      rejection_reason: "",
+                      rejection_type: "",
+                      subactivity: "",
+                      to_status: "",
+                      changed_by: user?.emp_code || "",
+                      remarks: "",
+                      document_type: "ref_doc",
+                      client_remarks: "",
+                      raised_amount: "",
+                      received_amount: "",
+                    });
+                  }}
+                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleSubmitProof}
+                  disabled={
+                    loder ||
+                    !proofData?.documents?.length ||
+                    (proofData?.to_status === "Raised" && !proofData?.remarks?.trim())
+                  }
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loder ? "Submitting..." : "Submit Proof"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-
-        <div className="mt-5 relative">
-          <label className="text-sm font-medium text-gray-700 block mb-1">
-            {proofData?.to_status === "Raised"
-              ? "Raised Amount"
-              : "Received Amount"}
-          </label>
-          <input
-            type="number"
-            value={
-              proofData?.to_status === "Raised"
-                ? proofData.raised_amount
-                : proofData.received_amount
-            }
-            onChange={(e) =>
-              setProofData({
-                ...proofData,
-                [proofData?.to_status === "Raised"
-                  ? "raised_amount"
-                  : "received_amount"]: e.target.value,
-              })
-            }
-            placeholder={`Enter the ${
-              proofData?.to_status === "Raised" ? "raised" : "received"
-            } amount...`}
-            className="w-full px-3 py-2 pr-14 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-
-          <span className="absolute right-3 top-9 text-xs text-gray-400">
-            LAKH
-          </span>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={() => {
-              setShowProofModal(false);
-              setProofData({
-                stage_type: "",
-                documents: [],
-                rejection_proof: [],
-                rejection_reason: "",
-                rejection_type: "",
-                subactivity: "",
-                to_status: "",
-                changed_by: user?.emp_code || "",
-                remarks: "",
-                document_type: "ref_doc",
-                client_remarks: "",
-                raised_amount: "",
-                received_amount: "",
-              });
-            }}
-            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={handleSubmitProof}
-            disabled={
-              loder ||
-              !proofData?.documents?.length ||
-              (proofData?.to_status === "Raised" && !proofData?.remarks?.trim())
-            }
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loder ? "Submitting..." : "Submit Proof"}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+      </AnimatePresence>
 
       {/* Show Document */}
       <AnimatePresence>
@@ -3706,91 +3705,91 @@ const ProjectList = () => {
                                                                               // ==========================================
                                                                               // ADMIN / ACCOUNT VIEW (1 Row per Stage)
                                                                               // ==========================================
-                                                                               sub.stages && sub.stages.length > 0 ? (
-                                sub.stages.map((stage, sIdx) => {
-                                  const rowSpanCount = Math.max(1, sub.stages?.length || 0);
-                                  const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
-                                  const stageRaised = (stage.payment_logs || [])
-                                    .filter(log => log.to_status === "Raised")
-                                    .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
+                                                                              sub.stages && sub.stages.length > 0 ? (
+                                                                                sub.stages.map((stage, sIdx) => {
+                                                                                  const rowSpanCount = Math.max(1, sub.stages?.length || 0);
+                                                                                  const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
+                                                                                  const stageRaised = (stage.payment_logs || [])
+                                                                                    .filter(log => log.to_status === "Raised")
+                                                                                    .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
 
-                                  const stageReceived = (stage.payment_logs || [])
-                                    .filter(log => log.to_status === "Received")
-                                    .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
+                                                                                  const stageReceived = (stage.payment_logs || [])
+                                                                                    .filter(log => log.to_status === "Received")
+                                                                                    .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
 
-                                  const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
-                                  const workStatus = stage.work_status || "Pending";
-                                  const paymentStatus = stage.payment_status || "Waiting";
+                                                                                  const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
+                                                                                  const workStatus = stage.work_status || "Pending";
+                                                                                  const paymentStatus = stage.payment_status || "Waiting";
 
-                                  return (
-                                    <tr
-                                      key={stage.id}
-                                      className="border-t text-[12px] bg-white hover:bg-gray-50 transition-colors"
-                                      onClick={() => {
-                                        if (sub.work_summary?.users?.length > 0) {
-                                          setExpandedRow(expandedRow === sub.id ? null : sub.id);
-                                        }
-                                      }}
-                                    >
-                                      {/* 🟢 Render Sub-Activity Parent Info ONLY on the FIRST stage row */}
-                                      {sIdx === 0 && (
-                                        <>
-                                          <td rowSpan={rowSpanCount} className="px-2 text-center align-middle border-r border-gray-100">
-                                            {sub.work_summary?.users?.length > 0 ? (
-                                              <motion.button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setExpandedRow(expandedRow === sub.id ? null : sub.id);
-                                                }}
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
-                                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                                                  }`}
-                                                title={expandedRow === sub.id ? "Collapse" : "Expand"}
-                                              >
-                                                {expandedRow === sub.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                              </motion.button>
-                                            ) : (
-                                              <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
-                                            )}
-                                          </td>
-                                          <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
-                                            {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
-                                          </td>
-                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                            {formatNumber(sub.chainage_start)}
-                                          </td>
-                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                            {sub.total_quantity}
-                                          </td>
-                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                            {formatNumber(sub.covered_area)}
-                                          </td>
-                                          
-                                          
-                                          {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
-                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                            <button
-                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
-                                              onClick={(e) => handleViewSubActivity(sub.id, e)}
-                                              title="View Details"
-                                            >
-                                              <span className='flex flex-row items-center justify-center gap-1'>
-                                                <Eye size={16} />
-                                              </span>
-                                            </button>
-                                          </td>
-                                        </>
-                                      )}
+                                                                                  return (
+                                                                                    <tr
+                                                                                      key={stage.id}
+                                                                                      className="border-t text-[12px] bg-white hover:bg-gray-50 transition-colors"
+                                                                                      onClick={() => {
+                                                                                        if (sub.work_summary?.users?.length > 0) {
+                                                                                          setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                                                                                        }
+                                                                                      }}
+                                                                                    >
+                                                                                      {/* 🟢 Render Sub-Activity Parent Info ONLY on the FIRST stage row */}
+                                                                                      {sIdx === 0 && (
+                                                                                        <>
+                                                                                          <td rowSpan={rowSpanCount} className="px-2 text-center align-middle border-r border-gray-100">
+                                                                                            {sub.work_summary?.users?.length > 0 ? (
+                                                                                              <motion.button
+                                                                                                onClick={(e) => {
+                                                                                                  e.stopPropagation();
+                                                                                                  setExpandedRow(expandedRow === sub.id ? null : sub.id);
+                                                                                                }}
+                                                                                                whileHover={{ scale: 1.1 }}
+                                                                                                whileTap={{ scale: 0.95 }}
+                                                                                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${expandedRow === sub.id
+                                                                                                  ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                                  : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                                  }`}
+                                                                                                title={expandedRow === sub.id ? "Collapse" : "Expand"}
+                                                                                              >
+                                                                                                {expandedRow === sub.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                                                                              </motion.button>
+                                                                                            ) : (
+                                                                                              <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
+                                                                                            )}
+                                                                                          </td>
+                                                                                          <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
+                                                                                            {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
+                                                                                          </td>
+                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                            {formatNumber(sub.chainage_start)}
+                                                                                          </td>
+                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                            {sub.total_quantity}
+                                                                                          </td>
+                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                            {formatNumber(sub.covered_area)}
+                                                                                          </td>
 
-                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
-                                      <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
-                                      <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
-                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>  
 
-                                                                                      
+                                                                                          {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
+                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                            <button
+                                                                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                                                                                              onClick={(e) => handleViewSubActivity(sub.id, e)}
+                                                                                              title="View Details"
+                                                                                            >
+                                                                                              <span className='flex flex-row items-center justify-center gap-1'>
+                                                                                                <Eye size={16} />
+                                                                                              </span>
+                                                                                            </button>
+                                                                                          </td>
+                                                                                        </>
+                                                                                      )}
+
+                                                                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
+                                                                                      <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
+                                                                                      <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
+                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
+
+
 
 
 
@@ -3861,7 +3860,7 @@ const ProjectList = () => {
                                                                                                       "bg-gray-100 text-gray-600 border-gray-200"}`}
                                                                                           >
                                                                                             {/* {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus} */}
-                                                                                                {workStatus === "Pending" ? "Not Started" : workStatus}
+                                                                                            {workStatus === "Pending" ? "Not Started" : workStatus}
 
                                                                                           </span>
                                                                                           {
@@ -3896,32 +3895,32 @@ const ProjectList = () => {
                                                                                             //   );
                                                                                             // }}
                                                                                             onChange={(e) => {
-        const selectedAction = e.target.value;
+                                                                                              const selectedAction = e.target.value;
 
-        // 🔥 Intercept the action: Check if Account is trying to raise without TL approval
-        if (isACCOUNT && workStatus !== "Approved" && selectedAction === "Raised") {
-            // Show error message popup
-            dispatch(showSnackbar({ 
-                message: "Team Lead has not approved this yet. You cannot raise the amount.", 
-                type: "error" 
-            }));
-            
-            // Revert the dropdown back to its original value
-            e.target.value = invoiceStatus; 
-            return; // Stop the function here so the modal doesn't open
-        }
+                                                                                              // 🔥 Intercept the action: Check if Account is trying to raise without TL approval
+                                                                                              if (isACCOUNT && workStatus !== "Approved" && selectedAction === "Raised") {
+                                                                                                // Show error message popup
+                                                                                                dispatch(showSnackbar({
+                                                                                                  message: "Team Lead has not approved this yet. You cannot raise the amount.",
+                                                                                                  type: "error"
+                                                                                                }));
 
-        // If validation passes, open the modal normally
-        handleSubmissionapproveStatus(
-            stage.id,
-            sub,
-            selectedAction,
-            stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
-            stage.extra_payment_amount || 0,
-            projectId,
-            'payment'
-        );
-    }}
+                                                                                                // Revert the dropdown back to its original value
+                                                                                                e.target.value = invoiceStatus;
+                                                                                                return; // Stop the function here so the modal doesn't open
+                                                                                              }
+
+                                                                                              // If validation passes, open the modal normally
+                                                                                              handleSubmissionapproveStatus(
+                                                                                                stage.id,
+                                                                                                sub,
+                                                                                                selectedAction,
+                                                                                                stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
+                                                                                                stage.extra_payment_amount || 0,
+                                                                                                projectId,
+                                                                                                'payment'
+                                                                                              );
+                                                                                            }}
                                                                                             className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
                                                                                             style={{
                                                                                               backgroundColor:
