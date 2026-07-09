@@ -424,6 +424,117 @@ const UpdateProject = () => {
     }, [sectors]);
 
     // Initialize activities from project data
+    // useEffect(() => {
+    //     if (!projectData?.activities_detail?.length) return;
+
+    //     const activitiesList = [];
+    //     const weightagesMap = {};
+    //     const datesMap = {};
+    //     const subSelectionsMap = {};
+    //     const subUnitsMap = {};
+    //     const subQtysMap = {};
+
+    //     // Process each activity
+    //     projectData.activities_detail.forEach((activity) => {
+    //         const activityId = activity.id;
+    //         activitiesList.push(activityId);
+
+    //         weightagesMap[activityId] = parseFloat(activity.weightage) || 0;
+
+    //         datesMap[activityId] = {
+    //             startDate: activity.start_date || "",
+    //             endDate: activity.end_date || "",
+    //         };
+
+    //         // Process sub-activities
+    //         const selectedSubs = [];
+    //         if (activity.subactivities && activity.subactivities.length > 0) {
+    //             activity.subactivities.forEach((sub) => {
+    //                 const subId = sub.id;
+    //                 selectedSubs.push(subId);
+
+    //                 // Set unit
+    //                 subUnitsMap[`${activityId}_${subId}`] = sub.unit || "";
+
+    //                 // Set planned quantities
+    //                 subQtysMap[`${subId}_quantity`] = sub.total_quantity || 0;
+    //                 subQtysMap[`${subId}_start_date`] = sub.start_date || "";
+    //                 subQtysMap[`${subId}_end_date`] = sub.end_date || "";
+    //                 // subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
+    //                 // subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
+    //                 subQtysMap[`${subId}_chainagestart`] = parseFloat(sub.chainage_start) || 0;
+    //                 subQtysMap[`${subId}_chainageend`] = parseFloat(sub.chainage_end) || 0;
+    //                 subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
+    //                 subQtysMap[`${subId}_description`] = sub.description || "";
+    //                 // Initialize dynamic stages from backend data
+    //                 if (sub.stages && sub.stages.length > 0) {
+    //                     setWorkStages(prev => ({
+    //                         ...prev,
+    //                         [subId]: sub.stages.map((stg, i) => ({
+    //                             id: stg.id, // Preserve existing DB ID for updating
+    //                             name: stg.name || stg.stage_type || `Stage ${i + 1}`,
+    //                             payment_percent: stg.payment_percent || 0
+    //                         }))
+    //                     }));
+    //                 } else {
+    //                     // Fallback for older data that doesn't have the stages array yet
+    //                     setWorkStages(prev => ({
+    //                         ...prev,
+    //                         [subId]: [
+    //                             { id: `temp_stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+    //                             { id: `temp_stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+    //                         ]
+    //                     }));
+    //                 }
+    //             });
+    //         }
+    //         subSelectionsMap[activityId] = selectedSubs;
+    //     });
+
+    //     setSelectedActivities(activitiesList);
+    //     setActivityWeightages(weightagesMap);
+    //     setActivityDates(datesMap);
+    //     setSelectedSubActivities(subSelectionsMap);
+    //     setSubActivityUnits(subUnitsMap);
+    //     setSubActivityPlannedQtys(subQtysMap);
+
+    //     // Also create activities in the template/custom structure for display
+    //     const transformedActivities = projectData.activities_detail.map((activity, index) => ({
+    //         id: activity.id,
+    //         sorting_var: activity.sorting_var || index + 1,
+    //         activity_name: activity.activity_name,
+    //         start_date: activity.start_date,
+    //         end_date: activity.end_date,
+    //         weightage: activity.weightage,
+    //         isFromTemplate: false,
+    //         isCustom: false,
+    //         subActivities: activity.subactivities.map((sub, subIndex) => ({
+    //             id: sub.id,
+    //             sorting_var: sub.sorting_var || subIndex + 1,
+    //             subactivity_name: sub.subactivity_name,
+    //             description: sub.description || "",
+    //             unit: sub.unit,
+    //             total_quantity: sub.total_quantity,
+    //             submission_payment: sub.submission_payment,
+    //             approval_payment: sub.approval_payment,
+    //             chainage_start: sub.chainage_start,
+    //             chainage_end: sub.chainage_end,
+    //             covered_area: sub.covered_area,
+    //             chainage_exist: true,
+    //             planned_quantity_exist: true,
+    //             length_exist: true,
+    //             submission_exist: true,
+    //             approval_exist: true,
+    //         })),
+    //     }));
+
+    //     setTemplateActivities(transformedActivities);
+    //     setCustomActivities([]);
+
+    // }, [projectData]);
+
+
+    // Initialize activities from project data
     useEffect(() => {
         if (!projectData?.activities_detail?.length) return;
 
@@ -434,8 +545,13 @@ const UpdateProject = () => {
         const subUnitsMap = {};
         const subQtysMap = {};
 
+        // 1. Sort the main activities array by sorting_var
+        const sortedActivities = [...projectData.activities_detail].sort(
+            (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+        );
+
         // Process each activity
-        projectData.activities_detail.forEach((activity) => {
+        sortedActivities.forEach((activity) => {
             const activityId = activity.id;
             activitiesList.push(activityId);
 
@@ -449,7 +565,13 @@ const UpdateProject = () => {
             // Process sub-activities
             const selectedSubs = [];
             if (activity.subactivities && activity.subactivities.length > 0) {
-                activity.subactivities.forEach((sub) => {
+                
+                // 2. Sort the sub-activities array by sorting_var
+                const sortedSubActivities = [...activity.subactivities].sort(
+                    (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+                );
+
+                sortedSubActivities.forEach((sub) => {
                     const subId = sub.id;
                     selectedSubs.push(subId);
 
@@ -460,20 +582,24 @@ const UpdateProject = () => {
                     subQtysMap[`${subId}_quantity`] = sub.total_quantity || 0;
                     subQtysMap[`${subId}_start_date`] = sub.start_date || "";
                     subQtysMap[`${subId}_end_date`] = sub.end_date || "";
-                    // subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
-                    // subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
                     subQtysMap[`${subId}_chainagestart`] = parseFloat(sub.chainage_start) || 0;
                     subQtysMap[`${subId}_chainageend`] = parseFloat(sub.chainage_end) || 0;
                     subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
                     subQtysMap[`${subId}_description`] = sub.description || "";
-                    // Initialize dynamic stages from backend data
+                    
+                    // 3. Sort dynamic stages from backend data
                     if (sub.stages && sub.stages.length > 0) {
+                        const sortedStages = [...sub.stages].sort(
+                            (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+                        );
+                        
                         setWorkStages(prev => ({
                             ...prev,
-                            [subId]: sub.stages.map((stg, i) => ({
+                            [subId]: sortedStages.map((stg, i) => ({
                                 id: stg.id, // Preserve existing DB ID for updating
                                 name: stg.name || stg.stage_type || `Stage ${i + 1}`,
-                                payment_percent: stg.payment_percent || 0
+                                payment_percent: stg.payment_percent || 0,
+                                sorting_var: stg.sorting_var || i + 1
                             }))
                         }));
                     } else {
@@ -499,34 +625,40 @@ const UpdateProject = () => {
         setSubActivityPlannedQtys(subQtysMap);
 
         // Also create activities in the template/custom structure for display
-        const transformedActivities = projectData.activities_detail.map((activity, index) => ({
-            id: activity.id,
-            sorting_var: activity.sorting_var || index + 1,
-            activity_name: activity.activity_name,
-            start_date: activity.start_date,
-            end_date: activity.end_date,
-            weightage: activity.weightage,
-            isFromTemplate: false,
-            isCustom: false,
-            subActivities: activity.subactivities.map((sub, subIndex) => ({
-                id: sub.id,
-                sorting_var: sub.sorting_var || subIndex + 1,
-                subactivity_name: sub.subactivity_name,
-                description: sub.description || "",
-                unit: sub.unit,
-                total_quantity: sub.total_quantity,
-                submission_payment: sub.submission_payment,
-                approval_payment: sub.approval_payment,
-                chainage_start: sub.chainage_start,
-                chainage_end: sub.chainage_end,
-                covered_area: sub.covered_area,
-                chainage_exist: true,
-                planned_quantity_exist: true,
-                length_exist: true,
-                submission_exist: true,
-                approval_exist: true,
-            })),
-        }));
+        const transformedActivities = sortedActivities.map((activity, index) => {
+            const sortedSubActivities = [...(activity.subactivities || [])].sort(
+                (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+            );
+
+            return {
+                id: activity.id,
+                sorting_var: activity.sorting_var || index + 1,
+                activity_name: activity.activity_name,
+                start_date: activity.start_date,
+                end_date: activity.end_date,
+                weightage: activity.weightage,
+                isFromTemplate: false,
+                isCustom: false,
+                subActivities: sortedSubActivities.map((sub, subIndex) => ({
+                    id: sub.id,
+                    sorting_var: sub.sorting_var || subIndex + 1,
+                    subactivity_name: sub.subactivity_name,
+                    description: sub.description || "",
+                    unit: sub.unit,
+                    total_quantity: sub.total_quantity,
+                    submission_payment: sub.submission_payment,
+                    approval_payment: sub.approval_payment,
+                    chainage_start: sub.chainage_start,
+                    chainage_end: sub.chainage_end,
+                    covered_area: sub.covered_area,
+                    chainage_exist: true,
+                    planned_quantity_exist: true,
+                    length_exist: true,
+                    submission_exist: true,
+                    approval_exist: true,
+                })),
+            }
+        });
 
         setTemplateActivities(transformedActivities);
         setCustomActivities([]);
