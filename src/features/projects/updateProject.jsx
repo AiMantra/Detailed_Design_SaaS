@@ -780,7 +780,19 @@ const UpdateProject = () => {
         }
     };
 
+    // const handleActivityDateChange = (activityId, field, value) => {
+    //     setActivityDates((prev) => ({
+    //         ...prev,
+    //         [activityId]: {
+    //             ...prev[activityId],
+    //             [field]: value,
+    //         },
+    //     }));
+    // };
+
+
     const handleActivityDateChange = (activityId, field, value) => {
+        // 1. Update the parent activity's date
         setActivityDates((prev) => ({
             ...prev,
             [activityId]: {
@@ -788,6 +800,22 @@ const UpdateProject = () => {
                 [field]: value,
             },
         }));
+
+        // 2. Cascade the new date to all sub-activities under this activity
+        const activityObj = getAllActivities().find((a) => a.id === activityId);
+        
+        if (activityObj && activityObj.subActivities) {
+            setSubActivityPlannedQtys((prev) => {
+                const updatedQtys = { ...prev };
+                const subField = field === "startDate" ? "start_date" : "end_date";
+
+                activityObj.subActivities.forEach((sub) => {
+                    updatedQtys[`${sub.id}_${subField}`] = value;
+                });
+
+                return updatedQtys;
+            });
+        }
     };
 
     // const getActivityTotals = (activity, storeData) => {
@@ -1304,6 +1332,21 @@ const UpdateProject = () => {
             ...prev,
             [selectedActivityForSub]: [...(prev[selectedActivityForSub] || []), ...newSubIds],
         }));
+
+        // Get the parent activity's current dates
+        const parentDates = activityDates[selectedActivityForSub] || {};
+        const defaultStartDate = parentDates.startDate || "";
+        const defaultEndDate = parentDates.endDate || "";
+
+        // Update the planned quantities state for the new sub-activities
+        setSubActivityPlannedQtys(prev => {
+            const updated = { ...prev };
+            newSubs.forEach(sub => {
+                updated[`${sub.id}_start_date`] = defaultStartDate;
+                updated[`${sub.id}_end_date`] = defaultEndDate;
+            });
+            return updated;
+        });
 
         setTimeout(() => {
             const lastSubElement = document.getElementById(`sub-${lastSubId}`);

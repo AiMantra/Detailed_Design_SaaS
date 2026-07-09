@@ -572,7 +572,18 @@ const CreateProject = () => {
     }
   };
 
+  // const handleActivityDateChange = (activityId, field, value) => {
+  //   setActivityDates((prev) => ({
+  //     ...prev,
+  //     [activityId]: {
+  //       ...prev[activityId],
+  //       [field]: value,
+  //     },
+  //   }));
+  // };
+
   const handleActivityDateChange = (activityId, field, value) => {
+    // 1. Update the parent activity's date
     setActivityDates((prev) => ({
       ...prev,
       [activityId]: {
@@ -580,6 +591,25 @@ const CreateProject = () => {
         [field]: value,
       },
     }));
+
+    // 2. Auto-fill the same date for all sub-activities of this activity
+    const activityObj = getAllActivities().find((a) => a.id === activityId);
+    
+    if (activityObj && activityObj.subActivities) {
+      setSubActivityPlannedQtys((prev) => {
+        const updatedQtys = { ...prev };
+        
+        // Map "startDate" -> "start_date" and "endDate" -> "end_date"
+        const subField = field === "startDate" ? "start_date" : "end_date";
+
+        // Apply the date to every sub-activity under this activity
+        activityObj.subActivities.forEach((sub) => {
+          updatedQtys[`${sub.id}_${subField}`] = value;
+        });
+
+        return updatedQtys;
+      });
+    }
   };
 
   const getActivityTotals = (activity, storeData) => {
@@ -1304,6 +1334,20 @@ const CreateProject = () => {
         ...newSubIds,
       ],
     }));
+
+
+    const parentDates = activityDates[selectedActivityForSub] || {};
+    const defaultStartDate = parentDates.startDate || "";
+    const defaultEndDate = parentDates.endDate || "";
+
+    setSubActivityPlannedQtys((prev) => {
+      const updated = { ...prev };
+      newSubs.forEach((sub) => {
+        updated[`${sub.id}_start_date`] = defaultStartDate;
+        updated[`${sub.id}_end_date`] = defaultEndDate;
+      });
+      return updated;
+    });
 
     // Scroll to the newly added sub-activity
     setTimeout(() => {
