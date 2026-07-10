@@ -1185,6 +1185,7 @@ const UpdateProject = () => {
             newSubs = [
                 {
                     // id: `custom-sub-${Date.now()}`,
+                    id: `custom-sub-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`,
                     sorting_var: null,
                     subactivity_name: newSubActivity.subactivity_name,
                     unit: newSubActivity.unit,
@@ -1225,6 +1226,7 @@ const UpdateProject = () => {
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
                         // id: `custom-sub-${Date.now()}-${i}`,
+                        id: `custom-sub-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`,
                         sorting_var: null,
                         subactivity_name: newSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: newSubActivity.unit,
