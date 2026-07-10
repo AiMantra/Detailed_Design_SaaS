@@ -344,7 +344,6 @@ const ProjectDetails = () => {
           dispatch(fetchProjectWorkSummary(id)).unwrap() // Add this line
         ]);
       } catch (error) {
-        console.error("Error loading data:", error);
         dispatch(showSnackbar({
           message: "Failed to load project data",
           type: "error"
@@ -646,7 +645,6 @@ const ProjectDetails = () => {
       }));
 
     } catch (error) {
-      console.error("Error updating field:", error);
       dispatch(showSnackbar({
         message: error.response?.data?.message || error.message || "Failed to update",
         type: "error"
@@ -767,7 +765,6 @@ const ProjectDetails = () => {
       setEditingSubActivity(null);
       setEditValue(0);
     } catch (error) {
-      console.error("Error updating progress:", error);
       dispatch(showSnackbar({
         message: error.response?.data?.message || error.message || "Failed to update progress",
         type: "error"
@@ -826,7 +823,6 @@ const ProjectDetails = () => {
         type: "success"
       }));
     } catch (error) {
-      console.error("Error updating status:", error);
       dispatch(showSnackbar({
         message: error.response?.data?.message || error.message || "Failed to update status",
         type: "error"

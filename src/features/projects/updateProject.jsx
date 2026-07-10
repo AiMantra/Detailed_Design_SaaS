@@ -330,7 +330,6 @@ const UpdateProject = () => {
                     dispatch(fetchStageTemplates()),
                 ]);
             } catch (error) {
-                console.error("Error loading reference data:", error);
                 dispatch(
                     showSnackbar({
                         message: "Failed to load reference data",
@@ -351,7 +350,6 @@ const UpdateProject = () => {
                 const projectResult = await dispatch(fetchProjectDetails(projectId)).unwrap();
                 setProjectData(projectResult);
             } catch (error) {
-                console.error("Error fetching project:", error);
                 dispatch(
                     showSnackbar({
                         message: error?.message || "Failed to load project data",
@@ -1081,7 +1079,6 @@ const UpdateProject = () => {
             setNewCompany({ name: "", gst_no: "" });
             setShowAddCompanyModal(false);
         } catch (error) {
-            console.error("Error adding company:", error);
             dispatch(showSnackbar({ message: "Failed to add company. Please try again.", type: "error" }));
         }
     };
@@ -1393,269 +1390,7 @@ const UpdateProject = () => {
         }
     };
 
-    // const handleCloneSubActivitySubmit = async (e) => {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-
-    //     if (!cloningSubActivity) return;
-
-    //     let newSubs = [];
-
-    //     if (cloningSubActivity.activityType === "single") {
-    //         newSubs = [
-    //             {
-    //                 // id: `custom-sub-${Date.now()}`,
-    //                 sorting_var: null,
-    //                 subactivity_name: cloningSubActivity.subactivity_name,
-    //                 unit: cloningSubActivity.unit,
-    //                 activityType: cloningSubActivity.activityType,
-    //                 chainage_start: null,
-    //                 chainage_end: null,
-    //                 covered_area: null,
-    //                 chainage_quantity: null,
-    //                 lengthType: "same",
-    //                 chainageLengths: [],
-    //                 isCustom: true,
-    //             },
-    //         ];
-    //     } else {
-    //         const start = Number(cloningSubActivity.chainage_start) || 0;
-    //         const count = Number(cloningSubActivity.chainage_quantity) || 0;
-
-    //         if (!count || start === undefined) {
-    //             dispatch(showSnackbar({ message: "Enter valid Chainage Details", type: "error" }));
-    //             return;
-    //         }
-
-    //         let currentStart = Number(start);
-
-    //         if (cloningSubActivity.lengthType === "same") {
-    //             const covered = Number(cloningSubActivity.covered_area) || 0;
-
-    //             if (!covered) {
-    //                 dispatch(
-    //                     showSnackbar({
-    //                         message: "Please enter Chainage Length",
-    //                         type: "error",
-    //                     })
-    //                 );
-    //                 return;
-    //             }
-
-    //             for (let i = 0; i < count; i++) {
-
-    //                 // same chainage logic as your working test(1), test(2)
-    //                 const chainageStart = Number(currentStart.toFixed(2));
-    //                 const currentEnd = Number(
-    //                     (chainageStart + covered).toFixed(2)
-    //                 );
-
-    //                 newSubs.push({
-    //                     // id: `custom-sub-${Date.now()}-${i}`,
-    //                     sorting_var: null,
-
-    //                     // same naming pattern
-    //                     subactivity_name:
-    //                         cloningSubActivity.subactivity_name +
-    //                         ` (${i + 1})`,
-
-    //                     unit: cloningSubActivity.unit,
-
-    //                     // updated chainage logic
-    //                     chainage_start: chainageStart,
-    //                     chainage_end: currentEnd,
-
-    //                     covered_area: covered,
-    //                     chainage_quantity: count,
-
-    //                     activityType: cloningSubActivity.activityType,
-    //                     lengthType: "same",
-    //                     chainageLengths: [],
-    //                     lengthIndex: i,
-    //                     isCustom: true,
-    //                     chainage_exist: cloningSubActivity.chainage_exist || true,
-
-    //                     // keep flags same as existing structure
-    //                     approval_exist:
-    //                         cloningSubActivity.approval_exist || true,
-
-    //                     // chainage_exist:
-    //                     //     cloningSubActivity.chainage_exist ?? true,
-
-    //                     length_exist:
-    //                         cloningSubActivity.length_exist || true,
-
-    //                     planned_quantity_exist:
-    //                         cloningSubActivity.planned_quantity_exist || true,
-
-    //                     submission_exist:
-    //                         cloningSubActivity.submission_exist || true,
-    //                 });
-
-    //                 // next start
-    //                 currentStart = currentEnd;
-    //             }
-    //         } else {
-
-    //             const lengths = cloningSubActivity.chainageLengths;
-
-    //             if (lengths.length !== count) {
-    //                 dispatch(
-    //                     showSnackbar({
-    //                         message: `Please enter lengths for all ${count} chainages`,
-    //                         type: "error",
-    //                     })
-    //                 );
-    //                 return;
-    //             }
-
-    //             for (let i = 0; i < count; i++) {
-
-    //                 const covered = Number(lengths[i]) || 0;
-
-    //                 if (!covered) {
-    //                     dispatch(
-    //                         showSnackbar({
-    //                             message: `Please enter valid length for chainage ${i + 1}`,
-    //                             type: "error",
-    //                         })
-    //                     );
-    //                     return;
-    //                 }
-
-    //                 // same chainage logic
-    //                 const chainageStart = Number(currentStart.toFixed(2));
-    //                 const currentEnd = Number(
-    //                     (chainageStart + covered).toFixed(2)
-    //                 );
-
-    //                 newSubs.push({
-    //                     // id: `custom-sub-${Date.now()}-${i}`,
-    //                     sorting_var: null,
-
-    //                     // same naming pattern
-    //                     subactivity_name:
-    //                         cloningSubActivity.subactivity_name +
-    //                         ` (${i + 1})`,
-
-    //                     unit: cloningSubActivity.unit,
-
-    //                     chainage_start: chainageStart,
-    //                     chainage_end: currentEnd,
-
-    //                     covered_area: covered,
-    //                     chainage_quantity: count,
-
-    //                     activityType: cloningSubActivity.activityType,
-    //                     chainageLengths: lengths,
-    //                     lengthType: "different",
-    //                     lengthIndex: i,
-    //                     isCustom: true,
-
-    //                     approval_exist:
-    //                         cloningSubActivity.approval_exist || true,
-
-    //                     chainage_exist:
-    //                         cloningSubActivity.chainage_exist ?? true,
-
-    //                     length_exist:
-    //                         cloningSubActivity.length_exist || true,
-
-    //                     planned_quantity_exist:
-    //                         cloningSubActivity.planned_quantity_exist || true,
-
-    //                     submission_exist:
-    //                         cloningSubActivity.submission_exist || true,
-    //                 });
-
-    //                 // next start
-    //                 currentStart = currentEnd;
-    //             }
-    //         }
-    //     }
-
-    //     const activityId = cloningSubActivity.activityId;
-    //     const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
-    //     const newSubIds = newSubs.map((s) => s.id);
-    //     const lastSubId = newSubIds[newSubIds.length - 1];
-
-    //     const existingSubs =
-    //         templateIndex !== -1
-    //             ? [...(templatesActivities[templateIndex]?.subActivities || [])]
-    //             : [...(customActivities.find((act) => act.id === activityId)?.subActivities || [])];
-
-    //     let insertIndex = existingSubs.length;
-    //     const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
-    //     for (let i = existingSubs.length - 1; i >= 0; i--) {
-    //         if (existingSubs[i]?.subactivity_name?.toLowerCase() === lowerNewName) {
-    //             insertIndex = i + 1;
-    //             break;
-    //         }
-    //     }
-
-    //     const updatedSubActivities = [...existingSubs];
-    //     updatedSubActivities.splice(insertIndex, 0, ...newSubs);
-
-    //     const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
-    //         ...sub,
-    //         sorting_var: idx + 1,
-    //     }));
-
-    //     if (templateIndex !== -1) {
-    //         setTemplateActivities((prev) =>
-    //             prev.map((act, index) => {
-    //                 if (index === templateIndex) {
-    //                     return { ...act, subActivities: reassignedSubActivities };
-    //                 }
-    //                 return act;
-    //             })
-    //         );
-    //     } else {
-    //         setCustomActivities((prev) =>
-    //             prev.map((act) => {
-    //                 if (act.id === activityId) {
-    //                     return { ...act, subActivities: reassignedSubActivities };
-    //                 }
-    //                 return act;
-    //             })
-    //         );
-    //     }
-
-    //     setSelectedSubActivities((prev) => ({
-    //         ...prev,
-    //         [activityId]: [...(prev[activityId] || []), ...newSubIds],
-    //     }));
-
-    //     // Recalculate weightage for this activity
-    //     const activityObj = getAllActivities().find(a => a.id === activityId);
-    //     if (activityObj) {
-    //         const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
-    //         let totalWeightage = 0;
-    //         updatedSelectedSubs.forEach(selectedSubId => {
-    //             const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
-    //             if (subObj) {
-    //                 const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-    //                 const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-    //                 totalWeightage += submissionPayment + approvalPayment;
-    //             }
-    //         });
-    //         setActivityWeightages(prev => ({
-    //             ...prev,
-    //             [activityId]: totalWeightage
-    //         }));
-    //     }
-
-    //     setTimeout(() => {
-    //         const lastSubElement = document.getElementById(`sub-${lastSubId}`);
-    //         if (lastSubElement) {
-    //             lastSubElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    //         }
-    //     }, 100);
-
-    //     setShowCloneSubActivityModal(false);
-    //     setCloningSubActivity(null);
-    //     dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
-    // };
+    
 
     const handleCloneSubActivitySubmit = async (e) => {
         e.preventDefault();
@@ -2515,7 +2250,6 @@ const UpdateProject = () => {
                     workorder_document: form.workorder_document
                 })
             };
-console.log("Payload before dispatch:", payload);
             // // Add to FormData for file upload
             // Object.keys(payload).forEach((key) => {
             //     if (key === 'activities') {
@@ -2544,7 +2278,6 @@ console.log("Payload before dispatch:", payload);
             // navigate("/all-projects");
             // setTimeout(() => navigate("/all-projects"), 2000);
         } catch (error) {
-            console.error("Project update error:", error);
             dispatch(
                 showSnackbar({
                     message: error?.message || "Failed to update project",
@@ -2699,54 +2432,7 @@ console.log("Payload before dispatch:", payload);
 
 
 
-    // Add click outside handler with clear logic
-    // useEffect(() => {
-    //     function handleClickOutside(event) {
-    //         // Handle Company dropdown
-    //         if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
-    //             setShowCompanyDropdown(false);
-    //             // Check if current search value matches any company
-    //             const hasMatchingCompany = companies.some(c =>
-    //                 c.name?.toLowerCase() === companySearch?.toLowerCase()
-    //             );
-    //             // If no match and no company selected, clear the search
-    //             if (!hasMatchingCompany && !form.company && companySearch) {
-    //                 setCompanySearch("");
-    //             }
-    //         }
-
-    //         // Handle Sector dropdown
-    //         if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
-    //             setShowSectorDropdown(false);
-    //             // Check if current search value matches any sector
-    //             const hasMatchingSector = sectorsList.some(s =>
-    //                 s.name?.toLowerCase() === sectorSearch?.toLowerCase()
-    //             );
-    //             // If no match and no sector selected, clear the search
-    //             if (!hasMatchingSector && !form.sector && sectorSearch) {
-    //                 setSectorSearch("");
-    //             }
-    //         }
-
-    //         // Handle Client dropdown
-    //         if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
-    //             setShowClientDropdown(false);
-    //             // Check if current search value matches any client
-    //             const hasMatchingClient = clients.some(c =>
-    //                 c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
-    //                 c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
-    //             );
-    //             // If no match and no client selected, clear the search
-    //             if (!hasMatchingClient && !form.client && clientSearch) {
-    //                 setClientSearch("");
-    //             }
-    //         }
-    //     }
-
-    //     document.addEventListener("mousedown", handleClickOutside);
-    //     return () => document.removeEventListener("mousedown", handleClickOutside);
-    // }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
-    // Rest of the component remains the same (all the JSX with modals and form)...
+   
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -4694,29 +4380,7 @@ console.log("Payload before dispatch:", payload);
                             </div>
                         )}
 
-                        {/* <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Workorder Document</label>
-                            <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
-                                <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <div className="text-gray-500">
-                                    <span className="text-sm">
-                                        {form?.workorder_document?.name ||
-                                            (form.existing_workorder_document ? "Current document uploaded" : "Click to upload or drag & drop")}
-                                    </span>
-                                </div>
-                                <input type="file" name="workorder_document" onChange={handleChange} className="hidden" />
-                            </label>
-                            {form.existing_workorder_document && !form.workorder_document && (
-                                <a
-                                    href={form.existing_workorder_document}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:underline mt-1 inline-flex items-center gap-1"
-                                >
-                                    <FileText size={12} /> View Current Document
-                                </a>
-                            )}
-                        </div> */}
+                        
                         <div className="flex flex-col gap-1">
     <label className="text-xs text-gray-500">Workorder Document</label>
     
@@ -5501,7 +5165,6 @@ console.log("Payload before dispatch:", payload);
                                                                                         sub.id,
                                                                                     );
                                                                                     const key = `${activityId}_${sub.id}`;
-                                                                                    console.log(key, 'keyyy')
                                                                                     // const key = `${activityId}_${sub.subactivity_name}`;
                                                                                     // const key2 = `${sub?.id}_${sub.subactivity_name}`;
                                                                                     const currentUnit =
@@ -5517,40 +5180,7 @@ console.log("Payload before dispatch:", payload);
                                                                                         >
 
                                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                                {/* <div className="flex items-center gap-2">
-                                                                             <input
-                                                                               type="checkbox"
-                                                                               checked={isSelected}
-                                                                               onChange={(e) =>
-                                                                                 handleSubActivitySelection(
-                                                                                   activityId,
-                                                                                   sub.id,
-                                                                                   e.target.checked,
-                                                                                 )
-                                                                               }
-                                                                               className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                             />
-                                                                             <span
-                                                                               className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
-                                                                               onClick={(e) => {
-                                                                                 e.stopPropagation();
-                                                                                 handleSubActivitySelection(
-                                                                                   activityId,
-                                                                                   sub.id,
-                                                                                   !isSelected,
-                                                                                 );
-                                                                               }}
-                                                                             >
-                                                                               Stage {sub.sorting_var}: {displayName}
-                                                                             </span>
-                               
-                               
-                                                                             {sub.isCustom && (
-                                                                               <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
-                                                                                 Custom
-                                                                               </span>
-                                                                             )}
-                                                                           </div> */}
+                                                                                               
                                                                                                 <div className="flex items-center gap-2 flex-1">
                                                                                                     <input
                                                                                                         type="checkbox"
@@ -5640,7 +5270,6 @@ console.log("Payload before dispatch:", payload);
                                                                                                             />
                                                                                                             Show All
                                                                                                         </label>
-                                                                                                        {console.log(showAllFields[key], '')}
 
 
                                                                                                     </div>
@@ -5890,98 +5519,7 @@ console.log("Payload before dispatch:", payload);
                                                                                                                 </div>
                                                                                                             </div>}
 
-                                                                                                        {/* {(sub?.submission_exist || showAllFields[key]) &&
-                                                                                                            <div>
-                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                    Submission Payment (%)
-                                                                                                                </label>
-                                                                                                                <div className="relative">
-                                                                                                                    <input
-                                                                                                                        type="number"
-                                                                                                                        min="0"
-                                                                                                                        step="0.01"
-                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_subpayment")] || ''}
-                                                                                                                        value={
-                                                                                                                            subActivityPlannedQtys[
-                                                                                                                            `${sub.id}_subpayment`
-                                                                                                                            ] || ""
-                                                                                                                        }
-                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_subpayment"), e.target.value)}
-                                                                                                                        onChange={(e) =>
-                                                                                                                            handleSubActivityPlannedQtyChange(
-                                                                                                                                sub.id,
-                                                                                                                                "subpayment",
-                                                                                                                                e.target.value,
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        onBlur={(e) =>
-                                                                                                                            handleActivityWeightageChange(
-                                                                                                                                activityId,
-                                                                                                                                getActivityTotals(
-                                                                                                                                    activityData,
-                                                                                                                                    subActivityPlannedQtys,
-                                                                                                                                ),
-                                                                                                                                sub.id
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                        placeholder="Enter payment in %"
-                                                                                                                    />
-                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                        <Percent
-                                                                                                                            className=" text-gray-400"
-                                                                                                                            size={16}
-                                                                                                                        />
-                                                                                                                    </span>
-                                                                                                                </div>
-                                                                                                            </div>} */}
-
-                                                                                                        {/* {(sub?.approval_exist || showAllFields[key]) &&
-                                                                                                            <div>
-                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                    Approval Payment (%)
-                                                                                                                </label>
-                                                                                                                <div className="relative">
-                                                                                                                    <input
-                                                                                                                        type="number"
-                                                                                                                        min="0"
-                                                                                                                        step="0.01"
-                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_approvalpayment")] || ''}
-                                                                                                                        value={
-                                                                                                                            subActivityPlannedQtys[
-                                                                                                                            `${sub.id}_approvalpayment`
-                                                                                                                            ] || ""
-                                                                                                                        }
-                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_approvalpayment"), e.target.value)}
-                                                                                                                        onChange={(e) =>
-                                                                                                                            handleSubActivityPlannedQtyChange(
-                                                                                                                                sub.id,
-                                                                                                                                "approvalpayment",
-                                                                                                                                e.target.value,
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        onBlur={(e) =>
-                                                                                                                            handleActivityWeightageChange(
-                                                                                                                                activityId,
-                                                                                                                                getActivityTotals(
-                                                                                                                                    activityData,
-                                                                                                                                    subActivityPlannedQtys,
-                                                                                                                                ),
-                                                                                                                                sub.id
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                        placeholder="Enter payment in %"
-                                                                                                                    />
-                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                        <Percent
-                                                                                                                            className=" text-gray-400"
-                                                                                                                            size={16}
-                                                                                                                        />
-                                                                                                                    </span>
-                                                                                                                </div>
-                                                                                                            </div>} */}
-
+                                                                                                        
 
 
                                                                                                         {/* Sub-Activity Dates aligned with Quantities and Chainages */}

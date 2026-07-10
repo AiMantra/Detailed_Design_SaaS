@@ -89,7 +89,6 @@ export const MyTickets = ({ onRaiseTicket }) => {
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
-    console.log('Paginating tickets:', paginatedTickets);
 
     const totalPages = Math.ceil(filteredMyTickets.length / itemsPerPage);
 

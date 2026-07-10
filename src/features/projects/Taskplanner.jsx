@@ -171,18 +171,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                             <CheckCircle2 size={11} /> {counts.completed}
                         </span>
                     )}
-                    {/* {counts.pending > 0 && (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1">
-                            <CircleDashed size={11} /> {counts.pending}
-                        </span>
-                    )}
-                    {counts.extra > 0 && (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1">
-                            <Sparkles size={11} /> {counts.extra}
-                        </span>
-                       
-
-                    )} */}
+                    
                   {counts.pending > 0 && (
     <div className="flex flex-col items-center justify-center">
         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1 w-max">
@@ -602,7 +591,6 @@ const TaskPlanner = () => {
                     dispatch(fetchOnlyProjectsList()).unwrap(),
                 ]);
             } catch (e) {
-                console.error(e);
             } finally {
                 setRefreshing(false);
             }
@@ -615,7 +603,6 @@ const TaskPlanner = () => {
         try {
             await dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() })).unwrap();
         } catch (e) {
-            console.error(e);
         } finally {
             setRefreshing(false);
         }
@@ -684,7 +671,6 @@ const TaskPlanner = () => {
     const todayStr = getTodayStr();
     const todaysGroup = groupedPlanners.find((g) => g.date === todayStr);
     const isEdit = (() => {
-        console.log(todaysGroup?.tasks, 'isedited check in taskplanner');
         if (!todaysGroup?.tasks?.length) return false;
         const first = [...todaysGroup.tasks].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
         if (!first?.created_at) return false;
@@ -742,7 +728,6 @@ const TaskPlanner = () => {
                     </motion.button>
 
                     {!isComparisonTab && (
-                        console.log({ todaysGroup, isEdit }) ||
                             todaysGroup ? (
                             <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                                 onClick={() => setUpdateModalData({ isOpen: true, date: todaysGroup.date, tasks: todaysGroup.tasks })}
@@ -889,7 +874,6 @@ const TaskPlanner = () => {
                         setShowMultiLog(false);
                         dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() }));
                     } catch (e) {
-                        console.error(e);
                     }
                 }}
             />
@@ -906,7 +890,6 @@ const TaskPlanner = () => {
                         await dispatch(updateDailyWorkplan(payload)).unwrap();
                         dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() }));
                     } catch (e) {
-                        console.error(e);
                     }
                 }}
                 onSaveWorklog={async (date, rows) => {
@@ -915,7 +898,6 @@ const TaskPlanner = () => {
                         await dispatch(saveDailyWorkLogBulk(payload)).unwrap();
                         dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() }));
                     } catch (e) {
-                        console.error(e);
                     }
                 }}
             />

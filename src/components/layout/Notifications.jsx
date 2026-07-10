@@ -9,15 +9,7 @@ const NotificationsModal = () => {
 
   // Later: Handle different notification types with navigation
   const handleNotificationClick = (notification) => {
-    // Example navigation based on notification type:
-    // if (notification.type === 'message') {
-    //   window.location.href = `/messages/${notification.id}`;
-    //   // or use react-router: navigate(`/messages/${notification.id}`);
-    // } else if (notification.type === 'order') {
-    //   window.location.href = `/orders/${notification.id}`;
-    // } else if (notification.type === 'comment') {
-    //   window.location.href = `/posts/${notification.postId}`;
-    // }
+    
     
     setIsModalOpen(false);
   };

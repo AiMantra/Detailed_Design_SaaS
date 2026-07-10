@@ -200,7 +200,6 @@ const ProjectList = () => {
           dispatch(fetchOnlyProjectsList()).unwrap(),
         ]);
       } catch (error) {
-        console.error("Error loading data:", error);
         dispatch(
           showSnackbar({
             message: "Failed to load data from server",
@@ -247,29 +246,7 @@ const ProjectList = () => {
     }
   };
 
-  // const handleViewSubActivity = async (subActivityId, e) => {
-  //   if (e) e.stopPropagation();
-
-  //   setShowSubActivityModal(true);
-  //   setLoadingSubActivity(true);
-  //   setSubActivityModalData(null);
-
-  //   try {
-
-  //     // Make the request
-  //     const response = await api.get(`subactivity/${subActivityId}/`);
-
-  //     // Axios stores the JSON payload inside response.data
-  //     setSubActivityModalData(response.data);
-
-  //   } catch (error) {
-  //     console.error(error);
-  //     dispatch(showSnackbar({ message: "Failed to load sub-activity details", type: "error" }));
-  //     setShowSubActivityModal(false);
-  //   } finally {
-  //     setLoadingSubActivity(false);
-  //   }
-  // };
+  
 
   const handleViewSubActivity = async (subActivityId, e) => {
     if (e) e.stopPropagation();
@@ -286,7 +263,6 @@ const ProjectList = () => {
       setSubActivityModalData(response);
 
     } catch (error) {
-      console.error(error);
       dispatch(showSnackbar({ message: "Failed to load sub-activity details", type: "error" }));
       setShowSubActivityModal(false);
     } finally {
@@ -843,7 +819,6 @@ const ProjectList = () => {
       const result = await dispatch(fetchProjectDetails(projectId)).unwrap();
       setExpandedProjectDetails(prev => ({ ...prev, [projectId]: result }));
     } catch (error) {
-      console.error("Failed to fetch project details:", error);
       dispatch(
         showSnackbar({
           message: "Failed to load project details",
@@ -857,7 +832,6 @@ const ProjectList = () => {
 
   const handleSubmissionapproveStatus = (status, sub, value, amount, extraPayment, projectId, url) => {
     setShowProofModal(true);
-    console.log("Proof Data Before Setting:", parseFloat(amount) + parseFloat(extraPayment));
     setProofData({
       ...proofData,
       stage_type: status,
@@ -875,7 +849,6 @@ const ProjectList = () => {
 
 
   };
-  console.log("Proof Data After Setting:", proofData);
   const handleSubmitProof = async () => {
     setLoder(true);
     const response = await dispatch(tlSubactivitySubmitwithProof(proofData)).unwrap();
@@ -2098,66 +2071,7 @@ const ProjectList = () => {
       </AnimatePresence>
       {!showLoading && (
         <>
-          {/* <div className="mb-10 flex justify-between items-start">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <motion.h1
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
-                >
-                  {isAdmin ? "Project Portfolio" : "AVAILABLE PROJECTS"}
-                </motion.h1>
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${isACCOUNT
-                    ? "bg-purple-100 text-purple-600"
-                    : isAdmin
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-green-100 text-green-600"
-                    }`}
-                >
-                  {getRoleIcon()}
-                  {getRoleDisplay()}
-                </motion.div>
-              </div>
-              <motion.p
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="text-gray-500 text-lg"
-              >
-                {isAdmin
-                  ? "Track and manage all your construction projects in one place"
-                  : "Browse projects and pick tasks to work on"}
-              </motion.p>
-            </div>
-
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={handleRefresh}
-              disabled={showLoading}
-              className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
-            >
-              <RefreshCw
-                size={20}
-                className={`text-blue-600 ${refreshing ? "animate-spin" : ""}`}
-              />
-              <span className="text-sm font-medium text-gray-700">Refresh</span>
-            </motion.button>
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => setShowMultiLog(true)}
-              // disabled={showLoading}
-              className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
-            >
-              <PlusCircle size={16} />
-              <span className="text-sm font-medium text-gray-700">Work Log</span>
-            </motion.button>
-          </div> */}
+          
           <div className="mb-10 flex justify-between items-start">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -2436,17 +2350,7 @@ const ProjectList = () => {
                                 : "border-gray-100 hover:border-blue-200"
                         }`}
                     >
-                      {/* {isAdmin && (
-                        <button
-                          onClick={(e) => handleDeleteProject(projectId, projectName, e)}
-                          disabled={deleteInProgress}
-                          className="absolute top-4 right-4 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )} */}
-
-                      {/* <div className="p-6 cursor-pointer" onClick={() => handleProjectNavigation(projectId)}> */}
+                      
                       <div
                         className="p-6 cursor-pointer"
                         // onClick={() =>
@@ -2575,22 +2479,7 @@ const ProjectList = () => {
                                 </div>
                               </div>
 
-                              {/* <div className="flex items-center gap-2">
-                                <div className="p-2 bg-indigo-50 rounded-lg">
-                                  <BarChart3
-                                    size={16}
-                                    className="text-indigo-600"
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">
-                                    Activities
-                                  </p>
-                                  <p className="text-sm font-semibold">
-                                    {activities.length}
-                                  </p>
-                                </div>
-                              </div> */}
+                             
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-indigo-50 rounded-lg">
                                   <UserStar
@@ -2665,49 +2554,10 @@ const ProjectList = () => {
                             </div>
                           </div>
 
-                          {/* RIGHT ACTIONS */}
-                          {/* <div className="flex lg:flex-col gap-3 items-center lg:items-end">
-
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleProjectNavigation(projectId);
-                              }}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
-                            >
-                              <Eye size={18} />
-                              <span className="hidden sm:inline">View</span>
-                            </motion.button>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedCard(isExpanded ? null : projectId);
-                              }}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              {isExpanded ? (
-                                <ChevronUp size={20} />
-                              ) : (
-                                <ChevronDown size={20} />
-                              )}
-                            </button>
-                          </div> */}
+                          
 
                           <div className="flex flex-row items-center justify-center gap-2">
-                            {/* <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleProjectNavigation(projectId);
-                              }}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
-                            >
-                              <Eye size={18} /> View Details
-                            </motion.button> */}
+                            
 
 
                             <button
@@ -2726,31 +2576,7 @@ const ProjectList = () => {
                                 <ChevronDown size={20} />
                               )}
                             </button>
-                            {/* 
-                            {isAdmin && (
-                              <>
-                                {
-                                  project?.workorder_document &&
-                                  <a
-                                    href={project?.workorder_document}
-                                    target="_blank"
-                                    disabled={deleteInProgress}
-                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                                    title="Workorder Document"
-                                  >
-                                    <DownloadCloudIcon size={16} />
-                                  </a>
-                                }
-                                <button
-                                  onClick={(e) => handleDeleteProject(projectId, projectName, e)}
-                                  disabled={deleteInProgress}
-                                  className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110 "
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-
-                              </>
-                            )} */}
+                           
 
                             {isAdmin && (
                               <div className="relative">
@@ -2866,30 +2692,7 @@ const ProjectList = () => {
 
                         </div>
 
-                        {/* 💰 Quick Footer */}
-                        {/* <div className="flex justify-between items-center mt-4 text-sm">
-                          <div className="flex items-center gap-1 text-green-600 font-semibold">
-                            <IndianRupee size={14} />
-                            {getCost(project)}L
-                          </div>
-
-                          <div className="text-gray-400 text-xs">
-                            {activities.length} activities
-                          </div>
-                        </div> */}
-
-                        {/* Progress Bar - Only visible for Admin */}
-                        {/* {isAdmin && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="font-medium text-gray-600">Overall Progress</span>
-                              <span className={`font-bold ${isCompleted ? "text-green-600" : "text-blue-600"}`}>{progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 1 }} className={`h-3 rounded-full ${isCompleted ? "bg-green-500" : `bg-gradient-to-r ${statusInfo.colors.gradient}`}`} />
-                            </div>
-                          </div>
-                        )} */}
+                        
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -2948,14 +2751,7 @@ const ProjectList = () => {
                                       </span>
                                     </p>
                                   </div>
-                                  {/* <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3">
-                                    <p className="text-xs text-gray-500 mb-1">
-                                      Total Activities
-                                    </p>
-                                    <p className="text-xl font-bold text-purple-700">
-                                      {activities.length}
-                                    </p>
-                                  </div> */}
+                                  
                                 </div>
                               )}
 
@@ -3032,18 +2828,7 @@ const ProjectList = () => {
                                           getClientName(project)}
                                       </span>
                                     </div>
-                                    {/* {project.clientbranch && (
-                                      <>
-                                        <div className="flex items-center py-2 border-b border-gray-200">
-                                          <span className="text-sm text-gray-500 w-40">Branch</span>
-                                          <span className="text-sm font-medium text-g :ray-800">{project.clientbranch_detail?.name || project.clientbranch}</span>
-                                        </div>
-                                        <div className="flex items-center py-2">
-                                          <span className="text-sm text-gray-500 w-40">Client GST</span>
-                                          <span className="text-sm font-medium text-g :ray-800 font-mono">{project.clientbranch_detail?.gst || "—"}</span>
-                                        </div>
-                                      </>
-                                    )} */}
+                                    
                                     {project.clientbranch &&
                                       (() => {
                                         const matchedBranch = project.client_detail?.branches
@@ -3171,42 +2956,7 @@ const ProjectList = () => {
                                       </div>
                                     )}
 
-                                    {/* {
-                                      !loadingProjectDetails[projectId] && expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 &&
-                                      <div className=" bg-gray-50 rounded-xl p-4">
-                                        <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
-                                          <UserCog size={18} className="text-blue-600" />
-                                          Assigned Personnel
-                                        </h4>
-                                        <div className="flex flex-row gap-4 flex-wrap">
-                                          {expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 && (
-                                            expandedProjectDetails[projectId]?.assigned_to_detail?.map((data, index) =>
-                                              <div key={index} className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                                  {data?.profilepic ? (
-                                                    <CustomImageModal customStyle>
-                                                      <img
-                                                        src={`${IMAGE_URL}${data?.profilepic}`}
-                                                        alt={data?.name}
-                                                        className=" rounded-full object-cover"
-                                                      />
-                                                    </CustomImageModal>
-                                                  ) : (
-                                                    <div >
-                                                      {data?.name?.charAt(0)}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                <div>
-                                                  <p className="text-sm font-medium text-gray-800">{data?.name}</p>
-                                                  <p className="text-xs text-gray-500">{expandedProjectDetails[projectId]?.assigned_to_detail?.length > 1 ? "Project CO-Owner" : "Project Owner"}</p>
-                                                </div>
-                                              </div>
-                                            )
-                                          )}
-                                        </div>
-                                      </div>
-                                    } */}
+                                    
                                   </div>
                                 </div>
                               </div>
@@ -3303,25 +3053,7 @@ const ProjectList = () => {
 
                                                   const activityProgress = activity.activity_progress || 0
                                                   const financialProgress = activity.financial_progress || 0
-                                                  // const activityProgress =
-                                                  //   subs.length > 0
-                                                  //     ? subs.reduce((acc, s) => {
-                                                  //       let progress = 0;
-
-                                                  //       const submissionPayment = Number(s.submission_payment) || 0;
-                                                  //       const approvalPayment = Number(s.approval_payment) || 0;
-
-                                                  //       if (s.submission_status === "Received") {
-                                                  //         progress += submissionPayment;
-                                                  //       }
-
-                                                  //       if (s.approval_status === "Received") {
-                                                  //         progress += approvalPayment;
-                                                  //       }
-
-                                                  //       return acc + progress;
-                                                  //     }, 0)
-                                                  //     : 0;
+                                                  
 
 
                                                   const daysLeft = calculateDaysLeft(
@@ -3364,47 +3096,7 @@ const ProjectList = () => {
                                                           </div>
                                                           <div className="mt-2">
 
-                                                            {/* <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-
                                                             
-                                                              <div>
-                                                                <div className="flex justify-between text-xs mb-1">
-                                                                  <span className="text-gray-500">Physical Progress</span>
-                                                                  <span className="font-medium text-green-600">
-                                                                    {activityProgress}%
-                                                                  </span>
-                                                                </div>
-
-                                                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                                                  <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${activityProgress}%` }}
-                                                                    transition={{ duration: 0.6 }}
-                                                                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
-                                                                  />
-                                                                </div>
-                                                              </div>
-
-                                                              
-                                                              <div>
-                                                                <div className="flex justify-between text-xs mb-1">
-                                                                  <span className="text-gray-500">Financial Progress</span>
-                                                                  <span className="font-medium text-blue-600">
-                                                                    {financialProgress}%
-                                                                  </span>
-                                                                </div>
-
-                                                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                                                  <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${financialProgress}%` }}
-                                                                    transition={{ duration: 0.6 }}
-                                                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
-                                                                  />
-                                                                </div>
-                                                              </div>
-
-                                                            </div> */}
 
 
                                                           </div>
@@ -3622,59 +3314,7 @@ const ProjectList = () => {
                                                                                         </td>
                                                                                       </tr>
 
-                                                                                      {/* 🟡 Expanded Time Logs Row (Same for everyone) - Only show on first stage or as a separate row */}
-                                                                                      {/* {expandedRow === sub.id && sIdx === 0 && (
-                                                                                        <tr className="bg-gray-50/80">
-                                                                                          <td colSpan="9" className="px-4 py-4 w-full">
-                                                                                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                                                                              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                                                                                                <div className="flex items-center gap-2">
-                                                                                                  <Clock size={16} className="text-blue-500" />
-                                                                                                  <span className="text-sm font-medium text-gray-700">Time Logs</span>
-                                                                                                </div>
-                                                                                                <span className="text-xs text-gray-500">
-                                                                                                  Total: {sub.work_summary?.total_hours || "00:00:00"}
-                                                                                                </span>
-                                                                                              </div>
-
-                                                                                              <div className="divide-y divide-gray-100">
-                                                                                                {sub.work_summary?.users?.length > 0 ? (
-                                                                                                  sub.work_summary.users.map((log, i) => (
-                                                                                                    <div key={i} className="px-4 py-2.5 flex justify-between items-center hover:bg-gray-50">
-                                                                                                      <div className="flex items-center gap-2">
-                                                                                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
-                                                                                                          {log.name?.charAt(0)?.toUpperCase()}
-                                                                                                        </div>
-                                                                                                        <span className="text-sm text-gray-700">{log.name}</span>
-                                                                                                      </div>
-                                                                                                      <div className="flex items-center gap-3">
-                                                                                                        <span className="text-xs text-gray-400">{log.days_worked} day(s)</span>
-                                                                                                        <span className="text-sm font-mono font-medium text-blue-600">
-                                                                                                          {log.total_time_spent}
-                                                                                                        </span>
-                                                                                                      </div>
-                                                                                                    </div>
-                                                                                                  ))
-                                                                                                ) : (
-                                                                                                  <div className="px-4 py-6 text-center text-sm text-gray-400">
-                                                                                                    No time logs recorded
-                                                                                                  </div>
-                                                                                                )}
-                                                                                              </div>
-
-                                                                                              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
-                                                                                                <button
-                                                                                                  onClick={() => setExpandedRow(null)}
-                                                                                                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mx-auto"
-                                                                                                >
-                                                                                                  <ChevronUp size={12} />
-                                                                                                  Collapse
-                                                                                                </button>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                          </td>
-                                                                                        </tr>
-                                                                                      )} */}
+                                                                                      
                                                                                     </Fragment>
                                                                                   );
                                                                                 })
@@ -3883,17 +3523,7 @@ const ProjectList = () => {
                                                                                           <select
                                                                                             value={paymentStatus}
                                                                                             disabled={paymentStatus === "Waiting"}
-                                                                                            // onChange={(e) => {
-                                                                                            //   handleSubmissionapproveStatus(
-                                                                                            //     stage.id,
-                                                                                            //     sub,
-                                                                                            //     e.target.value,
-                                                                                            //     stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
-                                                                                            //     stage.extra_payment_amount || 0,
-                                                                                            //     projectId,
-                                                                                            //     'payment'
-                                                                                            //   );
-                                                                                            // }}
+                                                                                            
                                                                                             onChange={(e) => {
                                                                                               const selectedAction = e.target.value;
 
@@ -4096,22 +3726,7 @@ const ProjectList = () => {
               isOpen={showMultiLog}
               onClose={() => setShowMultiLog(false)}
               projects={projectsOnly}          // your full projects array
-              // onSave={async (date, rows) => {
-              //   // rows = [{ projectId, activityId, subActivityId, startTime, endTime, workType, description }]
-              //   for (const row of rows) {
-              //     await dispatch(saveDailyWorkLog({
-              //       projectId: row.projectId,
-              //       subActivityId: row.subActivityId,
-              //       date,
-              //       startTime: row.startTime,
-              //       endTime: row.endTime,
-              //       work_type: row.workType,
-              //       note: row.description,
-              //       status: "WORKED",
-              //     })).unwrap();
-              //   }
-              //   dispatch(showSnackbar({ message: "Work logs saved!", type: "success" }));
-              // }}
+              
               onSave={async (date, rows) => {
                 try {
                   // Append the 'date' and default 'status' to every row 
@@ -4129,7 +3744,6 @@ const ProjectList = () => {
 
                 } catch (error) {
                   // The thunk handles the error snackbar now via showError()
-                  console.error("Failed to save", error);
                 }
               }}
             />

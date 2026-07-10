@@ -337,14 +337,7 @@ const DailyLogs = () => {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-         {/* <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Daily Logs Management
-          </h1> */}
-          {/* <p className="text-gray-500 mt-2">
-            Total: {filteredLogs.length} logs
-          </p> */}
-        {/* </div>  */}
+        
 
         <div>
   <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1 md:pb-2">
@@ -352,20 +345,11 @@ const DailyLogs = () => {
   </h2>
 
   
-  {/* <p className="text-xs md:text-sm text-gray-500 mt-1">
-    Total: {filteredLogs.length} logs
-  </p> */}
+  
 </div>
 
         <div className="flex gap-2 w-full md:w-auto">
-          {/* <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="bg-gray-600 text-white px-4 py-2 rounded-xl hover:bg-gray-700 flex items-center gap-2"
-          >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button> */}
+          
           <button
   onClick={handleRefresh}
   disabled={loading}
@@ -380,20 +364,7 @@ const DailyLogs = () => {
   </span>
 </button>
 
-          {/* <button
-            onClick={handleExport}
-            className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 flex items-center gap-2"
-          >
-            <Download size={18} />
-            <span className="hidden sm:inline">Export</span>
-          </button> */}
-          {/* <button
-            onClick={() => setShowAddLogModal(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center gap-2 flex-1 md:flex-none"
-          >
-            <FileText size={20} />
-            <span className="hidden sm:inline">Add Log</span>
-          </button> */}
+         
         </div>
       </div>
 
@@ -461,23 +432,7 @@ const DailyLogs = () => {
               />
             </div>
 
-            {/* Project Filter
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
-                <Building size={14} />
-                Project
-              </label>
-              <select
-                value={filters.projectId}
-                onChange={(e) => handleFilterChange('projectId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Projects</option>
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.project_code})</option>
-                ))}
-              </select>
-            </div> */}
+           
 
             {/* Type Filter */}
             <div className="space-y-1">

@@ -268,44 +268,14 @@ const RaisedTickets = () => {
 
     const [enddate, setEndDate] = useState(``);
 
-    // *********** Filter Logic ***********
-
-    // const [selectedStatus, setSelectedStatus] = useState([
-    //     "open",
-    //     "acceptance",
-    //     "completed",
-    //     "close",
-    //     "pending",
-    //     "inprocess",
-    // ]);
+    
     const [asignee, setAsignee] = useState("");
     const [asigning, setAsigning] = useState("");
     const [priority, setPriority] = useState("");
     const [ticket_for, setTicketFor] = useState("Aimantra HRMS");
     const [priority_status, setPriority_status] = useState([]);
 
-    // function handlePriority(value) {
-    //     if (value == 1) {
-    //         return (
-    //             <button className="priority-button font-weight600 color-tab-red">
-    //                 High
-    //             </button>
-    //         );
-    //     } else if (value == 2) {
-    //         return (
-    //             <button className="priority-button font-weight600 color-tab-yellow">
-    //                 Medium
-    //             </button>
-    //         );
-
-    //     } else if (value == 3) {
-    //         return (
-    //             <button className="priority-button font-weight600 color-tab-blue">
-    //                 Low
-    //             </button>
-    //         );
-    //     } else return <td className="align-center"></td>;
-    // }
+    
     useEffect(() => {
         if (startdate === null && enddate === null) {
             setStartDate("");
@@ -317,17 +287,7 @@ const RaisedTickets = () => {
         let filteredData = ticketsList;
 
 
-        // if (selectedStatus.length > 0) {
-        //     filteredData = filteredData.filter((ticket) =>
-        //         selectedStatus.includes(ticket.status)
-        //     );
-        // }
-        // if (selectedStatus.length === 0) {
-        //     filteredData = filteredData.filter((ticket) =>
-        //         // ["pending", "inprocess", "completed"].includes(ticket.status)
-        //         status_list.includes(ticket.status)
-        //     );
-        // }
+        
 
         if (selectedStatus !== 'null') {
             filteredData = filteredData.filter((ticket) =>
@@ -410,14 +370,7 @@ const RaisedTickets = () => {
     ]);
 
     const statusName = [
-        // {
-        //     status: "open",
-        //     name: "Open",
-        // },
-        // {
-        //     status: "acceptance",
-        //     name: "Acceptance",
-        // },
+        
         {
             status: "pending",
             name: "Pending",
@@ -473,26 +426,7 @@ const RaisedTickets = () => {
             <div className="content-tabs">
                 <div className="attendance-subcont">
                     <div className="field-cont">
-                        {/* <div className="field-cont-div">
-                            <input
-                                className="attendance-input-field width-10vw   date-field"
-                                placeholder="From Date"
-                                type="date"
-                                value={startdate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                            />
-                            <hr className="field-cont-hr" />
-                        </div>
-                        <div className="field-cont-div">
-                            <input
-                                className="attendance-input-field width-10vw   date-field"
-                                placeholder="To Date"
-                                type="date"
-                                value={enddate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
-                            <hr className="field-cont-hr" />
-                        </div> */}
+                       
                         <div title=' Date Range' className="field-cont-div ">
 
                             <DateRangePicker startDate={startdate} endDate={enddate} placeHolder1="From Date" placeHolder2="To Date" onChange={(start, end) => {
@@ -534,32 +468,7 @@ const RaisedTickets = () => {
                             </select>
                             <hr className="field-cont-hr" />
                         </div>}
-                        {/* <div className="field-cont-div">
-                            <Filter />
-                            <select
-                                className="attendance-input-field width-10vw   date-field"
-                                type="text"
-                                value={priority}
-                                onChange={(e) => setPriority(e.target.value)}
-                            >
-                                <option value="">Priority</option>
-                                {priority_status
-                                    .sort((a, b) => a - b)
-                                    .map((prior) => (
-                                        <option value={prior}>
-                                            {prior === "1"
-                                                ? "High"
-                                                : prior === "2"
-                                                    ? "Medium"
-                                                    : prior === "3"
-                                                        ? "Low"
-                                                        : "All"}
-                                        </option>
-                                    ))}
-                                ;
-                            </select>
-                            <hr className="field-cont-hr" />
-                        </div> */}
+                        
                         <div className="field-cont-div-svg">
                             <SearchBig />
                             <input
@@ -899,32 +808,7 @@ const MyTickets = () => {
 
                         </div>
 
-                        {/* <div className="field-cont-div">
-                            <Filter />
-                            <select
-                                className="attendance-input-field width-10vw   date-field"
-                                type="text"
-                                value={priority}
-                                onChange={(e) => setPriority(e.target.value)}
-                            >
-                                <option value="">Priority</option>
-                                {priority_status
-                                    .sort((a, b) => a - b)
-                                    .map((prior) => (
-                                        <option value={prior}>
-                                            {prior === "1"
-                                                ? "High"
-                                                : prior === "2"
-                                                    ? "Medium"
-                                                    : prior === "3"
-                                                        ? "Low"
-                                                        : "All"}
-                                        </option>
-                                    ))}
-                                ;
-                            </select>
-                            <hr className="field-cont-hr" />
-                        </div> */}
+                       
                         <div className="field-cont-div-svg">
                             <SearchBig />
                             <input
@@ -1616,32 +1500,7 @@ const ImprestExpenseCustomData = () => {
                             <hr className="field-cont-hr" />
                         </div>
 
-                        {/* <div className="field-cont-div">
-                            <div className="date-uppercase ">
-                                <input
-                                    className="attendance-input-field width-10vw   date-field date-field-filter"
-                                    placeholder="From Date"
-                                    type="date"
-                                    value={fromdate}
-                                    onChange={(e) => setFromDate(e.target.value || null)}
-                                />
-                            </div>
-
-                            <hr className="field-cont-hr" />
-                        </div>
-
-                        <div className="field-cont-div">
-                            <div className="date-uppercase ">
-                                <input
-                                    className="attendance-input-field width-10vw   date-field date-field-filter"
-                                    placeholder="To Date"
-                                    type="date"
-                                    value={todate}
-                                    onChange={(e) => setToDate(e.target.value || null)}
-                                />
-                            </div>
-                            <hr className="field-cont-hr" />
-                        </div> */}
+                        
 
                         <div className="field-cont-div">
                             <Active />
@@ -1688,11 +1547,7 @@ const ImprestExpenseCustomData = () => {
 
                     </div>
                     <div className="btn-cont">
-                        {/* <div className="btn-cont">
-                        <button className=" model-button-print" title="Download in Excel Format" onClick={handleDownloadExcel}>
-                            <DownloadIcon />
-                        </button>
-                    </div> */}
+                       
                         <hr className="field-cont-hr" />
                         <DownloadTableExcel
                             filename={`Expense Data ${fromdate === todate ? `${fromdate}` : `${fromdate} to ${todate}`} ${datetimefield}`}

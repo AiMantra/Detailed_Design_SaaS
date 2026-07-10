@@ -80,6 +80,7 @@ const CreateProject = () => {
     loading,
   } = useSelector((state) => state.api);
 
+
   const [form, setForm] = useState({
     project_code: "",
     project_name: "",
@@ -557,7 +558,7 @@ const CreateProject = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // console.log(workorder_document);
+   
 
     if (name == "workorder_document") {
       setForm((prev) => ({
@@ -833,7 +834,6 @@ const CreateProject = () => {
                   totalWeightage += submissionPayment + approvalPayment;
                 }
               });
-              console.log(`Recalculated weightage for activity ${activity.id}: ${totalWeightage}%`);
               setActivityWeightages(prev => ({
                 ...prev,
                 [activity.id]: totalWeightage
@@ -941,7 +941,6 @@ const CreateProject = () => {
       });
       setShowAddCompanyModal(false);
     } catch (error) {
-      console.error("Error adding company:", error);
 
       const errorMessage =
         error?.response?.data?.message || error?.response?.data?.detail || "";
@@ -1452,251 +1451,7 @@ const CreateProject = () => {
     }
   };
 
-  // const handleCloneSubActivitySubmit = async (e) => {
-  //   e.preventDefault();
-  //   e.stopPropagation();
-
-  //   if (!cloningSubActivity) return;
-
-  //   let newSubs = [];
-
-  //   if (cloningSubActivity.activityType === "single") {
-  //     console.log(cloningSubActivity, 'subactivity')
-  //     const numberclone = (cloningSubActivity?.sorting_var || 0) + 1;
-
-  //     newSubs = [
-  //       {
-  //         id: `custom-sub-${Date.now()}`,
-  //         sorting_var: null,
-  //         subactivity_name: `${cloningSubActivity.subactivity_name} ${numberclone}`,
-  //         unit: cloningSubActivity.unit,
-  //         activityType: cloningSubActivity.activityType,
-  //         chainage_start: null,
-  //         planned_quantity_exist: true,
-  //         chainage_end: null,
-  //         covered_area: null,
-  //         chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : false,
-  //         chainage_quantity: null,
-  //         lengthType: "same",
-  //         chainageLengths: [],
-  //         isCustom: true,
-  //         approval_exist: cloningSubActivity.approval_exist || '',
-  //         length_exist: cloningSubActivity.length_exist || '',
-  //         submission_exist: cloningSubActivity.submission_exist || '',
-
-  //       },
-  //     ];
-
-  //     console.log(newSubs, 'new subss')
-  //   } else {
-  //     const start = Number(cloningSubActivity.chainage_start) || 0;
-  //     const count = Number(cloningSubActivity.chainage_quantity) || 0;
-
-  //     if (!count || start === undefined) {
-  //       dispatch(
-  //         showSnackbar({
-  //           message:
-  //             "Enter valid Chainage Details (Start Chainage and Quantity)",
-  //           type: "error",
-  //         }),
-  //       );
-  //       return;
-  //     }
-
-  //     let currentStart = start;
-
-  //     if (cloningSubActivity.lengthType === "same") {
-  //       const covered = Number(cloningSubActivity.covered_area) || 0;
-  //       if (!covered) {
-  //         dispatch(
-  //           showSnackbar({
-  //             message: "Please enter Chainage Length",
-  //             type: "error",
-  //           }),
-  //         );
-  //         return;
-  //       }
-
-  //       for (let i = 0; i < count; i++) {
-  //         const currentEnd = Number((currentStart + covered).toFixed(2));
-  //         newSubs.push({
-  //           id: `custom-sub-${Date.now()}-${i}`,
-  //           sorting_var: null,
-  //           subactivity_name: cloningSubActivity.subactivity_name,
-  //           unit: cloningSubActivity.unit,
-  //           chainage_start: currentStart,
-  //           chainage_end: currentEnd,
-  //           covered_area: covered,
-  //           chainage_quantity: count,
-  //           planned_quantity_exist: true,
-  //           chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
-  //           activityType: cloningSubActivity.activityType,
-  //           lengthType: "same",
-  //           chainageLengths: [],
-  //           lengthIndex: i,
-  //           isCustom: true,
-  //           approval_exist: cloningSubActivity.approval_exist || '',
-  //           length_exist: cloningSubActivity.length_exist || '',
-  //           submission_exist: cloningSubActivity.submission_exist || '',
-
-  //         });
-  //         currentStart = currentEnd;
-  //       }
-  //     } else {
-  //       const lengths = cloningSubActivity.chainageLengths;
-  //       if (lengths.length !== count) {
-  //         dispatch(
-  //           showSnackbar({
-  //             message: `Please enter lengths for all ${count} chainages`,
-  //             type: "error",
-  //           }),
-  //         );
-  //         return;
-  //       }
-
-  //       for (let i = 0; i < count; i++) {
-  //         const covered = Number(lengths[i]) || 0;
-  //         if (!covered) {
-  //           dispatch(
-  //             showSnackbar({
-  //               message: `Please enter valid length for chainage ${i + 1}`,
-  //               type: "error",
-  //             }),
-  //           );
-  //           return;
-  //         }
-  //         const currentEnd = Number((currentStart + covered).toFixed(2));
-  //         newSubs.push({
-  //           id: `custom-sub-${Date.now()}-${i}`,
-  //           sorting_var: null,
-  //           subactivity_name: cloningSubActivity.subactivity_name,
-  //           unit: cloningSubActivity.unit,
-  //           chainage_start: currentStart,
-  //           chainage_end: currentEnd,
-  //           covered_area: covered,
-  //           chainage_quantity: count,
-  //           activityType: cloningSubActivity.activityType,
-  //           chainageLengths: lengths,
-  //           planned_quantity_exist: true,
-  //           chainage_exist: cloningSubActivity.chainage_exist ? cloningSubActivity.chainage_exist : true,
-  //           lengthType: "different",
-  //           lengthIndex: i,
-  //           isCustom: true,
-  //           approval_exist: cloningSubActivity.approval_exist || '',
-  //           length_exist: cloningSubActivity.length_exist || '',
-  //           submission_exist: cloningSubActivity.submission_exist || '',
-
-  //         });
-  //         currentStart = currentEnd;
-  //       }
-  //     }
-  //   }
-
-  //   const activityId = cloningSubActivity.activityId;
-  //   const templateIndex = templatesActivities.findIndex(
-  //     (act) => act.id === activityId,
-  //   );
-
-  //   const newSubIds = newSubs.map((s) => s.id);
-  //   const lastSubId = newSubIds[newSubIds.length - 1];
-
-  //   // Get existing sub-activities
-  //   const existingSubs =
-  //     templateIndex !== -1
-  //       ? [...(templatesActivities[templateIndex]?.subActivities || [])]
-  //       : [
-  //         ...(customActivities.find((act) => act.id === activityId)
-  //           ?.subActivities || []),
-  //       ];
-
-  //   // Find insertion position for same name sub-activities (case-insensitive)
-  //   let insertIndex = existingSubs.length;
-  //   const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
-  //   for (let i = existingSubs.length - 1; i >= 0; i--) {
-  //     if (existingSubs[i]?.subactivity_name?.toLowerCase() === lowerNewName) {
-  //       insertIndex = i + 1;
-  //       break;
-  //     }
-  //   }
-
-  //   // Create updated sub-activities array with new items inserted
-  //   const updatedSubActivities = [...existingSubs];
-  //   updatedSubActivities.splice(insertIndex, 0, ...newSubs);
-
-  //   // Reassign sorting_var values based on new order
-  //   const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
-  //     ...sub,
-  //     sorting_var: idx + 1,
-  //   }));
-
-  //   if (templateIndex !== -1) {
-  //     setTemplateActivities((prev) =>
-  //       prev.map((act, index) => {
-  //         if (index === templateIndex) {
-  //           return {
-  //             ...act,
-  //             subActivities: reassignedSubActivities,
-  //           };
-  //         }
-  //         return act;
-  //       }),
-  //     );
-  //   } else {
-  //     setCustomActivities((prev) =>
-  //       prev.map((act) => {
-  //         if (act.id === activityId) {
-  //           return {
-  //             ...act,
-  //             subActivities: reassignedSubActivities,
-  //           };
-  //         }
-  //         return act;
-  //       }),
-  //     );
-  //   }
-
-  //   // Auto-select the new sub-activities
-  //   setSelectedSubActivities((prev) => ({
-  //     ...prev,
-  //     [activityId]: [...(prev[activityId] || []), ...newSubIds],
-  //   }));
-
-  //   const activityObj = getAllActivities().find(a => a.id === activityId);
-  //   if (activityObj) {
-  //     const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
-  //     let totalWeightage = 0;
-  //     updatedSelectedSubs.forEach(selectedSubId => {
-  //       const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
-  //       if (subObj) {
-  //         const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-  //         const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-  //         totalWeightage += submissionPayment + approvalPayment;
-  //       }
-  //     });
-  //     setActivityWeightages(prev => ({
-  //       ...prev,
-  //       [activityId]: totalWeightage
-  //     }));
-  //   }
-
-  //   // Scroll to the newly added sub-activity
-  //   setTimeout(() => {
-  //     const lastSubElement = document.getElementById(`sub-${lastSubId}`);
-  //     if (lastSubElement) {
-  //       lastSubElement.scrollIntoView({ behavior: "smooth", block: "center" });
-  //     }
-  //   }, 100);
-
-  //   setShowCloneSubActivityModal(false);
-  //   setCloningSubActivity(null);
-
-  //   dispatch(
-  //     showSnackbar({
-  //       message: "Sub-activity cloned successfully",
-  //       type: "success",
-  //     }),
-  //   );
-  // };
+  
 
 
   const handleCloneSubActivitySubmit = async (e) => {
@@ -2548,15 +2303,7 @@ const CreateProject = () => {
         );
       }
 
-      // Check unit selection for each selected sub-activity
-      // for (const subId of selectedSubs) {
-      //   const subObj = activityObj?.subActivities.find((s) => s.id === subId);
-      //   if (subObj && (!subObj.unit || subObj.unit === "")) {
-      //     return showError(
-      //       `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
-      //     );
-      //   }
-      // }
+     
 
       // Check unit and dates for each selected sub-activity
       for (const subId of selectedSubs) {
@@ -2665,14 +2412,6 @@ const CreateProject = () => {
 
 
 
-        // return {
-        //   activity_name: activityObj?.activity_name,
-        //   start_date: dates.startDate,
-        //   end_date: dates.endDate,
-        //   weightage: weightage,
-        //   sorting_var: activitySortingVar,
-        //   subactivities: subactivities,
-        // };
 
         return {
           activity_name: activityObj?.activity_name,
@@ -2713,7 +2452,6 @@ const CreateProject = () => {
         workorder_document: form.workorder_document
       };
 
-      console.log('payload-', payload)
 
       const apiResult = await dispatch(createProjectApi(payload)).unwrap();
       // ✅ Success
@@ -2726,7 +2464,6 @@ const CreateProject = () => {
       );
       navigate("/all-projects");
     } catch (error) {
-      console.error("Project creation error:", error);
       dispatch(
         showSnackbar({
           message: error?.message || "Failed to create project",
@@ -2738,226 +2475,7 @@ const CreateProject = () => {
     }
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   e.stopPropagation();
-  //   if (!validate()) return;
-  //   setIsSubmitting(true);
-  //   dispatch(
-  //     showSnackbar({
-  //       message: "Creating project... This may take a moment.",
-  //       type: "info",
-  //     }),
-  //   );
-  //   try {
-  //     const allActivities = getAllActivities();
-  //     let createdActivityIds = [];
-  //     const activityIdMap = {};
-  //     const activitiesPayload = selectedActivities.map((activityId) => {
-  //       const dates = activityDates[activityId];
-  //       const weightage = activityWeightages[activityId] || 0;
-  //       return {
-  //         activity_name: allActivities.find((a) => a.id === activityId)
-  //           ?.activity_name,
-  //         weightage: weightage,
-  //         start_date: dates.startDate,
-  //         end_date: dates.endDate,
-  //         sorting_var: allActivities.find((a) => a.id === activityId)
-  //           ?.sorting_var
-  //       };
-  //     });
-  //     const activitiesResponse = await dispatch(
-  //       createActivitiesBulk(activitiesPayload),
-  //     ).unwrap();
-  //     if (Array.isArray(activitiesResponse)) {
-  //       createdActivityIds = activitiesResponse.map((act) => act.id);
-  //       selectedActivities.forEach((actName, index) => {
-  //         activityIdMap[actName] = activitiesResponse[index]?.id;
-  //       });
-  //     } else {
-  //       createdActivityIds = [activitiesResponse.id];
-  //       activityIdMap[selectedActivities[0]] = activitiesResponse.id;
-  //     }
-  //     const bulkSubPromises = [];
-
-  //     for (const activityIdKey of selectedActivities) {
-  //       const activityObj = allActivities.find((a) => a.id === activityIdKey);
-  //       if (!activityObj) continue;
-
-  //       const backendActivityId = activityIdMap[activityIdKey];
-  //       const selectedSubs = selectedSubActivities[activityIdKey] || [];
-  //       if (selectedSubs.length === 0) continue;
-
-  //       const subActivitiesPayload = selectedSubs.map((subId) => {
-  //         const subObj = activityObj.subActivities.find((s) => s.id === subId);
-  //         const unit =
-  //           subActivityUnits[`${activityIdKey}_${subId}`] || subObj?.unit;
-  //         const plannedQty = subActivityPlannedQtys[`${subId}_quantity`] || 0;
-  //         const submissionpayment =
-  //           subActivityPlannedQtys[`${subId}_subpayment`] || 0;
-  //         const approvalpayment =
-  //           subActivityPlannedQtys[`${subId}_approvalpayment`] || 0;
-  //         const chainagestart =
-  //           subActivityPlannedQtys[`${subId}_chainagestart`] || 0;
-  //         const chainageend =
-  //           subActivityPlannedQtys[`${subId}_chainageend`] || 0;
-  //         const description =
-  //           subActivityPlannedQtys[`${subId}_description`] || "";
-  //         const isStatusBased = unit === "status";
-
-  //         return {
-  //           subactivity_name: subObj?.subactivity_name || String(subId),
-  //           unit: isStatusBased ? "status" : unit,
-  //           total_quantity: isStatusBased ? 1 : plannedQty,
-  //           range: isStatusBased ? "status" : null,
-  //           activity: backendActivityId,
-  //           submission_payment: submissionpayment,
-  //           approval_payment: approvalpayment,
-  //           chainage_start: chainagestart,
-  //           chainage_end: chainageend,
-  //           description: description,
-  //           sorting_var: subObj?.sorting_var
-  //         };
-  //       });
-
-  //       bulkSubPromises.push(
-  //         dispatch(createSubActivitiesBulk(subActivitiesPayload)).unwrap(),
-  //       );
-  //     }
-
-  //     if (bulkSubPromises.length > 0) {
-  //       await Promise.all(bulkSubPromises);
-  //     }
-
-  //     const selectedCompany = companies.find((c) => c.name === form.company);
-  //     const sectorId = sectorsMap[form.sector] || null;
-  //     const clientId = form.client || null;
-  //     const projectData = {
-  //       project_code: form.project_code,
-  //       project_name: form.project_name,
-  //       short_name: form.short_name,
-  //       company: selectedCompany?.id || null,
-  //       sector: sectorId,
-  //       clientbranch: form.clientbranch,
-  //       client: clientId,
-  //       sub_company: undefined,
-  //       location: form.location,
-  //       total_length: parseFloat(form.total_length),
-  //       workorder_cost: parseFloat(form.workorder_Amount) || 0,
-  //       igst_percentage: parseFloat(form.igst_percentage) || 0,
-  //       cgst_percentage: parseFloat(form.cgst_percentage) || 0,
-  //       director_proposal_date: form.director_proposal_date
-  //         ? form.director_proposal_date
-  //         : null,
-  //       project_confirmation_date: form.project_confirmation_date
-  //         ? form.project_confirmation_date
-  //         : null,
-  //       loa_date: form.loa_date,
-  //       completion_date: form.completion_date,
-  //       activities: createdActivityIds,
-  //       assigned_to: form.assigned_to,
-  //     };
-  //     const apiResult = await dispatch(createProjectApi(projectData)).unwrap();
-  //     // Doubt
-  //     dispatch(
-  //       addProject({
-  //         id: apiResult.id || `temp_${Date.now()}`,
-  //         code: form.project_code,
-  //         name: form.project_name,
-  //         shortName: form.short_name,
-  //         company: form.company,
-  //         location: form.location,
-  //         sector: form.sector,
-  //         department: form.client,
-  //         totalLength: form.total_length,
-  //         clientbranch: form.clientbranch,
-  //         cost: form.workorder_Amount,
-  //         directorProposalDate: form.director_proposal_date,
-  //         projectConfirmationDate: form.project_confirmation_date,
-  //         loaDate: form.loa_date,
-  //         completionDate: form.completion_date,
-  //         assigned_to: form.assigned_to,
-  //         activities: selectedActivities.map((activityId, idx) => {
-  //           const activityObj = allActivities.find((a) => a.id === activityId);
-  //           const dates = activityDates[activityId];
-  //           const selectedSubs = selectedSubActivities[activityId] || [];
-  //           return {
-  //             id: createdActivityIds[idx] || `a${idx + 1}_${Date.now()}`,
-  //             sorting_var: activityObj?.sorting_var || idx + 1,
-  //             activity_name: activityObj?.activity_name || activityId,
-  //             weightage: activityWeightages[activityId] || 0,
-  //             start_date: dates.startDate,
-  //             end_date: dates.endDate,
-  //             // progress: 0,
-  //             subActivities: selectedSubs.map((subId, subIdx) => {
-  //               const subObj = activityObj?.subActivities.find(
-  //                 (s) => s.id === subId,
-  //               );
-  //               const key = subObj
-  //                 ? `${subId}_${subObj.subactivity_name}`
-  //                 : `${subId}_${activityId}`;
-  //               const unit = subActivityUnits[key] || subObj?.unit;
-  //               const plannedQty = subActivityPlannedQtys[key] || 0;
-
-  //               return {
-  //                 id: `s${idx + 1}_${subIdx + 1}_${Date.now()}`,
-  //                 sorting_var: subObj?.sorting_var || subIdx + 1,
-  //                 subactivity_name: subObj?.subactivity_name || subId,
-  //                 unit: unit,
-  //                 total_quantity: unit !== "status" ? plannedQty : 1,
-  //                 // completedQty: 0,
-  //                 // progress: 0,
-  //                 chainage_start: subObj.chainage_start,
-  //                 chainage_end: subObj.chainage_end,
-  //                 covered_area: subObj.covered_area,
-  //                 status: "Pending",
-  //               };
-  //             }),
-  //           };
-  //         }),
-  //       }),
-  //     );
-  //     dispatch(
-  //       showSnackbar({
-  //         message: "Project created successfully!",
-  //         type: "success",
-  //       }),
-  //     );
-  //     navigate("/projects");
-  //   } catch (error) {
-  //     console.error("Project creation error:", error);
-  //     let errorMessage = "Failed to create project";
-  //     if (error.response?.data) {
-  //       if (typeof error.response.data === "string") {
-  //         errorMessage = error.response.data;
-  //       } else if (error.response.data.message) {
-  //         errorMessage = error.response.data.message;
-  //       } else if (error.response.data.detail) {
-  //         errorMessage = error.response.data.detail;
-  //       } else {
-  //         try {
-  //           const errors = Object.entries(error.response.data)
-  //             .map(
-  //               ([field, msgs]) =>
-  //                 `${field}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`,
-  //             )
-  //             .join(", ");
-  //           if (errors) errorMessage = errors;
-  //         } catch {
-  //           errorMessage = "Unknown error occurred";
-  //         }
-  //       }
-  //     }
-  //     dispatch(
-  //       showSnackbar({
-  //         message: errorMessage,
-  //         type: "error",
-  //       }),
-  //     );
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
+  
 
   const closeModal = (setter) => {
     setter(false);
@@ -3151,17 +2669,13 @@ const CreateProject = () => {
       .map(id => getAllActivities().find(a => a.id === id))
       .filter(Boolean);
 
-    console.log("=== STAGE DEBUG ===");
     allSelectedActivities.forEach(activity => {
       const selectedSubIds = selectedSubActivities[activity.id] || [];
       const selectedSubs = activity.subActivities.filter(sub => selectedSubIds.includes(sub.id));
 
-      console.log(`Activity: ${activity.activity_name} (sorting_var: ${activity.sorting_var})`);
       selectedSubs.forEach(sub => {
-        console.log(`  - ${sub.subactivity_name}: stage ${sub.sorting_var}`);
       });
     });
-    console.log("=================");
   };
 
   const [showAllFields, setShowAllFields] = useState({});
@@ -5350,24 +4864,7 @@ const CreateProject = () => {
             </div>
 
 
-            {/* <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Assigned to</label>
-              <div className="relative">
-                <UserPen className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <select
-                  name="sector"
-                  value={form.sector}
-                  onChange={handleChange}
-                  className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
-                >
-                  <option value="">Select Sector</option>
-                  {sectorsList.map((sector, i) => (
-                    <option key={i} value={sector}>{sector}</option>
-                  ))}
-                </select>
-
-              </div>
-            </div> */}
+            
           </div>
         </motion.div>
         {/* Step 2: Project Specifications & Dates */}
@@ -5469,52 +4966,7 @@ const CreateProject = () => {
                 </span>
               </div>
             </div>
-            {/* <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">CGST (%)</label>
-              <div className="relative">
-                <Percent className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type="number"
-                  onWheel={(e) => e.target.blur()}
-                  name="cgst_percentage"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={form.cgst}
-                  onChange={handleChange}
-                  className="w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div> */}
-
-            {/* Director Proposal Date */}
-            {/* <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 flex items-center gap-1">
-                <Calendar size={12} /> Director Proposal Date *
-              </label>
-              <input
-                type="date"
-                name="director_proposal_date"
-                value={form.director_proposal_date}
-                onChange={handleChange}
-                className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div> */}
-            {/* Project Confirmation Date */}
-            {/* <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500 flex items-center gap-1">
-                <Calendar size={12} /> Project Confirmation Date *
-              </label>
-              <input
-                type="date"
-                name="project_confirmation_date"
-                value={form.project_confirmation_date}
-                onChange={handleChange}
-                className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div> */}
+           
             {/* LOA Date */}
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500 flex items-center gap-1">
@@ -6125,40 +5577,7 @@ const CreateProject = () => {
                                           className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
                                         >
                                           <div className="flex items-center justify-between mb-2">
-                                            {/* <div className="flex items-center gap-2">
-                                              <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={(e) =>
-                                                  handleSubActivitySelection(
-                                                    activityId,
-                                                    sub.id,
-                                                    e.target.checked,
-                                                  )
-                                                }
-                                                className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                              />
-                                              <span
-                                                className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleSubActivitySelection(
-                                                    activityId,
-                                                    sub.id,
-                                                    !isSelected,
-                                                  );
-                                                }}
-                                              >
-                                                Stage {sub.sorting_var}: {displayName}
-                                              </span>
-
-
-                                              {sub.isCustom && (
-                                                <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
-                                                  Custom
-                                                </span>
-                                              )}
-                                            </div> */}
+                                           
                                             <div className="flex items-center gap-2 flex-1">
                                               <input
                                                 type="checkbox"
@@ -6345,19 +5764,7 @@ const CreateProject = () => {
                                                             )}
                                                         </div>
 
-                                                        {/* <input
-                                                          type="number"
-                                                          min="0"
-                                                          step="0.01"
-                                                          defaultValue={
-                                                            sub.chainage_start ||
-                                                            ""
-                                                          } // Read from sub object directly
-                                                          // disabled // Make it read-only as it's calculated
-                                                          onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'chainagestart', e.target.value)}
-                                                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-gray-100"
-                                                          placeholder="001"
-                                                        /> */}
+                                                        
 
                                                         <input
                                                           type="number"
@@ -6391,16 +5798,7 @@ const CreateProject = () => {
                                                               </div>
                                                             )}
                                                         </div>
-                                                        {/* <input
-                                                      type="number"
-                                                      onWheel={(e) => e.target.blur()}
-                                                      min="0"
-                                                      step="0.01"
-                                                      value={subActivityPlannedQtys[`${sub.id}_coveredarea`] || ''}
-                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'coveredarea', e.target.value)}
-                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                      placeholder="001"
-                                                    /> */}
+                                                       
                                                         <input
                                                           type="number"
                                                           onWheel={(e) => e.target.blur()}
@@ -6491,128 +5889,7 @@ const CreateProject = () => {
                                                       </div>
                                                     </div>
                                                   </div>}
-                                                {/* {(sub?.submission_exist || showAllFields[key]) &&
-                                                  <div>
-                                                    <label className="block text-[10px] text-gray-500 mb-1">
-                                                      Submission Payment (%)
-                                                    </label>
-                                                    <div className="relative">
-                                                      <input
-                                                        type="number"
-                                                        onWheel={(e) => e.target.blur()}
-                                                        min="0"
-                                                        step="0.01"
-                                                        // value={subActivityPlannedQtys[(key2 + "_subpayment")] || ''}
-                                                        value={
-                                                          subActivityPlannedQtys[
-                                                          `${sub.id}_subpayment`
-                                                          ] || ""
-                                                        }
-                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_subpayment"), e.target.value)}
-                                                        onChange={(e) =>
-                                                          handleSubActivityPlannedQtyChange(
-                                                            sub.id,
-                                                            "subpayment",
-                                                            e.target.value,
-                                                          )
-                                                        }
-                                                        onBlur={(e) =>
-                                                          handleActivityWeightageChange(
-                                                            activityId,
-                                                            getActivityTotals(
-                                                              activityData,
-                                                              subActivityPlannedQtys,
-                                                            ),
-                                                            sub.id
-                                                          )
-                                                        }
-                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="Enter payment in %"
-                                                      />
-                                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                        <Percent
-                                                          className=" text-gray-400"
-                                                          size={16}
-                                                        />
-                                                      </span>
-                                                    </div>
-                                                  </div>} */}
-
-                                                {/* {(sub?.approval_exist || showAllFields[key]) &&
-                                                  <div>
-                                                    <label className="block text-[10px] text-gray-500 mb-1">
-                                                      Approval Payment (%)
-                                                    </label>
-                                                    <div className="relative">
-                                                      <input
-                                                        type="number"
-                                                        onWheel={(e) => e.target.blur()}
-                                                        min="0"
-                                                        step="0.01"
-                                                        // value={subActivityPlannedQtys[(key2 + "_approvalpayment")] || ''}
-                                                        value={
-                                                          subActivityPlannedQtys[
-                                                          `${sub.id}_approvalpayment`
-                                                          ] || ""
-                                                        }
-                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_approvalpayment"), e.target.value)}
-                                                        onChange={(e) =>
-                                                          handleSubActivityPlannedQtyChange(
-                                                            sub.id,
-                                                            "approvalpayment",
-                                                            e.target.value,
-                                                          )
-                                                        }
-                                                        onBlur={(e) =>
-                                                          handleActivityWeightageChange(
-                                                            activityId,
-                                                            getActivityTotals(
-                                                              activityData,
-                                                              subActivityPlannedQtys,
-                                                            ),
-                                                            sub.id
-                                                          )
-                                                        }
-                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="Enter payment in %"
-                                                      />
-                                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                        <Percent
-                                                          className=" text-gray-400"
-                                                          size={16}
-                                                        />
-                                                      </span>
-                                                    </div>
-                                                  </div>} */}
-
-                                                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-2 col-span-3 mt-2">
-  <div>
-    <label className="block text-[10px] text-gray-500 mb-1">
-      Start Date
-    </label>
-    <input
-      type="date"
-      value={subActivityPlannedQtys[`${sub.id}_start_date`] || ""}
-      min={activityDates[activityId]?.startDate || form.loa_date}
-      max={subActivityPlannedQtys[`${sub.id}_end_date`] || activityDates[activityId]?.endDate || form.completion_date}
-      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "start_date", e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-  <div>
-    <label className="block text-[10px] text-gray-500 mb-1">
-      End Date
-    </label>
-    <input
-      type="date"
-      value={subActivityPlannedQtys[`${sub.id}_end_date`] || ""}
-      min={subActivityPlannedQtys[`${sub.id}_start_date`] || activityDates[activityId]?.startDate || form.loa_date}
-      max={activityDates[activityId]?.endDate || form.completion_date}
-      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, "end_date", e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-</div> */}
+                                               
                                                 {/* Sub-Activity Dates aligned with Quantities and Chainages */}
                                                 <div >
                                                   <div className="grid grid-cols-1 gap-1 col-span-3">
@@ -6909,35 +6186,7 @@ const CreateProject = () => {
               </div>
             </motion.div>
           )}
-          {/* {isMobile && (
-            <div className="flex justify-between mt-6">
-              <button
-                type="button"
-                onClick={prevStep}
-                className="bg-gray-600 text-white px-6 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm"
-              >
-                <ChevronLeft size={16} />
-                Previous
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    Create Project
-                    <CheckCircle size={16} />
-                  </>
-                )}
-              </button>
-            </div>
-          )} */}
+       
 
           {isMobile && (
     <div className="flex flex-col gap-3 mt-6">
@@ -6985,27 +6234,7 @@ const CreateProject = () => {
     </div>
 )}
         </motion.div>
-        {/* {!isMobile && (
-          <div className="flex justify-center">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 md:px-16 py-4 md:py-5 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-bold text-base md:text-xl flex items-center gap-2 md:gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Creating Project...
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={20} />
-                  Create Project
-                </>
-              )}
-            </button>
-          </div>
-        )} */}
+       
 
         {!isMobile && (
     <div className="flex justify-center gap-4">

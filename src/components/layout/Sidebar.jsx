@@ -95,14 +95,7 @@ const Sidebar = () => {
       description: "My Projects",
     },
 
-    // {
-    //   name: "Submitted Task",
-    //   icon: FolderKanban,
-    //   path: "/submitted-task",
-    //   roles: ["TL"],
-    //   badge: null,
-    //   description: "Submitted Task",
-    // },
+   
     {
       name: "Project Report",
       icon: ChartArea,
@@ -158,85 +151,7 @@ const Sidebar = () => {
       badge: null,
       description: "All project logs",
     },
-    // {
-    //   name: "My Work Logs",
-    //   icon: Clock,
-    //   path: "/my-work-logs",
-    //   roles: ["USER"],
-    //   badge: null,
-    //   description: "My work hours & logs",
-    // },
-
-
-    // User specific - My Projects
-    // {
-    //   name: "My Projects",
-    //   icon: Briefcase,
-    //   path: "/my-projects",
-    //   roles: ["USER"],
-    //   badge: null,
-    //   description: "View my assigned projects",
-    // },
-
-
-    // {
-    //   name: "Contractors",
-    //   icon: HardHat,
-    //   path: "/contractors",
-    //   roles: ["ACCOUNT", "ADMIN"],
-    //   badge: null,
-    //   description: "Manage contractors",
-    // },
-    // {
-    //   name: "Extensions",
-    //   icon: FileClock,
-    //   path: "/extensions",
-    //   roles: ["ACCOUNT", "ADMIN"],
-    //   badge: "pending",
-    //   description: "Extension requests",
-    // },
-    // {
-    //   name: "Equipment",
-    //   icon: Wrench,
-    //   path: "/equipment",
-    //   roles: ["ACCOUNT", "ADMIN"],
-    //   badge: null,
-    //   description: "Equipment management",
-    // },
-    // {
-    //   name: "Materials",
-    //   icon: Truck,
-    //   path: "/materials",
-    //   roles: ["ACCOUNT", "ADMIN"],
-    //   badge: null,
-    //   description: "Material inventory",
-    // },
-
-    // // Account only
-    // {
-    //   name: "Analytics",
-    //   icon: TrendingUp,
-    //   path: "/analytics",
-    //   roles: ["ACCOUNT"],
-    //   badge: null,
-    //   description: "Advanced analytics",
-    // },
-    // {
-    //   name: "User Management",
-    //   icon: UserCog,
-    //   path: "/users",
-    //   roles: ["ACCOUNT"],
-    //   badge: null,
-    //   description: "Manage users & roles",
-    // },
-    // {
-    //   name: "Settings",
-    //   icon: Settings,
-    //   path: "/settings",
-    //   roles: ["ACCOUNT"],
-    //   badge: null,
-    //   description: "System settings",
-    // },
+   
     {
       name: "Tech Support",
       icon: CheckCircle,
@@ -458,68 +373,11 @@ const Sidebar = () => {
                   ))}
                 </div>
               )}
-              {/* {tLMenu.length > 0 && (
-                <div className="space-y-0.5">
-                  {(!desktopCollapsed || isMobile) && (
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
-                      Tl
-                    </p>
-                  )}
-                  {tLMenu.map((item, index) => (
-                    <MenuItem
-                      key={index}
-                      item={item}
-                      desktopCollapsed={desktopCollapsed && !isMobile}
-                      getBadgeColor={getBadgeColor}
-                      isMobile={isMobile}
-                    />
-                  ))}
-                </div>
-              )} */}
+             
             </nav>
           </div>
 
-          {/* Footer user */}
-          {/* {!desktopCollapsed || isMobile ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="relative p-3 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-slate-900/40 backdrop-blur-sm"
-            >
-              <div className="flex items-center gap-2">
-                <div className="relative shrink-0">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">
-                    {user?.name || "User"}
-                  </p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
-                    <Shield size={8} />
-                    {user?.role || "USER"}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="relative p-3 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-slate-900/40 backdrop-blur-sm flex justify-center"
-            >
-              <div className="relative">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
-              </div>
-            </motion.div>
-          )}
-        </div>
-      </motion.aside> */}
+          
 
           {!desktopCollapsed || isMobile ? (
             <motion.div

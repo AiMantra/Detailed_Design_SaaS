@@ -72,54 +72,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
         await dispatch(fetchProjectReport({ emp_code: user }));
     };
 
-    // // Helper function to convert time string to total seconds for accurate calculations
-    // const timeToSeconds = (timeString) => {
-    //     if (!timeString || timeString === "00:00:00") return 0;
-    //     const parts = timeString.split(":");
-    //     const hours = parseInt(parts[0]) || 0;
-    //     const minutes = parseInt(parts[1]) || 0;
-    //     const seconds = parseInt(parts[2]) || 0;
-    //     return hours * 3600 + minutes * 60 + seconds;
-    // };
-
-    // // Helper function to format seconds to readable format
-    // const formatSecondsToDuration = (totalSeconds) => {
-    //     if (!totalSeconds || totalSeconds === 0) return "0h";
-    //     const hours = Math.floor(totalSeconds / 3600);
-    //     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    //     const seconds = totalSeconds % 60;
-
-    //     if (seconds > 0 && hours === 0 && minutes === 0) return `${seconds}s`;
-    //     if (minutes === 0 && seconds === 0) return `${hours}h`;
-    //     if (hours === 0 && seconds === 0) return `${minutes}m`;
-    //     if (hours === 0) return `${minutes}m ${seconds}s`;
-    //     if (minutes === 0 && seconds === 0) return `${hours}h`;
-    //     if (seconds === 0) return `${hours}h ${minutes}m`;
-    //     return `${hours}h ${minutes}m ${seconds}s`;
-    // };
-
-    // const formatDuration = (timeString) => {
-    //     if (!timeString || timeString === "00:00:00") return "0h";
-    //     const seconds = timeToSeconds(timeString);
-    //     return formatSecondsToDuration(seconds);
-    // };
-
-    // const formatDurationDetailed = (timeString) => {
-    //     if (!timeString || timeString === "00:00:00") return "0 hours";
-    //     const parts = timeString.split(":");
-    //     const hours = parseInt(parts[0]) || 0;
-    //     const minutes = parseInt(parts[1]) || 0;
-    //     const seconds = parseInt(parts[2]) || 0;
-
-    //     const parts_array = [];
-    //     if (hours > 0) parts_array.push(`${hours} hour${hours > 1 ? "s" : ""}`);
-    //     if (minutes > 0)
-    //         parts_array.push(`${minutes} minute${minutes > 1 ? "s" : ""}`);
-    //     if (seconds > 0)
-    //         parts_array.push(`${seconds} second${seconds > 1 ? "s" : ""}`);
-
-    //     return parts_array.join(" ") || "0 hours";
-    // };
+    
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -197,12 +150,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
         const processedProjects = projects.map((project) => {
             let projectTotalSeconds = 0;
             let projectTotalTasks = 0;
-            // const projectStatusCount = {
-            //     Approved: 0,
-            //     Submitted: 0,
-            //     Inprogress: 0,
-            //     Rejected: 0,
-            // };
+            
             const projectStatusCount = {
                 Pending: 0,
                 Inprogress: 0,
@@ -230,14 +178,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
                             subTotalSeconds += userSeconds;
                             projectTotalSeconds += userSeconds;
                             totalHoursInSeconds += userSeconds;
-                            // projectTotalTasks++;
-                            // totalTasks++;
-                            // projectStatusCount[sub.status] =
-                            //     (projectStatusCount[sub.status] || 0) + 1;
-                            // globalStatusCount[sub.status] =
-                            //     (globalStatusCount[sub.status] || 0) + 1;
-
-                            // Track employees globally
+                            
                             if (!allEmployeesMap.has(user.emp_code)) {
                                 allEmployeesMap.set(user.emp_code, {
                                     emp_code: user.emp_code,
@@ -245,12 +186,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
                                     total_hours_in_seconds: 0,
                                     total_tasks: 0,
                                     projects: new Set(),
-                                    // statusBreakdown: {
-                                    //     Approved: 0,
-                                    //     Submitted: 0,
-                                    //     Inprogress: 0,
-                                    //     Rejected: 0,
-                                    // },
+                                   
                                     statusBreakdown: {
                                         Pending: 0,
                                         Inprogress: 0,
@@ -334,20 +270,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
                     total_hours_in_seconds: activityTotalSeconds,
                     total_hours_formatted: formatSecondsToDuration(activityTotalSeconds),
                     subactivities: processedSubactivities,
-                    // statusCount: {
-                    //     Approved: processedSubactivities.filter(
-                    //         (s) => s.status === "Approved",
-                    //     ).length,
-                    //     Submitted: processedSubactivities.filter(
-                    //         (s) => s.status === "Submitted",
-                    //     ).length,
-                    //     Inprogress: processedSubactivities.filter(
-                    //         (s) => s.status === "Inprogress",
-                    //     ).length,
-                    //     Rejected: processedSubactivities.filter(
-                    //         (s) => s.status === "Rejected",
-                    //     ).length,
-                    // },
+                    
 
                     statusCount: {
                         Pending: processedSubactivities.filter((s) => s.status === "Pending").length,
@@ -508,14 +431,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
             OnHold: 0,
         };
 
-        // filteredProjects.forEach((project) => {
-        //     filteredTotalSeconds += project.total_hours_in_seconds;
-        //     filteredTotalTasks += project.total_tasks;
-        //     filteredStatusBreakdown.Approved += project.statusBreakdown.Approved;
-        //     filteredStatusBreakdown.Submitted += project.statusBreakdown.Submitted;
-        //     filteredStatusBreakdown.Inprogress += project.statusBreakdown.Inprogress;
-        //     filteredStatusBreakdown.Rejected += project.statusBreakdown.Rejected;
-        // });
+        
 
         filteredProjects.forEach((project) => {
             filteredTotalSeconds += project.total_hours_in_seconds;
@@ -563,20 +479,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
         selectedStatus !== "all" ||
         selectedEmployee !== "all";
 
-    // const getStatusColor = (status) => {
-    //     switch (status) {
-    //         case "Approved":
-    //             return "bg-green-100 text-green-800 border-green-200";
-    //         case "Submitted":
-    //             return "bg-blue-100 text-blue-800 border-blue-200";
-    //         case "Inprogress":
-    //             return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    //         case "Rejected":
-    //             return "bg-red-100 text-red-800 border-red-200";
-    //         default:
-    //             return "bg-gray-100 text-gray-800 border-gray-200";
-    //     }
-    // };
+   
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -599,20 +502,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
         }
     };
 
-    // const getStatusIcon = (status) => {
-    //     switch (status) {
-    //         case "Approved":
-    //             return <CheckCircle size={14} className="text-green-600" />;
-    //         case "Submitted":
-    //             return <FileText size={14} className="text-blue-600" />;
-    //         case "Inprogress":
-    //             return <Activity size={14} className="text-yellow-600" />;
-    //         case "Rejected":
-    //             return <XCircle size={14} className="text-red-600" />;
-    //         default:
-    //             return null;
-    //     }
-    // };
+    
 
     const getStatusIcon = (status) => {
         switch (status) {
@@ -841,32 +731,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
 
                 {/* Status Distribution Cards - All 7 Statuses */}
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                    {/* <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700 font-medium">Pending</p>
-                                <p className="text-2xl font-bold text-gray-800">
-                                    {hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Pending || 0
-                                        : reportData.totalStats.statusBreakdown.Pending || 0}
-                                </p>
-                            </div>
-                            <Clock size={28} className="text-gray-600" />
-                        </div>
-                        <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gray-500 rounded-full"
-                                style={{
-                                    width: `${((hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Pending || 0
-                                        : reportData.totalStats.statusBreakdown.Pending || 0) /
-                                        (hasActiveFilters
-                                            ? filteredData.filteredStats.totalTasks
-                                            : reportData.totalStats.totalTasks)) * 100}%`,
-                                }}
-                            />
-                        </div>
-                    </div> */}
+                    
 
                     <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
                         <div className="flex items-center justify-between">
@@ -1003,154 +868,10 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
                         </div>
                     </div>
 
-                    {/* <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-orange-700 font-medium">On Hold</p>
-                                <p className="text-2xl font-bold text-orange-800">
-                                    {hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.OnHold || 0
-                                        : reportData.totalStats.statusBreakdown.OnHold || 0}
-                                </p>
-                            </div>
-                            <PauseCircle size={28} className="text-orange-600" />
-                        </div>
-                        <div className="mt-2 h-1.5 bg-orange-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-orange-500 rounded-full"
-                                style={{
-                                    width: `${((hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.OnHold || 0
-                                        : reportData.totalStats.statusBreakdown.OnHold || 0) /
-                                        (hasActiveFilters
-                                            ? filteredData.filteredStats.totalTasks
-                                            : reportData.totalStats.totalTasks)) * 100}%`,
-                                }}
-                            />
-                        </div>
-                    </div> */}
+                    
                 </div>
 
-                {/* Status Distribution Cards */}
-                {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-yellow-700 font-medium">
-                                    In Progress
-                                </p>
-                                <p className="text-2xl font-bold text-yellow-800">
-                                    {hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Inprogress
-                                        : reportData.totalStats.statusBreakdown.Inprogress}
-                                </p>
-                            </div>
-                            <Activity size={28} className="text-yellow-600" />
-                        </div>
-                        <div className="mt-2 h-1.5 bg-yellow-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-yellow-500 rounded-full"
-                                style={{
-                                    width: `${((hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Inprogress
-                                        : reportData.totalStats.statusBreakdown.Inprogress) /
-                                        (hasActiveFilters
-                                            ? filteredData.filteredStats.totalTasks
-                                            : reportData.totalStats.totalTasks)) *
-                                        100
-                                        }%`,
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-blue-700 font-medium">Submitted</p>
-                                <p className="text-2xl font-bold text-blue-800">
-                                    {hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Submitted
-                                        : reportData.totalStats.statusBreakdown.Submitted}
-                                </p>
-                            </div>
-                            <FileText size={28} className="text-blue-600" />
-                        </div>
-                        <div className="mt-2 h-1.5 bg-blue-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-blue-500 rounded-full"
-                                style={{
-                                    width: `${((hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Submitted
-                                        : reportData.totalStats.statusBreakdown.Submitted) /
-                                        (hasActiveFilters
-                                            ? filteredData.filteredStats.totalTasks
-                                            : reportData.totalStats.totalTasks)) *
-                                        100
-                                        }%`,
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-green-700 font-medium">Approved</p>
-                                <p className="text-2xl font-bold text-green-800">
-                                    {hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Approved
-                                        : reportData.totalStats.statusBreakdown.Approved}
-                                </p>
-                            </div>
-                            <CheckCircle size={28} className="text-green-600" />
-                        </div>
-                        <div className="mt-2 h-1.5 bg-green-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-green-500 rounded-full"
-                                style={{
-                                    width: `${((hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Approved
-                                        : reportData.totalStats.statusBreakdown.Approved) /
-                                        (hasActiveFilters
-                                            ? filteredData.filteredStats.totalTasks
-                                            : reportData.totalStats.totalTasks)) *
-                                        100
-                                        }%`,
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-red-700 font-medium">Rejected</p>
-                                <p className="text-2xl font-bold text-red-800">
-                                    {hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Rejected
-                                        : reportData.totalStats.statusBreakdown.Rejected}
-                                </p>
-                            </div>
-                            <XCircle size={28} className="text-red-600" />
-                        </div>
-                        <div className="mt-2 h-1.5 bg-red-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-red-500 rounded-full"
-                                style={{
-                                    width: `${((hasActiveFilters
-                                        ? filteredData.filteredStats.statusBreakdown.Rejected
-                                        : reportData.totalStats.statusBreakdown.Rejected) /
-                                        (hasActiveFilters
-                                            ? filteredData.filteredStats.totalTasks
-                                            : reportData.totalStats.totalTasks)) *
-                                        100
-                                        }%`,
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div> */}
+                
 
                 {/* Filters Bar */}
                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 mb-6">
@@ -1169,22 +890,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
             />
         </div>
 
-        {/* <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            // Added max-h-60 and overflow-y-auto here
-            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white max-h-60 overflow-y-auto"
-        >
-            <option value="all">📊 All Projects</option>
-            {reportData.projects?.map((project) => (
-                <option key={project.project_id} value={project.project_id}>
-                    📁{" "}
-                    {project.project_name.length > 50
-                        ? project.project_name.substring(0, 50) + "..."
-                        : project.project_name}
-                </option>
-            ))}
-        </select> */}
+       
 
 
 {/* Custom Scrollable Dropdown */}
@@ -1230,31 +936,7 @@ const [isProjectOpen, setIsProjectOpen] = useState(false);
         </div>
     )}
 </div>
-        {/* <select
-            value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
-            // Added max-h-60 and overflow-y-auto here
-            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white max-h-60 overflow-y-auto"
-        >
-            <option value="all">👥 All Employees</option>
-            {reportData.allEmployees?.map((emp) => (
-                <option key={emp.emp_code} value={emp.emp_code}>
-                    👤 {emp.name} ({emp.total_hours} - {emp.total_tasks} tasks)
-                </option>
-            ))}
-        </select>
-
-        <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
-        >
-            <option value="all">🎯 All Status</option>
-            <option value="Approved">✅ Approved</option>
-            <option value="Submitted">📤 Submitted</option>
-            <option value="Inprogress">⏳ In Progress</option>
-            <option value="Rejected">❌ Rejected</option>
-        </select> */}
+        
 
         {/* Custom Scrollable Employee Dropdown */}
 <div className="relative">

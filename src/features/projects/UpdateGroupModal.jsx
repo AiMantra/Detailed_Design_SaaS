@@ -254,7 +254,6 @@ const DurationBadge = ({ start, end }) => {
 
 const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [], isEdit, initialData = {} }) => {
     const dispatch = useDispatch();
-    console.log("Rendering UpdateGroupModal with initialData:", isEdit, initialData);
     const [date, setDate] = useState("");
     const [rows, setRows] = useState([]);
     const [saving, setSaving] = useState(false);
@@ -267,14 +266,12 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     const isAnyDropdownOpen = Object.values(openDropdowns).some(Boolean);
 
     const ensureProjectDetail = useCallback(async (projectId) => {
-        console.log("Ensuring project detail for projectId:", projectId);
         if (!projectId || detailCache[projectId] || loadingDetail[projectId]) return;
         // setLoadingDetail((prev) => ({ ...prev, [projectId]: true }));
         try {
             const result = await dispatch(fetchProjectDetails(projectId)).unwrap();
             setDetailCache((prev) => ({ ...prev, [projectId]: result }));
         } catch (err) {
-            console.error("Failed to fetch project details:", err);
         } finally {
             // setLoadingDetail((prev) => ({ ...prev, [projectId]: false }));
         }
@@ -284,7 +281,6 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     useEffect(() => {
         if (isOpen && initialData) {
             setDate(initialData.date && initialData.date !== "Unscheduled" ? initialData.date : todayStr());
-            console.log("Initializing rows with tasks:", initialData.tasks);
             if (initialData.tasks && initialData.tasks.length > 0) {
                 const mappedRows = initialData.tasks.map(task => ({
                     _id: crypto.randomUUID(),
@@ -299,9 +295,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                     isSelected: false, // ✅ Existing tasks are unchecked by default
                     status: task.status || "not_done",
                 }));
-                console.log("Mapped rows for modal:", mappedRows);
                 setRows(mappedRows);
-                console.log("Ensuring project details for project IDs:", mappedRows.map(r => r.projectId));
                 const uniquePids = [...new Set(mappedRows.map(r => r.projectId).filter(Boolean))];
                 uniquePids.forEach(pid => ensureProjectDetail(pid));
             } else {
@@ -392,7 +386,6 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             // ✅ ONLY Extract Selected Rows
             const selectedRows = rows
             const selectedRowsworklog = rows.filter(r => r.isSelected);
-            console.log("Selected rows for update:", selectedRowsworklog);
             // ✅ Format exactly as requested
             const payload = selectedRows.map(row => ({
                 id: row.taskId,
@@ -414,18 +407,14 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 note: row.description,
             }));
 
-            console.log("Saving update payload:", payload);
             if (!isEdit) {
                 await onSaveWorklog(date, worklogPayload);
-                console.log("Would call onSaveWorklog with:", { date, worklogPayload });
             } else {
-                console.log("Would call onSave with:", { date, payload });
                 await onSave(date, payload);
             }
 
             onClose();
         } catch (error) {
-            console.error("Save failed", error);
         } finally {
             setSaving(false);
         }
@@ -444,7 +433,6 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             }))
         );
     };
-    console.log("Rendering UpdateGroupModal with rows:", rows);
     // const areAllSelected = rows.length > 0 && rows.every(r => r.isSelected);
     const selectableRows = rows.filter(
         r => r.status?.toUpperCase() !== "COMPLETED"
@@ -739,32 +727,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         />
                                                     </td>
 
-                                                    {/* EDIT BUTTON */}
-                                                    {/* <td className="px-1 py-2 align-top text-center">
-                                                        <button
-                                                            onClick={() =>
-                                                                setEditingRow(
-                                                                    editingRow === row._id
-                                                                        ? null
-                                                                        : row._id
-                                                                )
-                                                            }
-                                                            disabled={!row.isSelected}
-                                                            className={`p-1.5 rounded-lg transition ${isEditing
-                                                                ? "bg-green-100 text-green-600"
-                                                                : "text-blue-500 hover:bg-blue-50"
-                                                                } ${!row.isSelected
-                                                                    ? "opacity-50 cursor-not-allowed"
-                                                                    : ""
-                                                                }`}
-                                                        >
-                                                            {isEditing ? (
-                                                                <CheckCircle2 size={14} />
-                                                            ) : (
-                                                                <Pencil size={14} />
-                                                            )}
-                                                        </button>
-                                                    </td> */}
+                                                   
 
                                                     {/* DELETE BUTTON */}
                                                     {isEdit && (
