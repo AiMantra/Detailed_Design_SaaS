@@ -558,7 +558,7 @@ const CreateProject = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-   
+
 
     if (name == "workorder_document") {
       setForm((prev) => ({
@@ -595,11 +595,11 @@ const CreateProject = () => {
 
     // 2. Auto-fill the same date for all sub-activities of this activity
     const activityObj = getAllActivities().find((a) => a.id === activityId);
-    
+
     if (activityObj && activityObj.subActivities) {
       setSubActivityPlannedQtys((prev) => {
         const updatedQtys = { ...prev };
-        
+
         // Map "startDate" -> "start_date" and "endDate" -> "end_date"
         const subField = field === "startDate" ? "start_date" : "end_date";
 
@@ -1128,6 +1128,7 @@ const CreateProject = () => {
       return;
     }
 
+
     let newSubs = [];
 
     if (newSubActivity.activityType === "single") {
@@ -1451,7 +1452,7 @@ const CreateProject = () => {
     }
   };
 
-  
+
 
 
   const handleCloneSubActivitySubmit = async (e) => {
@@ -2303,12 +2304,12 @@ const CreateProject = () => {
         );
       }
 
-     
+
 
       // Check unit and dates for each selected sub-activity
       for (const subId of selectedSubs) {
         const subObj = activityObj?.subActivities.find((s) => s.id === subId);
-        
+
         // 1. Validate Unit
         if (subObj && (!subObj.unit || subObj.unit === "")) {
           return showError(
@@ -2475,7 +2476,7 @@ const CreateProject = () => {
     }
   };
 
-  
+
 
   const closeModal = (setter) => {
     setter(false);
@@ -4254,14 +4255,14 @@ const CreateProject = () => {
         </div> */}
 
         <div>
-  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1 md:pb-2">
-    Create New Project
-  </h2>
-  <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-1">
-    <AlertCircle size={14} />
-    Fields marked with * are required
-  </p>
-</div>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent pb-1 md:pb-2">
+            Create New Project
+          </h2>
+          <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-1">
+            <AlertCircle size={14} />
+            Fields marked with * are required
+          </p>
+        </div>
         {isMobile && (
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <motion.div
@@ -4864,7 +4865,7 @@ const CreateProject = () => {
             </div>
 
 
-            
+
           </div>
         </motion.div>
         {/* Step 2: Project Specifications & Dates */}
@@ -4966,7 +4967,7 @@ const CreateProject = () => {
                 </span>
               </div>
             </div>
-           
+
             {/* LOA Date */}
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500 flex items-center gap-1">
@@ -5577,7 +5578,7 @@ const CreateProject = () => {
                                           className="bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-200"
                                         >
                                           <div className="flex items-center justify-between mb-2">
-                                           
+
                                             <div className="flex items-center gap-2 flex-1">
                                               <input
                                                 type="checkbox"
@@ -5764,7 +5765,7 @@ const CreateProject = () => {
                                                             )}
                                                         </div>
 
-                                                        
+
 
                                                         <input
                                                           type="number"
@@ -5798,7 +5799,7 @@ const CreateProject = () => {
                                                               </div>
                                                             )}
                                                         </div>
-                                                       
+
                                                         <input
                                                           type="number"
                                                           onWheel={(e) => e.target.blur()}
@@ -5889,7 +5890,7 @@ const CreateProject = () => {
                                                       </div>
                                                     </div>
                                                   </div>}
-                                               
+
                                                 {/* Sub-Activity Dates aligned with Quantities and Chainages */}
                                                 <div >
                                                   <div className="grid grid-cols-1 gap-1 col-span-3">
@@ -6186,88 +6187,88 @@ const CreateProject = () => {
               </div>
             </motion.div>
           )}
-       
+
 
           {isMobile && (
-    <div className="flex flex-col gap-3 mt-6">
-        {/* Row 1: Actions */}
-        <div className="flex gap-3">
-            {/* Cancel Button */}
-            <button
+            <div className="flex flex-col gap-3 mt-6">
+              {/* Row 1: Actions */}
+              <div className="flex gap-3">
+                {/* Cancel Button */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/all-projects")}
+                  className="flex-1 bg-white text-gray-700 border border-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+
+                {/* Create/Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      Create
+                      <CheckCircle size={16} />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Previous Button (kept separate or below as needed) */}
+              <button
                 type="button"
-                onClick={() => navigate("/all-projects")}
-                className="flex-1 bg-white text-gray-700 border border-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-            >
-                <X size={16} />
-                Cancel
-            </button>
-
-            {/* Create/Submit Button */}
-            <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isSubmitting ? (
-                    <>
-                        <Loader2 className="animate-spin" size={16} />
-                        Creating...
-                    </>
-                ) : (
-                    <>
-                        Create
-                        <CheckCircle size={16} />
-                    </>
-                )}
-            </button>
-        </div>
-
-        {/* Previous Button (kept separate or below as needed) */}
-        <button
-            type="button"
-            onClick={prevStep}
-            className="w-full bg-gray-600 text-white px-6 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
-        >
-            <ChevronLeft size={16} />
-            Previous
-        </button>
-    </div>
-)}
+                onClick={prevStep}
+                className="w-full bg-gray-600 text-white px-6 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+            </div>
+          )}
         </motion.div>
-       
+
 
         {!isMobile && (
-    <div className="flex justify-center gap-4">
-        {/* Cancel Button */}
-        <button
-            type="button"
-            onClick={() => navigate("/all-projects")}
-            className="w-56 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2"
-        >
-            <X size={18} />
-            Cancel
-        </button>
+          <div className="flex justify-center gap-4">
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={() => navigate("/all-projects")}
+              className="w-56 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2"
+            >
+              <X size={18} />
+              Cancel
+            </button>
 
-        {/* Create Button */}
-        <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-56 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            {isSubmitting ? (
+            {/* Create Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-56 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
                 <>
-                    <Loader2 className="animate-spin" size={18} />
-                    Creating...
+                  <Loader2 className="animate-spin" size={18} />
+                  Creating...
                 </>
-            ) : (
+              ) : (
                 <>
-                    <CheckCircle size={18} />
-                    Create Project
+                  <CheckCircle size={18} />
+                  Create Project
                 </>
-            )}
-        </button>
-    </div>
-)}
+              )}
+            </button>
+          </div>
+        )}
       </form>
     </motion.div>
   );
