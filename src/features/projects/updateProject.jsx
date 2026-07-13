@@ -993,25 +993,27 @@ const UpdateProject = () => {
             const allActivities = getAllActivities();
             for (const activity of allActivities) {
                 const subExists = activity.subActivities.some(s => s.id === subId);
-                if (subExists) {
-                    const selectedSubs = selectedSubActivities[activity.id] || [];
-                    if (selectedSubs.includes(subId)) {
-                        let totalWeightage = 0;
-                        selectedSubs.forEach(selectedSubId => {
-                            const subObj = activity.subActivities.find(s => s.id === selectedSubId);
-                            if (subObj) {
-                                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-                                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-                                totalWeightage += submissionPayment + approvalPayment;
-                            }
-                        });
-                        setActivityWeightages(prev => ({
-                            ...prev,
-                            [activity.id]: totalWeightage
-                        }));
-                    }
-                    break;
-                }
+                // if (subExists) {
+                //     const selectedSubs = selectedSubActivities[activity.id] || [];
+                //     if (selectedSubs.includes(subId)) {
+                //         let totalWeightage = 0;
+                //         selectedSubs.forEach(selectedSubId => {
+                //             const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                //             if (subObj) {
+
+                //                 const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                //                 const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                //                 console.log(`Calculating weightage for activity ${activity.id}, sub ${selectedSubId}: submission=${submissionPayment}, approval=${approvalPayment}`);
+                //                 totalWeightage += submissionPayment + approvalPayment;
+                //             }
+                //         });
+                //         setActivityWeightages(prev => ({
+                //             ...prev,
+                //             [activity.id]: totalWeightage
+                //         }));
+                //     }
+                //     break;
+                // }
             }
 
         } else if (field === "quantity") {
@@ -1185,7 +1187,7 @@ const UpdateProject = () => {
             newSubs = [
                 {
                     // id: `custom-sub-${Date.now()}`,
-                    id: `custom-sub-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`,
+                    id: `custom-sub-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
                     sorting_var: null,
                     subactivity_name: newSubActivity.subactivity_name,
                     unit: newSubActivity.unit,
@@ -1263,6 +1265,7 @@ const UpdateProject = () => {
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
                         // id: `custom-sub-${Date.now()}-${i}`,
+                        id: `custom-sub-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`,
                         sorting_var: null,
                         subactivity_name: newSubActivity.subactivity_name,
                         unit: newSubActivity.unit,
@@ -2150,7 +2153,7 @@ const UpdateProject = () => {
 
                 const subactivities = selectedSubs.map((subId) => {
                     const subObj = activityObj?.subActivities.find((s) => s.id === subId);
-
+                      
                     const unit = subActivityUnits[`${activityId}_${subId}`] || subObj?.unit;
                     const plannedQty = subActivityPlannedQtys[`${subId}_quantity`] || 0;
                     const submissionpayment = subActivityPlannedQtys[`${subId}_subpayment`] || 0;
@@ -2165,7 +2168,7 @@ const UpdateProject = () => {
                     const subSortingVar = subObj?.sorting_var || 0;
 
                     const isNewSub = subId?.toString().startsWith('custom-sub-');
-
+                    console.log(coveredarea,'coveredareaS')
                     // return {
                     //     // id: subId,
                     //     ...(isNewSub ? {} : { id: subId }),
@@ -5411,7 +5414,7 @@ const UpdateProject = () => {
                                                                                                                     <div>
                                                                                                                         <div className="flex flex-row justify-between items-center">
                                                                                                                             <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                                Chainage Length
+                                                                                                                                Chainage Length 
                                                                                                                             </label>
                                                                                                                             {currentUnit ===
                                                                                                                                 "status" && (
@@ -5422,7 +5425,7 @@ const UpdateProject = () => {
                                                                                                                                     </div>
                                                                                                                                 )}
                                                                                                                         </div>
-                                                                                                                        {/* <input
+                                                                                                                        <input
                                                                                      type="number"
                                                                                      min="0"
                                                                                      step="0.01"
@@ -5430,8 +5433,8 @@ const UpdateProject = () => {
                                                                                      onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'coveredarea', e.target.value)}
                                                                                      className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                                                      placeholder="001"
-                                                                                   /> */}
-                                                                                                                        <input
+                                                                                   />
+                                                                                                                        {/* <input
                                                                                                                             type="number"
                                                                                                                             min="0"
                                                                                                                             step="0.01"
@@ -5516,7 +5519,7 @@ const UpdateProject = () => {
                                                                                                                             }}
                                                                                                                             className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                                                                                             placeholder="Length"
-                                                                                                                        />
+                                                                                                                        /> */}
                                                                                                                     </div>
                                                                                                                 </div>
                                                                                                             </div>}

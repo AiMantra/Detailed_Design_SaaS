@@ -2190,20 +2190,7 @@ const ActivityModalContent = ({
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
-                            {/* <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-1 block">
-                                        Weightage (%)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.weightage}
-                                        onChange={(e) => onFormChange("weightage", e.target.value)}
-                                        placeholder="0-100"
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div> */}
-                            {/* </div> */}
+                            
 
                             <div>
                                 <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -2219,30 +2206,7 @@ const ActivityModalContent = ({
                                 />
                             </div>
 
-                            {/* <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-1 block">
-                                        Start Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.start_date}
-                                        onChange={(e) => onFormChange("start_date", e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-1 block">
-                                        End Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.end_date}
-                                        onChange={(e) => onFormChange("end_date", e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                            </div> */}
+                           
                         </div>
 
                         <div className="flex gap-3 mt-6">
@@ -2396,11 +2360,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
         activity_name: activity?.activity_name || "",
         sorting_var: activity?.sorting_var || "",
         template_description: activity?.template_description || "",
-        // start_date: activity?.start_date || "",
-        // end_date: activity?.end_date || "",
-        // weightage: activity?.weightage || "",
-        // company: activity?.company || "",
-        // sector: activity?.sector || "",
+        
     });
 
     const handleFormChange = (field, value) => {
@@ -2412,11 +2372,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
             activity_name: activity?.activity_name || "",
             sorting_var: activity?.sorting_var || "",
             template_description: activity?.template_description || "",
-            // start_date: activity?.start_date || "",
-            // end_date: activity?.end_date || "",
-            // weightage: activity?.weightage || "",
-            // company: activity?.company || "",
-            // sector: activity?.sector || "",
+            
         });
     };
 
@@ -2458,31 +2414,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
                 activity_name: formData.activity_name,
                 sorting_var: formData.sorting_var || "1",
                 template_description: formData.template_description,
-                // start_date: formData.start_date || null,
-                // end_date: formData.end_date || null,
-                // weightage: formData.weightage || null,
-                // company: formData.company || null,
-                // sector: formData.sector || null,
-                // subactivities: currentSubActivities.map((sub) => ({
-                //     id: sub.id,
-                //     subactivity_name: sub.subactivity_name,
-                //     sorting_var: sub.sorting_var,
-                //     description: sub.description,
-                //     unit: sub.unit,
-                //     submission_payment: sub.submission_payment,
-                //     approval_payment: sub.approval_payment,
-                //     chainage_start: sub.chainage_start,
-                //     chainage_end: sub.chainage_end,
-                //     covered_area: sub.covered_area,
-                //     total_quantity: sub.total_quantity,
-                //     chainage_exist: sub.chainage_exist,
-                //     planned_quantity_exist: sub.planned_quantity_exist,
-                //     length_exist: sub.length_exist,
-                //     submission_exist: sub.submission_exist,
-                //     approval_exist: sub.approval_exist,
-                //     range: sub.range,
-                //     range_no: sub.range_no,
-                // })),
+               
             };
 
             await dispatch(
@@ -2875,12 +2807,7 @@ export const AddSubActivityButton = ({
                 createSubActivity({
                     activity_template: activity.id,
                     ...formData,
-                    // submission_payment: parseFloat(formData.submission_payment) || 0,
-                    // approval_payment: parseFloat(formData.approval_payment) || 0,
-                    // chainage_start: parseFloat(formData.chainage_start) || 0,
-                    // chainage_end: parseFloat(formData.chainage_end) || 0,
-                    // covered_area: parseFloat(formData.covered_area) || 0,
-                    // total_quantity: formData.total_quantity || null,
+                    
                 }),
             ).unwrap();
 
@@ -2946,14 +2873,7 @@ export const EditSubActivityButton = ({
         length_exist: subActivity?.length_exist !== false,
         submission_exist: subActivity?.submission_exist !== false,
         approval_exist: subActivity?.approval_exist !== false,
-        // submission_payment: subActivity?.submission_payment || "0",
-        // approval_payment: subActivity?.approval_payment || "0",
-        // chainage_start: subActivity?.chainage_start || "0",
-        // chainage_end: subActivity?.chainage_end || "0",
-        // covered_area: subActivity?.covered_area || "0",
-        // total_quantity: subActivity?.total_quantity || "",
-        // range: subActivity?.range || "",
-        // range_no: subActivity?.range_no || "",
+        
     });
 
     const handleFormChange = (field, value) => {
@@ -2971,14 +2891,7 @@ export const EditSubActivityButton = ({
             length_exist: subActivity?.length_exist !== false,
             submission_exist: subActivity?.submission_exist !== false,
             approval_exist: subActivity?.approval_exist !== false,
-            // submission_payment: subActivity?.submission_payment || "0",
-            // approval_payment: subActivity?.approval_payment || "0",
-            // chainage_start: subActivity?.chainage_start || "0",
-            // chainage_end: subActivity?.chainage_end || "0",
-            // covered_area: subActivity?.covered_area || "0",
-            // total_quantity: subActivity?.total_quantity || "",
-            // range: subActivity?.range || "",
-            // range_no: subActivity?.range_no || "",
+           
         });
     };
 
@@ -3000,12 +2913,7 @@ export const EditSubActivityButton = ({
                     id: subActivity.id,
                     data: {
                         ...formData,
-                        // submission_payment: parseFloat(formData.submission_payment) || 0,
-                        // approval_payment: parseFloat(formData.approval_payment) || 0,
-                        // chainage_start: parseFloat(formData.chainage_start) || 0,
-                        // chainage_end: parseFloat(formData.chainage_end) || 0,
-                        // covered_area: parseFloat(formData.covered_area) || 0,
-                        // total_quantity: formData.total_quantity || null,
+                       
                     },
                 }),
             ).unwrap();
