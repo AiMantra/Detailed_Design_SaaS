@@ -1,3 +1,4 @@
+                                                                                
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
@@ -13,9 +14,11 @@ import { fetchEmployeeWorklogHistory } from "../api/apiSlice";
 // ─── Status Config ────────────────────────────────────────────────────────────
 const getStatusConfig = (status) => {
   const s = status?.toLowerCase();
+  
+  // IF STATUS IS "stop", WE OVERRIDE THE LABEL TO "Completed"
   if (s === "stop" || s === "completed" || s === "approved") {
     return {
-      label: "Completed",
+      label: "Completed", 
       icon: <CheckCircle2 size={13} />,
       badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
       dot: "bg-emerald-500",
@@ -60,6 +63,26 @@ const SummaryBar = ({ summary }) => {
 const EmployeeHistoryCard = ({ employee, defaultExpanded = false }) => {
   const [collapsed, setCollapsed] = useState(!defaultExpanded);
 
+  // Group worklogs by Date
+  const groupedLogs = useMemo(() => {
+    if (!employee.worklogs) return [];
+    
+    const groups = {};
+    employee.worklogs.forEach((log) => {
+      const dateKey = log.date || "Unscheduled";
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(log);
+    });
+
+    // Convert object to array and sort dates descending (newest first)
+    return Object.keys(groups)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .map((date) => ({
+        date,
+        logs: groups[date],
+      }));
+  }, [employee.worklogs]);
+
   if (!employee.worklogs || employee.worklogs.length === 0) return null;
 
   return (
@@ -94,7 +117,7 @@ const EmployeeHistoryCard = ({ employee, defaultExpanded = false }) => {
         </div>
       </button>
 
-      {/* Comparison table */}
+      {/* Date-Grouped Tables */}
       <AnimatePresence initial={false}>
         {!collapsed && (
           <motion.div key="body"
@@ -102,81 +125,95 @@ const EmployeeHistoryCard = ({ employee, defaultExpanded = false }) => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="bg-gray-50/80 text-gray-500 text-[11px] font-bold uppercase tracking-wider border-b border-gray-200">
-                    <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4">Project & Activity</th>
-                    <th className="px-6 py-4">Description</th>
-                    <th className="px-6 py-4 text-center">Hours</th>
-                    <th className="px-6 py-4 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {employee.worklogs.map((log) => {
-                    const cfg = getStatusConfig(log.status);
+            className="overflow-hidden bg-slate-50/50">
+            
+            <div className="p-5 space-y-6">
+              {groupedLogs.map((group) => (
+                <div key={group.date} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  
+                  {/* Date Header */}
+                  <div className="bg-gray-100/60 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 bg-white rounded-md shadow-sm border border-gray-200">
+                        <Calendar size={16} className="text-blue-500" />
+                      </div>
+                      <h3 className="font-bold text-gray-800 text-sm">{formatDate(group.date)}</h3>
+                    </div>
+                    <span className="text-xs font-bold text-gray-500 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-sm">
+                      {group.logs.length} Log{group.logs.length !== 1 && 's'}
+                    </span>
+                  </div>
 
-                    return (
-                      <tr key={log.id} className="hover:bg-blue-50/30 transition-all duration-200 group">
-                        
-                        {/* Date */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">{formatDate(log.date)}</span>
-                          </div>
-                        </td>
+                  {/* 4-Column Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-gray-50/30 text-gray-500 text-[10px] font-bold uppercase tracking-wider border-b border-gray-100">
+                          <th className="px-6 py-3">Project & Activity</th>
+                          <th className="px-6 py-3">Description</th>
+                          <th className="px-6 py-3 text-center">Hours</th>
+                          <th className="px-6 py-3 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {group.logs.map((log) => {
+                          const cfg = getStatusConfig(log.status);
 
-                        {/* Project & Activity Stacked */}
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2">
-                              <Briefcase size={13} className="text-blue-500 shrink-0" />
-                              <span className="text-sm font-semibold text-gray-800 truncate max-w-[200px]">
-                                {log.project || "—"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <AlignLeft size={11} className="shrink-0" />
-                              <span className="truncate max-w-[200px]">
-                                {log.activity} {log.subactivity ? `› ${log.subactivity}` : ""}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
+                          return (
+                            <tr key={log.id} className="hover:bg-blue-50/30 transition-all duration-200 group">
+                              
+                              {/* Project & Activity Stacked */}
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col gap-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <Briefcase size={13} className="text-blue-500 shrink-0" />
+                                    <span className="text-sm font-semibold text-gray-800 truncate max-w-[220px]">
+                                      {log.project || "—"}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <AlignLeft size={11} className="shrink-0" />
+                                    <span className="truncate max-w-[220px]">
+                                      {log.activity} {log.subactivity ? `› ${log.subactivity}` : ""}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
 
-                        {/* Description */}
-                        <td className="px-6 py-4 max-w-[250px] whitespace-normal">
-                          <div className="flex items-start gap-2">
-                            <FileText size={14} className="text-gray-400 shrink-0 mt-0.5" />
-                            <span className="text-sm text-gray-600 line-clamp-2">
-                              {log.description || "No description provided."}
-                            </span>
-                          </div>
-                        </td>
+                              {/* Description */}
+                              <td className="px-6 py-4 max-w-[280px] whitespace-normal">
+                                <div className="flex items-start gap-2">
+                                  <FileText size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                                  <span className="text-sm text-gray-600 line-clamp-2">
+                                    {log.description || "No description provided."}
+                                  </span>
+                                </div>
+                              </td>
 
-                        {/* Hours */}
-                        <td className="px-6 py-4 text-center">
-                          <span className="inline-flex items-center justify-center gap-1 text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
-                            <Hourglass size={12} className="text-indigo-500" />
-                            {log.hours?.toFixed(1)}
-                          </span>
-                        </td>
+                              {/* Hours */}
+                              <td className="px-6 py-4 text-center">
+                                <span className="inline-flex items-center justify-center gap-1 text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
+                                  <Hourglass size={12} className="text-indigo-500" />
+                                  {log.hours?.toFixed(1)}
+                                </span>
+                              </td>
 
-                        {/* Status */}
-                        <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border min-w-[100px] ${cfg.badge}`}>
-                            {cfg.icon}
-                            <span className="capitalize">{log.status}</span>
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                              {/* Status */}
+                              <td className="px-6 py-4 text-center">
+                                <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border min-w-[100px] ${cfg.badge}`}>
+                                  {cfg.icon}
+                                  {/* Renders cfg.label (which is "Completed" if status is "stop") */}
+                                  <span className="capitalize">{cfg.label}</span>
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
@@ -211,11 +248,17 @@ const EmployeeWorklogHistory = () => {
   }, [startDate, endDate]);
 
   useEffect(() => {
+   
+
     dispatch(fetchEmployeeWorklogHistory(historyFilters));
-  }, [dispatch, historyFilters]);
+  }, [dispatch]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
+
+    setSearchTerm("");
+    setStartDate("");
+    setEndDate("");
     try {
       await dispatch(fetchEmployeeWorklogHistory(historyFilters)).unwrap();
     } catch {
@@ -231,27 +274,31 @@ const EmployeeWorklogHistory = () => {
     
     let filtered = [...historyData.results];
 
-    // Filter by Search Term (Name, ID, Project, or Description)
+    // Filter by Search Term
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      filtered = filtered.map(emp => {
-        // If employee name/id matches, keep all their logs
-        if ((emp.user_name || "").toLowerCase().includes(q) || (emp.user_id || "").toLowerCase().includes(q)) {
-          return emp;
-        }
-        
-        // Otherwise, filter their inner worklogs
-        const matchingLogs = emp.worklogs.filter(log => 
-          (log.project || "").toLowerCase().includes(q) ||
-          (log.description || "").toLowerCase().includes(q)
+      
+      // If user is ADMIN, ACCOUNT, or TL, search by employee info
+      if (["ACCOUNT", "ADMIN", "TL"].includes(user?.role)) {
+        filtered = filtered.filter(emp => 
+          (emp.user_name || "").toLowerCase().includes(q) || 
+          (emp.user_id || "").toLowerCase().includes(q)
         );
-
-        return matchingLogs.length > 0 ? { ...emp, worklogs: matchingLogs } : null;
-      }).filter(Boolean); // Remove nulls
+      } 
+      // If user is a standard USER, search inside their own logs by project/description
+      else {
+        filtered = filtered.map(emp => {
+          const matchingLogs = emp.worklogs.filter(log => 
+            (log.project || "").toLowerCase().includes(q) ||
+            (log.description || "").toLowerCase().includes(q)
+          );
+          return matchingLogs.length > 0 ? { ...emp, worklogs: matchingLogs } : null;
+        }).filter(Boolean);
+      }
     }
 
     // Filter by Date inside worklogs
-    if (startDate || endDate) {
+    if (startDate && endDate) {
       filtered = filtered.map(emp => {
         const matchingLogs = emp.worklogs.filter(log => {
           const logDate = new Date(log.date);
@@ -322,7 +369,7 @@ const EmployeeWorklogHistory = () => {
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
             <input type="text"
-              placeholder={isAdminOrTL ? "Search by employee name, ID, project, or description..." : "Search by project or description..."}
+              placeholder={isAdminOrTL ? "Search by employee name, ID" : "Search by project or description..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
