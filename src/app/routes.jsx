@@ -28,6 +28,7 @@ import UpdateProject from "../features/projects/updateProject";
 import TicketsManagement from "../features/ticketsManagement/TicketsManagement";
 import TaskPlanner from "../features/projects/Taskplanner";
 import TrackWorkLog from "../features/projects/TrackWorkLog";
+import EmployeeWorklogHistory from "../features/projects/EmployeeWorklogHistory";
 
 export default function AppRoutes() {
   return (
@@ -119,6 +120,15 @@ export default function AppRoutes() {
             <TrackWorkLog />
           </ProtectedRoute>
         } />
+
+        <Route 
+          path="/employee-worklog-history" 
+          element={
+            <ProtectedRoute allowedRoles={["USER", "TL", "ADMIN", "ACCOUNT"]}>
+              <EmployeeWorklogHistory />
+            </ProtectedRoute>
+          } 
+        />
 
 
 

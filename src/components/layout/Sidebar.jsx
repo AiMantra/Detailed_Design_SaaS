@@ -25,7 +25,9 @@ import {
   Settings2,
   ChartArea,
   ChartBar,
-  CalendarDays
+  CalendarDays,
+  History 
+
 } from "lucide-react";
 
 import logo from "../../assets/aimantra.png";
@@ -141,6 +143,15 @@ const Sidebar = () => {
       description: "Plan and organize your tasks",
     },
 
+    {
+      name: "Employee Worklog History",
+      icon: History, // Or you can reuse ClipboardList / FileClock
+      path: "/employee-worklog-history", // Update this route to match your actual route
+      roles: ["USER", "ADMIN", "ACCOUNT", "TL"],
+      badge: null,
+      description: "View history of employee work logs",
+    },
+
     // Work Logs - Different for User vs Admin
     // Admin sees all logs, User sees only their own logs
     {
@@ -168,7 +179,7 @@ const Sidebar = () => {
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support", "Track Rework"
+      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support", "Track Rework","Employee Worklog History"
       // "settings"
     ].includes(item.name)
   );
