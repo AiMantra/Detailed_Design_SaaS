@@ -394,43 +394,7 @@ const CompaniesTable = ({ refreshKey }) => {
             deleted_at: company.deleted_at,
             deleted_by: company.deleted_by,
             deleted_by_details: company.deleted_by_details,
-            // customSections: [
-            //     {
-            //         icon: Layers,
-            //         title: "Work Types",
-            //         content: (
-            //             <div className="flex flex-wrap gap-2">
-            //                 {company.stage_work_types?.length > 0 ? (
-            //                     company.stage_work_types.map((wt, idx) => (
-            //                         <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-purple-50 text-purple-700 border border-purple-200">
-            //                             {wt.name}
-            //                         </span>
-            //                     ))
-            //                 ) : (
-            //                     <p className="text-gray-400 text-sm">No work types assigned</p>
-            //                 )}
-            //             </div>
-            //         )
-            //     },
-            //     {
-            //         icon: Building2,
-            //         title: "Basic Information",
-            //         content: (
-            //             <div className="grid grid-cols-2 gap-2 text-sm">
-            //                 <div>
-            //                     <span className="text-gray-500">Unit Type:</span>
-            //                     <span className="ml-2 font-medium">{getUnitDisplayName(company.unit)}</span>
-            //                 </div>
-            //                 <div>
-            //                     <span className="text-gray-500">Status:</span>
-            //                     <span className={`ml-2 font-medium ${company.is_deleted ? 'text-red-600' : 'text-green-600'}`}>
-            //                         {sector.is_deleted ? 'Deleted' : 'Active'}
-            //                     </span>
-            //                 </div>
-            //             </div>
-            //         )
-            //     }
-            // ]
+          
         };
     };
 
@@ -449,15 +413,7 @@ const CompaniesTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddCompanyButton onSuccess={handleRefresh} loadData={loadData} companies={filteredCompanies} />
-                {/* <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
-                    <input
-                        type="checkbox"
-                        checked={showDeleted}
-                        onChange={(e) => setShowDeleted(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                    />
-                    Show Deleted
-                </label> */}
+                
             </div>
 
             {/* Companies List */}
@@ -844,15 +800,7 @@ const SectorsTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddSectorButton onSuccess={handleRefresh} loadData={loadData} sectors={filteredSectors} />
-                {/* <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
-                    <input
-                        type="checkbox"
-                        checked={showDeleted}
-                        onChange={(e) => setShowDeleted(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                    />
-                    Show Deleted
-                </label> */}
+                
             </div>
 
             {/* Sectors List */}
@@ -1148,15 +1096,7 @@ const ClientsTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddClientButton onSuccess={handleRefresh} loadData={loadData} />
-                {/* <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
-                    <input
-                        type="checkbox"
-                        checked={showDeleted}
-                        onChange={(e) => setShowDeleted(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                    />
-                    Show Deleted
-                </label> */}
+               
             </div>
 
             {/* Clients List */}

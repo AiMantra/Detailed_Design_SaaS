@@ -352,16 +352,7 @@ const MyTasks = () => {
                 <FolderOpen size={16} />
                 Projects
               </button>
-              {/* <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'timeline'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-              >
-                <BarChart3 size={16} />
-                Timeline
-              </button> */}
+              
             </div>
           </div>
         </motion.div>
@@ -510,26 +501,7 @@ const MyTasks = () => {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        {/* Quick Action Banner */}
-                        {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 border-b border-blue-100">
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <AlertCircle size={14} className="text-blue-600" />
-                              </div>
-                              <p className="text-sm text-blue-700">
-                                Want to log more hours on this project?
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => navigate(`/my-projects/${project.project_id}`)}
-                              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg shadow-sm"
-                            >
-                              <PlusCircle size={14} />
-                              Log Time Now
-                            </button>
-                          </div>
-                        </div> */}
+                        
 
                         {/* Activities List */}
                         <div className="divide-y divide-gray-100">

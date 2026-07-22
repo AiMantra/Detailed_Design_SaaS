@@ -121,7 +121,6 @@ const UserPickedProjectDetails = () => {
           await dispatch(fetchUserTasks(user.id));
         }
       } catch (error) {
-        console.error('Error loading data:', error);
       } finally {
         setLoading(false);
       }
@@ -132,7 +131,6 @@ const UserPickedProjectDetails = () => {
   // Find the project and filter user's tasks
   useEffect(() => {
     if (!id || !userTasks.length) {
-      console.log("No project ID or no user tasks");
       return;
     }
     
@@ -147,7 +145,6 @@ const UserPickedProjectDetails = () => {
         // Check if task's project_id matches the current project ID
         const matches = task.project_id === id;
         if (matches) {
-          // console.log(`Task ${task.subactivity_name} belongs to project ${id}`);
         }
         return matches;
       });

@@ -1,3 +1,5 @@
+
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
@@ -328,7 +330,6 @@ const UpdateProject = () => {
                     dispatch(fetchStageTemplates()),
                 ]);
             } catch (error) {
-                console.error("Error loading reference data:", error);
                 dispatch(
                     showSnackbar({
                         message: "Failed to load reference data",
@@ -349,7 +350,6 @@ const UpdateProject = () => {
                 const projectResult = await dispatch(fetchProjectDetails(projectId)).unwrap();
                 setProjectData(projectResult);
             } catch (error) {
-                console.error("Error fetching project:", error);
                 dispatch(
                     showSnackbar({
                         message: error?.message || "Failed to load project data",
@@ -422,6 +422,117 @@ const UpdateProject = () => {
     }, [sectors]);
 
     // Initialize activities from project data
+    // useEffect(() => {
+    //     if (!projectData?.activities_detail?.length) return;
+
+    //     const activitiesList = [];
+    //     const weightagesMap = {};
+    //     const datesMap = {};
+    //     const subSelectionsMap = {};
+    //     const subUnitsMap = {};
+    //     const subQtysMap = {};
+
+    //     // Process each activity
+    //     projectData.activities_detail.forEach((activity) => {
+    //         const activityId = activity.id;
+    //         activitiesList.push(activityId);
+
+    //         weightagesMap[activityId] = parseFloat(activity.weightage) || 0;
+
+    //         datesMap[activityId] = {
+    //             startDate: activity.start_date || "",
+    //             endDate: activity.end_date || "",
+    //         };
+
+    //         // Process sub-activities
+    //         const selectedSubs = [];
+    //         if (activity.subactivities && activity.subactivities.length > 0) {
+    //             activity.subactivities.forEach((sub) => {
+    //                 const subId = sub.id;
+    //                 selectedSubs.push(subId);
+
+    //                 // Set unit
+    //                 subUnitsMap[`${activityId}_${subId}`] = sub.unit || "";
+
+    //                 // Set planned quantities
+    //                 subQtysMap[`${subId}_quantity`] = sub.total_quantity || 0;
+    //                 subQtysMap[`${subId}_start_date`] = sub.start_date || "";
+    //                 subQtysMap[`${subId}_end_date`] = sub.end_date || "";
+    //                 // subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
+    //                 // subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
+    //                 subQtysMap[`${subId}_chainagestart`] = parseFloat(sub.chainage_start) || 0;
+    //                 subQtysMap[`${subId}_chainageend`] = parseFloat(sub.chainage_end) || 0;
+    //                 subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
+    //                 subQtysMap[`${subId}_description`] = sub.description || "";
+    //                 // Initialize dynamic stages from backend data
+    //                 if (sub.stages && sub.stages.length > 0) {
+    //                     setWorkStages(prev => ({
+    //                         ...prev,
+    //                         [subId]: sub.stages.map((stg, i) => ({
+    //                             id: stg.id, // Preserve existing DB ID for updating
+    //                             name: stg.name || stg.stage_type || `Stage ${i + 1}`,
+    //                             payment_percent: stg.payment_percent || 0
+    //                         }))
+    //                     }));
+    //                 } else {
+    //                     // Fallback for older data that doesn't have the stages array yet
+    //                     setWorkStages(prev => ({
+    //                         ...prev,
+    //                         [subId]: [
+    //                             { id: `temp_stg_${subId}_1`, name: "Submission", payment_percent: sub.submission_payment || 0 },
+    //                             { id: `temp_stg_${subId}_2`, name: "Approval", payment_percent: sub.approval_payment || 0 }
+    //                         ]
+    //                     }));
+    //                 }
+    //             });
+    //         }
+    //         subSelectionsMap[activityId] = selectedSubs;
+    //     });
+
+    //     setSelectedActivities(activitiesList);
+    //     setActivityWeightages(weightagesMap);
+    //     setActivityDates(datesMap);
+    //     setSelectedSubActivities(subSelectionsMap);
+    //     setSubActivityUnits(subUnitsMap);
+    //     setSubActivityPlannedQtys(subQtysMap);
+
+    //     // Also create activities in the template/custom structure for display
+    //     const transformedActivities = projectData.activities_detail.map((activity, index) => ({
+    //         id: activity.id,
+    //         sorting_var: activity.sorting_var || index + 1,
+    //         activity_name: activity.activity_name,
+    //         start_date: activity.start_date,
+    //         end_date: activity.end_date,
+    //         weightage: activity.weightage,
+    //         isFromTemplate: false,
+    //         isCustom: false,
+    //         subActivities: activity.subactivities.map((sub, subIndex) => ({
+    //             id: sub.id,
+    //             sorting_var: sub.sorting_var || subIndex + 1,
+    //             subactivity_name: sub.subactivity_name,
+    //             description: sub.description || "",
+    //             unit: sub.unit,
+    //             total_quantity: sub.total_quantity,
+    //             submission_payment: sub.submission_payment,
+    //             approval_payment: sub.approval_payment,
+    //             chainage_start: sub.chainage_start,
+    //             chainage_end: sub.chainage_end,
+    //             covered_area: sub.covered_area,
+    //             chainage_exist: true,
+    //             planned_quantity_exist: true,
+    //             length_exist: true,
+    //             submission_exist: true,
+    //             approval_exist: true,
+    //         })),
+    //     }));
+
+    //     setTemplateActivities(transformedActivities);
+    //     setCustomActivities([]);
+
+    // }, [projectData]);
+
+
+    // Initialize activities from project data
     useEffect(() => {
         if (!projectData?.activities_detail?.length) return;
 
@@ -432,8 +543,13 @@ const UpdateProject = () => {
         const subUnitsMap = {};
         const subQtysMap = {};
 
+        // 1. Sort the main activities array by sorting_var
+        const sortedActivities = [...projectData.activities_detail].sort(
+            (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+        );
+
         // Process each activity
-        projectData.activities_detail.forEach((activity) => {
+        sortedActivities.forEach((activity) => {
             const activityId = activity.id;
             activitiesList.push(activityId);
 
@@ -447,7 +563,13 @@ const UpdateProject = () => {
             // Process sub-activities
             const selectedSubs = [];
             if (activity.subactivities && activity.subactivities.length > 0) {
-                activity.subactivities.forEach((sub) => {
+
+                // 2. Sort the sub-activities array by sorting_var
+                const sortedSubActivities = [...activity.subactivities].sort(
+                    (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+                );
+
+                sortedSubActivities.forEach((sub) => {
                     const subId = sub.id;
                     selectedSubs.push(subId);
 
@@ -458,20 +580,24 @@ const UpdateProject = () => {
                     subQtysMap[`${subId}_quantity`] = sub.total_quantity || 0;
                     subQtysMap[`${subId}_start_date`] = sub.start_date || "";
                     subQtysMap[`${subId}_end_date`] = sub.end_date || "";
-                    // subQtysMap[`${subId}_subpayment`] = parseFloat(sub.submission_payment) || 0;
-                    // subQtysMap[`${subId}_approvalpayment`] = parseFloat(sub.approval_payment) || 0;
                     subQtysMap[`${subId}_chainagestart`] = parseFloat(sub.chainage_start) || 0;
                     subQtysMap[`${subId}_chainageend`] = parseFloat(sub.chainage_end) || 0;
                     subQtysMap[`${subId}_coveredarea`] = parseFloat(sub.covered_area) || 0;
                     subQtysMap[`${subId}_description`] = sub.description || "";
-                    // Initialize dynamic stages from backend data
+
+                    // 3. Sort dynamic stages from backend data
                     if (sub.stages && sub.stages.length > 0) {
+                        const sortedStages = [...sub.stages].sort(
+                            (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+                        );
+
                         setWorkStages(prev => ({
                             ...prev,
-                            [subId]: sub.stages.map((stg, i) => ({
+                            [subId]: sortedStages.map((stg, i) => ({
                                 id: stg.id, // Preserve existing DB ID for updating
                                 name: stg.name || stg.stage_type || `Stage ${i + 1}`,
-                                payment_percent: stg.payment_percent || 0
+                                payment_percent: stg.payment_percent || 0,
+                                sorting_var: stg.sorting_var || i + 1
                             }))
                         }));
                     } else {
@@ -497,34 +623,40 @@ const UpdateProject = () => {
         setSubActivityPlannedQtys(subQtysMap);
 
         // Also create activities in the template/custom structure for display
-        const transformedActivities = projectData.activities_detail.map((activity, index) => ({
-            id: activity.id,
-            sorting_var: activity.sorting_var || index + 1,
-            activity_name: activity.activity_name,
-            start_date: activity.start_date,
-            end_date: activity.end_date,
-            weightage: activity.weightage,
-            isFromTemplate: false,
-            isCustom: false,
-            subActivities: activity.subactivities.map((sub, subIndex) => ({
-                id: sub.id,
-                sorting_var: sub.sorting_var || subIndex + 1,
-                subactivity_name: sub.subactivity_name,
-                description: sub.description || "",
-                unit: sub.unit,
-                total_quantity: sub.total_quantity,
-                submission_payment: sub.submission_payment,
-                approval_payment: sub.approval_payment,
-                chainage_start: sub.chainage_start,
-                chainage_end: sub.chainage_end,
-                covered_area: sub.covered_area,
-                chainage_exist: true,
-                planned_quantity_exist: true,
-                length_exist: true,
-                submission_exist: true,
-                approval_exist: true,
-            })),
-        }));
+        const transformedActivities = sortedActivities.map((activity, index) => {
+            const sortedSubActivities = [...(activity.subactivities || [])].sort(
+                (a, b) => (a.sorting_var || 0) - (b.sorting_var || 0)
+            );
+
+            return {
+                id: activity.id,
+                sorting_var: activity.sorting_var || index + 1,
+                activity_name: activity.activity_name,
+                start_date: activity.start_date,
+                end_date: activity.end_date,
+                weightage: activity.weightage,
+                isFromTemplate: false,
+                isCustom: false,
+                subActivities: sortedSubActivities.map((sub, subIndex) => ({
+                    id: sub.id,
+                    sorting_var: sub.sorting_var || subIndex + 1,
+                    subactivity_name: sub.subactivity_name,
+                    description: sub.description || "",
+                    unit: sub.unit,
+                    total_quantity: sub.total_quantity,
+                    submission_payment: sub.submission_payment,
+                    approval_payment: sub.approval_payment,
+                    chainage_start: sub.chainage_start,
+                    chainage_end: sub.chainage_end,
+                    covered_area: sub.covered_area,
+                    chainage_exist: true,
+                    planned_quantity_exist: true,
+                    length_exist: true,
+                    submission_exist: true,
+                    approval_exist: true,
+                })),
+            }
+        });
 
         setTemplateActivities(transformedActivities);
         setCustomActivities([]);
@@ -646,7 +778,19 @@ const UpdateProject = () => {
         }
     };
 
+    // const handleActivityDateChange = (activityId, field, value) => {
+    //     setActivityDates((prev) => ({
+    //         ...prev,
+    //         [activityId]: {
+    //             ...prev[activityId],
+    //             [field]: value,
+    //         },
+    //     }));
+    // };
+
+
     const handleActivityDateChange = (activityId, field, value) => {
+        // 1. Update the parent activity's date
         setActivityDates((prev) => ({
             ...prev,
             [activityId]: {
@@ -654,6 +798,22 @@ const UpdateProject = () => {
                 [field]: value,
             },
         }));
+
+        // 2. Cascade the new date to all sub-activities under this activity
+        const activityObj = getAllActivities().find((a) => a.id === activityId);
+
+        if (activityObj && activityObj.subActivities) {
+            setSubActivityPlannedQtys((prev) => {
+                const updatedQtys = { ...prev };
+                const subField = field === "startDate" ? "start_date" : "end_date";
+
+                activityObj.subActivities.forEach((sub) => {
+                    updatedQtys[`${sub.id}_${subField}`] = value;
+                });
+
+                return updatedQtys;
+            });
+        }
     };
 
     // const getActivityTotals = (activity, storeData) => {
@@ -833,25 +993,27 @@ const UpdateProject = () => {
             const allActivities = getAllActivities();
             for (const activity of allActivities) {
                 const subExists = activity.subActivities.some(s => s.id === subId);
-                if (subExists) {
-                    const selectedSubs = selectedSubActivities[activity.id] || [];
-                    if (selectedSubs.includes(subId)) {
-                        let totalWeightage = 0;
-                        selectedSubs.forEach(selectedSubId => {
-                            const subObj = activity.subActivities.find(s => s.id === selectedSubId);
-                            if (subObj) {
-                                const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-                                const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-                                totalWeightage += submissionPayment + approvalPayment;
-                            }
-                        });
-                        setActivityWeightages(prev => ({
-                            ...prev,
-                            [activity.id]: totalWeightage
-                        }));
-                    }
-                    break;
-                }
+                // if (subExists) {
+                //     const selectedSubs = selectedSubActivities[activity.id] || [];
+                //     if (selectedSubs.includes(subId)) {
+                //         let totalWeightage = 0;
+                //         selectedSubs.forEach(selectedSubId => {
+                //             const subObj = activity.subActivities.find(s => s.id === selectedSubId);
+                //             if (subObj) {
+
+                //                 const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
+                //                 const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
+                //                 console.log(`Calculating weightage for activity ${activity.id}, sub ${selectedSubId}: submission=${submissionPayment}, approval=${approvalPayment}`);
+                //                 totalWeightage += submissionPayment + approvalPayment;
+                //             }
+                //         });
+                //         setActivityWeightages(prev => ({
+                //             ...prev,
+                //             [activity.id]: totalWeightage
+                //         }));
+                //     }
+                //     break;
+                // }
             }
 
         } else if (field === "quantity") {
@@ -882,7 +1044,7 @@ const UpdateProject = () => {
         if (!trimmedName || !trimmedgst || !trimpancard) {
             dispatch(
                 showSnackbar({
-                    message: "Please enter " + ((!trimmedName && "Company name") || (!trimpancard && "PAN NO.") || (!trimmedgst && "GST")),
+                    message: "Please enter " + ((!trimmedName && "Company name") || (!trimpancard && "PAN No.") || (!trimmedgst && "GST")),
                     type: "error",
                 })
             );
@@ -919,7 +1081,6 @@ const UpdateProject = () => {
             setNewCompany({ name: "", gst_no: "" });
             setShowAddCompanyModal(false);
         } catch (error) {
-            console.error("Error adding company:", error);
             dispatch(showSnackbar({ message: "Failed to add company. Please try again.", type: "error" }));
         }
     };
@@ -1026,6 +1187,7 @@ const UpdateProject = () => {
             newSubs = [
                 {
                     // id: `custom-sub-${Date.now()}`,
+                    id: `custom-sub-${Date.now()}${Math.floor(Math.random() * 10000)}`,
                     sorting_var: null,
                     subactivity_name: newSubActivity.subactivity_name,
                     unit: newSubActivity.unit,
@@ -1066,6 +1228,7 @@ const UpdateProject = () => {
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
                         // id: `custom-sub-${Date.now()}-${i}`,
+                        id: `custom-sub-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`,
                         sorting_var: null,
                         subactivity_name: newSubActivity.subactivity_name + ` (${i + 1})`,
                         unit: newSubActivity.unit,
@@ -1102,6 +1265,7 @@ const UpdateProject = () => {
                     const currentEnd = Number((currentStart + covered).toFixed(2));
                     newSubs.push({
                         // id: `custom-sub-${Date.now()}-${i}`,
+                        id: `custom-sub-${Date.now()}-${i}-${Math.floor(Math.random() * 10000)}`,
                         sorting_var: null,
                         subactivity_name: newSubActivity.subactivity_name,
                         unit: newSubActivity.unit,
@@ -1171,6 +1335,21 @@ const UpdateProject = () => {
             [selectedActivityForSub]: [...(prev[selectedActivityForSub] || []), ...newSubIds],
         }));
 
+        // Get the parent activity's current dates
+        const parentDates = activityDates[selectedActivityForSub] || {};
+        const defaultStartDate = parentDates.startDate || "";
+        const defaultEndDate = parentDates.endDate || "";
+
+        // Update the planned quantities state for the new sub-activities
+        setSubActivityPlannedQtys(prev => {
+            const updated = { ...prev };
+            newSubs.forEach(sub => {
+                updated[`${sub.id}_start_date`] = defaultStartDate;
+                updated[`${sub.id}_end_date`] = defaultEndDate;
+            });
+            return updated;
+        });
+
         setTimeout(() => {
             const lastSubElement = document.getElementById(`sub-${lastSubId}`);
             if (lastSubElement) {
@@ -1216,269 +1395,7 @@ const UpdateProject = () => {
         }
     };
 
-    // const handleCloneSubActivitySubmit = async (e) => {
-    //     e.preventDefault();
-    //     e.stopPropagation();
 
-    //     if (!cloningSubActivity) return;
-
-    //     let newSubs = [];
-
-    //     if (cloningSubActivity.activityType === "single") {
-    //         newSubs = [
-    //             {
-    //                 // id: `custom-sub-${Date.now()}`,
-    //                 sorting_var: null,
-    //                 subactivity_name: cloningSubActivity.subactivity_name,
-    //                 unit: cloningSubActivity.unit,
-    //                 activityType: cloningSubActivity.activityType,
-    //                 chainage_start: null,
-    //                 chainage_end: null,
-    //                 covered_area: null,
-    //                 chainage_quantity: null,
-    //                 lengthType: "same",
-    //                 chainageLengths: [],
-    //                 isCustom: true,
-    //             },
-    //         ];
-    //     } else {
-    //         const start = Number(cloningSubActivity.chainage_start) || 0;
-    //         const count = Number(cloningSubActivity.chainage_quantity) || 0;
-
-    //         if (!count || start === undefined) {
-    //             dispatch(showSnackbar({ message: "Enter valid Chainage Details", type: "error" }));
-    //             return;
-    //         }
-
-    //         let currentStart = Number(start);
-
-    //         if (cloningSubActivity.lengthType === "same") {
-    //             const covered = Number(cloningSubActivity.covered_area) || 0;
-
-    //             if (!covered) {
-    //                 dispatch(
-    //                     showSnackbar({
-    //                         message: "Please enter Chainage Length",
-    //                         type: "error",
-    //                     })
-    //                 );
-    //                 return;
-    //             }
-
-    //             for (let i = 0; i < count; i++) {
-
-    //                 // same chainage logic as your working test(1), test(2)
-    //                 const chainageStart = Number(currentStart.toFixed(2));
-    //                 const currentEnd = Number(
-    //                     (chainageStart + covered).toFixed(2)
-    //                 );
-
-    //                 newSubs.push({
-    //                     // id: `custom-sub-${Date.now()}-${i}`,
-    //                     sorting_var: null,
-
-    //                     // same naming pattern
-    //                     subactivity_name:
-    //                         cloningSubActivity.subactivity_name +
-    //                         ` (${i + 1})`,
-
-    //                     unit: cloningSubActivity.unit,
-
-    //                     // updated chainage logic
-    //                     chainage_start: chainageStart,
-    //                     chainage_end: currentEnd,
-
-    //                     covered_area: covered,
-    //                     chainage_quantity: count,
-
-    //                     activityType: cloningSubActivity.activityType,
-    //                     lengthType: "same",
-    //                     chainageLengths: [],
-    //                     lengthIndex: i,
-    //                     isCustom: true,
-    //                     chainage_exist: cloningSubActivity.chainage_exist || true,
-
-    //                     // keep flags same as existing structure
-    //                     approval_exist:
-    //                         cloningSubActivity.approval_exist || true,
-
-    //                     // chainage_exist:
-    //                     //     cloningSubActivity.chainage_exist ?? true,
-
-    //                     length_exist:
-    //                         cloningSubActivity.length_exist || true,
-
-    //                     planned_quantity_exist:
-    //                         cloningSubActivity.planned_quantity_exist || true,
-
-    //                     submission_exist:
-    //                         cloningSubActivity.submission_exist || true,
-    //                 });
-
-    //                 // next start
-    //                 currentStart = currentEnd;
-    //             }
-    //         } else {
-
-    //             const lengths = cloningSubActivity.chainageLengths;
-
-    //             if (lengths.length !== count) {
-    //                 dispatch(
-    //                     showSnackbar({
-    //                         message: `Please enter lengths for all ${count} chainages`,
-    //                         type: "error",
-    //                     })
-    //                 );
-    //                 return;
-    //             }
-
-    //             for (let i = 0; i < count; i++) {
-
-    //                 const covered = Number(lengths[i]) || 0;
-
-    //                 if (!covered) {
-    //                     dispatch(
-    //                         showSnackbar({
-    //                             message: `Please enter valid length for chainage ${i + 1}`,
-    //                             type: "error",
-    //                         })
-    //                     );
-    //                     return;
-    //                 }
-
-    //                 // same chainage logic
-    //                 const chainageStart = Number(currentStart.toFixed(2));
-    //                 const currentEnd = Number(
-    //                     (chainageStart + covered).toFixed(2)
-    //                 );
-
-    //                 newSubs.push({
-    //                     // id: `custom-sub-${Date.now()}-${i}`,
-    //                     sorting_var: null,
-
-    //                     // same naming pattern
-    //                     subactivity_name:
-    //                         cloningSubActivity.subactivity_name +
-    //                         ` (${i + 1})`,
-
-    //                     unit: cloningSubActivity.unit,
-
-    //                     chainage_start: chainageStart,
-    //                     chainage_end: currentEnd,
-
-    //                     covered_area: covered,
-    //                     chainage_quantity: count,
-
-    //                     activityType: cloningSubActivity.activityType,
-    //                     chainageLengths: lengths,
-    //                     lengthType: "different",
-    //                     lengthIndex: i,
-    //                     isCustom: true,
-
-    //                     approval_exist:
-    //                         cloningSubActivity.approval_exist || true,
-
-    //                     chainage_exist:
-    //                         cloningSubActivity.chainage_exist ?? true,
-
-    //                     length_exist:
-    //                         cloningSubActivity.length_exist || true,
-
-    //                     planned_quantity_exist:
-    //                         cloningSubActivity.planned_quantity_exist || true,
-
-    //                     submission_exist:
-    //                         cloningSubActivity.submission_exist || true,
-    //                 });
-
-    //                 // next start
-    //                 currentStart = currentEnd;
-    //             }
-    //         }
-    //     }
-
-    //     const activityId = cloningSubActivity.activityId;
-    //     const templateIndex = templatesActivities.findIndex((act) => act.id === activityId);
-    //     const newSubIds = newSubs.map((s) => s.id);
-    //     const lastSubId = newSubIds[newSubIds.length - 1];
-
-    //     const existingSubs =
-    //         templateIndex !== -1
-    //             ? [...(templatesActivities[templateIndex]?.subActivities || [])]
-    //             : [...(customActivities.find((act) => act.id === activityId)?.subActivities || [])];
-
-    //     let insertIndex = existingSubs.length;
-    //     const lowerNewName = cloningSubActivity.subactivity_name.toLowerCase();
-    //     for (let i = existingSubs.length - 1; i >= 0; i--) {
-    //         if (existingSubs[i]?.subactivity_name?.toLowerCase() === lowerNewName) {
-    //             insertIndex = i + 1;
-    //             break;
-    //         }
-    //     }
-
-    //     const updatedSubActivities = [...existingSubs];
-    //     updatedSubActivities.splice(insertIndex, 0, ...newSubs);
-
-    //     const reassignedSubActivities = updatedSubActivities.map((sub, idx) => ({
-    //         ...sub,
-    //         sorting_var: idx + 1,
-    //     }));
-
-    //     if (templateIndex !== -1) {
-    //         setTemplateActivities((prev) =>
-    //             prev.map((act, index) => {
-    //                 if (index === templateIndex) {
-    //                     return { ...act, subActivities: reassignedSubActivities };
-    //                 }
-    //                 return act;
-    //             })
-    //         );
-    //     } else {
-    //         setCustomActivities((prev) =>
-    //             prev.map((act) => {
-    //                 if (act.id === activityId) {
-    //                     return { ...act, subActivities: reassignedSubActivities };
-    //                 }
-    //                 return act;
-    //             })
-    //         );
-    //     }
-
-    //     setSelectedSubActivities((prev) => ({
-    //         ...prev,
-    //         [activityId]: [...(prev[activityId] || []), ...newSubIds],
-    //     }));
-
-    //     // Recalculate weightage for this activity
-    //     const activityObj = getAllActivities().find(a => a.id === activityId);
-    //     if (activityObj) {
-    //         const updatedSelectedSubs = [...(selectedSubActivities[activityId] || []), ...newSubIds];
-    //         let totalWeightage = 0;
-    //         updatedSelectedSubs.forEach(selectedSubId => {
-    //             const subObj = activityObj.subActivities.find(s => s.id === selectedSubId);
-    //             if (subObj) {
-    //                 const submissionPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_subpayment`]) || 0;
-    //                 const approvalPayment = parseFloat(subActivityPlannedQtys[`${selectedSubId}_approvalpayment`]) || 0;
-    //                 totalWeightage += submissionPayment + approvalPayment;
-    //             }
-    //         });
-    //         setActivityWeightages(prev => ({
-    //             ...prev,
-    //             [activityId]: totalWeightage
-    //         }));
-    //     }
-
-    //     setTimeout(() => {
-    //         const lastSubElement = document.getElementById(`sub-${lastSubId}`);
-    //         if (lastSubElement) {
-    //             lastSubElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    //         }
-    //     }, 100);
-
-    //     setShowCloneSubActivityModal(false);
-    //     setCloningSubActivity(null);
-    //     dispatch(showSnackbar({ message: "Sub-activity cloned successfully", type: "success" }));
-    // };
 
     const handleCloneSubActivitySubmit = async (e) => {
         e.preventDefault();
@@ -2171,6 +2088,33 @@ const UpdateProject = () => {
             if (!selectedSubs.length) {
                 return showError(`Please select at least one sub-activity for ${activityLabel}`);
             }
+            for (const subId of selectedSubs) {
+                const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+
+                // 1. Validate Unit
+                if (subObj && (!subObj.unit || subObj.unit === "")) {
+                    return showError(
+                        `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
+                    );
+                }
+
+                // 2. Validate Sub-Activity Dates
+                const subStartDate = subActivityPlannedQtys[`${subId}_start_date`];
+                const subEndDate = subActivityPlannedQtys[`${subId}_end_date`];
+                const subName = subObj?.subactivity_name || "Sub-activity";
+
+                if (!subStartDate || !subEndDate) {
+                    return showError(
+                        `Please select Start and End dates for "${subName}" in activity "${activityLabel}"`
+                    );
+                }
+
+                if (new Date(subStartDate) > new Date(subEndDate)) {
+                    return showError(
+                        `End date must be after start date for "${subName}" in activity "${activityLabel}"`
+                    );
+                }
+            }
         }
 
         if (!validateDates()) {
@@ -2224,7 +2168,7 @@ const UpdateProject = () => {
                     const subSortingVar = subObj?.sorting_var || 0;
 
                     const isNewSub = subId?.toString().startsWith('custom-sub-');
-
+                    console.log(coveredarea, 'coveredareaS')
                     // return {
                     //     // id: subId,
                     //     ...(isNewSub ? {} : { id: subId }),
@@ -2240,8 +2184,8 @@ const UpdateProject = () => {
                     //     sorting_var: subSortingVar,
                     // };
 
-                    const work_stages = workStages[subId] || [];
-                    const mappedStages = work_stages.map((stg, sIdx) => {
+                    const stages = workStages[subId] || [];
+                    const mappedStages = stages.map((stg, sIdx) => {
                         // Check if it's a newly added stage (has a temp_stg_ ID)
                         const isNewStage = String(stg.id).startsWith("temp_stg_");
                         return {
@@ -2283,7 +2227,7 @@ const UpdateProject = () => {
             const selectedCompany = companies.find((c) => c.name === form.company);
 
             const formData = new FormData();
-            console.log("Activities Payload:", activitiesPayload);
+
             const payload = {
                 project_name: form.project_name,
                 project_code: form.project_code,
@@ -2311,19 +2255,18 @@ const UpdateProject = () => {
                     workorder_document: form.workorder_document
                 })
             };
+            // // Add to FormData for file upload
+            // Object.keys(payload).forEach((key) => {
+            //     if (key === 'activities') {
+            //         formData.append(key, JSON.stringify(payload[key]));
+            //     } else {
+            //         formData.append(key, payload[key]);
+            //     }
+            // });
 
-            // Add to FormData for file upload
-            Object.keys(payload).forEach((key) => {
-                if (key === 'activities') {
-                    formData.append(key, JSON.stringify(payload[key]));
-                } else {
-                    formData.append(key, payload[key]);
-                }
-            });
-
-            if (form.workorder_document) {
-                formData.append("workorder_document", form.workorder_document);
-            }
+            // if (form.workorder_document) {
+            //     formData.append("workorder_document", form.workorder_document);
+            // }
 
             const apiResult = await dispatch(updateProjectApi({ projectId: projectId, projectData: payload })).unwrap();
 
@@ -2340,7 +2283,6 @@ const UpdateProject = () => {
             // navigate("/all-projects");
             // setTimeout(() => navigate("/all-projects"), 2000);
         } catch (error) {
-            console.error("Project update error:", error);
             dispatch(
                 showSnackbar({
                     message: error?.message || "Failed to update project",
@@ -2495,54 +2437,7 @@ const UpdateProject = () => {
 
 
 
-    // Add click outside handler with clear logic
-    // useEffect(() => {
-    //     function handleClickOutside(event) {
-    //         // Handle Company dropdown
-    //         if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
-    //             setShowCompanyDropdown(false);
-    //             // Check if current search value matches any company
-    //             const hasMatchingCompany = companies.some(c =>
-    //                 c.name?.toLowerCase() === companySearch?.toLowerCase()
-    //             );
-    //             // If no match and no company selected, clear the search
-    //             if (!hasMatchingCompany && !form.company && companySearch) {
-    //                 setCompanySearch("");
-    //             }
-    //         }
 
-    //         // Handle Sector dropdown
-    //         if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target)) {
-    //             setShowSectorDropdown(false);
-    //             // Check if current search value matches any sector
-    //             const hasMatchingSector = sectorsList.some(s =>
-    //                 s.name?.toLowerCase() === sectorSearch?.toLowerCase()
-    //             );
-    //             // If no match and no sector selected, clear the search
-    //             if (!hasMatchingSector && !form.sector && sectorSearch) {
-    //                 setSectorSearch("");
-    //             }
-    //         }
-
-    //         // Handle Client dropdown
-    //         if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) {
-    //             setShowClientDropdown(false);
-    //             // Check if current search value matches any client
-    //             const hasMatchingClient = clients.some(c =>
-    //                 c.client_name?.toLowerCase() === clientSearch?.toLowerCase() ||
-    //                 c.client_code?.toLowerCase() === clientSearch?.toLowerCase()
-    //             );
-    //             // If no match and no client selected, clear the search
-    //             if (!hasMatchingClient && !form.client && clientSearch) {
-    //                 setClientSearch("");
-    //             }
-    //         }
-    //     }
-
-    //     document.addEventListener("mousedown", handleClickOutside);
-    //     return () => document.removeEventListener("mousedown", handleClickOutside);
-    // }, [companies, sectorsList, clients, companySearch, sectorSearch, clientSearch, form.company, form.sector, form.client]);
-    // Rest of the component remains the same (all the JSX with modals and form)...
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -4134,98 +4029,101 @@ const UpdateProject = () => {
                                 />
                             </div>
                         </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Company *</label>
+                            <div className="relative" ref={companyDropdownRef}>
 
-                        <div className="relative" ref={companyDropdownRef}>
-                            <Building2
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={16}
-                            />
+                                <Building2
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    size={16}
+                                />
 
-                            <input
-                                type="text"
-                                value={companySearch || (form.company ? form.company : "")}
-                                placeholder="Select Company"
-                                onFocus={() => {
-                                    setShowCompanyDropdown(true);
-                                }}
-                                onChange={(e) => {
-                                    setCompanySearch(e.target.value);
-                                    if (form.company) {
-                                        setForm({
-                                            ...form,
-                                            company: ""
-                                        });
-                                    }
-                                    setShowCompanyDropdown(true);
-                                }}
-                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                            />
-
-                            {/* Clear button */}
-                            {form.company && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm({
-                                            ...form,
-                                            company: ''
-                                        });
-                                        setCompanySearch('');
-                                        setShowCompanyDropdown(false);
+                                <input
+                                    type="text"
+                                    value={companySearch || (form.company ? form.company : "")}
+                                    placeholder="Select Company"
+                                    onFocus={() => {
+                                        setShowCompanyDropdown(true);
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            )}
-
-                            {/* Dropdown */}
-                            {showCompanyDropdown && (
-                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {(() => {
-                                        const filteredCompanies = companies.filter((c) =>
-                                            !companySearch ||
-                                            c.name?.toLowerCase().includes(companySearch.toLowerCase())
-                                        );
-
-                                        if (filteredCompanies.length === 0) {
-                                            return (
-                                                <div className="px-3 py-2 text-gray-400 text-sm">
-                                                    No matching companies - This will clear when you click outside
-                                                </div>
-                                            );
+                                    onChange={(e) => {
+                                        setCompanySearch(e.target.value);
+                                        if (form.company) {
+                                            setForm({
+                                                ...form,
+                                                company: ""
+                                            });
                                         }
+                                        setShowCompanyDropdown(true);
+                                    }}
+                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                />
 
-                                        return filteredCompanies.map((company) => {
-                                            const companyName = company.name || "";
+                                {/* Clear button */}
+                                {form.company && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({
+                                                ...form,
+                                                company: ''
+                                            });
+                                            setCompanySearch('');
+                                            setShowCompanyDropdown(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={company.id}
-                                                    onClick={() => {
-                                                        setForm({
-                                                            ...form,
-                                                            company: company.name,
-                                                        });
-                                                        setCompanySearch(company.name);
-                                                        setShowCompanyDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    <div>
-                                                        {companyName}
-                                                        {company.gst_no && (
-                                                            <span className="text-xs text-gray-400 ml-2">
-                                                                (GST: {company.gst_no})
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                {/* Dropdown */}
+                                {showCompanyDropdown && (
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            const filteredCompanies = companies.filter((c) =>
+                                                !companySearch ||
+                                                c.name?.toLowerCase().includes(companySearch.toLowerCase())
                                             );
-                                        });
-                                    })()}
-                                </div>
-                            )}
+
+                                            if (filteredCompanies.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching companies - This will clear when you click outside
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filteredCompanies.map((company) => {
+                                                const companyName = company.name || "";
+
+                                                return (
+                                                    <div
+                                                        key={company.id}
+                                                        onClick={() => {
+                                                            setForm({
+                                                                ...form,
+                                                                company: company.name,
+                                                            });
+                                                            setCompanySearch(company.name);
+                                                            setShowCompanyDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    >
+                                                        <div>
+                                                            {companyName}
+                                                            {company.gst_no && (
+                                                                <span className="text-xs text-gray-400 ml-2">
+                                                                    (GST: {company.gst_no})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {form.company && (
@@ -4245,193 +4143,200 @@ const UpdateProject = () => {
                             </div>
                         )}
 
-                        <div className="relative" ref={sectorDropdownRef}>
-                            <Factory
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={16}
-                            />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Sector *</label>
+                            <div className="relative" ref={sectorDropdownRef}>
+                                <Factory
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    size={16}
+                                />
 
-                            <input
-                                type="text"
-                                value={sectorSearch || (form.sector ? form.sector : "")}
-                                placeholder="Select Sector"
-                                onFocus={() => {
-                                    setShowSectorDropdown(true);
-                                }}
-                                onChange={(e) => {
-                                    setSectorSearch(e.target.value);
-                                    if (form.sector) {
-                                        setForm({
-                                            ...form,
-                                            sector: ""
-                                        });
-                                    }
-                                    setShowSectorDropdown(true);
-                                }}
-                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                            />
-
-                            {/* Clear button */}
-                            {form.sector && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm({
-                                            ...form,
-                                            sector: ''
-                                        });
-                                        setSectorSearch('');
-                                        setShowSectorDropdown(false);
+                                <input
+                                    type="text"
+                                    value={sectorSearch || (form.sector ? form.sector : "")}
+                                    placeholder="Select Sector"
+                                    onFocus={() => {
+                                        setShowSectorDropdown(true);
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            )}
-
-                            {/* Dropdown */}
-                            {showSectorDropdown && (
-                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {(() => {
-                                        const filteredSectors = sectorsList.filter((s) =>
-                                            !sectorSearch ||
-                                            s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
-                                        );
-
-                                        if (filteredSectors.length === 0) {
-                                            return (
-                                                <div className="px-3 py-2 text-gray-400 text-sm">
-                                                    No matching sectors - This will clear when you click outside
-                                                </div>
-                                            );
+                                    onChange={(e) => {
+                                        setSectorSearch(e.target.value);
+                                        if (form.sector) {
+                                            setForm({
+                                                ...form,
+                                                sector: ""
+                                            });
                                         }
+                                        setShowSectorDropdown(true);
+                                    }}
+                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                />
 
-                                        return filteredSectors.map((sector) => {
-                                            const sectorName = sector.name || "";
-                                            const sectorUnit = sector.unit || "";
+                                {/* Clear button */}
+                                {form.sector && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({
+                                                ...form,
+                                                sector: ''
+                                            });
+                                            setSectorSearch('');
+                                            setShowSectorDropdown(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={sector.id || sector.name}
-                                                    onClick={() => {
-                                                        setForm({
-                                                            ...form,
-                                                            sector: sector.name,
-                                                        });
-                                                        setSectorSearch(sector.name);
-                                                        setShowSectorDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    <div>
-                                                        {sectorName}
-                                                        {sectorUnit && (
-                                                            <span className="text-xs text-gray-400 ml-2">
-                                                                (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                {/* Dropdown */}
+                                {showSectorDropdown && (
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            const filteredSectors = sectorsList.filter((s) =>
+                                                !sectorSearch ||
+                                                s.name?.toLowerCase().includes(sectorSearch.toLowerCase())
                                             );
-                                        });
-                                    })()}
-                                </div>
-                            )}
+
+                                            if (filteredSectors.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching sectors - This will clear when you click outside
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filteredSectors.map((sector) => {
+                                                const sectorName = sector.name || "";
+                                                const sectorUnit = sector.unit || "";
+
+                                                return (
+                                                    <div
+                                                        key={sector.id || sector.name}
+                                                        onClick={() => {
+                                                            setForm({
+                                                                ...form,
+                                                                sector: sector.name,
+                                                            });
+                                                            setSectorSearch(sector.name);
+                                                            setShowSectorDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    >
+                                                        <div>
+                                                            {sectorName}
+                                                            {sectorUnit && (
+                                                                <span className="text-xs text-gray-400 ml-2">
+                                                                    (Unit: {SECTOR_UNIT_MAPPING[sectorUnit] || sectorUnit})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="relative" ref={clientDropdownRef}>
-                            <Handshake
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={16}
-                            />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Client *</label>
 
-                            <input
-                                type="text"
-                                value={clientSearch}
-                                placeholder="Select Client"
-                                onFocus={() => {
-                                    setShowClientDropdown(true);
-                                }}
-                                onChange={(e) => {
-                                    setClientSearch(e.target.value);
-                                    if (form.client) {
-                                        setForm({
-                                            ...form,
-                                            client: "",
-                                            clientbranch: ""
-                                        });
-                                    }
-                                    setShowClientDropdown(true);
-                                }}
-                                className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                            />
+                            <div className="relative" ref={clientDropdownRef}>
+                                <Handshake
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    size={16}
+                                />
 
-                            {/* Clear button */}
-                            {form.client && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm({
-                                            ...form,
-                                            client: '',
-                                            clientbranch: ''
-                                        });
-                                        setClientSearch('');
-                                        setClientCode('');
-                                        setShowClientDropdown(false);
+                                <input
+                                    type="text"
+                                    value={clientSearch}
+                                    placeholder="Select Client"
+                                    onFocus={() => {
+                                        setShowClientDropdown(true);
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            )}
-
-                            {/* Dropdown */}
-                            {showClientDropdown && (
-                                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                    {(() => {
-                                        const filteredClients = clients.filter((c) =>
-                                            !clientSearch ||
-                                            c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                            c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
-                                        );
-
-                                        if (filteredClients.length === 0) {
-                                            return (
-                                                <div className="px-3 py-2 text-gray-400 text-sm">
-                                                    No matching clients - This will clear when you click outside
-                                                </div>
-                                            );
+                                    onChange={(e) => {
+                                        setClientSearch(e.target.value);
+                                        if (form.client) {
+                                            setForm({
+                                                ...form,
+                                                client: "",
+                                                clientbranch: ""
+                                            });
                                         }
+                                        setShowClientDropdown(true);
+                                    }}
+                                    className="w-full pl-9 pr-16 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                />
 
-                                        return filteredClients.map((client) => {
-                                            const clientName = client.client_name || "";
-                                            const clientCode = client.client_code || "";
+                                {/* Clear button */}
+                                {form.client && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({
+                                                ...form,
+                                                client: '',
+                                                clientbranch: ''
+                                            });
+                                            setClientSearch('');
+                                            setClientCode('');
+                                            setShowClientDropdown(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-white hover:bg-red-500 w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={client.id}
-                                                    onClick={() => {
-                                                        setForm({
-                                                            ...form,
-                                                            client: client.id,
-                                                            clientbranch: "",
-                                                        });
-                                                        setClientSearch(`${clientName} - ${clientCode}`);
-                                                        setClientCode(clientCode);
-                                                        setShowClientDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                                                >
-                                                    <div>
-                                                        {clientName} - {clientCode}
-                                                    </div>
-                                                </div>
+                                {/* Dropdown */}
+                                {showClientDropdown && (
+                                    <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            const filteredClients = clients.filter((c) =>
+                                                !clientSearch ||
+                                                c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                                c.client_code?.toLowerCase().includes(clientSearch.toLowerCase())
                                             );
-                                        });
-                                    })()}
-                                </div>
-                            )}
+
+                                            if (filteredClients.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm">
+                                                        No matching clients - This will clear when you click outside
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filteredClients.map((client) => {
+                                                const clientName = client.client_name || "";
+                                                const clientCode = client.client_code || "";
+
+                                                return (
+                                                    <div
+                                                        key={client.id}
+                                                        onClick={() => {
+                                                            setForm({
+                                                                ...form,
+                                                                client: client.id,
+                                                                clientbranch: "",
+                                                            });
+                                                            setClientSearch(`${clientName} - ${clientCode}`);
+                                                            setClientCode(clientCode);
+                                                            setShowClientDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    >
+                                                        <div>
+                                                            {clientName} - {clientCode}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         {form.client && (
                             <>
@@ -4480,18 +4385,46 @@ const UpdateProject = () => {
                             </div>
                         )}
 
+
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Workorder Document</label>
-                            <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
-                                <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <div className="text-gray-500">
-                                    <span className="text-sm">
-                                        {form?.workorder_document?.name ||
-                                            (form.existing_workorder_document ? "Current document uploaded" : "Click to upload or drag & drop")}
+
+                            {/* If a document is already uploaded or a new one is selected, show the file with an X button */}
+                            {(form?.workorder_document || form.existing_workorder_document) ? (
+                                <div className="relative flex items-center justify-between w-full pl-9 pr-3 h-11 border border-blue-200 rounded-lg bg-blue-50">
+                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
+                                    <span className="text-sm text-blue-700 truncate mr-4">
+                                        {form?.workorder_document?.name || "Current document uploaded"}
                                     </span>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            // Clear both the new file and the existing reference to allow a fresh upload
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                workorder_document: null,
+                                                existing_workorder_document: ""
+                                            }));
+                                        }}
+                                        className="p-1 hover:bg-blue-100 rounded text-red-600 transition-colors"
+                                        title="Remove document"
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                                <input type="file" name="workorder_document" onChange={handleChange} className="hidden" />
-                            </label>
+                            ) : (
+                                /* If no document is selected, show the upload box */
+                                <label className="relative flex items-center cursor-pointer hover:border-blue-500 transition w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50">
+                                    <Upload className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <div className="text-gray-500">
+                                        <span className="text-sm">Click to upload or drag & drop</span>
+                                    </div>
+                                    <input type="file" name="workorder_document" onChange={handleChange} className="hidden" />
+                                </label>
+                            )}
+
+                            {/* Only show the link if an existing document is present on the server */}
                             {form.existing_workorder_document && !form.workorder_document && (
                                 <a
                                     href={form.existing_workorder_document}
@@ -4503,7 +4436,6 @@ const UpdateProject = () => {
                                 </a>
                             )}
                         </div>
-
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Assign Project Owners *</label>
 
@@ -5238,7 +5170,6 @@ const UpdateProject = () => {
                                                                                         sub.id,
                                                                                     );
                                                                                     const key = `${activityId}_${sub.id}`;
-                                                                                    console.log(key, 'keyyy')
                                                                                     // const key = `${activityId}_${sub.subactivity_name}`;
                                                                                     // const key2 = `${sub?.id}_${sub.subactivity_name}`;
                                                                                     const currentUnit =
@@ -5254,40 +5185,7 @@ const UpdateProject = () => {
                                                                                         >
 
                                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                                {/* <div className="flex items-center gap-2">
-                                                                             <input
-                                                                               type="checkbox"
-                                                                               checked={isSelected}
-                                                                               onChange={(e) =>
-                                                                                 handleSubActivitySelection(
-                                                                                   activityId,
-                                                                                   sub.id,
-                                                                                   e.target.checked,
-                                                                                 )
-                                                                               }
-                                                                               className="w-3 h-3 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                             />
-                                                                             <span
-                                                                               className="text-xs md:text-sm font-medium text-gray-700 cursor-pointer"
-                                                                               onClick={(e) => {
-                                                                                 e.stopPropagation();
-                                                                                 handleSubActivitySelection(
-                                                                                   activityId,
-                                                                                   sub.id,
-                                                                                   !isSelected,
-                                                                                 );
-                                                                               }}
-                                                                             >
-                                                                               Stage {sub.sorting_var}: {displayName}
-                                                                             </span>
-                               
-                               
-                                                                             {sub.isCustom && (
-                                                                               <span className="text-[9px] bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">
-                                                                                 Custom
-                                                                               </span>
-                                                                             )}
-                                                                           </div> */}
+
                                                                                                 <div className="flex items-center gap-2 flex-1">
                                                                                                     <input
                                                                                                         type="checkbox"
@@ -5377,7 +5275,6 @@ const UpdateProject = () => {
                                                                                                             />
                                                                                                             Show All
                                                                                                         </label>
-                                                                                                        {console.log(showAllFields[key], '')}
 
 
                                                                                                     </div>
@@ -5528,16 +5425,16 @@ const UpdateProject = () => {
                                                                                                                                     </div>
                                                                                                                                 )}
                                                                                                                         </div>
-                                                                                                                        {/* <input
-                                                                                     type="number"
-                                                                                     min="0"
-                                                                                     step="0.01"
-                                                                                     value={subActivityPlannedQtys[`${sub.id}_coveredarea`] || ''}
-                                                                                     onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'coveredarea', e.target.value)}
-                                                                                     className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                     placeholder="001"
-                                                                                   /> */}
                                                                                                                         <input
+                                                                                                                            type="number"
+                                                                                                                            min="0"
+                                                                                                                            step="0.01"
+                                                                                                                            value={subActivityPlannedQtys[`${sub.id}_coveredarea`] || ''}
+                                                                                                                            onChange={(e) => handleSubActivityPlannedQtyChange(sub.id, 'coveredarea', e.target.value)}
+                                                                                                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
+                                                                                                                            placeholder="001"
+                                                                                                                        />
+                                                                                                                        {/* <input
                                                                                                                             type="number"
                                                                                                                             min="0"
                                                                                                                             step="0.01"
@@ -5622,102 +5519,11 @@ const UpdateProject = () => {
                                                                                                                             }}
                                                                                                                             className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                                                                                             placeholder="Length"
-                                                                                                                        />
+                                                                                                                        /> */}
                                                                                                                     </div>
                                                                                                                 </div>
                                                                                                             </div>}
 
-                                                                                                        {/* {(sub?.submission_exist || showAllFields[key]) &&
-                                                                                                            <div>
-                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                    Submission Payment (%)
-                                                                                                                </label>
-                                                                                                                <div className="relative">
-                                                                                                                    <input
-                                                                                                                        type="number"
-                                                                                                                        min="0"
-                                                                                                                        step="0.01"
-                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_subpayment")] || ''}
-                                                                                                                        value={
-                                                                                                                            subActivityPlannedQtys[
-                                                                                                                            `${sub.id}_subpayment`
-                                                                                                                            ] || ""
-                                                                                                                        }
-                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_subpayment"), e.target.value)}
-                                                                                                                        onChange={(e) =>
-                                                                                                                            handleSubActivityPlannedQtyChange(
-                                                                                                                                sub.id,
-                                                                                                                                "subpayment",
-                                                                                                                                e.target.value,
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        onBlur={(e) =>
-                                                                                                                            handleActivityWeightageChange(
-                                                                                                                                activityId,
-                                                                                                                                getActivityTotals(
-                                                                                                                                    activityData,
-                                                                                                                                    subActivityPlannedQtys,
-                                                                                                                                ),
-                                                                                                                                sub.id
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                        placeholder="Enter payment in %"
-                                                                                                                    />
-                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                        <Percent
-                                                                                                                            className=" text-gray-400"
-                                                                                                                            size={16}
-                                                                                                                        />
-                                                                                                                    </span>
-                                                                                                                </div>
-                                                                                                            </div>} */}
-
-                                                                                                        {/* {(sub?.approval_exist || showAllFields[key]) &&
-                                                                                                            <div>
-                                                                                                                <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                    Approval Payment (%)
-                                                                                                                </label>
-                                                                                                                <div className="relative">
-                                                                                                                    <input
-                                                                                                                        type="number"
-                                                                                                                        min="0"
-                                                                                                                        step="0.01"
-                                                                                                                        // value={subActivityPlannedQtys[(key2 + "_approvalpayment")] || ''}
-                                                                                                                        value={
-                                                                                                                            subActivityPlannedQtys[
-                                                                                                                            `${sub.id}_approvalpayment`
-                                                                                                                            ] || ""
-                                                                                                                        }
-                                                                                                                        // onChange={(e) => handleSubActivityPlannedQtyChange(sub?.id, (sub.subactivity_name + "_approvalpayment"), e.target.value)}
-                                                                                                                        onChange={(e) =>
-                                                                                                                            handleSubActivityPlannedQtyChange(
-                                                                                                                                sub.id,
-                                                                                                                                "approvalpayment",
-                                                                                                                                e.target.value,
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        onBlur={(e) =>
-                                                                                                                            handleActivityWeightageChange(
-                                                                                                                                activityId,
-                                                                                                                                getActivityTotals(
-                                                                                                                                    activityData,
-                                                                                                                                    subActivityPlannedQtys,
-                                                                                                                                ),
-                                                                                                                                sub.id
-                                                                                                                            )
-                                                                                                                        }
-                                                                                                                        className="w-full pr-7 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
-                                                                                                                        placeholder="Enter payment in %"
-                                                                                                                    />
-                                                                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                                                                                                        <Percent
-                                                                                                                            className=" text-gray-400"
-                                                                                                                            size={16}
-                                                                                                                        />
-                                                                                                                    </span>
-                                                                                                                </div>
-                                                                                                            </div>} */}
 
 
 
@@ -5725,7 +5531,7 @@ const UpdateProject = () => {
                                                                                                         <div >
                                                                                                             <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                 <label className="block text-[10px] text-gray-500 ">
-                                                                                                                    Start Date
+                                                                                                                    Start Date *
                                                                                                                 </label>
                                                                                                                 <input
                                                                                                                     type="date"
@@ -5740,7 +5546,7 @@ const UpdateProject = () => {
                                                                                                         <div>
                                                                                                             <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                 <label className="block text-[10px] text-gray-500 ">
-                                                                                                                    End Date
+                                                                                                                    End Date *
                                                                                                                 </label>
                                                                                                                 <input
                                                                                                                     type="date"
@@ -6027,7 +5833,7 @@ const UpdateProject = () => {
                         </motion.div>
                     )}
 
-                    {isMobile && (
+                    {/* {isMobile && (
                         <div className="flex justify-between mt-6">
                             <button
                                 type="button"
@@ -6040,8 +5846,53 @@ const UpdateProject = () => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    <>
+                                        Update Project
+                                        <Save size={16} />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )} */}
+
+                    {isMobile && (
+                        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-6">
+                            <div className="flex justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                                {/* New Cancel Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/all-projects")}
+                                    className="flex-1 sm:flex-none bg-white text-gray-700 border border-gray-200 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <X size={16} />
+                                    Cancel
+                                </button>
+
+                                {/* Existing Previous Button */}
+                                <button
+                                    type="button"
+                                    onClick={prevStep}
+                                    className="flex-1 sm:flex-none bg-gray-600 text-white px-4 py-2.5 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <ChevronLeft size={16} />
+                                    Previous
+                                </button>
+                            </div>
+
+                            {/* Existing Update Button */}
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={handleSubmit}
+                                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? (
                                     <>
@@ -6059,22 +5910,34 @@ const UpdateProject = () => {
                     )}
                 </motion.div>
 
+
                 {!isMobile && (
-                    <div className="flex justify-center">
+                    <div className="flex justify-center gap-4">
+                        {/* Cancel Button */}
+                        <button
+                            type="button"
+                            onClick={() => navigate("/all-projects")}
+                            className="w-56 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2"
+                        >
+                            <X size={18} />
+                            Cancel
+                        </button>
+
+                        {/* Update Button */}
                         <button
                             type="button"
                             disabled={isSubmitting}
                             onClick={handleSubmit}
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 md:px-16 py-4 md:py-5 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-bold text-base md:text-xl flex items-center gap-2 md:gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-56 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? (
                                 <>
-                                    <Loader2 className="animate-spin" size={20} />
-                                    Updating Project...
+                                    <Loader2 className="animate-spin" size={18} />
+                                    Updating...
                                 </>
                             ) : (
                                 <>
-                                    <Save size={20} />
+                                    <Save size={18} />
                                     Update Project
                                 </>
                             )}

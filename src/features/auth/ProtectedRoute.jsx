@@ -32,11 +32,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     ) {
       console.warn('🚨 Tampering detected!...');
 
-      // sessionStorage.clear();
-      // // Clear encryption key if you're using encryption
-      // if (typeof clearEncryptionKey === 'function') {
-      //   clearEncryptionKey();
-      // }
+      
 
       return true;
     }

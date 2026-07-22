@@ -1,3 +1,6 @@
+
+
+
 // src/components/LogCard.jsx
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -108,10 +111,41 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
     return date.toLocaleDateString();
   };
 
+  
+
   const formatValue = (value, path = '') => {
     if (value === null || value === undefined) return null;
 
+    // 1. Adds the check for the "None" string
+    if (typeof value === 'string' && value === 'None') {
+      return <span className="text-gray-400 italic">Not previously set</span>;
+    }
+
+    // if (typeof value === 'object') {
+    //   return (
+    //     <div className="ml-4 border-l-2 border-gray-200 pl-3">
+    //       {Object.entries(value).map(([key, val]) => {
+    //         const currentPath = path ? `${path}.${key}` : key;
+    //         const formatted = formatValue(val, currentPath);
+    //         if (formatted === null) return null;
+
+    //         return (
+    //           <div key={currentPath} className="mb-2">
+    //             {/* 2. Adds the .replace() for clientbranch here too */}
+    //             <span className="text-xs font-medium text-gray-500 capitalize">
+    //               {key.replace(/_/g, ' ').replace(/clientbranch/gi, 'client branch')}:
+    //             </span>
+    //             <div className="mt-1">{formatted}</div>
+    //           </div>
+    //         );
+    //       })}
+    //     </div>
+    //   );
+    // }
+
     if (typeof value === 'object') {
+      const isArray = Array.isArray(value); // Check if the object is an array
+
       return (
         <div className="ml-4 border-l-2 border-gray-200 pl-3">
           {Object.entries(value).map(([key, val]) => {
@@ -119,9 +153,17 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
             const formatted = formatValue(val, currentPath);
             if (formatted === null) return null;
 
+            // If it is an array, convert the index to a number and add 1. 
+            // Otherwise, format the string key normally.
+            const displayKey = (isArray && !isNaN(key)) 
+              ? parseInt(key, 10) + 1 
+              : key.replace(/_/g, ' ').replace(/clientbranch/gi, 'client branch');
+
             return (
               <div key={currentPath} className="mb-2">
-                <span className="text-xs font-medium text-gray-500 capitalize">{key.replace(/_/g, ' ')}:</span>
+                <span className="text-xs font-medium text-gray-500 capitalize">
+                  {displayKey}:
+                </span>
                 <div className="mt-1">{formatted}</div>
               </div>
             );
@@ -263,14 +305,53 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
             {/* Changes Preview */}
             {changes.length > 0 && (
               <div className="mt-3">
-                <button
+                {/* <button
                   onClick={() => setShowChanges(!showChanges)}
                   className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
                 >
                   {showChanges ? <EyeOff size={16} /> : <Eye size={16} />}
                   {showChanges ? 'Hide changes' : `Show ${changes.length} change${changes.length > 1 ? 's' : ''}`}
-                </button>
+                </button> */}
 
+                <button
+               onClick={() => setShowChanges(!showChanges)}
+               className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+             >
+               {showChanges ? <EyeOff size={16} /> : <Eye size={16} />}
+               {showChanges ? 'Hide Changes' : 'Show Changes'}
+              </button>
+
+                {/* <AnimatePresence>
+                  {showChanges && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    >
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Updated Fields</h4>
+                      <div className="space-y-3">
+                        {changes.map((change, idx) => (
+                          
+                          // --- NEW CHANGE: Removed "Previous" grid block, redesigned as a single sleek card for the new value ---
+                          <div 
+                            key={idx} 
+                            className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-green-500"
+                          >
+                            <p className="text-xs text-green-600 font-semibold mb-1 uppercase tracking-wider">
+                              {change.field.replace(/_/g, ' ')}
+                            </p>
+                            <div className="text-sm text-gray-800">
+                              {formatValue(change.new)}
+                            </div>
+                          </div>
+                          // -------------------------------------------------------------------------------------------------------
+
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence> */}
                 <AnimatePresence>
                   {showChanges && (
                     <motion.div
@@ -279,28 +360,22 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-3 bg-gray-50 rounded-lg p-4 border border-gray-200"
                     >
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Detailed Changes</h4>
-                      <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Updated Fields</h4>
+                      <div className="space-y-3">
                         {changes.map((change, idx) => (
-                          <div key={idx} className="border-b border-gray-200 last:border-0 pb-3 last:pb-0">
-                            <p className="text-xs font-medium text-gray-500 mb-2 capitalize">
-                              {change.field.replace(/_/g, ' ')}
+                          
+                          <div 
+                            key={idx} 
+                            className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-green-500"
+                          >
+                            <p className="text-xs text-green-600 font-semibold mb-1 capitalize tracking-wider">
+                              {change.field.replace(/_/g, ' ').replace(/clientbranch/gi, 'client branch')}
                             </p>
-                            <div className="grid md:grid-cols-2 gap-3">
-                              <div className="bg-white p-2 rounded border border-gray-200">
-                                <p className="text-xs text-gray-400 mb-1">Previous</p>
-                                <div className="text-sm">
-                                  {formatValue(change.old)}
-                                </div>
-                              </div>
-                              <div className="bg-white p-2 rounded border border-green-200">
-                                <p className="text-xs text-gray-400 mb-1">New</p>
-                                <div className="text-sm">
-                                  {formatValue(change.new)}
-                                </div>
-                              </div>
+                            <div className="text-sm text-gray-800">
+                              {formatValue(change.new)}
                             </div>
                           </div>
+
                         ))}
                       </div>
                     </motion.div>
@@ -319,16 +394,6 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
             >
               {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             </button>
-
-            {userRole === "ACCOUNT" && (
-              <button
-                onClick={() => onDelete(log)}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Delete log"
-              >
-                <Trash2 size={18} />
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -395,33 +460,6 @@ const LogCard = ({ log, onDelete, userRole, isExpanded, onToggle }) => {
                   </div>
                 </div>
               </div>
-
-              {/* Related Entities */}
-              {/* {(log.activity_detail || log.subactivity_detail) && (
-                <div>
-                  <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Related Entities
-                  </h5>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    {log.activity_detail && (
-                      <div className="bg-blue-50 rounded-lg p-3">
-                        <p className="text-xs font-medium text-blue-700 mb-2">Activity</p>
-                        <pre className="text-xs bg-white p-2 rounded border border-blue-200 overflow-auto max-h-40">
-                          {JSON.stringify(log.activity_detail, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                    {log.subactivity_detail && (
-                      <div className="bg-emerald-50 rounded-lg p-3">
-                        <p className="text-xs font-medium text-emerald-700 mb-2">SubActivity</p>
-                        <pre className="text-xs bg-white p-2 rounded border border-emerald-200 overflow-auto max-h-40">
-                          {JSON.stringify(log.subactivity_detail, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )} */}
             </div>
           </motion.div>
         )}

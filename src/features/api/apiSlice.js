@@ -13,6 +13,7 @@ import { showError, showSuccess } from '../../utils/toast.js'; // <-- ADD THIS
 
 import { trackWorkLogService } from '../../services/trackworklogService.js';
 import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
+import { employeeWorklogHistoryService } from '../../services/employeeWorkLogHistory';
 
 
 const initialState = {
@@ -36,7 +37,39 @@ const initialState = {
   taskPlanners: [], // Keep for backward compatibility
 
   trackWorkLogData: null, // <-- ADDED THIS
+  employeeWorklogHistory: null,
 };
+
+
+
+
+
+
+
+export const fetchEmployeeWorklogHistory = createAsyncThunk(
+  "api/fetchEmployeeWorklogHistory",
+  async (filters = {}, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const user = auth.user;
+
+      const requestFilters = { ...filters };
+
+      // If it's a standard user and you want to lock them to their own ID
+      if (user?.role === "USER" && !requestFilters.user_id) {
+         requestFilters.user_id = user.emp_code; // Adjust property name to match your user object
+      }
+
+      const response = await employeeWorklogHistoryService.getEmployeeWorklogs(requestFilters);
+      return response;
+      
+    } catch (error) {
+      console.error('Error fetching employee worklog history:', error);
+      showError(error.message || 'Failed to fetch employee worklogs');
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 
 // ============ TRACK WORK LOG THUNKS ============ // <-- ADDED THIS SECTION
@@ -811,6 +844,23 @@ const apiSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+
+
+   // ============ EMPLOYEE WORKLOG HISTORY ============
+      .addCase(fetchEmployeeWorklogHistory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.employeeWorklogHistory = null;
+      })
+      .addCase(fetchEmployeeWorklogHistory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.employeeWorklogHistory = action.payload;
+      })
+      .addCase(fetchEmployeeWorklogHistory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+    
 
 
     .addCase(fetchTrackWorkLog.pending, (state) => {

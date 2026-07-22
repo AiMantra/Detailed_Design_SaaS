@@ -189,7 +189,6 @@ const RaiseATicket = ({ getTicketList }) => {
                     alert(res);
                 }
             } catch (err) {
-                console.log(err);
                 // handleErrorToast(err, loadingToastId);
             } finally {
                 setLoading(false); //loading logic
@@ -257,7 +256,6 @@ const RaiseATicket = ({ getTicketList }) => {
         const FRONTEND_URL = urlParts[0] + `//` + urlParts[2];
 
         const domainParts = urlParts[2].split(".");
-        // console.log(domainParts, FRONTEND_URL, 'frontend url');
 
         if (FRONTEND_URL.includes('hrms')) {
             setFormData({
@@ -272,7 +270,6 @@ const RaiseATicket = ({ getTicketList }) => {
         }
     }, [])
 
-    // console.log(formData)
 
     return (
         <>
@@ -342,30 +339,7 @@ const RaiseATicket = ({ getTicketList }) => {
                                     <span className="error-message">{errors.ticket_for}</span>
                                 )}
                             </div>
-                            {/* 
-                            <div className="flex-column">
-                                <label
-                                    htmlFor="ticket_for"
-                                    className="form-labels font-weight500 font-size-subheading">
-                                    Ticket For<span className="required">*</span>
-                                </label>
-                                <select
-                                    id="ticket_for"
-                                    name="ticket_for"
-                                    className="form-input"
-                                    defaultValue=""
-                                >
-                                    <option value="" disabled hidden>
-                                        Ticket For
-                                    </option>
-                                    
-                                    <option value="">AiMantra PROJECT MANAGEMENT SYSTEM</option>
-                                </select>
-                                {errors.ticket_for && (
-                                    <span className="error-message">{errors.ticket_for}</span>
-                                )}
-
-                            </div> */}
+                            
 
 
                             <div title="Description" className="flex-column">
@@ -394,88 +368,7 @@ const RaiseATicket = ({ getTicketList }) => {
                             </div>
 
 
-                            {/* <div title="Due Date" className="flex-column">
-                                <label
-                                    htmlFor="due_date"
-                                    className="form-labels font-weight500 font-size-heading"
-                                >
-                                    Due Date<span className="required">*</span>
-                                </label>
-                                <input
-                                    id="due_date"
-                                    type="date"
-                                    name="due_date"
-                                    onChange={handleInputChange}
-                                    value={formData.due_date}
-                                    className={`form-input ${errors.due_date
-                                        ? "error"
-                                        : inputState.due_date
-                                            ? "success"
-                                            : ""
-                                        }`}
-                                />
-                                {errors.due_date && (
-                                    <span className="error-message">{errors.due_date}</span>
-                                )}
-                            </div> */}
-
-                            {/* <div title="Assigned By Name" className="flex-column">
-                                <label
-                                    htmlFor="assigned_by_name"
-                                    className="form-labels font-weight500 font-size-heading"
-                                >
-                                    Customer Name<span className="required">*</span>
-                                </label>
-                                <input
-                                    id="assigned_by_name"
-                                    type="text"
-                                    name="assigned_by_name"
-                                    maxLength={150}
-                                    placeholder="Enter Assigned By Name"
-                                    onChange={handleInputChange}
-                                    value={formData.assigned_by_name}
-                                    className={`form-input ${errors.assigned_by_name
-                                        ? "error"
-                                        : inputState.assigned_by_name
-                                            ? "success"
-                                            : ""
-                                        }`}
-                                />
-                                {errors.assigned_by_name && (
-                                    <span className="error-message">
-                                        {errors.assigned_by_name}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div title="Assigned By" className="flex-column">
-                                <label
-                                    htmlFor="assigned_by"
-                                    className="form-labels font-weight500 font-size-heading"
-                                >
-                                    Customer Email<span className="required">*</span>
-                                </label>
-                                <input
-                                    id="assigned_by"
-                                    type="email"
-                                    name="assigned_by"
-                                    placeholder="Enter Email"
-                                    onChange={handleInputChange}
-                                    onInput={(e) => {
-                                        e.target.value = e.target.value.toLowerCase().trim(); // Convert input to lowercase
-                                    }}
-                                    value={formData.assigned_by}
-                                    className={`form-input ${errors.assigned_by
-                                        ? "error"
-                                        : inputState.assigned_by
-                                            ? "success"
-                                            : ""
-                                        }`}
-                                />
-                                {errors.assigned_by && (
-                                    <span className="error-message">{errors.assigned_by}</span>
-                                )}
-                            </div> */}
+                            
 
                             <div title="Description" className="flex-column">
                                 <label
@@ -660,7 +553,6 @@ const RaiseTicketWithDocument = ({ getTicketList }) => {
                 }
             } catch (err) {
                 handleAllError(err, loadingToastId);
-                console.log(err);
             } finally {
                 setLoading(false); //loading logic
                 toast.dismiss(loadingToastId);
@@ -732,13 +624,11 @@ const RaiseTicketWithDocument = ({ getTicketList }) => {
         );
     };
 
-    console.log("formData");
-    console.log(formData);
+   
     const currentUrl = window.location.href;
     const urlParts = currentUrl.split("/");
     const FRONTEND_URL = urlParts[0] + `//` + urlParts[2];
     const domainParts = urlParts[2].split(".");
-    console.log(domainParts, FRONTEND_URL, 'frontend url');
     return (
         <>
             <button
@@ -988,7 +878,6 @@ const TicketChatboxModal = ({ i, clientemail, clientname, ticket_name, status, p
         const { name, value, type, checked, options, files } = e.target;
 
         let newValue;
-        console.log(value, 'newvalue')
         if (type === "select-multiple") {
             newValue = Array.from(options)
                 .filter((option) => option.selected)
@@ -1005,7 +894,6 @@ const TicketChatboxModal = ({ i, clientemail, clientname, ticket_name, status, p
             newValue = value;
         }
 
-        console.log(newValue)
         setInputState((prevState) => ({
             ...prevState,
             [name]:
@@ -1075,7 +963,6 @@ const TicketChatboxModal = ({ i, clientemail, clientname, ticket_name, status, p
     const [inputState, setInputState] = useState({});
     const [fileName, setFileName] = useState("");
 
-    console.log(formData.files !== "")
     const validateForm = () => {
         const newErrors = {};
         const requiredFields = [
@@ -1088,8 +975,6 @@ const TicketChatboxModal = ({ i, clientemail, clientname, ticket_name, status, p
             }
         });
 
-        console.log("newErrors");
-        console.log(newErrors);
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -1105,8 +990,7 @@ const TicketChatboxModal = ({ i, clientemail, clientname, ticket_name, status, p
             e.preventDefault();
         }
 
-        console.log("formData");
-        console.log(formData);
+        
 
         if (validateForm()) {
             setLoading(true);
@@ -1178,79 +1062,7 @@ const TicketChatboxModal = ({ i, clientemail, clientname, ticket_name, status, p
             }
         }
     };
-    // const handleSendTaskRemark = async (e) => {
-    //     e.preventDefault();
-
-    //     console.log("formData");
-    //     console.log(formData);
-
-    //     if (validateForm()) {
-    //         setLoading(true);
-    //         const loadingToastId = toast.loading("Loading: Please wait...");
-
-
-    //         const formDataToSend = new FormData();
-    //         Object.keys(formData).forEach((key) => {
-    //             if (formData[key] && key !== "document") {
-    //                 formDataToSend.append(key, formData[key]);
-    //             }
-    //         });
-
-    //         const symbols = '!@#$%^&*()_-+=';
-    //         const lowercaseLetters = 'abcdefghijklmnopqrstuvwxyz';
-    //         const uppercaseLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    //         const numbers = '0123456789';
-    //         const now = new Date();
-    //         let date = now.toLocaleDateString('en-GB').split('/').reverse().join('-'); // Format: YYYY-MM-DD
-    //         let time = now.toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '-'); // Format: HH-MM-SS
-    //         const allChars = symbols + lowercaseLetters + uppercaseLetters + numbers;
-    //         let randomCode = '';
-    //         for (let i = 0; i < 8; i++) {
-    //             const randomIndex = Math.floor(Math.random() * allChars.length);
-    //             randomCode += allChars[randomIndex];
-    //         }
-    //         let originalFile
-    //         let customFileName
-    //         let customFile
-    //         if (formData.document) {
-    //             originalFile = formData.document;
-    //             customFileName = Aimantra ${date} ${time}_${randomCode} ${originalFile.name};
-    //             customFile = new File([originalFile], customFileName, { type: originalFile.type });
-    //             formDataToSend.append("document", customFile);
-    //         }
-
-
-    //         try {
-    //             let res = await axios.post(${BASE_URL}/ticketChat/, formDataToSend, {
-    //                 headers: {
-    //                     "Content-Type": "multipart/form-data",
-    //                 },
-    //             });
-
-    //             if (res.status === 200) {
-    //                 await getTicketChat();
-    //                 setFormData({
-    //                     ...formData,
-    //                     message: "",
-    //                     files: '',
-    //                 });
-
-    //                 // setChatShow(false);
-    //                 // refreshData();
-    //             } else {
-    //                 alert(res);
-    //             }
-    //         } catch (err) {
-    //             // alert(err);
-    //             handleErrorToast(err, loadingToastId);
-    //         } finally {
-    //             setLoading(false);
-    //             toast.dismiss(loadingToastId);
-    //         }
-    //     }
-    // };
-
-    // !########################################################################
+    
 
     const [ticketChat, setTicketChat] = useState([]);
     const [buffer, setBuffering] = useState(true); //buffering logic

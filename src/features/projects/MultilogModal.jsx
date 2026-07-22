@@ -321,16 +321,7 @@ const DurationBadge = ({ start, end }) => {
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-/**
- * MultiWorkLogModal
- *
- * Props
- *   isOpen      {boolean}
- *   onClose     {() => void}
- *   onSave      {(date: string, rows: WorkLogRow[]) => Promise<void>}
- *   projects    {Array}  – lightweight list: id, project_name/name, short_name, project_code
- *   defaultDate {string} optional YYYY-MM-DD
- */
+
 const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate }) => {
     const dispatch = useDispatch();
 
@@ -361,7 +352,6 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             const result = await dispatch(fetchProjectDetails(projectId)).unwrap();
             setDetailCache((prev) => ({ ...prev, [projectId]: result }));
         } catch (err) {
-            console.error("Failed to fetch project details:", err);
         } finally {
             setLoadingDetail((prev) => ({ ...prev, [projectId]: false }));
         }
@@ -383,7 +373,6 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
 
     const workTypesFor = (pid) =>
         detailFor(pid)?.sector_detail?.stage_work_types || [];
-
     // ── row helpers ────────────────────────────────────────────────────────────
 
     const updateRow = useCallback((id, field, value) => {
@@ -474,7 +463,6 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
         setSaving(true);
         try {
             const payload = rows.map(({ _id, ...rest }) => rest);
-            console.log("Saving work logs:", { date, payload });
             await onSave(date, payload);
 
             onClose();
@@ -507,7 +495,10 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                         onClick={(e) => e.stopPropagation()}
                     >
 
-                        {/* header */}
+
+                        
+
+
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-blue-50 rounded-xl">
@@ -745,7 +736,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             <span className="text-xs font-semibold text-gray-500">Total Duration:</span>
                                         </td>
                                         <td className="px-2 pt-2 pb-1 text-center">
-                                            <span className={`text-xs font-bold px-2 py-1 rounded-full
+                                            <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap
 ${totalHours > 9
                                                     ? "bg-red-50 text-red-700"
                                                     : totalHours > 0

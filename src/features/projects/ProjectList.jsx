@@ -200,7 +200,6 @@ const ProjectList = () => {
           dispatch(fetchOnlyProjectsList()).unwrap(),
         ]);
       } catch (error) {
-        console.error("Error loading data:", error);
         dispatch(
           showSnackbar({
             message: "Failed to load data from server",
@@ -247,29 +246,7 @@ const ProjectList = () => {
     }
   };
 
-  // const handleViewSubActivity = async (subActivityId, e) => {
-  //   if (e) e.stopPropagation();
-
-  //   setShowSubActivityModal(true);
-  //   setLoadingSubActivity(true);
-  //   setSubActivityModalData(null);
-
-  //   try {
-
-  //     // Make the request
-  //     const response = await api.get(`subactivity/${subActivityId}/`);
-
-  //     // Axios stores the JSON payload inside response.data
-  //     setSubActivityModalData(response.data);
-
-  //   } catch (error) {
-  //     console.error(error);
-  //     dispatch(showSnackbar({ message: "Failed to load sub-activity details", type: "error" }));
-  //     setShowSubActivityModal(false);
-  //   } finally {
-  //     setLoadingSubActivity(false);
-  //   }
-  // };
+  
 
   const handleViewSubActivity = async (subActivityId, e) => {
     if (e) e.stopPropagation();
@@ -286,7 +263,6 @@ const ProjectList = () => {
       setSubActivityModalData(response);
 
     } catch (error) {
-      console.error(error);
       dispatch(showSnackbar({ message: "Failed to load sub-activity details", type: "error" }));
       setShowSubActivityModal(false);
     } finally {
@@ -843,7 +819,6 @@ const ProjectList = () => {
       const result = await dispatch(fetchProjectDetails(projectId)).unwrap();
       setExpandedProjectDetails(prev => ({ ...prev, [projectId]: result }));
     } catch (error) {
-      console.error("Failed to fetch project details:", error);
       dispatch(
         showSnackbar({
           message: "Failed to load project details",
@@ -857,7 +832,6 @@ const ProjectList = () => {
 
   const handleSubmissionapproveStatus = (status, sub, value, amount, extraPayment, projectId, url) => {
     setShowProofModal(true);
-    console.log("Proof Data Before Setting:", parseFloat(amount) + parseFloat(extraPayment));
     setProofData({
       ...proofData,
       stage_type: status,
@@ -875,7 +849,6 @@ const ProjectList = () => {
 
 
   };
-  console.log("Proof Data After Setting:", proofData);
   const handleSubmitProof = async () => {
     setLoder(true);
     const response = await dispatch(tlSubactivitySubmitwithProof(proofData)).unwrap();
@@ -1267,7 +1240,7 @@ const ProjectList = () => {
                 raised_amount: "",
                 received_amount: "",
                 extra_amount: "",
-              })
+              });
             }}
           >
             <motion.div
@@ -1277,15 +1250,19 @@ const ProjectList = () => {
               className="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl border"
               onClick={(e) => e.stopPropagation()}
             >
-
               {/* HEADER */}
               <div className="flex justify-between items-center mb-5">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  📎 Submit Work Proof
+                  📎{" "}
+                  {proofData?.to_status === "Raised"
+                    ? "Raised Work Proof"
+                    : proofData?.to_status === "Received"
+                      ? "Received Work Proof"
+                      : "Submit Work Proof"}
                 </h3>
                 <button
                   onClick={() => {
-                    setShowProofModal(false)
+                    setShowProofModal(false);
                     setProofData({
                       stage_type: "",
                       documents: [],
@@ -1301,7 +1278,7 @@ const ProjectList = () => {
                       received_amount: "",
                       raised_amount: "",
                       extra_amount: "",
-                    })
+                    });
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
                 >
@@ -1310,6 +1287,14 @@ const ProjectList = () => {
               </div>
 
               {/* UPLOAD AREA */}
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  Upload Documents{" "}
+                  {proofData?.to_status === "Raised" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </label>
+              </div>
               <label className="block border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-blue-400 transition">
                 <input
                   type="file"
@@ -1325,9 +1310,7 @@ const ProjectList = () => {
                 <p className="text-sm text-gray-500">
                   <span className="text-blue-600 font-medium">browse</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  JPG, PNG, PDF, DOC
-                </p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF, DOC</p>
               </label>
 
               {/* FILE PREVIEW GRID */}
@@ -1358,7 +1341,9 @@ const ProjectList = () => {
                         onClick={() =>
                           setProofData({
                             ...proofData,
-                            documents: proofData.documents.filter((_, index) => index !== i),
+                            documents: proofData.documents.filter(
+                              (_, index) => index !== i
+                            ),
                           })
                         }
                         className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
@@ -1374,11 +1359,14 @@ const ProjectList = () => {
               {proofData.to_status !== "Rejected" && (
                 <div className="mt-5">
                   <label className="text-sm font-medium text-gray-700 block mb-1">
-                    Message
+                    Message{" "}
+                    {proofData?.to_status === "Raised" && (
+                      <span className="text-red-500">*</span>
+                    )}
                   </label>
                   <textarea
-                    defaultValue={proofData.remarks}
-                    onBlur={(e) =>
+                    value={proofData.remarks}
+                    onChange={(e) =>
                       setProofData({ ...proofData, remarks: e.target.value })
                     }
                     placeholder="Describe your proof..."
@@ -1402,10 +1390,14 @@ const ProjectList = () => {
                       }
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
                     >
-                      <option value="" disabled>Select Rejection Type</option>
+                      <option value="" disabled>
+                        Select Rejection Type
+                      </option>
                       <option value="Quality Issue">Quality Issue</option>
                       <option value="Incomplete Work">Incomplete Work</option>
-                      <option value="Client Requirement Mismatch">Client Requirement Mismatch</option>
+                      <option value="Client Requirement Mismatch">
+                        Client Requirement Mismatch
+                      </option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
@@ -1415,8 +1407,8 @@ const ProjectList = () => {
                       Rejection Reason <span className="text-red-500">*</span>
                     </label>
                     <textarea
-                      defaultValue={proofData.rejection_reason || ""}
-                      onBlur={(e) =>
+                      value={proofData.rejection_reason || ""}
+                      onChange={(e) =>
                         setProofData({ ...proofData, rejection_reason: e.target.value })
                       }
                       placeholder="Enter reason for rejection..."
@@ -1437,12 +1429,17 @@ const ProjectList = () => {
                         onChange={(e) =>
                           setProofData({
                             ...proofData,
-                            rejection_proof: [...(proofData.rejection_proof || []), ...Array.from(e.target.files)],
+                            rejection_proof: [
+                              ...(proofData.rejection_proof || []),
+                              ...Array.from(e.target.files),
+                            ],
                           })
                         }
                       />
                       <p className="text-sm text-gray-500">
-                        <span className="text-red-600 font-medium">browse rejection proofs</span>
+                        <span className="text-red-600 font-medium">
+                          browse rejection proofs
+                        </span>
                       </p>
                     </label>
 
@@ -1472,7 +1469,9 @@ const ProjectList = () => {
                               onClick={() =>
                                 setProofData({
                                   ...proofData,
-                                  rejection_proof: proofData.rejection_proof.filter((_, index) => index !== i),
+                                  rejection_proof: proofData.rejection_proof.filter(
+                                    (_, index) => index !== i
+                                  ),
                                 })
                               }
                               className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
@@ -1489,19 +1488,27 @@ const ProjectList = () => {
 
               <div className="mt-5 relative">
                 <label className="text-sm font-medium text-gray-700 block mb-1">
-                  {proofData?.to_status === "Raised" ? "Raised Amount" : "Received Amount"}
+                  {proofData?.to_status === "Raised"
+                    ? "Raised Amount"
+                    : "Received Amount"}
                 </label>
-                {console.log("proofData?.to_status === 'Raised' ? parseFloat(proofData.raised_amount) + parseFloat(proofData.extra_amount) : proofData.received_amount", proofData.raised_amount, proofData.extra_amount)}
                 <input
                   type="number"
-                  value={proofData?.to_status === "Raised" ? proofData.raised_amount : proofData.received_amount}
+                  value={
+                    proofData?.to_status === "Raised"
+                      ? proofData.raised_amount
+                      : proofData.received_amount
+                  }
                   onChange={(e) =>
                     setProofData({
                       ...proofData,
-                      [proofData?.to_status === "Raised" ? "raised_amount" : "received_amount"]: e.target.value,
+                      [proofData?.to_status === "Raised"
+                        ? "raised_amount"
+                        : "received_amount"]: e.target.value,
                     })
                   }
-                  placeholder={`Enter the ${proofData?.to_status === "Raised" ? "raised" : "received"} amount...`}
+                  placeholder={`Enter the ${proofData?.to_status === "Raised" ? "raised" : "received"
+                    } amount...`}
                   className="w-full px-3 py-2 pr-14 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
 
@@ -1528,8 +1535,8 @@ const ProjectList = () => {
                       document_type: "ref_doc",
                       client_remarks: "",
                       raised_amount: "",
-                      received_amount: ""
-                    })
+                      received_amount: "",
+                    });
                   }}
                   className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
                 >
@@ -1538,13 +1545,16 @@ const ProjectList = () => {
 
                 <button
                   onClick={handleSubmitProof}
-                  disabled={!proofData?.documents?.length || loder}
+                  disabled={
+                    loder ||
+                    !proofData?.documents?.length ||
+                    (proofData?.to_status === "Raised" && !proofData?.remarks?.trim())
+                  }
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loder ? "Submitting..." : "Submit Proof"}
                 </button>
               </div>
-
             </motion.div>
           </motion.div>
         )}
@@ -2061,73 +2071,14 @@ const ProjectList = () => {
       </AnimatePresence>
       {!showLoading && (
         <>
-          {/* <div className="mb-10 flex justify-between items-start">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <motion.h1
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
-                >
-                  {isAdmin ? "Project Portfolio" : "AVAILABLE PROJECTS"}
-                </motion.h1>
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${isACCOUNT
-                    ? "bg-purple-100 text-purple-600"
-                    : isAdmin
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-green-100 text-green-600"
-                    }`}
-                >
-                  {getRoleIcon()}
-                  {getRoleDisplay()}
-                </motion.div>
-              </div>
-              <motion.p
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="text-gray-500 text-lg"
-              >
-                {isAdmin
-                  ? "Track and manage all your construction projects in one place"
-                  : "Browse projects and pick tasks to work on"}
-              </motion.p>
-            </div>
-
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={handleRefresh}
-              disabled={showLoading}
-              className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
-            >
-              <RefreshCw
-                size={20}
-                className={`text-blue-600 ${refreshing ? "animate-spin" : ""}`}
-              />
-              <span className="text-sm font-medium text-gray-700">Refresh</span>
-            </motion.button>
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => setShowMultiLog(true)}
-              // disabled={showLoading}
-              className="p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 flex items-center gap-2"
-            >
-              <PlusCircle size={16} />
-              <span className="text-sm font-medium text-gray-700">Work Log</span>
-            </motion.button>
-          </div> */}
+          
           <div className="mb-10 flex justify-between items-start">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <motion.h1
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
+                  className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent pb-1 md:pb-2"
                 >
                   {isAdmin ? "Project Portfolio" : "AVAILABLE PROJECTS"}
                 </motion.h1>
@@ -2399,17 +2350,7 @@ const ProjectList = () => {
                                 : "border-gray-100 hover:border-blue-200"
                         }`}
                     >
-                      {/* {isAdmin && (
-                        <button
-                          onClick={(e) => handleDeleteProject(projectId, projectName, e)}
-                          disabled={deleteInProgress}
-                          className="absolute top-4 right-4 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )} */}
-
-                      {/* <div className="p-6 cursor-pointer" onClick={() => handleProjectNavigation(projectId)}> */}
+                      
                       <div
                         className="p-6 cursor-pointer"
                         // onClick={() =>
@@ -2538,22 +2479,7 @@ const ProjectList = () => {
                                 </div>
                               </div>
 
-                              {/* <div className="flex items-center gap-2">
-                                <div className="p-2 bg-indigo-50 rounded-lg">
-                                  <BarChart3
-                                    size={16}
-                                    className="text-indigo-600"
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">
-                                    Activities
-                                  </p>
-                                  <p className="text-sm font-semibold">
-                                    {activities.length}
-                                  </p>
-                                </div>
-                              </div> */}
+                             
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-indigo-50 rounded-lg">
                                   <UserStar
@@ -2628,49 +2554,10 @@ const ProjectList = () => {
                             </div>
                           </div>
 
-                          {/* RIGHT ACTIONS */}
-                          {/* <div className="flex lg:flex-col gap-3 items-center lg:items-end">
-
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleProjectNavigation(projectId);
-                              }}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
-                            >
-                              <Eye size={18} />
-                              <span className="hidden sm:inline">View</span>
-                            </motion.button>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedCard(isExpanded ? null : projectId);
-                              }}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                              {isExpanded ? (
-                                <ChevronUp size={20} />
-                              ) : (
-                                <ChevronDown size={20} />
-                              )}
-                            </button>
-                          </div> */}
+                          
 
                           <div className="flex flex-row items-center justify-center gap-2">
-                            {/* <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleProjectNavigation(projectId);
-                              }}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
-                            >
-                              <Eye size={18} /> View Details
-                            </motion.button> */}
+                            
 
 
                             <button
@@ -2689,31 +2576,7 @@ const ProjectList = () => {
                                 <ChevronDown size={20} />
                               )}
                             </button>
-                            {/* 
-                            {isAdmin && (
-                              <>
-                                {
-                                  project?.workorder_document &&
-                                  <a
-                                    href={project?.workorder_document}
-                                    target="_blank"
-                                    disabled={deleteInProgress}
-                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                                    title="Workorder Document"
-                                  >
-                                    <DownloadCloudIcon size={16} />
-                                  </a>
-                                }
-                                <button
-                                  onClick={(e) => handleDeleteProject(projectId, projectName, e)}
-                                  disabled={deleteInProgress}
-                                  className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all hover:scale-110 "
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-
-                              </>
-                            )} */}
+                           
 
                             {isAdmin && (
                               <div className="relative">
@@ -2829,30 +2692,7 @@ const ProjectList = () => {
 
                         </div>
 
-                        {/* 💰 Quick Footer */}
-                        {/* <div className="flex justify-between items-center mt-4 text-sm">
-                          <div className="flex items-center gap-1 text-green-600 font-semibold">
-                            <IndianRupee size={14} />
-                            {getCost(project)}L
-                          </div>
-
-                          <div className="text-gray-400 text-xs">
-                            {activities.length} activities
-                          </div>
-                        </div> */}
-
-                        {/* Progress Bar - Only visible for Admin */}
-                        {/* {isAdmin && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="font-medium text-gray-600">Overall Progress</span>
-                              <span className={`font-bold ${isCompleted ? "text-green-600" : "text-blue-600"}`}>{progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 1 }} className={`h-3 rounded-full ${isCompleted ? "bg-green-500" : `bg-gradient-to-r ${statusInfo.colors.gradient}`}`} />
-                            </div>
-                          </div>
-                        )} */}
+                        
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -2911,14 +2751,7 @@ const ProjectList = () => {
                                       </span>
                                     </p>
                                   </div>
-                                  {/* <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3">
-                                    <p className="text-xs text-gray-500 mb-1">
-                                      Total Activities
-                                    </p>
-                                    <p className="text-xl font-bold text-purple-700">
-                                      {activities.length}
-                                    </p>
-                                  </div> */}
+                                  
                                 </div>
                               )}
 
@@ -2995,18 +2828,7 @@ const ProjectList = () => {
                                           getClientName(project)}
                                       </span>
                                     </div>
-                                    {/* {project.clientbranch && (
-                                      <>
-                                        <div className="flex items-center py-2 border-b border-gray-200">
-                                          <span className="text-sm text-gray-500 w-40">Branch</span>
-                                          <span className="text-sm font-medium text-g :ray-800">{project.clientbranch_detail?.name || project.clientbranch}</span>
-                                        </div>
-                                        <div className="flex items-center py-2">
-                                          <span className="text-sm text-gray-500 w-40">Client GST</span>
-                                          <span className="text-sm font-medium text-g :ray-800 font-mono">{project.clientbranch_detail?.gst || "—"}</span>
-                                        </div>
-                                      </>
-                                    )} */}
+                                    
                                     {project.clientbranch &&
                                       (() => {
                                         const matchedBranch = project.client_detail?.branches
@@ -3134,42 +2956,7 @@ const ProjectList = () => {
                                       </div>
                                     )}
 
-                                    {/* {
-                                      !loadingProjectDetails[projectId] && expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 &&
-                                      <div className=" bg-gray-50 rounded-xl p-4">
-                                        <h4 className="font-semibold mb-2 text-gray-800 flex items-center gap-2">
-                                          <UserCog size={18} className="text-blue-600" />
-                                          Assigned Personnel
-                                        </h4>
-                                        <div className="flex flex-row gap-4 flex-wrap">
-                                          {expandedProjectDetails[projectId]?.assigned_to_detail?.length > 0 && (
-                                            expandedProjectDetails[projectId]?.assigned_to_detail?.map((data, index) =>
-                                              <div key={index} className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                                  {data?.profilepic ? (
-                                                    <CustomImageModal customStyle>
-                                                      <img
-                                                        src={`${IMAGE_URL}${data?.profilepic}`}
-                                                        alt={data?.name}
-                                                        className=" rounded-full object-cover"
-                                                      />
-                                                    </CustomImageModal>
-                                                  ) : (
-                                                    <div >
-                                                      {data?.name?.charAt(0)}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                <div>
-                                                  <p className="text-sm font-medium text-gray-800">{data?.name}</p>
-                                                  <p className="text-xs text-gray-500">{expandedProjectDetails[projectId]?.assigned_to_detail?.length > 1 ? "Project CO-Owner" : "Project Owner"}</p>
-                                                </div>
-                                              </div>
-                                            )
-                                          )}
-                                        </div>
-                                      </div>
-                                    } */}
+                                    
                                   </div>
                                 </div>
                               </div>
@@ -3266,25 +3053,7 @@ const ProjectList = () => {
 
                                                   const activityProgress = activity.activity_progress || 0
                                                   const financialProgress = activity.financial_progress || 0
-                                                  // const activityProgress =
-                                                  //   subs.length > 0
-                                                  //     ? subs.reduce((acc, s) => {
-                                                  //       let progress = 0;
-
-                                                  //       const submissionPayment = Number(s.submission_payment) || 0;
-                                                  //       const approvalPayment = Number(s.approval_payment) || 0;
-
-                                                  //       if (s.submission_status === "Received") {
-                                                  //         progress += submissionPayment;
-                                                  //       }
-
-                                                  //       if (s.approval_status === "Received") {
-                                                  //         progress += approvalPayment;
-                                                  //       }
-
-                                                  //       return acc + progress;
-                                                  //     }, 0)
-                                                  //     : 0;
+                                                  
 
 
                                                   const daysLeft = calculateDaysLeft(
@@ -3327,47 +3096,7 @@ const ProjectList = () => {
                                                           </div>
                                                           <div className="mt-2">
 
-                                                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                                                              {/* Physical Progress */}
-                                                              <div>
-                                                                <div className="flex justify-between text-xs mb-1">
-                                                                  <span className="text-gray-500">Physical Progress</span>
-                                                                  <span className="font-medium text-green-600">
-                                                                    {activityProgress}%
-                                                                  </span>
-                                                                </div>
-
-                                                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                                                  <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${activityProgress}%` }}
-                                                                    transition={{ duration: 0.6 }}
-                                                                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
-                                                                  />
-                                                                </div>
-                                                              </div>
-
-                                                              {/* Financial Progress */}
-                                                              <div>
-                                                                <div className="flex justify-between text-xs mb-1">
-                                                                  <span className="text-gray-500">Financial Progress</span>
-                                                                  <span className="font-medium text-blue-600">
-                                                                    {financialProgress}%
-                                                                  </span>
-                                                                </div>
-
-                                                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                                                  <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${financialProgress}%` }}
-                                                                    transition={{ duration: 0.6 }}
-                                                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
-                                                                  />
-                                                                </div>
-                                                              </div>
-
-                                                            </div>
+                                                            
 
 
                                                           </div>
@@ -3544,7 +3273,9 @@ const ProjectList = () => {
                                                                                                         : "bg-gray-100 text-gray-600 border-gray-200"
                                                                                               }`}
                                                                                             >
-                                                                                              {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus}
+                                                                                              {/* {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus} */}
+
+                                                                                              {workStatus === "Pending" ? "Not Started" : workStatus}
                                                                                             </span>
                                                                                           </div>
                                                                                         </td>
@@ -3583,59 +3314,7 @@ const ProjectList = () => {
                                                                                         </td>
                                                                                       </tr>
 
-                                                                                      {/* 🟡 Expanded Time Logs Row (Same for everyone) - Only show on first stage or as a separate row */}
-                                                                                      {expandedRow === sub.id && sIdx === 0 && (
-                                                                                        <tr className="bg-gray-50/80">
-                                                                                          <td colSpan="9" className="px-4 py-4 w-full">
-                                                                                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                                                                              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                                                                                                <div className="flex items-center gap-2">
-                                                                                                  <Clock size={16} className="text-blue-500" />
-                                                                                                  <span className="text-sm font-medium text-gray-700">Time Logs</span>
-                                                                                                </div>
-                                                                                                <span className="text-xs text-gray-500">
-                                                                                                  Total: {sub.work_summary?.total_hours || "00:00:00"}
-                                                                                                </span>
-                                                                                              </div>
-
-                                                                                              <div className="divide-y divide-gray-100">
-                                                                                                {sub.work_summary?.users?.length > 0 ? (
-                                                                                                  sub.work_summary.users.map((log, i) => (
-                                                                                                    <div key={i} className="px-4 py-2.5 flex justify-between items-center hover:bg-gray-50">
-                                                                                                      <div className="flex items-center gap-2">
-                                                                                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
-                                                                                                          {log.name?.charAt(0)?.toUpperCase()}
-                                                                                                        </div>
-                                                                                                        <span className="text-sm text-gray-700">{log.name}</span>
-                                                                                                      </div>
-                                                                                                      <div className="flex items-center gap-3">
-                                                                                                        <span className="text-xs text-gray-400">{log.days_worked} day(s)</span>
-                                                                                                        <span className="text-sm font-mono font-medium text-blue-600">
-                                                                                                          {log.total_time_spent}
-                                                                                                        </span>
-                                                                                                      </div>
-                                                                                                    </div>
-                                                                                                  ))
-                                                                                                ) : (
-                                                                                                  <div className="px-4 py-6 text-center text-sm text-gray-400">
-                                                                                                    No time logs recorded
-                                                                                                  </div>
-                                                                                                )}
-                                                                                              </div>
-
-                                                                                              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
-                                                                                                <button
-                                                                                                  onClick={() => setExpandedRow(null)}
-                                                                                                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mx-auto"
-                                                                                                >
-                                                                                                  <ChevronUp size={12} />
-                                                                                                  Collapse
-                                                                                                </button>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                          </td>
-                                                                                        </tr>
-                                                                                      )}
+                                                                                      
                                                                                     </Fragment>
                                                                                   );
                                                                                 })
@@ -3670,7 +3349,6 @@ const ProjectList = () => {
                                                                                 sub.stages.map((stage, sIdx) => {
                                                                                   const rowSpanCount = Math.max(1, sub.stages?.length || 0);
                                                                                   const stageAmount = (((project?.workorder_cost || 0) * (parseFloat(stage.payment_percent) || 0)) / 100) * 1.18;
-                                                                                  console.log("Stage Amount Calculation:", project?.workorder_cost, stage.payment_percent, stageAmount);
                                                                                   const stageRaised = (stage.payment_logs || [])
                                                                                     .filter(log => log.to_status === "Raised")
                                                                                     .reduce((sum, item) => sum + (parseFloat(item.raised_amount) || 0), 0);
@@ -3680,7 +3358,6 @@ const ProjectList = () => {
                                                                                     .reduce((sum, item) => sum + (parseFloat(item.received_amount) || 0), 0);
 
                                                                                   const stageRemaining = parseFloat(stageAmount) + parseFloat(stage.extra_payment_amount || 0) - stageReceived;
-                                                                                  console.log("Stage Remaining Calculation:", stageAmount, stage.extra_payment_amount, stageReceived, stageRemaining);
                                                                                   const workStatus = stage.work_status || "Pending";
                                                                                   const paymentStatus = stage.payment_status || "Waiting";
 
@@ -3718,7 +3395,6 @@ const ProjectList = () => {
                                                                                               <div className="w-6 h-6 opacity-0 pointer-events-none"></div>
                                                                                             )}
                                                                                           </td>
-
                                                                                           <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
                                                                                             {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                           </td>
@@ -3731,24 +3407,32 @@ const ProjectList = () => {
                                                                                           <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                             {formatNumber(sub.covered_area)}
                                                                                           </td>
+
+
+                                                                                          {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
+                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                            <button
+                                                                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                                                                                              onClick={(e) => handleViewSubActivity(sub.id, e)}
+                                                                                              title="View Details"
+                                                                                            >
+                                                                                              <span className='flex flex-row items-center justify-center gap-1'>
+                                                                                                <Eye size={16} />
+                                                                                              </span>
+                                                                                            </button>
+                                                                                          </td>
                                                                                         </>
                                                                                       )}
 
-                                                                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS */}
-                                                                                      <td className="text-center align-middle border-r border-gray-100">
-                                                                                        <button
-                                                                                          className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
-                                                                                          onClick={(e) => handleViewSubActivity(sub.id, e)}
-                                                                                          title="View Details"
-                                                                                        >
-                                                                                          <span className='flex flex-row items-center justify-center gap-1'>
-                                                                                            <Eye size={16} />
-                                                                                          </span>
-                                                                                        </button>
-                                                                                      </td>
+                                                                                      {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
                                                                                       <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
                                                                                       <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
                                                                                       <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
+
+
+
+
+
 
                                                                                       {/* Raised */}
                                                                                       <td className="text-center">
@@ -3815,7 +3499,9 @@ const ProjectList = () => {
                                                                                                     workStatus === "Completed" ? "bg-purple-100 text-purple-600 border-purple-200" :
                                                                                                       "bg-gray-100 text-gray-600 border-gray-200"}`}
                                                                                           >
-                                                                                            {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus}
+                                                                                            {/* {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus} */}
+                                                                                            {workStatus === "Pending" ? "Not Started" : workStatus}
+
                                                                                           </span>
                                                                                           {
                                                                                             (workStatus === "Submitted" || workStatus === "Approved") &&
@@ -3837,11 +3523,28 @@ const ProjectList = () => {
                                                                                           <select
                                                                                             value={paymentStatus}
                                                                                             disabled={paymentStatus === "Waiting"}
+                                                                                            
                                                                                             onChange={(e) => {
+                                                                                              const selectedAction = e.target.value;
+
+                                                                                              // 🔥 Intercept the action: Check if Account is trying to raise without TL approval
+                                                                                              if (isACCOUNT && workStatus !== "Approved" && selectedAction === "Raised") {
+                                                                                                // Show error message popup
+                                                                                                dispatch(showSnackbar({
+                                                                                                  message: "Team Lead has not approved this yet. You cannot raise the amount.",
+                                                                                                  type: "error"
+                                                                                                }));
+
+                                                                                                // Revert the dropdown back to its original value
+                                                                                                e.target.value = invoiceStatus;
+                                                                                                return; // Stop the function here so the modal doesn't open
+                                                                                              }
+
+                                                                                              // If validation passes, open the modal normally
                                                                                               handleSubmissionapproveStatus(
                                                                                                 stage.id,
                                                                                                 sub,
-                                                                                                e.target.value,
+                                                                                                selectedAction,
                                                                                                 stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
                                                                                                 stage.extra_payment_amount || 0,
                                                                                                 projectId,
@@ -4023,22 +3726,7 @@ const ProjectList = () => {
               isOpen={showMultiLog}
               onClose={() => setShowMultiLog(false)}
               projects={projectsOnly}          // your full projects array
-              // onSave={async (date, rows) => {
-              //   // rows = [{ projectId, activityId, subActivityId, startTime, endTime, workType, description }]
-              //   for (const row of rows) {
-              //     await dispatch(saveDailyWorkLog({
-              //       projectId: row.projectId,
-              //       subActivityId: row.subActivityId,
-              //       date,
-              //       startTime: row.startTime,
-              //       endTime: row.endTime,
-              //       work_type: row.workType,
-              //       note: row.description,
-              //       status: "WORKED",
-              //     })).unwrap();
-              //   }
-              //   dispatch(showSnackbar({ message: "Work logs saved!", type: "success" }));
-              // }}
+              
               onSave={async (date, rows) => {
                 try {
                   // Append the 'date' and default 'status' to every row 
@@ -4056,7 +3744,6 @@ const ProjectList = () => {
 
                 } catch (error) {
                   // The thunk handles the error snackbar now via showError()
-                  console.error("Failed to save", error);
                 }
               }}
             />

@@ -310,22 +310,7 @@ const UserDropdown = () => {
             </div>
 
             <div className="p-1.5">
-              {/* <button className="w-full flex items-center gap-2 px-2.5 md:px-3 py-1.5 md:py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <User size={14} className="text-gray-500" />
-                Profile Settings
-              </button>
-
-              <button className="w-full flex items-center gap-2 px-2.5 md:px-3 py-1.5 md:py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <Bell size={14} className="text-gray-500" />
-                Notifications
-              </button> */}
-
-              {/* {(user?.role === "ACCOUNT" || user?.role === "ADMIN") && (
-                <button className="w-full flex items-center gap-2 px-2.5 md:px-3 py-1.5 md:py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                  <Settings size={14} className="text-gray-500" />
-                  System Settings
-                </button>
-              )} */}
+              
 
               <div className="border-t border-gray-200 dark:border-gray-700 my-1.5" />
 

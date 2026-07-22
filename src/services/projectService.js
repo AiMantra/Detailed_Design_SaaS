@@ -40,12 +40,12 @@ export const projectService = {
       let url;
       let emp_code = sessionStorage.getItem('emp_code')
       // 🔥 Role-based API logic
-      if (user?.role === 'TL') {
-        url = `user-assigned-projects-nodetails/${emp_code}/`;
-      } else {
-        url = '/get-projects-list/';
-      }
-
+      // if (user?.role === 'TL') {
+      //   url = `user-assigned-projects-nodetails/${emp_code}/`;
+      // } else {
+      //   url = '/get-projects-list/';
+      // }
+      url = '/get-projects-list/';
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -262,7 +262,7 @@ export const projectService = {
           formData.append("rejection_proof", file);
         });
       }
-    
+
 
       for (const key in proofData) {
         if (key !== "documents" && key !== "rejection_proof" && proofData[key] !== "") {

@@ -358,29 +358,7 @@ const SubmittedTasks = () => {
                                                     </p>
                                                 </div>
 
-                                                {/* {subactivity?.approval_status === 'Waiting' && (
-                                                    <div className="flex gap-2">
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.05 }}
-                                                            whileTap={{ scale: 0.95 }}
-                                                            onClick={() => handleApprove(submission)}
-                                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all"
-                                                        >
-                                                            <CheckCircle size={16} />
-                                                            <span className="text-sm">Approve</span>
-                                                        </motion.button>
-
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.05 }}
-                                                            whileTap={{ scale: 0.95 }}
-                                                            onClick={() => handleReject(submission)}
-                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all"
-                                                        >
-                                                            <ThumbsDown size={16} />
-                                                            <span className="text-sm">Reject</span>
-                                                        </motion.button>
-                                                    </div>
-                                                )} */}
+                                                
 
                                                 <button
                                                     onClick={() => toggleTaskExpand(submission.id)}
@@ -524,25 +502,7 @@ const SubmittedTasks = () => {
                 )}
             </motion.div>
 
-            {/* Reject Modal */}
-            {/* {rejectModalOpen && (
-                <RejectModal
-                    isOpen={rejectModalOpen}
-                    onClose={() => {
-                        setRejectModalOpen(false);
-                        setSelectedSubmission(null);
-                        setRejectReason('');
-                        setRejectDocuments([]);
-                    }}
-                    onConfirm={handleConfirmReject}
-                    reason={rejectReason}
-                    setReason={setRejectReason}
-                    documents={rejectDocuments}
-                    onFileUpload={handleFileUpload}
-                    onRemoveDocument={removeDocument}
-                    submission={selectedSubmission}
-                />
-            )} */}
+           
         </>
     );
 };
