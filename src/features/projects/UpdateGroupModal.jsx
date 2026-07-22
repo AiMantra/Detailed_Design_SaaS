@@ -576,7 +576,8 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             projects={projects}
                                                             value={row.projectId}
                                                             onChange={(pid) =>
-                                                                updateRow(row._id, "projectId", pid)
+                                                                handleProjectChange(row._id, pid)
+                                                            //     updateRow(row._id, "projectId", pid)
                                                             }
                                                             error={e("projectId")}
                                                             disabled={disabled}
