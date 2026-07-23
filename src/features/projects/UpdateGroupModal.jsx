@@ -6,6 +6,7 @@ import {
     Calendar, ChevronDown, AlertCircle, FolderOpen, Edit, CheckSquare, Pencil, CheckCircle2
 } from "lucide-react";
 import { fetchProjectDetails } from "../api/apiSlice";
+import { projectService } from "../../services/projectService";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
@@ -36,6 +37,44 @@ const formatHrs = (h) => (h > 0 ? `${h.toFixed(2)} hrs` : "—");
 const timeOptions = Array.from({ length: 24 }, (_, hour) =>
     ["00", "30"].map((min) => `${String(hour).padStart(2, "0")}:${min}`)
 ).flat();
+
+const normalizeValue = (value) => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") {
+        return normalizeValue(value.id ?? value.value ?? value.name ?? "");
+    }
+    return String(value);
+};
+
+const workTypeFromTask = (task) => normalizeValue(
+    task.work_type_id ??
+    task.workTypeId ??
+    task.work_type?.id ??
+    task.work_type_detail?.id ??
+    task.workType?.id ??
+    task.work_type?.name ??
+    task.work_type_detail?.name ??
+    task.workType?.name ??
+    task.work_type ??
+    task.workType ??
+    ""
+);
+
+const workTypeOptionValue = (workType) => normalizeValue(workType?.id ?? workType?.value ?? workType);
+const workTypeOptionLabel = (workType) => normalizeValue(workType?.name ?? workType?.label ?? workType);
+
+const resolveWorkTypeValue = (value, workTypes = []) => {
+    const normalized = normalizeValue(value);
+    if (!normalized) return "";
+
+    const directMatch = workTypes.find((workType) => workTypeOptionValue(workType) === normalized);
+    if (directMatch) return workTypeOptionValue(directMatch);
+
+    const nameMatch = workTypes.find(
+        (workType) => workTypeOptionLabel(workType).toLowerCase() === normalized.toLowerCase()
+    );
+    return nameMatch ? workTypeOptionValue(nameMatch) : normalized;
+};
 
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
@@ -290,7 +329,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                     subActivityId: task.subactivity_id || "",
                     startTime: extractTime(task.start_time),
                     endTime: extractTime(task.end_time),
-                    workType: task.work_type || "",
+                    workType: workTypeFromTask(task),
                     description: task.note || "",
                     isSelected: false, // ✅ Existing tasks are unchecked by default
                     status: task.status || "not_done",
@@ -394,6 +433,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 date: date,
                 start_time: row.startTime,
                 end_time: row.endTime,
+                work_type: resolveWorkTypeValue(row.workType, workTypesFor(row.projectId)),
                 note: row.description,
             }));
 
@@ -404,6 +444,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 date: date,
                 start_time: row.startTime,
                 end_time: row.endTime,
+                work_type: resolveWorkTypeValue(row.workType, workTypesFor(row.projectId)),
                 note: row.description,
             }));
 
@@ -529,6 +570,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
 
                                             const e = (f) => !!errors[`${row._id}.${f}`];
                                             const workTypes = workTypesFor(row.projectId);
+                                            const workTypeValue = resolveWorkTypeValue(row.workType, workTypes);
                                             const isEditing = editingRow === row._id;
 
                                             // Row is editable only when selected AND Edit button clicked
@@ -685,7 +727,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
 
                                                     <td className="px-1 py-2 align-top">
                                                         <Sel
-                                                            value={row.workType}
+                                                            value={workTypeValue}
                                                             onChange={(v) => updateRow(row._id, "workType", v)}
                                                             placeholder={
                                                                 !row.projectId ? "Work type" :
@@ -697,7 +739,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             error={e("workType")}
                                                         >
                                                             {workTypes.map((wt) => (
-                                                                <option key={wt.id} value={wt.id}>{wt.name}</option>
+                                                                <option key={workTypeOptionValue(wt)} value={workTypeOptionValue(wt)}>
+                                                                    {workTypeOptionLabel(wt)}
+                                                                </option>
                                                             ))}
                                                         </Sel>
                                                         {row.projectId && !isLoadingThis && workTypes.length === 0 && (
