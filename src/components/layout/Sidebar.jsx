@@ -26,7 +26,7 @@ import {
   ChartArea,
   ChartBar,
   CalendarDays,
-  History 
+  History
 
 } from "lucide-react";
 
@@ -97,7 +97,16 @@ const Sidebar = () => {
       description: "My Projects",
     },
 
-   
+    {
+      name: "Bulk Project Upload",
+      icon: FolderKanban,
+      path: "/projects-bulk",
+      roles: ["ACCOUNT",],
+      badge: null,
+      description: "Manage Bulk Project Uploads",
+    },
+
+
     {
       name: "Project Report",
       icon: ChartArea,
@@ -162,7 +171,7 @@ const Sidebar = () => {
       badge: null,
       description: "All project logs",
     },
-   
+
     {
       name: "Tech Support",
       icon: CheckCircle,
@@ -179,7 +188,7 @@ const Sidebar = () => {
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support", "Track Rework","Employee Worklog History"
+      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support", "Track Rework", "Employee Worklog History", "Bulk Project Upload"
       // "settings"
     ].includes(item.name)
   );
@@ -384,11 +393,11 @@ const Sidebar = () => {
                   ))}
                 </div>
               )}
-             
+
             </nav>
           </div>
 
-          
+
 
           {!desktopCollapsed || isMobile ? (
             <motion.div

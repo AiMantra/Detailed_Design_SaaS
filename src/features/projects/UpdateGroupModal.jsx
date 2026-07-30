@@ -405,7 +405,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
             if (r.startTime && r.endTime && r.endTime <= r.startTime) errs[`${r._id}.endTime`] = true;
-            // if (!r.workType) errs[`${r._id}.workType`] = true;
+            if (!r.workType) errs[`${r._id}.workType`] = true;
         });
 
         if (!date) errs["date"] = "Date is required";
@@ -618,8 +618,8 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             projects={projects}
                                                             value={row.projectId}
                                                             onChange={(pid) =>
+                                                                // updateRow(row._id, "projectId", pid)
                                                                 handleProjectChange(row._id, pid)
-                                                            //     updateRow(row._id, "projectId", pid)
                                                             }
                                                             error={e("projectId")}
                                                             disabled={disabled}
@@ -687,7 +687,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             placeholder="In"
                                                             error={e("startTime")}
                                                             disabled={disabled}
-
+                                                            
                                                         />
                                                     </td>
 

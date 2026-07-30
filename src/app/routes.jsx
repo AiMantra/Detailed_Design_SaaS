@@ -28,8 +28,8 @@ import UpdateProject from "../features/projects/updateProject";
 import TicketsManagement from "../features/ticketsManagement/TicketsManagement";
 import TaskPlanner from "../features/projects/Taskplanner";
 import TrackWorkLog from "../features/projects/TrackWorkLog";
-import EmployeeWorklogHistory from "../features/projects/EmployeeWorklogHistory";
-
+import EmployeeWorklogHistory from "../features/projects/EmployeeWorkLogHistory"
+import BulkProjectUpload from "../features/projects/BulkCreateProject";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -48,6 +48,7 @@ export default function AppRoutes() {
         <Route path="/all-projects" element={<ProjectList />} />
         {/*Common*/}
         <Route path="/projects" element={<ProjectList />} />
+        <Route path="/projects-bulk" element={<BulkProjectUpload />} />
         <Route path="/projects/:id" element={<ProjectDetails />} />
         <Route path="/projects/:id/extend" element={<ExtensionRequestPage />} />
         <Route path="/projects/:id/logs" element={<ProjectLogs />} />
@@ -121,13 +122,13 @@ export default function AppRoutes() {
           </ProtectedRoute>
         } />
 
-        <Route 
-          path="/employee-worklog-history" 
+        <Route
+          path="/employee-worklog-history"
           element={
             <ProtectedRoute allowedRoles={["USER", "TL", "ADMIN", "ACCOUNT"]}>
               <EmployeeWorklogHistory />
             </ProtectedRoute>
-          } 
+          }
         />
 
 
