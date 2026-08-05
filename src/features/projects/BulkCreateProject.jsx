@@ -252,7 +252,7 @@ const BulkProjectUpload = () => {
     // --------------------------------------------------------------- submit
     const handleUpload = async () => {
         if (!file) {
-            dispatch(showSnackbar({ message: "Pehle Excel file select karo", type: "error" }));
+            dispatch(showSnackbar({ message: "Please select an Excel file to continue.", type: "error" }));
             return;
         }
 
