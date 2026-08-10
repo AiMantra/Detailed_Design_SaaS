@@ -147,7 +147,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         } />
         <Route path="/project/update/:projectId" element={
-          <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN"]}>
+          <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN", "TL"]}>
             <UpdateProject />
           </ProtectedRoute>
         } />
