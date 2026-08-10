@@ -42,6 +42,7 @@ import {
     FileText,
     UserStar,
     PlusCircle,
+    Pencil,
 } from "lucide-react";
 import { getProjectStatusInfo, getDaysUntilDeadline } from "../../utils/deadlineUtils";
 import {
@@ -698,6 +699,10 @@ const TlProjectList = () => {
             setLoadingSubActivity(false);
         }
     };
+
+    const handleEditProject = (projectid) => {
+        navigate("/project/update/" + projectid)
+    }
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -910,7 +915,7 @@ const TlProjectList = () => {
                                     </button>
                                 </div>
 
-                                
+
 
                                 {/* For APPROVE - Confirmation, Proof, and Remarks */}
                                 {/* For APPROVE - Confirmation, Proof, and Remarks */}
@@ -1182,7 +1187,7 @@ const TlProjectList = () => {
                                     </div>
                                 )}
 
-                                
+
 
 
                                 {/* ACTIONS */}
@@ -1210,7 +1215,7 @@ const TlProjectList = () => {
 
                                     <button
                                         onClick={handleSubmitProof}
-                                        
+
 
                                         disabled={
                                             loder ||
@@ -2089,6 +2094,45 @@ const TlProjectList = () => {
                                                         </div>
                                                     </div>
 
+                                                    <div className="relative">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                // Toggle dropdown
+                                                                const dropdown = document.getElementById(`project-menu-${projectId}`);
+                                                                if (dropdown) {
+                                                                    dropdown.classList.toggle("hidden");
+                                                                }
+                                                            }}
+                                                            // className="p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-full shadow-lg transition-all hover:scale-110"
+                                                            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                                                            title="More options"
+                                                        >
+                                                            <EllipsisVertical size={20} />
+                                                        </button>
+
+                                                        <div
+                                                            id={`project-menu-${projectId}`}
+                                                            className="hidden absolute right-0 mt-2 w-50 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden"
+                                                        >
+                                                            <div className="py-1">
+
+
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleEditProject(projectId);
+                                                                    }}
+                                                                    className="flex items-center gap-3 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 w-full"
+                                                                >
+                                                                    <Pencil size={16} />
+                                                                    <span>Edit Project</span>
+                                                                </button>
+
+
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     {/* Progress Section */}
                                                     <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -2310,7 +2354,7 @@ const TlProjectList = () => {
                                                                                                                                 {activityProgress == 100 ? "Completed" : daysLeft < 0 ? "Delayed" : "Ongoing"}
                                                                                                                             </span>
                                                                                                                         </div>
-                                                                                                                        
+
                                                                                                                         {activity.start_date && activity.end_date && (
                                                                                                                             <p className="text-xs text-gray-400 mt-2">{formatDate(activity.start_date)} → {formatDate(activity.end_date)}</p>
                                                                                                                         )}
@@ -2530,7 +2574,7 @@ const TlProjectList = () => {
                                                                                                                                                                                 </div>
                                                                                                                                                                             </td>
 
-                                                                                                                                                                            
+
 
                                                                                                                                                                             {/* Action (Approve/Reject Dropdown for Submitted/Approved tasks, Submit button for others) */}
                                                                                                                                                                             <td className="text-center">
@@ -2861,7 +2905,7 @@ const TlProjectList = () => {
                                                                                                                                                                 </tr>
                                                                                                                                                             )}
 
-                                                                                                                                                            
+
                                                                                                                                                         </Fragment>
                                                                                                                                                     );
                                                                                                                                                 })}
