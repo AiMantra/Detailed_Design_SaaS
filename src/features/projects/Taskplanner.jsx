@@ -260,7 +260,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-600">
                                                                 <Clock size={12} className="text-indigo-400" />
-                                                                <span>
+                                                                {/* <span>
                                                                     {(() => {
                                                                         const utcDate = new Date(p.start_time);
                                                                         const hours = utcDate.getUTCHours();
@@ -273,6 +273,27 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 <span>
                                                                     to {(() => {
                                                                         const utcDate = new Date(p.end_time);
+                                                                        const hours = utcDate.getUTCHours();
+                                                                        const minutes = utcDate.getUTCMinutes();
+                                                                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                                                                        const displayHours = hours % 12 || 12;
+                                                                        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                                                                    })()}
+                                                                </span> */}
+
+                                                                <span>
+                                                                    {(() => {
+                                                                        const utcDate = new Date(w.start_time);
+                                                                        const hours = utcDate.getUTCHours();
+                                                                        const minutes = utcDate.getUTCMinutes();
+                                                                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                                                                        const displayHours = hours % 12 || 12;
+                                                                        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                                                                    })()}
+                                                                </span>
+                                                                <span>
+                                                                    to {(() => {
+                                                                        const utcDate = new Date(w.end_time);
                                                                         const hours = utcDate.getUTCHours();
                                                                         const minutes = utcDate.getUTCMinutes();
                                                                         const ampm = hours >= 12 ? 'PM' : 'AM';

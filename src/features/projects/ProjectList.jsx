@@ -2007,11 +2007,17 @@ const ProjectList = () => {
                                                       </p>
 
                                                       {/* Time Range if available */}
-                                                      {(log.start_time || log.end_time) && (
+                                                      {/* {(log.start_time || log.end_time) && (
                                                         <p className="text-xs text-gray-400 mt-1">
                                                           ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString() : "N/A"}
                                                           {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString()}`}
                                                         </p>
+                                                      )} */}
+                                                      {(log.start_time || log.end_time) && (
+                                                          <p className="text-xs text-gray-400 mt-1">
+                                                              ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
+                                                              {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
+                                                          </p>
                                                       )}
                                                     </div>
 
