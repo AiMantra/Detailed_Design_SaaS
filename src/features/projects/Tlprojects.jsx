@@ -43,7 +43,9 @@ import {
     UserStar,
     PlusCircle,
     Pencil,
+    AlertTriangle,
 } from "lucide-react";
+import api, { getLatestServerDate } from "../../services/api";
 import { getProjectStatusInfo, getDaysUntilDeadline } from "../../utils/deadlineUtils";
 import {
     fetchProjects,
@@ -703,6 +705,52 @@ const TlProjectList = () => {
     const handleEditProject = (projectid) => {
         navigate("/project/update/" + projectid)
     }
+
+    const TIME_OPTIONS = (() => {
+        const options = [];
+        for (let hour = 9; hour <= 20; hour++) {
+            for (const min of ["00", "30"]) {
+                if (hour === 20 && min === "30") continue; // stop exactly at 8:00 PM
+                options.push(`${String(hour).padStart(2, "0")}:${min}`);
+            }
+        }
+        return options;
+    })();
+
+    const [serverDate, setServerDate] = useState(null);   // true date, from backend
+    const [dateTampered, setDateTampered] = useState(false);
+    const [checkingClock, setCheckingClock] = useState(true);
+    useEffect(() => {
+        if (!showTimeLogModal) return;
+
+        const trueNow = getLatestServerDate();
+        console.log("True server date:", trueNow);
+        if (!trueNow) {
+            setServerDate(new Date());
+            setDateTampered(false);
+            setCheckingClock(false);
+            return;
+        }
+
+        const driftMs = Math.abs(new Date().getTime() - trueNow.getTime());
+        setDateTampered(driftMs > 2 * 60 * 1000);
+        setServerDate(trueNow);
+        setCheckingClock(false);
+    }, [showTimeLogModal]);
+
+    const maxSelectableDate = useMemo(() => {
+        if (!serverDate) return null;
+        const yesterday = new Date(serverDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return yesterday.toISOString().split("T")[0];
+    }, [serverDate]);
+
+    // Agar already-selected date server-verified max se aage nikal jaaye, clamp kar do
+    useEffect(() => {
+        if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
+            setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
+        }
+    }, [maxSelectableDate]);
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -741,63 +789,91 @@ const TlProjectList = () => {
                                 className="bg-white rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-gray-100"
                                 onClick={(e) => e.stopPropagation()}
                             >
+                                {/* Header */}
                                 <div className="flex justify-between items-center mb-5">
                                     <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                                         <Clock size={20} className="text-blue-500" />
                                         Log Work Hours
                                     </h3>
-                                    <button onClick={() => setShowTimeLogModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                                    <button
+                                        onClick={() => setShowTimeLogModal(false)}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                                    >
                                         <X size={18} />
                                     </button>
                                 </div>
+
+                                {/* Task Info */}
                                 <div className="mb-5 p-3 bg-gray-50 rounded-xl border">
                                     <p className="font-medium text-gray-800">{selectedTaskfortimelog.subactivity_name}</p>
                                     <p className="text-sm text-gray-500">{selectedTaskfortimelog.project_name}</p>
                                 </div>
+
+                                {/* Date */}
                                 <div className="mb-4">
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Date</label>
                                     <input
                                         type="date"
                                         value={timeLogData.date}
+                                        min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
                                         onChange={(e) => setTimeLogData({ ...timeLogData, date: e.target.value })}
-                                        max={new Date().toISOString().split("T")[0]}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        max={maxSelectableDate || new Date().toISOString().split("T")[0]}
+                                        disabled={dateTampered || checkingClock}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     />
                                 </div>
+
+                                {dateTampered && (
+                                    <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 flex items-start gap-2">
+                                        <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                                        <p className="text-red-600 text-sm font-medium">
+                                            Your device's date/time appears incorrect. Please correct your system date to continue.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Time Selection */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                                    {/* Start Time */}
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700 mb-1 block">Start Time</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                            Start Time
+                                        </label>
                                         <select
                                             value={timeLogData.startTime}
-                                            onChange={(e) => setTimeLogData({ ...timeLogData, startTime: e.target.value })}
+                                            onChange={(e) =>
+                                                setTimeLogData({ ...timeLogData, startTime: e.target.value })
+                                            }
                                             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                                         >
                                             <option value="">Select</option>
-                                            {Array.from({ length: 24 }).map((_, hour) =>
-                                                ["00", "30"].map((min) => {
-                                                    const time = `${String(hour).padStart(2, "0")}:${min}`;
-                                                    return <option key={time} value={time}>{time}</option>;
-                                                })
-                                            )}
+                                            {TIME_OPTIONS.map((time) => (
+                                                <option key={time} value={time}>{time}</option>
+                                            ))}
                                         </select>
                                     </div>
+
+                                    {/* End Time */}
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700 mb-1 block">End Time</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                            End Time
+                                        </label>
                                         <select
                                             value={timeLogData.endTime}
-                                            onChange={(e) => setTimeLogData({ ...timeLogData, endTime: e.target.value })}
+                                            onChange={(e) =>
+                                                setTimeLogData({ ...timeLogData, endTime: e.target.value })
+                                            }
                                             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                                         >
                                             <option value="">Select</option>
-                                            {Array.from({ length: 24 }).map((_, hour) =>
-                                                ["00", "30"].map((min) => {
-                                                    const time = `${String(hour).padStart(2, "0")}:${min}`;
-                                                    return <option key={time} value={time}>{time}</option>;
-                                                })
-                                            )}
+                                            {TIME_OPTIONS.map((time) => (
+                                                <option key={time} value={time}>{time}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
+
+                                {/* Quick Presets */}
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {[
                                         { label: "Full Day", start: "09:00", end: "18:00" },
@@ -806,42 +882,107 @@ const TlProjectList = () => {
                                     ].map((preset) => (
                                         <button
                                             key={preset.label}
-                                            onClick={() => setTimeLogData({ ...timeLogData, startTime: preset.start, endTime: preset.end })}
+                                            onClick={() =>
+                                                setTimeLogData({
+                                                    ...timeLogData,
+                                                    startTime: preset.start,
+                                                    endTime: preset.end,
+                                                })
+                                            }
                                             className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition"
                                         >
                                             {preset.label}
                                         </button>
                                     ))}
                                 </div>
+
+                                {/* Validation + Total */}
                                 {timeLogData.startTime && timeLogData.endTime && (
                                     <div className="mb-4 p-3 rounded-lg border bg-blue-50">
                                         {timeLogData.endTime <= timeLogData.startTime ? (
-                                            <p className="text-red-500 text-sm font-medium">End time must be after start time</p>
+                                            <p className="text-red-500 text-sm font-medium">
+                                                End time must be after start time
+                                            </p>
                                         ) : (
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-blue-700">Total Hours:</span>
                                                 <span className="text-lg font-semibold text-blue-700">
-                                                    {calculateHours(timeLogData.startTime, timeLogData.endTime).toFixed(2)} hrs
+                                                    {calculateHours(
+                                                        timeLogData.startTime,
+                                                        timeLogData.endTime
+                                                    ).toFixed(2)}{" "}
+                                                    hrs
                                                 </span>
                                             </div>
                                         )}
                                     </div>
                                 )}
+                                <div className="mb-4">
+                                    <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                        Work Type <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={timeLogData.work_type || ""}
+                                        onChange={(e) =>
+                                            setTimeLogData({ ...timeLogData, work_type: e.target.value })
+                                        }
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    >
+                                        <option value="">Select work type</option>
+                                        {/* You need to get the current project's sector_detail.stage_work_types */}
+                                        {(() => {
+                                            const workTypes = selectedTaskfortimelog.stage_work_types || [];
+                                            if (workTypes.length > 0) {
+                                                return workTypes.map((workType) => (
+                                                    <option key={workType.id} value={workType.id}>
+                                                        {workType.name}
+                                                    </option>
+                                                ));
+                                            } else {
+                                                return <option value="" disabled>No work types available for this sector</option>;
+                                            }
+                                        })()}
+                                    </select>
+                                </div>
+                                {/* Description */}
                                 <div className="mb-5">
-                                    <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+                                    <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                        Description
+                                    </label>
                                     <textarea
                                         value={timeLogData.description}
-                                        onChange={(e) => setTimeLogData({ ...timeLogData, description: e.target.value })}
+                                        onChange={(e) =>
+                                            setTimeLogData({
+                                                ...timeLogData,
+                                                description: e.target.value,
+                                            })
+                                        }
                                         placeholder="Describe what you worked on..."
                                         rows={3}
                                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
+
+                                {/* Actions */}
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowTimeLogModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                                    <button
+                                        onClick={() => setShowTimeLogModal(false)}
+                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                    >
+                                        Cancel
+                                    </button>
+
                                     <button
                                         onClick={handleSaveTimeLog}
-                                        disabled={isSaving || !timeLogData.startTime || !timeLogData.endTime || timeLogData.endTime <= timeLogData.startTime}
+                                        disabled={
+                                            isSaving ||
+                                            checkingClock ||
+                                            dateTampered ||
+                                            !timeLogData.startTime ||
+                                            !timeLogData.endTime ||
+                                            timeLogData.endTime <= timeLogData.startTime
+                                        }
                                         className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                                     >
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
