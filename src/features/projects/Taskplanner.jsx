@@ -282,8 +282,28 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 </span> */}
 
                                                                 <span>
+                                                                    {new Date(p.start_time).toLocaleTimeString(undefined, { 
+                                                                        timeZone: 'UTC', 
+                                                                        hour: 'numeric', 
+                                                                        minute: '2-digit', 
+                                                                        hour12: true 
+                                                                    })}
+                                                                </span>
+                                                                <span>
+                                                                    {' to '}
+                                                                    {new Date(p.end_time).toLocaleTimeString(undefined, { 
+                                                                        timeZone: 'UTC', 
+                                                                        hour: 'numeric', 
+                                                                        minute: '2-digit', 
+                                                                        hour12: true 
+                                                                    })}
+                                                                </span>
+                                                                
+
+
+                                                                {/* <span>
                                                                     {(() => {
-                                                                        const utcDate = new Date(w.start_time);
+                                                                        const utcDate = new Date(w?.start_time);
                                                                         const hours = utcDate.getUTCHours();
                                                                         const minutes = utcDate.getUTCMinutes();
                                                                         const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -293,14 +313,15 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 </span>
                                                                 <span>
                                                                     to {(() => {
-                                                                        const utcDate = new Date(w.end_time);
+                                                                        const utcDate = new Date(w?.end_time);
                                                                         const hours = utcDate.getUTCHours();
                                                                         const minutes = utcDate.getUTCMinutes();
                                                                         const ampm = hours >= 12 ? 'PM' : 'AM';
                                                                         const displayHours = hours % 12 || 12;
                                                                         return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
                                                                     })()}
-                                                                </span>
+                                                                </span> */}
+                                                                
                                                             </div>
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                                 <Hourglass size={11} className="text-purple-400" />
@@ -321,9 +342,15 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                 <td className="px-4 py-4">
                                                     {w ? (
                                                         <div className="space-y-1">
-                                                            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                                                            {/* <div className="flex items-center gap-1.5 text-xs text-gray-600">
                                                                 <Clock size={12} className="text-teal-400" />
                                                                 {formatTime(w.start_time)} – {formatTime(w.end_time)}
+                                                            </div> */}
+                                                            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                                                                <Clock size={12} className="text-teal-400" />
+                                                                {new Date(w.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12: true })}
+                                                                {' – '}
+                                                                {new Date(w.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12: true })}
                                                             </div>
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                                 <Hourglass size={11} className="text-teal-400" />
