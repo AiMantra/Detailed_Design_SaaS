@@ -372,7 +372,10 @@ const UpdateProject = () => {
         // Find selected sector
         const selectedSectorObj = sectors.find(s => s.id === projectData.sector);
         // Find selected client
-        const selectedClientObj = clients.find(c => c.id === projectData.client);
+        // const selectedClientObj = clients.find(c => c.id === projectData.client);
+
+        // Find selected client from Redux, fallback to projectData.client_detail if missing/deleted
+        const selectedClientObj = clients.find(c => c.id === projectData.client) || projectData?.client_detail;
 
         setForm({
             project_code: projectData.project_code || "",
@@ -4343,7 +4346,10 @@ const UpdateProject = () => {
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs text-gray-500">Branch *</label>
                                     <div className="relative">
-                                        <MapPinned className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        <MapPinned
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                            size={16}
+                                        />
                                         <select
                                             name="clientbranch"
                                             value={form.clientbranch}
@@ -4351,13 +4357,16 @@ const UpdateProject = () => {
                                             className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
                                         >
                                             <option value="">Select Branch</option>
-                                            {clients
-                                                .filter((data) => data?.id == form.client)[0]
-                                                ?.branches?.map((branch, i) => (
+                                            {(() => {
+                                                // Safely pull the client object from Redux or fallback to the projectData
+                                                const clientObj = clients.find((c) => c.id === form.client) || projectData?.client_detail;
+
+                                                return clientObj?.branches?.map((branch, i) => (
                                                     <option key={i} value={branch?.gst}>
                                                         {branch?.name} - {branch?.state}
                                                     </option>
-                                                ))}
+                                                ));
+                                            })()}
                                         </select>
                                     </div>
                                 </div>
@@ -4368,17 +4377,16 @@ const UpdateProject = () => {
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-500">Client GST</label>
                                 <div className="relative">
-                                    <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <IdCard
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                        size={16}
+                                    />
                                     <input
                                         type="text"
-                                        name="location"
                                         disabled
-                                        value={
-                                            clients
-                                                .filter((data) => data?.id == form.client)[0]
-                                                ?.branches.filter((data) => data.gst == form.clientbranch)[0]?.gst || ""
-                                        }
-                                        onChange={handleChange}
+                                        // Because your select dropdown sets form.clientbranch specifically to the branch?.gst value,
+                                        // we can just bind it directly here instead of running nested filters
+                                        value={form.clientbranch}
                                         className="cursor-not-allowed w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50"
                                     />
                                 </div>

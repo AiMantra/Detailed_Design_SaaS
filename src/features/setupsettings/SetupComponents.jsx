@@ -1,6 +1,6 @@
 // SetupComponents.jsx
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { showSnackbar } from "../notifications/notificationSlice";
 import { AlertTriangle, Layers, X, Loader2, Save, Edit, Trash2, Plus, Settings, Building2, TrendingUp, Handshake, Users, UserPlus, UserX, UserCheck, Clock, Mail } from "lucide-react";
@@ -31,6 +31,7 @@ import {
     restrictESI,
     restrictPhoneNumber,
     restrictPinCode,
+
 } from "../../utils/HelperValidations";
 
 import {
@@ -51,7 +52,17 @@ import {
     deleteClient,
 } from "../api/apiSlice";
 import { CustomImageModal } from "../../utils/CustomFunctions";
+import {
+    UploadCloud,
+    FileSpreadsheet,
 
+
+
+} from "lucide-react";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BULK_UPLOAD_ENDPOINT = `${BASE_URL}/detaildesign/clients/bulk-upload/`;
 // Custom Confirm Modal Function
 export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Delete", cancelText = "Cancel" }) => {
     return (
@@ -945,141 +956,141 @@ const SectorModalContent = ({
 
     return (
         <>
-           <AnimatePresence>
-    {isOpen && (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ scale: 0.95, y: 30 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 30 }}
-                /* 1. Changed main wrapper: Added flex flex-col overflow-hidden, removed p-6 and overflow-y-auto */
-                className="bg-white rounded-2xl max-w-md w-full shadow-2xl border relative z-[10000] max-h-[90vh] flex flex-col overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* 2. Header: Now a static block with its own padding and bottom border */}
-                <div className="flex justify-between items-center p-6 pb-4 bg-white border-b border-gray-100 shrink-0">
-                    <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                        <TrendingUp size={20} className="text-blue-600" />
-                        {title}
-                    </h3>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition">
-                        <X size={18} />
-                    </button>
-                </div>
-
-                {/* 3. Body: This is now the ONLY area that scrolls (flex-1 overflow-y-auto) */}
-                <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
-                    {/* Basic Information */}
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
-                                Sector Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => onFormChange("name", restrictToLetters(e.target.value))}
-                                placeholder="Enter sector name (e.g., Highway, Bridge, Building)"
-                                maxLength={50}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
-                                Unit Type <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                value={formData.unit}
-                                onChange={(e) => onFormChange("unit", e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                            >
-                                <option value="">Select unit type</option>
-                                {unitOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <p className="text-xs text-gray-400 mt-1">
-                                Unit type determines the measurement system for this sector
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Work Types Section */}
-                    <div className="border-t border-gray-200 pt-4">
-                        <div className="flex justify-between items-center mb-3">
-                            <label className="text-sm font-medium text-gray-700">
-                                Work Types
-                            </label>
-                            <button
-                                type="button"
-                                onClick={handleAddWorkType}
-                                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm flex items-center gap-1 transition"
-                            >
-                                <Plus size={14} />
-                                Add Work Type
-                            </button>
-                        </div>
-
-                        {workTypes.length === 0 ? (
-                            <div className="text-center py-6 bg-gray-50 rounded-lg">
-                                <p className="text-gray-400 text-sm">No work types added yet</p>
-                                <p className="text-xs text-gray-400 mt-1">Click "Add Work Type" to add work types for this sector</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {workTypes.map((workType, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                        <span className="text-gray-700">{workType.name}</span>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => handleEditWorkType(index)}
-                                                className="p-1.5 hover:bg-blue-100 rounded-lg transition text-blue-600"
-                                                title="Edit Work Type"
-                                            >
-                                                <Edit size={14} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleRemoveWorkType(index)}
-                                                className="p-1.5 hover:bg-red-100 rounded-lg transition text-red-600"
-                                                title="Remove Work Type"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* 4. Footer: Static block locked to the bottom, removed sticky */}
-                <div className="flex gap-3 p-6 pt-4 bg-white border-t border-gray-100 shrink-0">
-                    <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                        Cancel
-                    </button>
-                    <button
-                        onClick={onSubmit}
-                        disabled={loading || !formData.name.trim() || !formData.unit}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+                        onClick={onClose}
                     >
-                        {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                        {editingSector ? "Update" : "Add Sector"}
-                    </button>
-                </div>
-            </motion.div>
-        </motion.div>
-    )}
-</AnimatePresence>
+                        <motion.div
+                            initial={{ scale: 0.95, y: 30 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 30 }}
+                            /* 1. Changed main wrapper: Added flex flex-col overflow-hidden, removed p-6 and overflow-y-auto */
+                            className="bg-white rounded-2xl max-w-md w-full shadow-2xl border relative z-[10000] max-h-[90vh] flex flex-col overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* 2. Header: Now a static block with its own padding and bottom border */}
+                            <div className="flex justify-between items-center p-6 pb-4 bg-white border-b border-gray-100 shrink-0">
+                                <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                                    <TrendingUp size={20} className="text-blue-600" />
+                                    {title}
+                                </h3>
+                                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* 3. Body: This is now the ONLY area that scrolls (flex-1 overflow-y-auto) */}
+                            <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
+                                {/* Basic Information */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
+                                            Sector Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.name}
+                                            onChange={(e) => onFormChange("name", restrictToLetters(e.target.value))}
+                                            placeholder="Enter sector name (e.g., Highway, Bridge, Building)"
+                                            maxLength={50}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-1 block text-left">
+                                            Unit Type <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            value={formData.unit}
+                                            onChange={(e) => onFormChange("unit", e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        >
+                                            <option value="">Select unit type</option>
+                                            {unitOptions.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Unit type determines the measurement system for this sector
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Work Types Section */}
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <label className="text-sm font-medium text-gray-700">
+                                            Work Types
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={handleAddWorkType}
+                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm flex items-center gap-1 transition"
+                                        >
+                                            <Plus size={14} />
+                                            Add Work Type
+                                        </button>
+                                    </div>
+
+                                    {workTypes.length === 0 ? (
+                                        <div className="text-center py-6 bg-gray-50 rounded-lg">
+                                            <p className="text-gray-400 text-sm">No work types added yet</p>
+                                            <p className="text-xs text-gray-400 mt-1">Click "Add Work Type" to add work types for this sector</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {workTypes.map((workType, index) => (
+                                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <span className="text-gray-700">{workType.name}</span>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={() => handleEditWorkType(index)}
+                                                            className="p-1.5 hover:bg-blue-100 rounded-lg transition text-blue-600"
+                                                            title="Edit Work Type"
+                                                        >
+                                                            <Edit size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveWorkType(index)}
+                                                            className="p-1.5 hover:bg-red-100 rounded-lg transition text-red-600"
+                                                            title="Remove Work Type"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 4. Footer: Static block locked to the bottom, removed sticky */}
+                            <div className="flex gap-3 p-6 pt-4 bg-white border-t border-gray-100 shrink-0">
+                                <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={onSubmit}
+                                    disabled={loading || !formData.name.trim() || !formData.unit}
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+                                >
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                    {editingSector ? "Update" : "Add Sector"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <WorkTypeModal
                 isOpen={showWorkTypeModal}
@@ -2038,6 +2049,204 @@ export const AddClientButton = ({ onSuccess, loadData }) => {
 };
 
 
+
+
+
+export const BulkUploadClientButton = ({ onSuccess, loadData }) => {
+    const dispatch = useDispatch();
+    const fileInputRef = useRef(null);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [result, setResult] = useState(null); // { success_count, failed_count, errors, created_client_codes }
+
+    const openModal = () => {
+        setSelectedFile(null);
+        setResult(null);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        if (uploading) return; // don't allow closing mid-upload
+        setIsModalOpen(false);
+        setSelectedFile(null);
+        setResult(null);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const validExt = /\.(xlsx|xlsm)$/i.test(file.name);
+        if (!validExt) {
+            dispatch(showSnackbar({
+                message: "Please select a .xlsx or .xlsm file",
+                type: "error",
+            }));
+            return;
+        }
+        setSelectedFile(file);
+        setResult(null);
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            dispatch(showSnackbar({ message: "Please choose a file first", type: "error" }));
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        setUploading(true);
+        setResult(null);
+
+        try {
+            const response = await axios.post(
+                BULK_UPLOAD_ENDPOINT, // adjust to your actual endpoint path
+                formData,
+                { headers: { "Content-Type": "multipart/form-data" } }
+            );
+
+            const data = response.data;
+            setResult(data);
+
+            if (data.success_count > 0) {
+                dispatch(showSnackbar({
+                    message: `${data.success_count} client(s) created${data.failed_count ? `, ${data.failed_count} row issue(s)` : ""}`,
+                    type: data.failed_count ? "warning" : "success",
+                }));
+                if (loadData) loadData();
+                if (onSuccess) onSuccess();
+            } else {
+                dispatch(showSnackbar({
+                    message: "No clients were created — check the errors below",
+                    type: "error",
+                }));
+            }
+        } catch (error) {
+            const msg = error?.response?.data?.detail || "Upload failed. Please try again.";
+            console.log("Bulk upload error:", error);
+            dispatch(showSnackbar({ message: msg, type: "error" }));
+            setResult({
+                success_count: 0,
+                failed_count: 0,
+                errors: [msg],
+                created_client_codes: [],
+            });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    return (
+        <>
+            <button
+                onClick={openModal}
+                className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium"
+            >
+                {/* <Upload size={18} /> */}
+                Bulk Upload
+            </button>
+
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                            <h3 className="text-lg font-semibold text-gray-800">Bulk Upload Clients</h3>
+                            <button
+                                onClick={closeModal}
+                                disabled={uploading}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-gray-500">
+                                Upload an Excel file with "Client Details" and "Branches" sheets.
+                            </p>
+
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx,.xlsm"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                                <FileSpreadsheet size={32} className="mx-auto mb-2 text-gray-400" />
+                                {selectedFile ? (
+                                    <p className="text-sm font-medium text-gray-700">{selectedFile.name}</p>
+                                ) : (
+                                    <p className="text-sm text-gray-500">Click to select a .xlsx file</p>
+                                )}
+                            </div>
+
+                            {result && (
+                                <div className="space-y-2">
+                                    <div className="flex gap-3 text-sm">
+                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                                            {result.success_count} created
+                                        </span>
+                                        {result.failed_count > 0 && (
+                                            <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-medium">
+                                                {result.failed_count} issue(s)
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {result.errors?.length > 0 && (
+                                        <div className="bg-red-50 border border-red-100 rounded-xl p-3 max-h-48 overflow-y-auto">
+                                            <ul className="text-xs text-red-700 space-y-1 list-disc list-inside">
+                                                {result.errors.map((err, idx) => (
+                                                    <li key={idx}>{err}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
+                            <button
+                                onClick={closeModal}
+                                disabled={uploading}
+                                className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            >
+                                {result ? "Close" : "Cancel"}
+                            </button>
+                            <button
+                                onClick={handleUpload}
+                                disabled={!selectedFile || uploading}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    "Upload"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+
+
+
 // Edit Client Button (Simplified)
 export const EditClientButton = ({ client, onSuccess, loadData }) => {
     const [showModal, setShowModal] = useState(false);
@@ -2190,7 +2399,7 @@ const ActivityModalContent = ({
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
-                            
+
 
                             <div>
                                 <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -2206,7 +2415,7 @@ const ActivityModalContent = ({
                                 />
                             </div>
 
-                           
+
                         </div>
 
                         <div className="flex gap-3 mt-6">
@@ -2360,7 +2569,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
         activity_name: activity?.activity_name || "",
         sorting_var: activity?.sorting_var || "",
         template_description: activity?.template_description || "",
-        
+
     });
 
     const handleFormChange = (field, value) => {
@@ -2372,7 +2581,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
             activity_name: activity?.activity_name || "",
             sorting_var: activity?.sorting_var || "",
             template_description: activity?.template_description || "",
-            
+
         });
     };
 
@@ -2414,7 +2623,7 @@ export const EditActivityButton = ({ activity, onSuccess, loadData }) => {
                 activity_name: formData.activity_name,
                 sorting_var: formData.sorting_var || "1",
                 template_description: formData.template_description,
-               
+
             };
 
             await dispatch(
@@ -2807,7 +3016,7 @@ export const AddSubActivityButton = ({
                 createSubActivity({
                     activity_template: activity.id,
                     ...formData,
-                    
+
                 }),
             ).unwrap();
 
@@ -2873,7 +3082,7 @@ export const EditSubActivityButton = ({
         length_exist: subActivity?.length_exist !== false,
         submission_exist: subActivity?.submission_exist !== false,
         approval_exist: subActivity?.approval_exist !== false,
-        
+
     });
 
     const handleFormChange = (field, value) => {
@@ -2891,7 +3100,7 @@ export const EditSubActivityButton = ({
             length_exist: subActivity?.length_exist !== false,
             submission_exist: subActivity?.submission_exist !== false,
             approval_exist: subActivity?.approval_exist !== false,
-           
+
         });
     };
 
@@ -2913,7 +3122,7 @@ export const EditSubActivityButton = ({
                     id: subActivity.id,
                     data: {
                         ...formData,
-                       
+
                     },
                 }),
             ).unwrap();

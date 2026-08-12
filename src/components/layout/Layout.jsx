@@ -84,6 +84,7 @@ const Layout = () => {
   const getPageTitle = () => {
     const path = location.pathname;
     if (path.includes("/projects")) return "Project Management";
+    if (path.includes("/projects-bulk")) return "Bulk Project Upload";
     if (path.includes("/my-projects")) return "My Projects";
     if (path.includes("/dashboard")) return "Dashboard";
     if (path.includes("/daily-logs")) return "Daily Logs";
@@ -310,7 +311,7 @@ const UserDropdown = () => {
             </div>
 
             <div className="p-1.5">
-              
+
 
               <div className="border-t border-gray-200 dark:border-gray-700 my-1.5" />
 

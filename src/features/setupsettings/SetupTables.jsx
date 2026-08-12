@@ -19,7 +19,8 @@ import {
     AddClientButton,
     EditClientButton,
     DeleteClientButton,
-    ViewTimeStampDetailsButton
+    ViewTimeStampDetailsButton,
+    BulkUploadClientButton
 } from "./SetupComponents";
 import { fetchStageTemplates, fetchClients, fetchCompanies, fetchSectors, fetchActivities, fetchStageTemplate } from "../api/apiSlice";
 import { showSnackbar } from "../notifications/notificationSlice";
@@ -394,7 +395,7 @@ const CompaniesTable = ({ refreshKey }) => {
             deleted_at: company.deleted_at,
             deleted_by: company.deleted_by,
             deleted_by_details: company.deleted_by_details,
-          
+
         };
     };
 
@@ -413,7 +414,7 @@ const CompaniesTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddCompanyButton onSuccess={handleRefresh} loadData={loadData} companies={filteredCompanies} />
-                
+
             </div>
 
             {/* Companies List */}
@@ -800,7 +801,7 @@ const SectorsTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddSectorButton onSuccess={handleRefresh} loadData={loadData} sectors={filteredSectors} />
-                
+
             </div>
 
             {/* Sectors List */}
@@ -1096,7 +1097,7 @@ const ClientsTable = ({ refreshKey }) => {
                     />
                 </div>
                 <AddClientButton onSuccess={handleRefresh} loadData={loadData} />
-               
+                <BulkUploadClientButton onSuccess={handleRefresh} loadData={loadData} />
             </div>
 
             {/* Clients List */}
