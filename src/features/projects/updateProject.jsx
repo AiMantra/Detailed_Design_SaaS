@@ -4650,7 +4650,7 @@ const UpdateProject = () => {
 
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500 flex items-center gap-1">
-                                <Calendar size={12} /> Completion Date 1*
+                                <Calendar size={12} /> Completion Date *
                             </label>
                             <input
                                 type="date"
