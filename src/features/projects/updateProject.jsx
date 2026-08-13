@@ -4641,7 +4641,7 @@ const UpdateProject = () => {
                                 min="1000-01-01"
                                 max={form.completion_date || "9999-12-31"}
                                 // onChange={handleChange}
-                                disabled
+                                // disabled
                                 // max={form.completion_date}
                                 className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
@@ -4660,7 +4660,7 @@ const UpdateProject = () => {
                                 // onChange={handleChange}
 
                                 max={"9999-12-31"}
-                                disabled
+                                // disabled
                                 className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
