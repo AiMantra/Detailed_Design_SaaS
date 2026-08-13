@@ -4643,14 +4643,14 @@ const UpdateProject = () => {
                                 // onChange={handleChange}
                                 // disabled
                                 // max={form.completion_date}
-                                className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                className=" w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
                         </div>
 
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500 flex items-center gap-1">
-                                <Calendar size={12} /> Completion Date *
+                                <Calendar size={12} /> Completion Date 1*
                             </label>
                             <input
                                 type="date"
@@ -4661,7 +4661,7 @@ const UpdateProject = () => {
 
                                 max={"9999-12-31"}
                                 // disabled
-                                className="cursor-not-allowed w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                                className=" w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
                                 required
                             />
                         </div>
