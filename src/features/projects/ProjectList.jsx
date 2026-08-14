@@ -1003,11 +1003,11 @@ const ProjectList = () => {
   }, [serverDate]);
 
   // Agar already-selected date server-verified max se aage nikal jaaye, clamp kar do
-  useEffect(() => {
-    if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
-      setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
-    }
-  }, [maxSelectableDate]);
+  // useEffect(() => {
+  //   if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
+  //     setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
+  //   }
+  // }, [maxSelectableDate]);
 
 
   return (
@@ -1069,6 +1069,7 @@ const ProjectList = () => {
               {/* Date */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Date</label>
+                {console.log(timeLogData.date, "timeLogData.date")}
                 <input
                   type="date"
                   value={timeLogData.date}
@@ -2057,10 +2058,10 @@ const ProjectList = () => {
                                                         </p>
                                                       )} */}
                                                       {(log.start_time || log.end_time) && (
-                                                          <p className="text-xs text-gray-400 mt-1">
-                                                              ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
-                                                              {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
-                                                          </p>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                          ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
+                                                          {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
+                                                        </p>
                                                       )}
                                                     </div>
 

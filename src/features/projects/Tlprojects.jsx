@@ -746,11 +746,11 @@ const TlProjectList = () => {
     }, [serverDate]);
 
     // Agar already-selected date server-verified max se aage nikal jaaye, clamp kar do
-    useEffect(() => {
-        if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
-            setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
-        }
-    }, [maxSelectableDate]);
+    // useEffect(() => {
+    //     if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
+    //         setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
+    //     }
+    // }, [maxSelectableDate]);
     return (
         <motion.div
             initial={{ opacity: 0 }}
