@@ -505,6 +505,20 @@ const ProjectList = () => {
     };
   }, [projectsOnly]);
 
+
+  const projectCodeCounts = useMemo(() => {
+    const counts = {};
+    if (filteredProjects && Array.isArray(filteredProjects)) {
+      filteredProjects.forEach(project => {
+        const code = project.project_code || project.code || "Uncoded";
+        const cleanCode = code.trim() || "Uncoded";
+        counts[cleanCode] = (counts[cleanCode] || 0) + 1;
+      });
+    }
+    // Convert object to array and sort by count (highest first)
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [filteredProjects]);
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
@@ -960,6 +974,61 @@ const ProjectList = () => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [openMenuId]);
+
+
+  // Function to download project data as an Excel-compatible CSV
+  const handleDownloadExcel = () => {
+    if (!projectsOnly || projectsOnly.length === 0) {
+      dispatch(showSnackbar({ message: "No project data available to download", type: "warning" }));
+      return;
+    }
+
+    // Map the project data to the desired Excel columns
+    const exportData = projectsOnly.map((project) => ({
+      "Project Name": project.project_name || project.name || "",
+      "Project Code": project.project_code || project.code || "",
+      "Client Name": project?.client_detail?.client_name || getClientName(project) || "",
+      "Company": getCompanyName(project) || "",
+      "Sector": getSectorName(project) || "",
+      "Location": project.location || "",
+      "Total Length": getTotalLength(project) || 0,
+      "Workorder Amount (Lakhs)": getCost(project) || 0,
+      "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
+      "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
+      "LOA Date": project.loa_date ? new Date(project.loa_date).toLocaleDateString() : "",
+      "Deadline": project.completion_date ? new Date(project.completion_date).toLocaleDateString() : "",
+      "Status": project.status || "Ongoing",
+      "Physical Progress (%)": project.physical_progress || 0,
+      "Financial Progress (%)": project.financial_progress || 0,
+      "Overall Progress (%)": project.overall_progress || 0,
+    }));
+
+    // Extract headers and create CSV string
+    const headers = Object.keys(exportData[0]);
+    const csvContent = [
+      headers.join(","), // Header row
+      ...exportData.map((row) =>
+        headers
+          .map((fieldName) => {
+            // Escape double quotes and wrap in quotes to handle commas within data
+            const value = String(row[fieldName] || "");
+            return `"${value.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    // Create a Blob from the CSV string and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Project_List_Export_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
 
   return (
@@ -2265,7 +2334,7 @@ const ProjectList = () => {
                 />
               </div>
 
-              {isAdmin && (
+              {/* {isAdmin && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -2275,6 +2344,31 @@ const ProjectList = () => {
                   <Plus size={20} />
                   New Project
                 </motion.button>
+              )} */}
+              {isAdmin && (
+                <div className="flex items-center gap-3">
+                  {/* Excel Download Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDownloadExcel}
+                    className="bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-xl hover:shadow-xl hover:bg-gray-50 transition-all flex items-center gap-2"
+                  >
+                    <DownloadCloudIcon size={20} className="text-green-600" />
+                    Export
+                  </motion.button>
+
+                  {/* New Project Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/project/create")}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all flex items-center gap-2"
+                  >
+                    <Plus size={20} />
+                    New Project
+                  </motion.button>
+                </div>
               )}
             </div>
 
@@ -2287,6 +2381,53 @@ const ProjectList = () => {
               </div>
             )}
           </motion.div>
+
+         
+
+          {/* ========================================== */}
+          {/* 🟢 NEW: PROJECT CODE COUNTS TABLE UI       */}
+          {/* ========================================== */}
+          {projectCodeCounts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8 overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Hash size={18} className="text-blue-600" />
+                  Project Code Distribution
+                </h4>
+              </div>
+              
+              <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-6 pt-0 mt-4">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 text-gray-600 uppercase text-xs font-bold shadow-sm z-10">
+                    <tr>
+                      <th className="px-4 py-3 rounded-tl-lg border-b border-gray-200">Project Code</th>
+                      <th className="px-4 py-3 rounded-tr-lg border-b border-gray-200 text-center w-40">Total Projects</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {projectCodeCounts.map(([code, count]) => (
+                      <tr key={code} className="hover:bg-blue-50/50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-800 flex items-center gap-2">
+                          <Hash size={14} className="text-gray-400" />
+                          {code}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
+                            {count}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+          {/* ========================================== */}
 
           <AnimatePresence>
             {filteredProjects.length === 0 ? (
