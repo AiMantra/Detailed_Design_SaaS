@@ -27,13 +27,14 @@ import {
   StopCircle,
   Play,
   Save,
-  Users
+  Users,
+  AlertTriangle
 } from "lucide-react";
 import { showSnackbar } from "../notifications/notificationSlice";
 import { fetchProjects, fetchCompanies, fetchSubCompanies, fetchSectors, fetchClients } from "../api/apiSlice";
 import { saveDailyWorkLog } from "../tasks/taskSlice";
 import LoadingModal from "../../components/modals/LoadingModal";
-
+import axios from "axios";
 // Helper functions
 const getDaysUntilDeadline = (deadline) => {
   if (!deadline) return null;
@@ -349,7 +350,66 @@ const UserProjectDetails = () => {
   const totalSubActivities = activities.reduce((acc, act) =>
     acc + (act.subactivities?.length || act.subActivities?.length || 0), 0
   );
+  // Generate once, outside render loop (or useMemo)
+  const TIME_OPTIONS = (() => {
+    const options = [];
+    for (let hour = 9; hour <= 20; hour++) {
+      for (const min of ["00", "30"]) {
+        if (hour === 20 && min === "30") continue; // stop exactly at 8:00 PM
+        options.push(`${String(hour).padStart(2, "0")}:${min}`);
+      }
+    }
+    return options;
+  })();
 
+  const [serverDate, setServerDate] = useState(null);   // true date, from backend
+  const [dateTampered, setDateTampered] = useState(false);
+  const [checkingClock, setCheckingClock] = useState(true);
+
+  useEffect(() => {
+    if (!showTimeLogModal) return;
+
+
+
+    const verifySystemClock = async () => {
+      setCheckingClock(true);
+      try {
+        // Koi bhi lightweight GET endpoint chalega jo already backend mein exist karta hai
+        const res = await axios(`${BASE_URL}/detaildesign//tasks/`, { params: { limit: 1 } });
+        // axios mein header key hamesha lowercase hoti hai
+        const headerDate = res.headers["date"];
+        if (!headerDate) throw new Error("No Date header received");
+
+        const trueNow = new Date(headerDate);
+        const driftMs = Math.abs(new Date().getTime() - trueNow.getTime());
+
+        setDateTampered(driftMs > 2 * 60 * 1000);
+        setServerDate(trueNow);
+      } catch (err) {
+        console.error("Clock verification failed:", err);
+        setServerDate(new Date());
+        setDateTampered(false);
+      } finally {
+        setCheckingClock(false);
+      }
+    };
+
+    verifySystemClock();
+  }, [showTimeLogModal]);
+
+  const maxSelectableDate = useMemo(() => {
+    if (!serverDate) return null;
+    const yesterday = new Date(serverDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split("T")[0];
+  }, [serverDate]);
+
+  // Agar already-selected date server-verified max se aage nikal jaaye, clamp kar do
+  useEffect(() => {
+    if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
+      setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
+    }
+  }, [maxSelectableDate]);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -399,13 +459,21 @@ const UserProjectDetails = () => {
                 <input
                   type="date"
                   value={timeLogData.date}
-                  onChange={(e) =>
-                    setTimeLogData({ ...timeLogData, date: e.target.value })
-                  }
-                  max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setTimeLogData({ ...timeLogData, date: e.target.value })}
+                  max={maxSelectableDate || new Date().toISOString().split("T")[0]}
+                  disabled={dateTampered || checkingClock}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
+
+              {dateTampered && (
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 flex items-start gap-2">
+                  <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-600 text-sm font-medium">
+                    Your device's date/time appears incorrect. Please correct your system date to continue.
+                  </p>
+                </div>
+              )}
 
               {/* Time Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
@@ -422,16 +490,9 @@ const UserProjectDetails = () => {
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select</option>
-                    {Array.from({ length: 24 }).map((_, hour) =>
-                      ["00", "30"].map((min) => {
-                        const time = `${String(hour).padStart(2, "0")}:${min}`;
-                        return (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        );
-                      })
-                    )}
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -448,16 +509,9 @@ const UserProjectDetails = () => {
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select</option>
-                    {Array.from({ length: 24 }).map((_, hour) =>
-                      ["00", "30"].map((min) => {
-                        const time = `${String(hour).padStart(2, "0")}:${min}`;
-                        return (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        );
-                      })
-                    )}
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -539,17 +593,15 @@ const UserProjectDetails = () => {
                   onClick={handleSaveTimeLog}
                   disabled={
                     isSaving ||
+                    checkingClock ||
+                    dateTampered ||
                     !timeLogData.startTime ||
                     !timeLogData.endTime ||
                     timeLogData.endTime <= timeLogData.startTime
                   }
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                 >
-                  {isSaving ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Save size={16} />
-                  )}
+                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   Save
                 </button>
               </div>

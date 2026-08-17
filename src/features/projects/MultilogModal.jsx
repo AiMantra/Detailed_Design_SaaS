@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X, Plus, Trash2, Clock, Save, Loader2,
-    Calendar, ChevronDown, AlertCircle, Zap, FolderOpen,
+    Calendar, ChevronDown, AlertCircle, Zap, FolderOpen, AlertTriangle
 } from "lucide-react";
 import { fetchProjectDetails } from "../api/apiSlice"; // ← adjust path
 import { showSnackbar } from "../notifications/notificationSlice";
 // ─── constants ────────────────────────────────────────────────────────────────
-
+import api, { getLatestServerDate } from "../../services/api";
 const TIME_PRESETS = [
     { label: "Full Day", start: "09:00", end: "18:00" },
     { label: "Half Day", start: "09:00", end: "13:00" },
@@ -30,9 +30,17 @@ const calcHours = (start, end) => {
 
 const formatHrs = (h) => (h > 0 ? `${h.toFixed(2)} hrs` : "—");
 
-const timeOptions = Array.from({ length: 24 }, (_, hour) =>
-    ["00", "30"].map((min) => `${String(hour).padStart(2, "0")}:${min}`)
-).flat();
+const timeOptions = (() => {
+    const options = [];
+    for (let hour = 9; hour <= 20; hour++) {
+        for (const min of ["00", "30"]) {
+            options.push(`${String(hour).padStart(2, "0")}:${min}`);
+        }
+    }
+    return options;
+})();
+
+
 
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
@@ -472,7 +480,51 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             setSaving(false);
         }
     };
+    const TIME_OPTIONS = (() => {
+        const options = [];
+        for (let hour = 9; hour <= 20; hour++) {
+            for (const min of ["00", "30"]) {
+                if (hour === 20 && min === "30") continue; // stop exactly at 8:00 PM
+                options.push(`${String(hour).padStart(2, "0")}:${min}`);
+            }
+        }
+        return options;
+    })();
 
+    const [serverDate, setServerDate] = useState(null);   // true date, from backend
+    const [dateTampered, setDateTampered] = useState(false);
+    const [checkingClock, setCheckingClock] = useState(true);
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const trueNow = getLatestServerDate();
+        console.log("True server date:", trueNow);
+        if (!trueNow) {
+            setServerDate(new Date());
+            setDateTampered(false);
+            setCheckingClock(false);
+            return;
+        }
+
+        const driftMs = Math.abs(new Date().getTime() - trueNow.getTime());
+        setDateTampered(driftMs > 2 * 60 * 1000);
+        setServerDate(trueNow);
+        setCheckingClock(false);
+    }, [isOpen]);
+
+    const maxSelectableDate = useMemo(() => {
+        if (!serverDate) return null;
+        const d = serverDate;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }, [serverDate]);
+
+    // Agar already - selected date server - verified max se aage nikal jaaye, clamp kar do
+    useEffect(() => {
+        if (maxSelectableDate && date && date > maxSelectableDate) {
+            console.log("Clamping date from", date, "to maxSelectableDate", maxSelectableDate);
+            setDate(maxSelectableDate);
+        }
+    }, [maxSelectableDate]);
     // ── render ─────────────────────────────────────────────────────────────────
 
     return (
@@ -496,7 +548,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                     >
 
 
-                        
+
 
 
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -517,8 +569,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                     <input
                                         type="date"
                                         value={date}
-                                        min={yesterdayStr()}
-                                        max={todayStr()}
+                                        min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
                                         onChange={(e) => {
                                             setDate(e.target.value);
 
@@ -528,6 +579,8 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                 return n;
                                             });
                                         }}
+                                        max={maxSelectableDate || new Date().toISOString().split("T")[0]}
+                                        disabled={dateTampered || checkingClock}
                                         className={`border rounded-lg px-3 py-1.5 text-sm
         focus:outline-none focus:ring-2 focus:ring-blue-500
         ${errors.date
@@ -541,6 +594,16 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             {errors.date}
                                         </span>
                                     )}
+
+                                    {dateTampered && (
+                                        <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 flex items-start gap-2">
+                                            <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-600 text-sm font-medium">
+                                                Your device's date/time appears incorrect. Please correct your system date to continue.
+                                            </p>
+                                        </div>
+                                    )}
+
                                 </div>
                                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-500">
                                     <X size={18} />
@@ -653,6 +716,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                             placeholder="In"
                                                             error={e("startTime")}
                                                         />
+
                                                     </td>
 
                                                     {/* End */}
@@ -798,7 +862,8 @@ ${totalHours > 9
                             </button>
                             <button
                                 onClick={handleSave}
-                                disabled={saving}
+                                disabled={saving || checkingClock ||
+                                    dateTampered}
                                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl
                   hover:bg-blue-700 disabled:opacity-50 transition flex items-center
                   justify-center gap-2 text-sm font-medium"

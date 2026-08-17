@@ -42,11 +42,13 @@ import {
   EllipsisVertical,
   Pencil,
   UserStar,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
   getDaysUntilDeadline,
 } from "../../utils/deadlineUtils";
+import api, { getLatestServerDate } from "../../services/api";
 import {
   fetchProjects,
   fetchOnlyProjectsList,
@@ -68,7 +70,7 @@ import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 import MultiWorkLogModal from "./MultilogModal";
-import api from "../../services/api";
+
 const ProjectList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -246,7 +248,7 @@ const ProjectList = () => {
     }
   };
 
-  
+
 
   const handleViewSubActivity = async (subActivityId, e) => {
     if (e) e.stopPropagation();
@@ -504,6 +506,20 @@ const ProjectList = () => {
       }).length,
     };
   }, [projectsOnly]);
+
+
+  const projectCodeCounts = useMemo(() => {
+    const counts = {};
+    if (filteredProjects && Array.isArray(filteredProjects)) {
+      filteredProjects.forEach(project => {
+        const code = project.project_code || project.code || "Uncoded";
+        const cleanCode = code.trim() || "Uncoded";
+        counts[cleanCode] = (counts[cleanCode] || 0) + 1;
+      });
+    }
+    // Convert object to array and sort by count (highest first)
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [filteredProjects]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -961,6 +977,107 @@ const ProjectList = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [openMenuId]);
 
+  const TIME_OPTIONS = (() => {
+    const options = [];
+    for (let hour = 9; hour <= 20; hour++) {
+      for (const min of ["00", "30"]) {
+        if (hour === 20 && min === "30") continue; // stop exactly at 8:00 PM
+        options.push(`${String(hour).padStart(2, "0")}:${min}`);
+      }
+    }
+    return options;
+  })();
+
+  const [serverDate, setServerDate] = useState(null);   // true date, from backend
+  const [dateTampered, setDateTampered] = useState(false);
+  const [checkingClock, setCheckingClock] = useState(true);
+  useEffect(() => {
+    if (!showTimeLogModal) return;
+
+    const trueNow = getLatestServerDate();
+    console.log("True server date:", trueNow);
+    if (!trueNow) {
+      setServerDate(new Date());
+      setDateTampered(false);
+      setCheckingClock(false);
+      return;
+    }
+
+    const driftMs = Math.abs(new Date().getTime() - trueNow.getTime());
+    setDateTampered(driftMs > 2 * 60 * 1000);
+    setServerDate(trueNow);
+    setCheckingClock(false);
+  }, [showTimeLogModal]);
+
+  const maxSelectableDate = useMemo(() => {
+    if (!serverDate) return null;
+    const yesterday = new Date(serverDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split("T")[0];
+  }, [serverDate]);
+
+  // Agar already-selected date server-verified max se aage nikal jaaye, clamp kar do
+  // useEffect(() => {
+  //   if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
+  //     setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
+  //   }
+  // }, [maxSelectableDate]);
+
+
+  // Function to download project data as an Excel-compatible CSV
+  const handleDownloadExcel = () => {
+    if (!projectsOnly || projectsOnly.length === 0) {
+      dispatch(showSnackbar({ message: "No project data available to download", type: "warning" }));
+      return;
+    }
+
+    // Map the project data to the desired Excel columns
+    const exportData = projectsOnly.map((project) => ({
+      "Project Name": project.project_name || project.name || "",
+      "Project Code": project.project_code || project.code || "",
+      "Client Name": project?.client_detail?.client_name || getClientName(project) || "",
+      "Company": getCompanyName(project) || "",
+      "Sector": getSectorName(project) || "",
+      "Location": project.location || "",
+      "Total Length": getTotalLength(project) || 0,
+      "Workorder Amount (Lakhs)": getCost(project) || 0,
+      "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
+      "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
+      "LOA Date": project.loa_date ? new Date(project.loa_date).toLocaleDateString() : "",
+      "Deadline": project.completion_date ? new Date(project.completion_date).toLocaleDateString() : "",
+      "Status": project.status || "Ongoing",
+      "Physical Progress (%)": project.physical_progress || 0,
+      "Financial Progress (%)": project.financial_progress || 0,
+      "Overall Progress (%)": project.overall_progress || 0,
+    }));
+
+    // Extract headers and create CSV string
+    const headers = Object.keys(exportData[0]);
+    const csvContent = [
+      headers.join(","), // Header row
+      ...exportData.map((row) =>
+        headers
+          .map((fieldName) => {
+            // Escape double quotes and wrap in quotes to handle commas within data
+            const value = String(row[fieldName] || "");
+            return `"${value.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    // Create a Blob from the CSV string and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Project_List_Export_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   return (
     <motion.div
@@ -1021,17 +1138,32 @@ const ProjectList = () => {
               {/* Date */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Date</label>
+                {console.log(timeLogData.date, "timeLogData.date")}
                 <input
                   type="date"
                   value={timeLogData.date}
                   min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
-                  onChange={(e) =>
-                    setTimeLogData({ ...timeLogData, date: e.target.value })
+                  onChange={(e) => setTimeLogData({ ...timeLogData, date: e.target.value })}
+                  max={
+                    maxSelectableDate ||
+                    (() => {
+                      const d = new Date();
+                      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                    })()
                   }
-                  max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={dateTampered || checkingClock}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
+
+              {dateTampered && (
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 flex items-start gap-2">
+                  <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-600 text-sm font-medium">
+                    Your device's date/time appears incorrect. Please correct your system date to continue.
+                  </p>
+                </div>
+              )}
 
               {/* Time Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
@@ -1048,16 +1180,9 @@ const ProjectList = () => {
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select</option>
-                    {Array.from({ length: 24 }).map((_, hour) =>
-                      ["00", "30"].map((min) => {
-                        const time = `${String(hour).padStart(2, "0")}:${min}`;
-                        return (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        );
-                      })
-                    )}
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1074,16 +1199,9 @@ const ProjectList = () => {
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select</option>
-                    {Array.from({ length: 24 }).map((_, hour) =>
-                      ["00", "30"].map((min) => {
-                        const time = `${String(hour).padStart(2, "0")}:${min}`;
-                        return (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        );
-                      })
-                    )}
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1132,8 +1250,6 @@ const ProjectList = () => {
                   )}
                 </div>
               )}
-
-              {/* Work Type Dropdown - Dynamic from sector_detail.stage_work_types */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                   Work Type <span className="text-red-500">*</span>
@@ -1162,7 +1278,6 @@ const ProjectList = () => {
                   })()}
                 </select>
               </div>
-
               {/* Description */}
               <div className="mb-5">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -1195,17 +1310,15 @@ const ProjectList = () => {
                   onClick={handleSaveTimeLog}
                   disabled={
                     isSaving ||
+                    checkingClock ||
+                    dateTampered ||
                     !timeLogData.startTime ||
                     !timeLogData.endTime ||
                     timeLogData.endTime <= timeLogData.startTime
                   }
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                 >
-                  {isSaving ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Save size={16} />
-                  )}
+                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   Save
                 </button>
               </div>
@@ -2014,10 +2127,10 @@ const ProjectList = () => {
                                                         </p>
                                                       )} */}
                                                       {(log.start_time || log.end_time) && (
-                                                          <p className="text-xs text-gray-400 mt-1">
-                                                              ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
-                                                              {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
-                                                          </p>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                          ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
+                                                          {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
+                                                        </p>
                                                       )}
                                                     </div>
 
@@ -2077,7 +2190,7 @@ const ProjectList = () => {
       </AnimatePresence>
       {!showLoading && (
         <>
-          
+
           <div className="mb-10 flex justify-between items-start">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -2265,7 +2378,7 @@ const ProjectList = () => {
                 />
               </div>
 
-              {isAdmin && (
+              {/* {isAdmin && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -2275,6 +2388,31 @@ const ProjectList = () => {
                   <Plus size={20} />
                   New Project
                 </motion.button>
+              )} */}
+              {isAdmin && (
+                <div className="flex items-center gap-3">
+                  {/* Excel Download Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDownloadExcel}
+                    className="bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-xl hover:shadow-xl hover:bg-gray-50 transition-all flex items-center gap-2"
+                  >
+                    <DownloadCloudIcon size={20} className="text-green-600" />
+                    Export
+                  </motion.button>
+
+                  {/* New Project Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/project/create")}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all flex items-center gap-2"
+                  >
+                    <Plus size={20} />
+                    New Project
+                  </motion.button>
+                </div>
               )}
             </div>
 
@@ -2287,6 +2425,53 @@ const ProjectList = () => {
               </div>
             )}
           </motion.div>
+
+         
+
+          {/* ========================================== */}
+          {/* 🟢 NEW: PROJECT CODE COUNTS TABLE UI       */}
+          {/* ========================================== */}
+          {projectCodeCounts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8 overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Hash size={18} className="text-blue-600" />
+                  Project Code Distribution
+                </h4>
+              </div>
+              
+              <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-6 pt-0 mt-4">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead className="sticky top-0 bg-gray-100 text-gray-600 uppercase text-xs font-bold shadow-sm z-10">
+                    <tr>
+                      <th className="px-4 py-3 rounded-tl-lg border-b border-gray-200">Project Code</th>
+                      <th className="px-4 py-3 rounded-tr-lg border-b border-gray-200 text-center w-40">Total Projects</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {projectCodeCounts.map(([code, count]) => (
+                      <tr key={code} className="hover:bg-blue-50/50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-800 flex items-center gap-2">
+                          <Hash size={14} className="text-gray-400" />
+                          {code}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
+                            {count}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+          {/* ========================================== */}
 
           <AnimatePresence>
             {filteredProjects.length === 0 ? (
@@ -2356,7 +2541,7 @@ const ProjectList = () => {
                                 : "border-gray-100 hover:border-blue-200"
                         }`}
                     >
-                      
+
                       <div
                         className="p-6 cursor-pointer"
                         // onClick={() =>
@@ -2485,7 +2670,7 @@ const ProjectList = () => {
                                 </div>
                               </div>
 
-                             
+
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-indigo-50 rounded-lg">
                                   <UserStar
@@ -2560,10 +2745,10 @@ const ProjectList = () => {
                             </div>
                           </div>
 
-                          
+
 
                           <div className="flex flex-row items-center justify-center gap-2">
-                            
+
 
 
                             <button
@@ -2582,7 +2767,7 @@ const ProjectList = () => {
                                 <ChevronDown size={20} />
                               )}
                             </button>
-                           
+
 
                             {isAdmin && (
                               <div className="relative">
@@ -2698,7 +2883,7 @@ const ProjectList = () => {
 
                         </div>
 
-                        
+
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -2757,7 +2942,7 @@ const ProjectList = () => {
                                       </span>
                                     </p>
                                   </div>
-                                  
+
                                 </div>
                               )}
 
@@ -2834,7 +3019,7 @@ const ProjectList = () => {
                                           getClientName(project)}
                                       </span>
                                     </div>
-                                    
+
                                     {project.clientbranch &&
                                       (() => {
                                         const matchedBranch = project.client_detail?.branches
@@ -2962,7 +3147,7 @@ const ProjectList = () => {
                                       </div>
                                     )}
 
-                                    
+
                                   </div>
                                 </div>
                               </div>
@@ -3059,7 +3244,7 @@ const ProjectList = () => {
 
                                                   const activityProgress = activity.activity_progress || 0
                                                   const financialProgress = activity.financial_progress || 0
-                                                  
+
 
 
                                                   const daysLeft = calculateDaysLeft(
@@ -3102,7 +3287,7 @@ const ProjectList = () => {
                                                           </div>
                                                           <div className="mt-2">
 
-                                                            
+
 
 
                                                           </div>
@@ -3320,7 +3505,7 @@ const ProjectList = () => {
                                                                                         </td>
                                                                                       </tr>
 
-                                                                                      
+
                                                                                     </Fragment>
                                                                                   );
                                                                                 })
@@ -3529,7 +3714,7 @@ const ProjectList = () => {
                                                                                           <select
                                                                                             value={paymentStatus}
                                                                                             disabled={paymentStatus === "Waiting"}
-                                                                                            
+
                                                                                             onChange={(e) => {
                                                                                               const selectedAction = e.target.value;
 
@@ -3732,7 +3917,7 @@ const ProjectList = () => {
               isOpen={showMultiLog}
               onClose={() => setShowMultiLog(false)}
               projects={projectsOnly}          // your full projects array
-              
+
               onSave={async (date, rows) => {
                 try {
                   // Append the 'date' and default 'status' to every row 
