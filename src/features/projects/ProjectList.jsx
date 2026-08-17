@@ -42,11 +42,13 @@ import {
   EllipsisVertical,
   Pencil,
   UserStar,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
   getDaysUntilDeadline,
 } from "../../utils/deadlineUtils";
+import api, { getLatestServerDate } from "../../services/api";
 import {
   fetchProjects,
   fetchOnlyProjectsList,
@@ -68,7 +70,7 @@ import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 import MultiWorkLogModal from "./MultilogModal";
-import api from "../../services/api";
+
 const ProjectList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -246,7 +248,7 @@ const ProjectList = () => {
     }
   };
 
-  
+
 
   const handleViewSubActivity = async (subActivityId, e) => {
     if (e) e.stopPropagation();
@@ -975,6 +977,52 @@ const ProjectList = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [openMenuId]);
 
+  const TIME_OPTIONS = (() => {
+    const options = [];
+    for (let hour = 9; hour <= 20; hour++) {
+      for (const min of ["00", "30"]) {
+        if (hour === 20 && min === "30") continue; // stop exactly at 8:00 PM
+        options.push(`${String(hour).padStart(2, "0")}:${min}`);
+      }
+    }
+    return options;
+  })();
+
+  const [serverDate, setServerDate] = useState(null);   // true date, from backend
+  const [dateTampered, setDateTampered] = useState(false);
+  const [checkingClock, setCheckingClock] = useState(true);
+  useEffect(() => {
+    if (!showTimeLogModal) return;
+
+    const trueNow = getLatestServerDate();
+    console.log("True server date:", trueNow);
+    if (!trueNow) {
+      setServerDate(new Date());
+      setDateTampered(false);
+      setCheckingClock(false);
+      return;
+    }
+
+    const driftMs = Math.abs(new Date().getTime() - trueNow.getTime());
+    setDateTampered(driftMs > 2 * 60 * 1000);
+    setServerDate(trueNow);
+    setCheckingClock(false);
+  }, [showTimeLogModal]);
+
+  const maxSelectableDate = useMemo(() => {
+    if (!serverDate) return null;
+    const yesterday = new Date(serverDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split("T")[0];
+  }, [serverDate]);
+
+  // Agar already-selected date server-verified max se aage nikal jaaye, clamp kar do
+  // useEffect(() => {
+  //   if (maxSelectableDate && timeLogData.date && timeLogData.date > maxSelectableDate) {
+  //     setTimeLogData((prev) => ({ ...prev, date: maxSelectableDate }));
+  //   }
+  // }, [maxSelectableDate]);
+
 
   // Function to download project data as an Excel-compatible CSV
   const handleDownloadExcel = () => {
@@ -1090,17 +1138,32 @@ const ProjectList = () => {
               {/* Date */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Date</label>
+                {console.log(timeLogData.date, "timeLogData.date")}
                 <input
                   type="date"
                   value={timeLogData.date}
                   min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
-                  onChange={(e) =>
-                    setTimeLogData({ ...timeLogData, date: e.target.value })
+                  onChange={(e) => setTimeLogData({ ...timeLogData, date: e.target.value })}
+                  max={
+                    maxSelectableDate ||
+                    (() => {
+                      const d = new Date();
+                      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                    })()
                   }
-                  max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={dateTampered || checkingClock}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
+
+              {dateTampered && (
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 flex items-start gap-2">
+                  <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-600 text-sm font-medium">
+                    Your device's date/time appears incorrect. Please correct your system date to continue.
+                  </p>
+                </div>
+              )}
 
               {/* Time Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
@@ -1117,16 +1180,9 @@ const ProjectList = () => {
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select</option>
-                    {Array.from({ length: 24 }).map((_, hour) =>
-                      ["00", "30"].map((min) => {
-                        const time = `${String(hour).padStart(2, "0")}:${min}`;
-                        return (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        );
-                      })
-                    )}
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1143,16 +1199,9 @@ const ProjectList = () => {
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select</option>
-                    {Array.from({ length: 24 }).map((_, hour) =>
-                      ["00", "30"].map((min) => {
-                        const time = `${String(hour).padStart(2, "0")}:${min}`;
-                        return (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        );
-                      })
-                    )}
+                    {TIME_OPTIONS.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1201,8 +1250,6 @@ const ProjectList = () => {
                   )}
                 </div>
               )}
-
-              {/* Work Type Dropdown - Dynamic from sector_detail.stage_work_types */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                   Work Type <span className="text-red-500">*</span>
@@ -1231,7 +1278,6 @@ const ProjectList = () => {
                   })()}
                 </select>
               </div>
-
               {/* Description */}
               <div className="mb-5">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -1264,17 +1310,15 @@ const ProjectList = () => {
                   onClick={handleSaveTimeLog}
                   disabled={
                     isSaving ||
+                    checkingClock ||
+                    dateTampered ||
                     !timeLogData.startTime ||
                     !timeLogData.endTime ||
                     timeLogData.endTime <= timeLogData.startTime
                   }
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                 >
-                  {isSaving ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Save size={16} />
-                  )}
+                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   Save
                 </button>
               </div>
@@ -2083,10 +2127,10 @@ const ProjectList = () => {
                                                         </p>
                                                       )} */}
                                                       {(log.start_time || log.end_time) && (
-                                                          <p className="text-xs text-gray-400 mt-1">
-                                                              ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
-                                                              {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
-                                                          </p>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                          ⏱️ {log.start_time ? new Date(log.start_time).toLocaleTimeString(undefined, { timeZone: 'UTC' }) : "N/A"}
+                                                          {log.end_time && ` → ${new Date(log.end_time).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`}
+                                                        </p>
                                                       )}
                                                     </div>
 
@@ -2146,7 +2190,7 @@ const ProjectList = () => {
       </AnimatePresence>
       {!showLoading && (
         <>
-          
+
           <div className="mb-10 flex justify-between items-start">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -2497,7 +2541,7 @@ const ProjectList = () => {
                                 : "border-gray-100 hover:border-blue-200"
                         }`}
                     >
-                      
+
                       <div
                         className="p-6 cursor-pointer"
                         // onClick={() =>
@@ -2626,7 +2670,7 @@ const ProjectList = () => {
                                 </div>
                               </div>
 
-                             
+
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-indigo-50 rounded-lg">
                                   <UserStar
@@ -2701,10 +2745,10 @@ const ProjectList = () => {
                             </div>
                           </div>
 
-                          
+
 
                           <div className="flex flex-row items-center justify-center gap-2">
-                            
+
 
 
                             <button
@@ -2723,7 +2767,7 @@ const ProjectList = () => {
                                 <ChevronDown size={20} />
                               )}
                             </button>
-                           
+
 
                             {isAdmin && (
                               <div className="relative">
@@ -2839,7 +2883,7 @@ const ProjectList = () => {
 
                         </div>
 
-                        
+
 
                         <AnimatePresence>
                           {isExpanded && (
@@ -2898,7 +2942,7 @@ const ProjectList = () => {
                                       </span>
                                     </p>
                                   </div>
-                                  
+
                                 </div>
                               )}
 
@@ -2975,7 +3019,7 @@ const ProjectList = () => {
                                           getClientName(project)}
                                       </span>
                                     </div>
-                                    
+
                                     {project.clientbranch &&
                                       (() => {
                                         const matchedBranch = project.client_detail?.branches
@@ -3103,7 +3147,7 @@ const ProjectList = () => {
                                       </div>
                                     )}
 
-                                    
+
                                   </div>
                                 </div>
                               </div>
@@ -3200,7 +3244,7 @@ const ProjectList = () => {
 
                                                   const activityProgress = activity.activity_progress || 0
                                                   const financialProgress = activity.financial_progress || 0
-                                                  
+
 
 
                                                   const daysLeft = calculateDaysLeft(
@@ -3243,7 +3287,7 @@ const ProjectList = () => {
                                                           </div>
                                                           <div className="mt-2">
 
-                                                            
+
 
 
                                                           </div>
@@ -3461,7 +3505,7 @@ const ProjectList = () => {
                                                                                         </td>
                                                                                       </tr>
 
-                                                                                      
+
                                                                                     </Fragment>
                                                                                   );
                                                                                 })
@@ -3670,7 +3714,7 @@ const ProjectList = () => {
                                                                                           <select
                                                                                             value={paymentStatus}
                                                                                             disabled={paymentStatus === "Waiting"}
-                                                                                            
+
                                                                                             onChange={(e) => {
                                                                                               const selectedAction = e.target.value;
 
@@ -3873,7 +3917,7 @@ const ProjectList = () => {
               isOpen={showMultiLog}
               onClose={() => setShowMultiLog(false)}
               projects={projectsOnly}          // your full projects array
-              
+
               onSave={async (date, rows) => {
                 try {
                   // Append the 'date' and default 'status' to every row 

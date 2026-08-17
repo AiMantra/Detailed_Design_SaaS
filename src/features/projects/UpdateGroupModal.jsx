@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,7 +6,7 @@ import {
     Calendar, ChevronDown, AlertCircle, FolderOpen, Edit, CheckSquare, Pencil, CheckCircle2
 } from "lucide-react";
 import { fetchProjectDetails } from "../api/apiSlice";
-
+import api, { getLatestServerDate } from "../../services/api";
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
 const TIME_PRESETS = [
@@ -33,9 +33,15 @@ const calcHours = (start, end) => {
 
 const formatHrs = (h) => (h > 0 ? `${h.toFixed(2)} hrs` : "—");
 
-const timeOptions = Array.from({ length: 24 }, (_, hour) =>
-    ["00", "30"].map((min) => `${String(hour).padStart(2, "0")}:${min}`)
-).flat();
+const timeOptions = (() => {
+    const options = [];
+    for (let hour = 9; hour <= 20; hour++) {
+        for (const min of ["00", "30"]) {
+            options.push(`${String(hour).padStart(2, "0")}:${min}`);
+        }
+    }
+    return options;
+})();
 
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
@@ -65,7 +71,7 @@ const Highlighted = ({ text = "", term = "" }) => {
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
 
-const ProjectSearchInput = ({ projects, value, onChange, error, disabled,onToggle }) => {
+const ProjectSearchInput = ({ projects, value, onChange, error, disabled, onToggle }) => {
     const selectedProject = projects.find((p) => (p.id || p.project_id) === value);
     const displayName = (p) => p.short_name || p.shortName || p.project_name || p.name || "";
 
@@ -442,7 +448,51 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         selectableRows.length > 0 &&
         selectableRows.every(r => r.isSelected);
     const [editingRow, setEditingRow] = useState(null);
+    const TIME_OPTIONS = (() => {
+        const options = [];
+        for (let hour = 9; hour <= 20; hour++) {
+            for (const min of ["00", "30"]) {
+                if (hour === 20 && min === "30") continue; // stop exactly at 8:00 PM
+                options.push(`${String(hour).padStart(2, "0")}:${min}`);
+            }
+        }
+        return options;
+    })();
 
+    const [serverDate, setServerDate] = useState(null);   // true date, from backend
+    const [dateTampered, setDateTampered] = useState(false);
+    const [checkingClock, setCheckingClock] = useState(true);
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const trueNow = getLatestServerDate();
+        console.log("True server date:", trueNow);
+        if (!trueNow) {
+            setServerDate(new Date());
+            setDateTampered(false);
+            setCheckingClock(false);
+            return;
+        }
+
+        const driftMs = Math.abs(new Date().getTime() - trueNow.getTime());
+        setDateTampered(driftMs > 2 * 60 * 1000);
+        setServerDate(trueNow);
+        setCheckingClock(false);
+    }, [isOpen]);
+
+    const maxSelectableDate = useMemo(() => {
+        if (!serverDate) return null;
+        const d = serverDate;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }, [serverDate]);
+
+    // Agar already - selected date server - verified max se aage nikal jaaye, clamp kar do
+    useEffect(() => {
+        if (maxSelectableDate && date && date > maxSelectableDate) {
+            console.log("Clamping date from", date, "to maxSelectableDate", maxSelectableDate);
+            setDate(maxSelectableDate);
+        }
+    }, [maxSelectableDate]);
     return (
         <AnimatePresence>
             {isOpen && (
@@ -474,12 +524,40 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                     <input
                                         type="date"
                                         value={date}
+                                        min={new Date(Date.now() - 86400000).toISOString().split("T")[0]}
                                         onChange={(e) => {
                                             setDate(e.target.value);
-                                            setErrors((prev) => { const n = { ...prev }; delete n.date; return n; });
+
+                                            setErrors((prev) => {
+                                                const n = { ...prev };
+                                                delete n.date;
+                                                return n;
+                                            });
                                         }}
-                                        className={`border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.date ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+                                        max={maxSelectableDate || new Date().toISOString().split("T")[0]}
+                                        disabled={dateTampered || checkingClock}
+                                        className={`border rounded-lg px-3 py-1.5 text-sm
+        focus:outline-none focus:ring-2 focus:ring-blue-500
+        ${errors.date
+                                                ? "border-red-400 bg-red-50"
+                                                : "border-gray-200"
+                                            }`}
                                     />
+
+                                    {errors.date && (
+                                        <span className="text-[10px] text-red-500 mt-1">
+                                            {errors.date}
+                                        </span>
+                                    )}
+
+                                    {dateTampered && (
+                                        <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 flex items-start gap-2">
+                                            <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-600 text-sm font-medium">
+                                                Your device's date/time appears incorrect. Please correct your system date to continue.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-500">
                                     <X size={18} />
@@ -543,10 +621,10 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                     transition={{ duration: 0.16 }}
                                                     className={`group transition-all ${disabled ? "opacity-60 bg-gray-50/50" : ""
                                                         }`}
-                                                        style={{
-                                                                 position: "relative",
-                                                                    zIndex: openDropdowns[row._id] ? 50 : 1
-            }}
+                                                    style={{
+                                                        position: "relative",
+                                                        zIndex: openDropdowns[row._id] ? 50 : 1
+                                                    }}
                                                 >
                                                     {/* CHECKBOX */}
 
@@ -645,7 +723,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             placeholder="In"
                                                             error={e("startTime")}
                                                             disabled={disabled}
-                                                            
+
                                                         />
                                                     </td>
 
@@ -729,14 +807,16 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         />
                                                     </td>
 
-                                                   
+
 
                                                     {/* DELETE BUTTON */}
                                                     {isEdit && (
                                                         <td className="px-1 py-2 align-top text-center">
                                                             <button
                                                                 onClick={() => removeRow(row._id)}
-                                                                // disabled={rows.length === 1}
+                                                                disabled={checkingClock ||
+                                                                    dateTampered}
+
                                                                 className="p-1.5 rounded-lg text-red-1000 hover:text-red-500 hover:bg-red-50 transition "
                                                                 title="Remove row"
                                                             >

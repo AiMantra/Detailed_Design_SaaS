@@ -171,24 +171,24 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                             <CheckCircle2 size={11} /> {counts.completed}
                         </span>
                     )}
-                    
-                  {counts.pending > 0 && (
-    <div className="flex flex-col items-center justify-center">
-        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1 w-max">
-            <CircleDashed size={11} /> {counts.pending}
-        </span>
-        <span className="text-[10px] text-gray-500 font-medium mt-0.5">Pending</span>
-    </div>
-)}
 
-{counts.extra > 0 && (
-    <div className="flex flex-col items-center justify-center">
-        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 w-max">
-            <Sparkles size={11} /> {counts.extra}
-        </span>
-        <span className="text-[10px] text-gray-500 font-medium mt-0.5">Unplanned</span>
-    </div>
-)}
+                    {counts.pending > 0 && (
+                        <div className="flex flex-col items-center justify-center">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1 w-max">
+                                <CircleDashed size={11} /> {counts.pending}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-medium mt-0.5">Pending</span>
+                        </div>
+                    )}
+
+                    {counts.extra > 0 && (
+                        <div className="flex flex-col items-center justify-center">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 w-max">
+                                <Sparkles size={11} /> {counts.extra}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-medium mt-0.5">Unplanned</span>
+                        </div>
+                    )}
 
                     {collapsed
                         ? <ChevronRight size={18} className="text-gray-400 ml-1" />
@@ -282,23 +282,23 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 </span> */}
 
                                                                 <span>
-                                                                    {new Date(p.start_time).toLocaleTimeString(undefined, { 
-                                                                        timeZone: 'UTC', 
-                                                                        hour: 'numeric', 
-                                                                        minute: '2-digit', 
-                                                                        hour12: true 
+                                                                    {new Date(p.start_time).toLocaleTimeString(undefined, {
+                                                                        timeZone: 'UTC',
+                                                                        hour: 'numeric',
+                                                                        minute: '2-digit',
+                                                                        hour12: true
                                                                     })}
                                                                 </span>
                                                                 <span>
                                                                     {' to '}
-                                                                    {new Date(p.end_time).toLocaleTimeString(undefined, { 
-                                                                        timeZone: 'UTC', 
-                                                                        hour: 'numeric', 
-                                                                        minute: '2-digit', 
-                                                                        hour12: true 
+                                                                    {new Date(p.end_time).toLocaleTimeString(undefined, {
+                                                                        timeZone: 'UTC',
+                                                                        hour: 'numeric',
+                                                                        minute: '2-digit',
+                                                                        hour12: true
                                                                     })}
                                                                 </span>
-                                                                
+
 
 
                                                                 {/* <span>
@@ -321,7 +321,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                         return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
                                                                     })()}
                                                                 </span> */}
-                                                                
+
                                                             </div>
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                                 <Hourglass size={11} className="text-purple-400" />
@@ -776,7 +776,7 @@ const TaskPlanner = () => {
                     </motion.button>
 
                     {!isComparisonTab && (
-                            todaysGroup ? (
+                        todaysGroup ? (
                             <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                                 onClick={() => setUpdateModalData({ isOpen: true, date: todaysGroup.date, tasks: todaysGroup.tasks })}
                                 className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2">

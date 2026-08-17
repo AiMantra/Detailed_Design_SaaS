@@ -9,6 +9,25 @@ const API_PREFIX = '/detaildesign';
 const API_PREFIX_HRMS = '/wfm';
 const API_PREFIX_TICKET = '/ticket'
 
+// --- Clock verification state (module-level, shared across whole app) ---
+let latestServerDate = null;
+let latestServerDateAt = null;
+
+const captureServerDate = (headers) => {
+  const headerDate = headers?.['date'];
+  if (headerDate) {
+    latestServerDate = new Date(headerDate);
+    latestServerDateAt = Date.now();
+  }
+};
+
+export const getLatestServerDate = () => {
+  if (!latestServerDate) return null;
+  const elapsed = Date.now() - latestServerDateAt;
+  return new Date(latestServerDate.getTime() + elapsed);
+};
+// --- end clock verification ---
+
 // Function to get dynamic base URL based on current path
 const getDynamicBaseURL = () => {
   const currentPath = window.location.pathname;
@@ -48,9 +67,13 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
+    console.log('🔍 ALL RESPONSE HEADERS:', response.headers);
+    console.log('🔍 DATE HEADER VALUE:', response.headers['date']);
+    captureServerDate(response.headers); // <-- added
     return response;
   },
   async (error) => {
+    captureServerDate(error.response?.headers); // <-- added
     console.error('API Error:', error.response?.status, error.config?.url, error.response?.data);
 
     const originalRequest = error.config;
