@@ -100,7 +100,8 @@ const CreateProject = () => {
     completion_date: "",
     assigned_to: [],
     clientbranch: "",
-    workorder_document: ""
+    workorder_document: "",
+    source_id: ""
   });
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -2258,6 +2259,7 @@ const CreateProject = () => {
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
     if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
     if (!selectedActivities.length) missingFields.push("Please select at least one activity");
+    if (!form.source_id) missingFields.push("Project Type");
 
     if (missingFields.length) {
       return showError(`Please fill: ${missingFields.join(", ")}`);
@@ -2450,8 +2452,11 @@ const CreateProject = () => {
         sector: sectorsMap[form.sector] || null,
         client: form.client || null,
         activities: activitiesPayload,
-        workorder_document: form.workorder_document
+        workorder_document: form.workorder_document,
+        source_id: form.source_id
       };
+
+      
 
 
       const apiResult = await dispatch(createProjectApi(payload)).unwrap();
@@ -4338,6 +4343,30 @@ const CreateProject = () => {
                   value={form.short_name}
                   onChange={handleChange}
                   className="w-full pl-9 pr-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {/* 🟢 NEW: Project Type Dropdown */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Project Type *</label>
+              <div className="relative">
+                <Briefcase
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={16}
+                />
+                <select
+                  name="source_id"
+                  value={form.source_id}
+                  onChange={handleChange}
+                  className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
+                >
+                  <option value="" disabled>Select Project Type</option>
+                  <option value="266931d6-0486-4760-b5a5-fd9f823b3383">Detail Design</option>
+                  <option value="994947cd-a0cf-4648-bef3-42704e955ff0">DPR</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={16}
                 />
               </div>
             </div>
