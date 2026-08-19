@@ -126,6 +126,8 @@ const ProjectList = () => {
   const [subActivityModalData, setSubActivityModalData] = useState(null);
   const [loadingSubActivity, setLoadingSubActivity] = useState(false);
 
+  const [filterProjectType, setFilterProjectType] = useState("all"); // NEW FILTER STATE
+
   // Create lookup maps for IDs to names
   const companyMap = useMemo(() => {
     const map = {};
@@ -383,9 +385,60 @@ const ProjectList = () => {
   };
 
   // Filter and sort projects
+  // const filteredProjects = useMemo(() => {
+  //   if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
+  //   let filtered = [...projectsOnly];
+  //   if (searchTerm) {
+  //     filtered = filtered.filter((project) => {
+  //       const name = (project.project_name || project.name || "").toLowerCase();
+  //       const code = (project.project_code || project.code || "").toLowerCase();
+  //       const term = searchTerm.toLowerCase();
+  //       return name.includes(term) || code.includes(term);
+  //     });
+  //   }
+  //   if (filterStatus !== "all") {
+  //     filtered = filtered.filter((project) => {
+  //       const projectStatus = project.status || "ONGOING";
+  //       const progress = project.progress || 0;
+  //       const daysLeft = getDaysUntilDeadline(
+  //         project.completion_date || project.completionDate,
+  //       );
+  //       if (filterStatus === "delayed")
+  //         return (
+  //           (projectStatus === "DELAYED" || daysLeft < 0) && progress < 100
+  //         );
+  //       if (filterStatus === "critical")
+  //         return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
+  //       if (filterStatus === "ongoing")
+  //         return projectStatus === "ONGOING" && progress < 100;
+  //       if (filterStatus === "completed")
+  //         return progress === 100 || projectStatus === "COMPLETED";
+  //       return true;
+  //     });
+  //   }
+  //   filtered.sort((a, b) => {
+  //     const aDays =
+  //       getDaysUntilDeadline(a.created_at || a.completionDate) || 999;
+  //     const bDays =
+  //       getDaysUntilDeadline(b.created_at || b.completionDate) || 999;
+  //     const aProgress = a.progress || 0;
+  //     const bProgress = b.progress || 0;
+  //     const aName = a.project_name || a.name || "";
+  //     const bName = b.project_name || b.name || "";
+  //     if (sortBy === "deadline") return bDays - aDays;
+  //     if (sortBy === "progress") return bProgress - aProgress;
+  //     if (sortBy === "name") return aName.localeCompare(bName);
+  //     return 0;
+  //   });
+  //   return filtered;
+  // }, [projectsOnly, searchTerm, filterStatus, sortBy]);
+
+  // Filter and sort projects
   const filteredProjects = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
     let filtered = [...projectsOnly];
+    
+    // Search Term Filter
     if (searchTerm) {
       filtered = filtered.filter((project) => {
         const name = (project.project_name || project.name || "").toLowerCase();
@@ -394,6 +447,21 @@ const ProjectList = () => {
         return name.includes(term) || code.includes(term);
       });
     }
+
+    // 🟢 NEW: Type Filter (Detail Design / DPR) via source_id
+    if (filterProjectType !== "all") {
+      filtered = filtered.filter((project) => {
+        if (filterProjectType === "detail design") {
+          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
+        }
+        if (filterProjectType === "dpr") {
+          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
+        }
+        return true;
+      });
+    }
+
+    // Status Filter
     if (filterStatus !== "all") {
       filtered = filtered.filter((project) => {
         const projectStatus = project.status || "ONGOING";
@@ -414,6 +482,8 @@ const ProjectList = () => {
         return true;
       });
     }
+
+    // Sort Logic
     filtered.sort((a, b) => {
       const aDays =
         getDaysUntilDeadline(a.created_at || a.completionDate) || 999;
@@ -429,7 +499,7 @@ const ProjectList = () => {
       return 0;
     });
     return filtered;
-  }, [projectsOnly, searchTerm, filterStatus, sortBy]);
+  }, [projectsOnly, searchTerm, filterStatus, sortBy, filterProjectType]); // Added filterProjectType to dependencies
 
   const stats = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) {
@@ -2341,6 +2411,22 @@ const ProjectList = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {/* 🟢 NEW Filter for Detail Design & DPR */}
+              <div className="relative">
+                <select
+                  value={filterProjectType}
+                  onChange={(e) => setFilterProjectType(e.target.value)}
+                  className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
+                >
+                  <option value="all">All Types</option>
+                  <option value="detail design">Detail Design</option>
+                  <option value="dpr">DPR</option>
+                </select>
+                <Filter
+                  className="absolute right-3 top-3 text-gray-400 pointer-events-none"
+                  size={20}
                 />
               </div>
 

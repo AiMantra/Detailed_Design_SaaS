@@ -102,6 +102,7 @@ const UpdateProject = () => {
         clientbranch: "",
         workorder_document: null,
         existing_workorder_document: "",
+        source_id: "",
     });
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -397,6 +398,7 @@ const UpdateProject = () => {
             clientbranch: projectData.clientbranch || "",
             existing_workorder_document: projectData.workorder_document || "",
             workorder_document: null,
+            source_id: projectData.source || "",
         });
 
         // Set client search display
@@ -2048,6 +2050,9 @@ const UpdateProject = () => {
 
         const missingFields = [];
 
+        // 🟢 Check if selected project type is DPR
+const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
+
         if (!form.project_code) missingFields.push("Project Code");
         if (!form.project_name) missingFields.push("Project Name");
         if (!form.short_name) missingFields.push("Short Name");
@@ -2055,10 +2060,18 @@ const UpdateProject = () => {
         if (!form.sector) missingFields.push("Sector");
         if (!form.workorder_Amount) missingFields.push("Workorder Amount");
         if (!form.location) missingFields.push("Work location");
+
+        // 🟢 Make client and branch mandatory ONLY if NOT DPR
+        if (!isDPR && (!form.client || !form.clientbranch)) {
+            missingFields.push("Please select a Client & branch");
+        }
+
+        
         if (!form.clientbranch) missingFields.push("Please select a Client & branch");
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
         if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
         if (!selectedActivities.length) missingFields.push("Please select at least one activity");
+        if (!form.source_id) missingFields.push("Project Type");
 
         if (missingFields.length) {
             return showError(`Please fill: ${missingFields.join(", ")}`);
@@ -2252,6 +2265,7 @@ const UpdateProject = () => {
                 project_confirmation_date: form.project_confirmation_date || null,
                 sector: sectorsMap[form.sector] || null,
                 client: form.client || null,
+                source_id: form.source_id,
                 // workorder_document: form.workorder_document ? form.workorder_document : form.existing_workorder_document,
                 activities: activitiesPayload,
                 ...(form.workorder_document && {
@@ -4019,6 +4033,31 @@ const UpdateProject = () => {
                             </div>
                         </div>
 
+                        {/* 🟢 NEW: Project Type Dropdown */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-500">Project Type *</label>
+                            <div className="relative">
+                                <Briefcase
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                    size={16}
+                                />
+                                <select
+                                    name="source_id"
+                                    value={form.source_id}
+                                    onChange={handleChange}
+                                    className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
+                                >
+                                    <option value="" disabled>Select Project Type</option>
+                                    <option value="266931d6-0486-4760-b5a5-fd9f823b3383">Detail Design</option>
+                                    <option value="994947cd-a0cf-4648-bef3-42704e955ff0">DPR</option>
+                                </select>
+                                <ChevronDown
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                    size={16}
+                                />
+                            </div>
+                        </div>
+
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Location *</label>
                             <div className="relative">
@@ -4244,7 +4283,9 @@ const UpdateProject = () => {
                         </div>
 
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Client *</label>
+                            <label className="text-xs text-gray-500">
+                                Client {form.source_id !== "994947cd-a0cf-4648-bef3-42704e955ff0" && "*"}
+                            </label>
 
                             <div className="relative" ref={clientDropdownRef}>
                                 <Handshake
@@ -4344,7 +4385,9 @@ const UpdateProject = () => {
                         {form.client && (
                             <>
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-xs text-gray-500">Branch *</label>
+                                    <label className="text-xs text-gray-500">
+                                    Branch {form.source_id !== "994947cd-a0cf-4648-bef3-42704e955ff0" && "*"}
+                                </label>
                                     <div className="relative">
                                         <MapPinned
                                             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
