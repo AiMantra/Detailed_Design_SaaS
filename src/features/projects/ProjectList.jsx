@@ -437,7 +437,7 @@ const ProjectList = () => {
   const filteredProjects = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
     let filtered = [...projectsOnly];
-    
+
     // Search Term Filter
     if (searchTerm) {
       filtered = filtered.filter((project) => {
@@ -577,8 +577,8 @@ const ProjectList = () => {
   //   };
   // }, [projectsOnly]);
 
-  
-const stats = useMemo(() => {
+
+  const stats = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) {
       return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0 };
     }
@@ -640,6 +640,9 @@ const stats = useMemo(() => {
         if (filterProjectType === "dpr") {
           return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
         }
+        if (filterProjectType === "prebid") {
+          return project.source_id === "c4e54604-9a83-4065-b798-ad0e58673788";
+        }
         return true;
       });
     }
@@ -684,7 +687,7 @@ const stats = useMemo(() => {
   }, [projectsOnly, filterProjectType]); // 🟢 Added filterProjectType
 
 
-  
+
   const projectCodeCounts = useMemo(() => {
     const counts = {};
     if (filteredProjects && Array.isArray(filteredProjects)) {
@@ -2530,6 +2533,7 @@ const stats = useMemo(() => {
                   <option value="all">All Types</option>
                   <option value="detail design">Detail Design</option>
                   <option value="dpr">DPR</option>
+                  <option value="prebid">Prebid</option>
                 </select>
                 <Filter
                   className="absolute right-3 top-3 text-gray-400 pointer-events-none"
@@ -2619,7 +2623,7 @@ const stats = useMemo(() => {
             )}
           </motion.div>
 
-         
+
 
           {/* ========================================== */}
           {/* 🟢 NEW: PROJECT CODE COUNTS TABLE UI       */}
@@ -2636,7 +2640,7 @@ const stats = useMemo(() => {
                   Project Code Distribution
                 </h4>
               </div>
-              
+
               <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-6 pt-0 mt-4">
                 <table className="w-full text-sm text-left border-collapse">
                   <thead className="sticky top-0 bg-gray-100 text-gray-600 uppercase text-xs font-bold shadow-sm z-10">

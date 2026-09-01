@@ -2456,7 +2456,7 @@ const CreateProject = () => {
         source_id: form.source_id
       };
 
-      
+
 
 
       const apiResult = await dispatch(createProjectApi(payload)).unwrap();
@@ -4363,6 +4363,8 @@ const CreateProject = () => {
                   <option value="" disabled>Select Project Type</option>
                   <option value="266931d6-0486-4760-b5a5-fd9f823b3383">Detail Design</option>
                   <option value="994947cd-a0cf-4648-bef3-42704e955ff0">DPR</option>
+                  <option value='c4e54604-9a83-4065-b798-ad0e58673788'>Prebid</option>
+
                 </select>
                 <ChevronDown
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"

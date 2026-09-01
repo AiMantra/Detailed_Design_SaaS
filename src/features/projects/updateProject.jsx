@@ -2051,7 +2051,7 @@ const UpdateProject = () => {
         const missingFields = [];
 
         // 🟢 Check if selected project type is DPR
-const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
+        const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
 
         if (!form.project_code) missingFields.push("Project Code");
         if (!form.project_name) missingFields.push("Project Name");
@@ -2066,7 +2066,7 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
             missingFields.push("Please select a Client & branch");
         }
 
-        
+
         if (!form.clientbranch) missingFields.push("Please select a Client & branch");
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
         if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
@@ -4050,6 +4050,7 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                     <option value="" disabled>Select Project Type</option>
                                     <option value="266931d6-0486-4760-b5a5-fd9f823b3383">Detail Design</option>
                                     <option value="994947cd-a0cf-4648-bef3-42704e955ff0">DPR</option>
+                                    <option value='c4e54604-9a83-4065-b798-ad0e58673788'>Prebid</option>
                                 </select>
                                 <ChevronDown
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -4386,8 +4387,8 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                             <>
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs text-gray-500">
-                                    Branch {form.source_id !== "994947cd-a0cf-4648-bef3-42704e955ff0" && "*"}
-                                </label>
+                                        Branch {form.source_id !== "994947cd-a0cf-4648-bef3-42704e955ff0" && "*"}
+                                    </label>
                                     <div className="relative">
                                         <MapPinned
                                             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
