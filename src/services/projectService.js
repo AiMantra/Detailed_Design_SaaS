@@ -35,18 +35,24 @@ export const projectService = {
     }
   },
 
-  getProjectsLessDetails: async (user) => {
+  getProjectsListSimple: async () => {
     try {
-      let url;
-      let emp_code = sessionStorage.getItem('emp_code')
-      // 🔥 Role-based API logic
-      // if (user?.role === 'TL') {
-      //   url = `user-assigned-projects-nodetails/${emp_code}/`;
-      // } else {
-      //   url = '/get-projects-list/';
-      // }
-      url = '/get-projects-list/';
-      const response = await api.get(url);
+      const response = await api.get('/get-projects-lists/');
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      return data?.results || [];
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      throw error;
+    }
+  },
+
+  getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {
+    try {
+      const params = { page, page_size };
+      if (source_id) params.source_id = source_id;
+      if (project_code) params.project_code = project_code;
+      const response = await api.get('/get-projects-list/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching projects:', error);

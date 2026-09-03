@@ -29,6 +29,13 @@ const initialState = {
   projectWorkSummary: null,
   projects: [],
   projectsOnly: [],
+  projectsListAll: [],
+  projectsOnlyPagination: {
+    total_projects: 0,
+    page: 1,
+    page_size: 10,
+    total_pages: 1,
+  },
   projectDetails: null,
   loading: false,
   error: null,
@@ -553,19 +560,59 @@ export const fetchProjects = createAsyncThunk(
 
 export const fetchOnlyProjectsList = createAsyncThunk(
   'api/fetchOnlyProjectsList',
-  async (_, { rejectWithValue, getState }) => {
+  async (arg, { rejectWithValue, getState }) => {
     try {
+      const { page = 1, page_size = 10, source_id, project_code } = arg || {};
       const { auth } = getState();
       const user = auth.user;
 
-      const response = await projectService.getProjectsLessDetails(user);
-      return Array.isArray(response) ? response : [];
+      const response = await projectService.getProjectsLessDetails(user, {
+        page,
+        page_size,
+        source_id,
+        project_code,
+      });
+
+      if (Array.isArray(response)) {
+        return {
+          results: response,
+          total_projects: response.length,
+          page: 1,
+          page_size: response.length,
+          total_pages: 1,
+        };
+      }
+
+      const results = response?.results || [];
+      const totalProjects = response?.total_projects ?? response?.count ?? results.length;
+      const currentPage = response?.page ?? page;
+      const currentPageSize = response?.page_size ?? page_size;
+      const totalPages =
+        response?.total_pages ??
+        Math.max(1, Math.ceil(totalProjects / (currentPageSize || 10)));
+
+      return {
+        results,
+        total_projects: totalProjects,
+        page: currentPage,
+        page_size: currentPageSize,
+        total_pages: totalPages,
+      };
+    } catch (error) {
+      console.error('Error fetching projects list:', error);
+      showError(error.message || 'Failed to fetch projects list');
+      return rejectWithValue(error.message);
     }
-    // catch (error) {
-    //   return rejectWithValue(error.response?.data || error.message);
-    // }
-    catch (error) {
-      // EXACT ERROR HANDLING PATTERN APPLIED HERE
+  }
+);
+
+export const fetchProjectsListSimple = createAsyncThunk(
+  'api/fetchProjectsListSimple',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await projectService.getProjectsListSimple();
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
       console.error('Error fetching projects list:', error);
       showError(error.message || 'Failed to fetch projects list');
       return rejectWithValue(error.message);
@@ -1121,9 +1168,30 @@ const apiSlice = createSlice({
       })
       .addCase(fetchOnlyProjectsList.fulfilled, (state, action) => {
         state.loading = false;
-        state.projectsOnly = Array.isArray(action.payload) ? action.payload : [];
+        state.projectsOnly = Array.isArray(action.payload?.results)
+          ? action.payload.results
+          : [];
+        state.projectsOnlyPagination = {
+          total_projects: action.payload?.total_projects || 0,
+          page: action.payload?.page || 1,
+          page_size: action.payload?.page_size || 10,
+          total_pages: action.payload?.total_pages || 1,
+        };
       })
       .addCase(fetchOnlyProjectsList.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(fetchProjectsListSimple.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProjectsListSimple.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projectsListAll = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(fetchProjectsListSimple.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

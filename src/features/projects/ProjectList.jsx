@@ -12,6 +12,8 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   AlertCircle,
   CheckCircle2,
   XCircle,
@@ -82,6 +84,7 @@ const ProjectList = () => {
   const {
     // projects = [],
     projectsOnly = [],
+    projectsOnlyPagination = {},
     projectDetails = {},
     loading: apiLoading = false,
     companies = [],
@@ -91,8 +94,9 @@ const ProjectList = () => {
   const { user } = useSelector((state) => state.auth);
   const [showMultiLog, setShowMultiLog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("deadline");
+  const [projectCodeQuery, setProjectCodeQuery] = useState("");
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
   const [expandedCard, setExpandedCard] = useState(null);
   const [expandedActivities, setExpandedActivities] = useState({});
   const [refreshing, setRefreshing] = useState(false);
@@ -127,6 +131,22 @@ const ProjectList = () => {
   const [loadingSubActivity, setLoadingSubActivity] = useState(false);
 
   const [filterProjectType, setFilterProjectType] = useState("all"); // NEW FILTER STATE
+  const totalCount = projectsOnlyPagination.total_projects || 0;
+  const totalPages = projectsOnlyPagination.total_pages || Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const PROJECT_TYPE_SOURCE_IDS = {
+    "detail design": "266931d6-0486-4760-b5a5-fd9f823b3383",
+    dpr: "994947cd-a0cf-4648-bef3-42704e955ff0",
+    prebid: "c4e54604-9a83-4065-b798-ad0e58673788",
+  };
+  const sourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
+
+  const getProjectListParams = (page = currentPage) => ({
+    page,
+    page_size: PAGE_SIZE,
+    ...(sourceId ? { source_id: sourceId } : {}),
+    ...(projectCodeQuery ? { project_code: projectCodeQuery } : {}),
+  });
 
   // Create lookup maps for IDs to names
   const companyMap = useMemo(() => {
@@ -188,20 +208,26 @@ const ProjectList = () => {
     return ((completedWeight / totalWeight) * 100);
   };
 
-  // Load all data in a single loading session
+  // Debounce project_code search; reset to page 1 only when the query actually changes
   useEffect(() => {
-    const loadAllData = async () => {
-      setIsInitialLoading(true);
-      setLoadingMessage("Loading Projects");
-      setLoadingSubMessage("Fetching project data...");
+    const timer = setTimeout(() => {
+      const nextQuery = searchTerm.trim();
+      if (nextQuery !== projectCodeQuery) {
+        setProjectCodeQuery(nextQuery);
+        setCurrentPage(1);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, projectCodeQuery]);
 
+  // Load lookup data once
+  useEffect(() => {
+    const loadLookups = async () => {
       try {
         await Promise.all([
           dispatch(fetchCompanies()).unwrap(),
           dispatch(fetchSectors()).unwrap(),
           dispatch(fetchClients()).unwrap(),
-          // dispatch(fetchProjects()).unwrap(),
-          dispatch(fetchOnlyProjectsList()).unwrap(),
         ]);
       } catch (error) {
         dispatch(
@@ -210,13 +236,38 @@ const ProjectList = () => {
             type: "warning",
           }),
         );
-      } finally {
-        setIsInitialLoading(false);
       }
     };
-
-    loadAllData();
+    loadLookups();
   }, [dispatch]);
+
+  // Fetch projects whenever page or filters change
+  useEffect(() => {
+    let cancelled = false;
+    const loadProjects = async () => {
+      setIsInitialLoading(true);
+      setLoadingMessage("Loading Projects");
+      setLoadingSubMessage("Fetching project data...");
+      try {
+        await dispatch(fetchOnlyProjectsList(getProjectListParams())).unwrap();
+      } catch (error) {
+        if (!cancelled) {
+          dispatch(
+            showSnackbar({
+              message: "Failed to load data from server",
+              type: "warning",
+            }),
+          );
+        }
+      } finally {
+        if (!cancelled) setIsInitialLoading(false);
+      }
+    };
+    loadProjects();
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, currentPage, projectCodeQuery, sourceId]);
 
   // Refresh data
   const loadData = async () => {
@@ -229,8 +280,7 @@ const ProjectList = () => {
         dispatch(fetchCompanies()).unwrap(),
         dispatch(fetchSectors()).unwrap(),
         dispatch(fetchClients()).unwrap(),
-        // dispatch(fetchProjects()).unwrap(),
-        dispatch(fetchOnlyProjectsList()).unwrap(),
+        dispatch(fetchOnlyProjectsList(getProjectListParams())).unwrap(),
       ]);
       dispatch(
         showSnackbar({
@@ -433,73 +483,7 @@ const ProjectList = () => {
   //   return filtered;
   // }, [projectsOnly, searchTerm, filterStatus, sortBy]);
 
-  // Filter and sort projects
-  const filteredProjects = useMemo(() => {
-    if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
-    let filtered = [...projectsOnly];
-
-    // Search Term Filter
-    if (searchTerm) {
-      filtered = filtered.filter((project) => {
-        const name = (project.project_name || project.name || "").toLowerCase();
-        const code = (project.project_code || project.code || "").toLowerCase();
-        const term = searchTerm.toLowerCase();
-        return name.includes(term) || code.includes(term);
-      });
-    }
-
-    // 🟢 NEW: Type Filter (Detail Design / DPR) via source_id
-    if (filterProjectType !== "all") {
-      filtered = filtered.filter((project) => {
-        if (filterProjectType === "detail design") {
-          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-        }
-        if (filterProjectType === "dpr") {
-          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-        }
-        return true;
-      });
-    }
-
-    // Status Filter
-    if (filterStatus !== "all") {
-      filtered = filtered.filter((project) => {
-        const projectStatus = project.status || "ONGOING";
-        const progress = project.progress || 0;
-        const daysLeft = getDaysUntilDeadline(
-          project.completion_date || project.completionDate,
-        );
-        if (filterStatus === "delayed")
-          return (
-            (projectStatus === "DELAYED" || daysLeft < 0) && progress < 100
-          );
-        if (filterStatus === "critical")
-          return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
-        if (filterStatus === "ongoing")
-          return projectStatus === "ONGOING" && progress < 100;
-        if (filterStatus === "completed")
-          return progress === 100 || projectStatus === "COMPLETED";
-        return true;
-      });
-    }
-
-    // Sort Logic
-    filtered.sort((a, b) => {
-      const aDays =
-        getDaysUntilDeadline(a.created_at || a.completionDate) || 999;
-      const bDays =
-        getDaysUntilDeadline(b.created_at || b.completionDate) || 999;
-      const aProgress = a.progress || 0;
-      const bProgress = b.progress || 0;
-      const aName = a.project_name || a.name || "";
-      const bName = b.project_name || b.name || "";
-      if (sortBy === "deadline") return bDays - aDays;
-      if (sortBy === "progress") return bProgress - aProgress;
-      if (sortBy === "name") return aName.localeCompare(bName);
-      return 0;
-    });
-    return filtered;
-  }, [projectsOnly, searchTerm, filterStatus, sortBy, filterProjectType]); // Added filterProjectType to dependencies
+  const filteredProjects = Array.isArray(projectsOnly) ? projectsOnly : [];
 
   // const stats = useMemo(() => {
   //   if (!projectsOnly || !Array.isArray(projectsOnly)) {
@@ -583,22 +567,10 @@ const ProjectList = () => {
       return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0 };
     }
 
-    // 🟢 Base filter for Project Type
-    let baseProjects = projectsOnly;
-    if (filterProjectType !== "all") {
-      baseProjects = baseProjects.filter((project) => {
-        if (filterProjectType === "detail design") {
-          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-        }
-        if (filterProjectType === "dpr") {
-          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-        }
-        return true;
-      });
-    }
+    const baseProjects = projectsOnly;
 
     return {
-      total: baseProjects.length,
+      total: projectsOnlyPagination.total_projects || baseProjects.length,
       delayed: baseProjects.filter((p) => {
         const status = p.status || "ONGOING";
         const progress = p.progress || 0;
@@ -623,32 +595,17 @@ const ProjectList = () => {
         return progress > 0 && progress < 100;
       }).length,
     };
-  }, [projectsOnly, filterProjectType]); // 🟢 Added filterProjectType
+  }, [projectsOnly, projectsOnlyPagination.total_projects]);
 
   const ProjectListStats = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) {
       return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0, notStarted: 0 };
     }
 
-    // 🟢 Base filter for Project Type
-    let baseProjects = projectsOnly;
-    if (filterProjectType !== "all") {
-      baseProjects = baseProjects.filter((project) => {
-        if (filterProjectType === "detail design") {
-          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-        }
-        if (filterProjectType === "dpr") {
-          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-        }
-        if (filterProjectType === "prebid") {
-          return project.source_id === "c4e54604-9a83-4065-b798-ad0e58673788";
-        }
-        return true;
-      });
-    }
+    const baseProjects = projectsOnly;
 
     return {
-      total: baseProjects.length,
+      total: projectsOnlyPagination.total_projects || baseProjects.length,
 
       // Delayed: projects where completion date is past AND progress < 100
       delayed: baseProjects.filter((p) => {
@@ -684,7 +641,7 @@ const ProjectList = () => {
         return progress === 0;
       }).length,
     };
-  }, [projectsOnly, filterProjectType]); // 🟢 Added filterProjectType
+  }, [projectsOnly, projectsOnlyPagination.total_projects]);
 
 
 
@@ -2426,7 +2383,7 @@ const ProjectList = () => {
           {/* Stats Cards - Removed Critical/Delayed for user, only shown to Admin */}
 
           {/* Stats Cards - Only shown to Admin */}
-          {isAdmin && projectsOnly.length > 0 && (
+          {isAdmin && (totalCount > 0 || projectsOnly.length > 0) && (
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -2517,7 +2474,7 @@ const ProjectList = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Search projects by name or code..."
+                  placeholder="Search by project code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
@@ -2527,7 +2484,10 @@ const ProjectList = () => {
               <div className="relative">
                 <select
                   value={filterProjectType}
-                  onChange={(e) => setFilterProjectType(e.target.value)}
+                  onChange={(e) => {
+                    setFilterProjectType(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
                 >
                   <option value="all">All Types</option>
@@ -2541,51 +2501,6 @@ const ProjectList = () => {
                 />
               </div>
 
-              <div className="relative">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
-                >
-                  <option value="all">All Projects</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="critical">Critical</option>
-                  <option value="delayed">Delayed</option>
-                  <option value="completed">Completed</option>
-                </select>
-                <Filter
-                  className="absolute right-3 top-3 text-gray-400 pointer-events-none"
-                  size={20}
-                />
-              </div>
-
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
-                >
-                  <option value="deadline">Sort by Deadline</option>
-                  <option value="progress">Sort by Progress</option>
-                  <option value="name">Sort by Name</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-3 top-3 text-gray-400 pointer-events-none"
-                  size={20}
-                />
-              </div>
-
-              {/* {isAdmin && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/project/create")}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all flex items-center gap-2"
-                >
-                  <Plus size={20} />
-                  New Project
-                </motion.button>
-              )} */}
               {isAdmin && (
                 <div className="flex items-center gap-3">
                   {/* Excel Download Button */}
@@ -4110,6 +4025,39 @@ const ProjectList = () => {
                 })}
               </motion.div >
             )}
+            {totalCount > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 bg-white rounded-2xl shadow-xl px-6 py-4 border border-gray-100">
+                <p className="text-sm text-gray-500">
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}
+                  {" - "}
+                  {Math.min(currentPage * PAGE_SIZE, totalCount)}
+                  {" of "}
+                  {totalCount} projects
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={16} /> Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <MultiWorkLogModal
               isOpen={showMultiLog}
               onClose={() => setShowMultiLog(false)}

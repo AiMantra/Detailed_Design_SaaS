@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTrackWorkLog, fetchOnlyProjectsList } from "../api/apiSlice";
+import { fetchTrackWorkLog, fetchProjectsListSimple } from "../api/apiSlice";
 import {
   AlertCircle, FolderOpen, Briefcase, Layers, Loader2,
   Clock, CalendarDays, User, ChevronDown, ChevronUp,
@@ -242,7 +242,7 @@ const TrackWorkLog = () => {
 
   // Pull projects list AND rework data from Redux
   const {
-    projectsOnly = [],
+    projectsListAll = [],
     trackWorkLogData: data,
     loading,
     error
@@ -250,10 +250,10 @@ const TrackWorkLog = () => {
 
   // Fetch projects on initial mount if not already loaded
   useEffect(() => {
-    if (projectsOnly.length === 0) {
-      dispatch(fetchOnlyProjectsList());
+    if (projectsListAll.length === 0) {
+      dispatch(fetchProjectsListSimple());
     }
-  }, [dispatch, projectsOnly.length]);
+  }, [dispatch, projectsListAll.length]);
 
   // Local State for dropdown selections
   const [selectedProject, setSelectedProject] = useState("");
@@ -338,7 +338,7 @@ const TrackWorkLog = () => {
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer"
             >
               <option value="">-- Choose a Project --</option>
-              {projectsOnly.map(p => (
+              {projectsListAll.map(p => (
                 <option key={p.id || p.project_id} value={p.id || p.project_id}>
                   {p.project_name || p.name || p.short_name}
                 </option>
