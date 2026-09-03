@@ -60,6 +60,35 @@ export const projectService = {
     }
   },
 
+  getAllProjectsLessDetails: async (user, { source_id, project_code } = {}) => {
+    try {
+      const page_size = 100;
+      const params = { page: 1, page_size };
+      if (source_id) params.source_id = source_id;
+      if (project_code) params.project_code = project_code;
+
+      const firstResponse = await api.get('/get-projects-list/', { params });
+      const firstData = firstResponse.data;
+
+      if (Array.isArray(firstData)) return firstData;
+
+      let results = [...(firstData?.results || [])];
+      const totalPages = firstData?.total_pages || 1;
+
+      for (let page = 2; page <= totalPages; page++) {
+        const nextResponse = await api.get('/get-projects-list/', {
+          params: { ...params, page },
+        });
+        results = results.concat(nextResponse.data?.results || []);
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error fetching all projects:', error);
+      throw error;
+    }
+  },
+
   getProjectsWithDetails: async (user) => {
     try {
       let url;

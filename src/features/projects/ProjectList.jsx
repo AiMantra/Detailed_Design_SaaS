@@ -70,6 +70,7 @@ import { SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
 import { saveDailyWorkLog } from "../tasks/taskSlice";
 import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
+import { projectService } from "../../services/projectService";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 import MultiWorkLogModal from "./MultilogModal";
 
@@ -208,17 +209,18 @@ const ProjectList = () => {
     return ((completedWeight / totalWeight) * 100);
   };
 
-  // Debounce project_code search; reset to page 1 only when the query actually changes
+  // Call API only after the user stops typing in project code search
   useEffect(() => {
     const timer = setTimeout(() => {
       const nextQuery = searchTerm.trim();
-      if (nextQuery !== projectCodeQuery) {
-        setProjectCodeQuery(nextQuery);
-        setCurrentPage(1);
-      }
-    }, 400);
+      if (nextQuery === projectCodeQuery) return;
+      setCurrentPage(1);
+      setProjectCodeQuery(nextQuery);
+    }, 800);
     return () => clearTimeout(timer);
-  }, [searchTerm, projectCodeQuery]);
+    // Only restart the timer when the input changes, not when the last API query updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   // Load lookup data once
   useEffect(() => {
@@ -1161,58 +1163,78 @@ const ProjectList = () => {
   // }, [maxSelectableDate]);
 
 
-  // Function to download project data as an Excel-compatible CSV
-  const handleDownloadExcel = () => {
-    if (!projectsOnly || projectsOnly.length === 0) {
-      dispatch(showSnackbar({ message: "No project data available to download", type: "warning" }));
-      return;
+  // Function to download all project data as an Excel-compatible CSV
+  const handleDownloadExcel = async () => {
+    setRefreshing(true);
+    setLoadingMessage("Exporting Projects");
+    setLoadingSubMessage("Fetching all project data...");
+
+    try {
+      const allProjects = await projectService.getAllProjectsLessDetails(user, {
+        ...(sourceId ? { source_id: sourceId } : {}),
+        ...(projectCodeQuery ? { project_code: projectCodeQuery } : {}),
+      });
+
+      if (!allProjects || allProjects.length === 0) {
+        dispatch(showSnackbar({ message: "No project data available to download", type: "warning" }));
+        return;
+      }
+
+      const exportData = allProjects.map((project) => ({
+        "Project Name": project.project_name || project.name || "",
+        "Project Code": project.project_code || project.code || "",
+        "Client Name": project?.client_detail?.client_name || getClientName(project) || "",
+        "Company": getCompanyName(project) || "",
+        "Sector": getSectorName(project) || "",
+        "Location": project.location || "",
+        "Total Length": getTotalLength(project) || 0,
+        "Workorder Amount (Lakhs)": getCost(project) || 0,
+        "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
+        "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
+        "LOA Date": project.loa_date ? new Date(project.loa_date).toLocaleDateString() : "",
+        "Deadline": project.completion_date ? new Date(project.completion_date).toLocaleDateString() : "",
+        "Status": project.status || "Ongoing",
+        "Physical Progress (%)": project.physical_progress || 0,
+        "Financial Progress (%)": project.financial_progress || 0,
+        "Overall Progress (%)": project.overall_progress || 0,
+      }));
+
+      const headers = Object.keys(exportData[0]);
+      const csvContent = [
+        headers.join(","),
+        ...exportData.map((row) =>
+          headers
+            .map((fieldName) => {
+              const value = String(row[fieldName] || "");
+              return `"${value.replace(/"/g, '""')}"`;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Project_List_Export_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      dispatch(showSnackbar({
+        message: `Exported ${allProjects.length} projects`,
+        type: "success",
+      }));
+    } catch (error) {
+      dispatch(showSnackbar({
+        message: "Failed to export projects",
+        type: "error",
+      }));
+    } finally {
+      setRefreshing(false);
     }
-
-    // Map the project data to the desired Excel columns
-    const exportData = projectsOnly.map((project) => ({
-      "Project Name": project.project_name || project.name || "",
-      "Project Code": project.project_code || project.code || "",
-      "Client Name": project?.client_detail?.client_name || getClientName(project) || "",
-      "Company": getCompanyName(project) || "",
-      "Sector": getSectorName(project) || "",
-      "Location": project.location || "",
-      "Total Length": getTotalLength(project) || 0,
-      "Workorder Amount (Lakhs)": getCost(project) || 0,
-      "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
-      "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
-      "LOA Date": project.loa_date ? new Date(project.loa_date).toLocaleDateString() : "",
-      "Deadline": project.completion_date ? new Date(project.completion_date).toLocaleDateString() : "",
-      "Status": project.status || "Ongoing",
-      "Physical Progress (%)": project.physical_progress || 0,
-      "Financial Progress (%)": project.financial_progress || 0,
-      "Overall Progress (%)": project.overall_progress || 0,
-    }));
-
-    // Extract headers and create CSV string
-    const headers = Object.keys(exportData[0]);
-    const csvContent = [
-      headers.join(","), // Header row
-      ...exportData.map((row) =>
-        headers
-          .map((fieldName) => {
-            // Escape double quotes and wrap in quotes to handle commas within data
-            const value = String(row[fieldName] || "");
-            return `"${value.replace(/"/g, '""')}"`;
-          })
-          .join(",")
-      ),
-    ].join("\n");
-
-    // Create a Blob from the CSV string and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Project_List_Export_${new Date().toISOString().split("T")[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
 

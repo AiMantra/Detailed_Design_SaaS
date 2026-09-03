@@ -198,17 +198,18 @@ const TlProjectList = () => {
         return map;
     }, [clients]);
 
-    // Debounce project_code search; reset to page 1 only when the query actually changes
+    // Call API only after the user stops typing in project code search
     useEffect(() => {
         const timer = setTimeout(() => {
             const nextQuery = searchTerm.trim();
-            if (nextQuery !== projectCodeQuery) {
-                setProjectCodeQuery(nextQuery);
-                setCurrentPage(1);
-            }
-        }, 400);
+            if (nextQuery === projectCodeQuery) return;
+            setCurrentPage(1);
+            setProjectCodeQuery(nextQuery);
+        }, 800);
         return () => clearTimeout(timer);
-    }, [searchTerm, projectCodeQuery]);
+        // Only restart the timer when the input changes, not when the last API query updates
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]);
 
     // Load lookup data once
     useEffect(() => {
