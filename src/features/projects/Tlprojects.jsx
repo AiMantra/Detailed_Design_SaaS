@@ -205,7 +205,7 @@ const TlProjectList = () => {
             if (nextQuery === projectCodeQuery) return;
             setCurrentPage(1);
             setProjectCodeQuery(nextQuery);
-        }, 800);
+        }, 2000);
         return () => clearTimeout(timer);
         // Only restart the timer when the input changes, not when the last API query updates
         // eslint-disable-next-line react-hooks/exhaustive-deps
