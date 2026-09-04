@@ -104,6 +104,8 @@ const UpdateProject = () => {
         existing_workorder_document: "",
         source_id: "",
     });
+    const DPR_SOURCE_ID = "994947cd-a0cf-4648-bef3-42704e955ff0";
+    const isDPR = form.source_id === DPR_SOURCE_ID;
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [currentStep, setCurrentStep] = useState(1);
@@ -398,7 +400,7 @@ const UpdateProject = () => {
             clientbranch: projectData.clientbranch || "",
             existing_workorder_document: projectData.workorder_document || "",
             workorder_document: null,
-            source_id: projectData.source || "",
+            source_id: projectData.source || projectData.source_id || "",
         });
 
         // Set client search display
@@ -2050,9 +2052,6 @@ const UpdateProject = () => {
 
         const missingFields = [];
 
-        // 🟢 Check if selected project type is DPR
-        const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-
         if (!form.project_code) missingFields.push("Project Code");
         if (!form.project_name) missingFields.push("Project Name");
         if (!form.short_name) missingFields.push("Short Name");
@@ -2066,8 +2065,6 @@ const UpdateProject = () => {
             missingFields.push("Please select a Client & branch");
         }
 
-
-        if (!form.clientbranch) missingFields.push("Please select a Client & branch");
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
         if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
         if (!selectedActivities.length) missingFields.push("Please select at least one activity");
@@ -2107,8 +2104,9 @@ const UpdateProject = () => {
             for (const subId of selectedSubs) {
                 const subObj = activityObj?.subActivities.find((s) => s.id === subId);
 
-                // 1. Validate Unit
-                if (subObj && (!subObj.unit || subObj.unit === "")) {
+                // 1. Validate Unit (not required for DPR)
+                const currentUnit = subActivityUnits[`${activityId}_${subId}`] || subObj?.unit;
+                if (!isDPR && subObj && (!currentUnit || currentUnit === "")) {
                     return showError(
                         `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
                     );
@@ -2902,6 +2900,9 @@ const UpdateProject = () => {
                                         }
                                         className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                     >
+                                        {isDPR && (
+                                            <option value="">Select unit</option>
+                                        )}
                                         {UNIT_OPTIONS.map((option) => (
                                             <option key={option.value} value={option.value}>
                                                 {option.label}
@@ -3308,7 +3309,7 @@ const UpdateProject = () => {
                                     {/* Unit - READ ONLY */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Unit *
+                                            Unit {isDPR ? "" : "*"}
                                         </label>
                                         <select
                                             value={cloningSubActivity.unit}
@@ -3883,6 +3884,9 @@ const UpdateProject = () => {
                                         }
                                         className="w-full p-2.5 border rounded-xl text-sm"
                                     >
+                                        {isDPR && (
+                                            <option value="">Select unit</option>
+                                        )}
                                         {UNIT_OPTIONS.map((option) => (
                                             <option key={option.value} value={option.value}>
                                                 {option.label}
@@ -5364,7 +5368,7 @@ const UpdateProject = () => {
                                                                                                     <div className="grid grid-cols-3 gap-2 mt-2 pl-5">
                                                                                                         <div>
                                                                                                             <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                Unit *
+                                                                                                                Unit {isDPR ? "" : "*"}
                                                                                                             </label>
                                                                                                             <select
                                                                                                                 value={currentUnit}
@@ -5377,6 +5381,9 @@ const UpdateProject = () => {
                                                                                                                 }
                                                                                                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                                                                             >
+                                                                                                                {isDPR && (
+                                                                                                                    <option value="">Select unit</option>
+                                                                                                                )}
                                                                                                                 {UNIT_OPTIONS.map(
                                                                                                                     (option) => (
                                                                                                                         <option
