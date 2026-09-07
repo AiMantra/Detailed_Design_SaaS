@@ -420,20 +420,19 @@ const ProjectList = () => {
 
   // Helper function to calculate GST amount
   const calculateGSTAmount = (project) => {
-    const cost = getCost(project);
-    const igst = project.igst_percentage || 0;
-    const cgst = project.cgst_percentage || 0;
-    const total = ((cost * igst) / 100 + (cost * cgst) / 100).toFixed(2);
-    return total != 0.0 ? total : ((cost * 18) / 100).toFixed(2);
+    const cost = Number(getCost(project)) || 0;
+    const igst = Number(project.igst_percentage) || 0;
+    const cgst = Number(project.cgst_percentage) || 0;
+    const gst = (cost * igst) / 100 + (cost * cgst) / 100;
+    const amount = gst !== 0 ? gst : (cost * 18) / 100;
+    return amount.toFixed(2);
   };
 
   // Helper function to calculate total with GST
   const calculateTotalWithGST = (project) => {
-    const cost = getCost(project);
-    const igst = project.igst_percentage || 0;
-    const cgst = project.cgst_percentage || 0;
-    const total = ((cost * igst) / 100 + (cost * cgst) / 100).toFixed(2);
-    return (cost + (total != 0.0 ? total : (cost * 18) / 100)).toFixed(2);
+    const cost = Number(getCost(project)) || 0;
+    const gst = Number(calculateGSTAmount(project)) || 0;
+    return (cost + gst).toFixed(2);
   };
 
   // Filter and sort projects
@@ -663,7 +662,23 @@ const ProjectList = () => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleDateString("en-IN", {
+      const dateOnly = String(dateString).split("T")[0];
+      const parts = dateOnly.split("-");
+      if (parts.length === 3) {
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        const day = Number(parts[2]);
+        if (year && month && day) {
+          return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+      }
+      const parsed = new Date(dateString);
+      if (Number.isNaN(parsed.getTime())) return "N/A";
+      return parsed.toLocaleDateString("en-IN", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -1180,24 +1195,63 @@ const ProjectList = () => {
         return;
       }
 
-      const exportData = allProjects.map((project) => ({
-        "Project Name": project.project_name || project.name || "",
-        "Project Code": project.project_code || project.code || "",
-        "Client Name": project?.client_detail?.client_name || getClientName(project) || "",
-        "Company": getCompanyName(project) || "",
-        "Sector": getSectorName(project) || "",
-        "Location": project.location || "",
-        "Total Length": getTotalLength(project) || 0,
-        "Workorder Amount (Lakhs)": getCost(project) || 0,
-        "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
-        "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
-        "LOA Date": project.loa_date ? new Date(project.loa_date).toLocaleDateString() : "",
-        "Deadline": project.completion_date ? new Date(project.completion_date).toLocaleDateString() : "",
-        "Status": project.status || "Ongoing",
-        "Physical Progress (%)": project.physical_progress || 0,
-        "Financial Progress (%)": project.financial_progress || 0,
-        "Overall Progress (%)": project.overall_progress || 0,
-      }));
+      const PROJECT_TYPE_LABELS = {
+        "266931d6-0486-4760-b5a5-fd9f823b3383": "Detail Design",
+        "994947cd-a0cf-4648-bef3-42704e955ff0": "DPR",
+        "c4e54604-9a83-4065-b798-ad0e58673788": "Prebid",
+      };
+
+      const getExportClientName = (project) => {
+        if (project?.client_detail?.client_name) return project.client_detail.client_name;
+        const clientId = project.client || project.client_id;
+        if (clientId && clientMap[clientId]) return clientMap[clientId];
+        return "";
+      };
+
+      const exportData = allProjects.map((project) => {
+        try {
+          return {
+            "Project Name": project.project_name || project.name || "",
+            "Project Code": project.project_code || project.code || "",
+            "Project Type": PROJECT_TYPE_LABELS[project.source_id] || "",
+            "Client Name": getExportClientName(project),
+            "Company": getCompanyName(project) || "",
+            "Sector": getSectorName(project) || "",
+            "Location": project.location || "",
+            "Total Length": getTotalLength(project) || 0,
+            "Workorder Amount (Lakhs)": getCost(project) || 0,
+            "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
+            "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
+            "LOA Date": formatDate(getLoaDate(project)),
+            "Deadline": formatDate(project.completion_date || project.completionDate),
+            "Status": project.status || "Ongoing",
+            "Physical Progress (%)": project.physical_progress ?? 0,
+            "Financial Progress (%)": project.financial_progress ?? 0,
+            "Overall Progress (%)": project.overall_progress ?? 0,
+          };
+        } catch (rowError) {
+          console.error("Export row failed", project?.id, rowError);
+          return {
+            "Project Name": project.project_name || project.name || "",
+            "Project Code": project.project_code || project.code || "",
+            "Project Type": PROJECT_TYPE_LABELS[project.source_id] || "",
+            "Client Name": "",
+            "Company": "",
+            "Sector": "",
+            "Location": project.location || "",
+            "Total Length": "",
+            "Workorder Amount (Lakhs)": "",
+            "GST Amount (Lakhs)": "",
+            "Total with GST (Lakhs)": "",
+            "LOA Date": formatDate(project.loa_date),
+            "Deadline": formatDate(project.completion_date),
+            "Status": project.status || "Ongoing",
+            "Physical Progress (%)": project.physical_progress ?? 0,
+            "Financial Progress (%)": project.financial_progress ?? 0,
+            "Overall Progress (%)": project.overall_progress ?? 0,
+          };
+        }
+      });
 
       const headers = Object.keys(exportData[0]);
       const csvContent = [
@@ -1205,14 +1259,15 @@ const ProjectList = () => {
         ...exportData.map((row) =>
           headers
             .map((fieldName) => {
-              const value = String(row[fieldName] || "");
-              return `"${value.replace(/"/g, '""')}"`;
+              const value = row[fieldName];
+              const str = value === null || value === undefined ? "" : String(value);
+              return `"${str.replace(/"/g, '""')}"`;
             })
             .join(",")
         ),
       ].join("\n");
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
