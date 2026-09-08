@@ -524,7 +524,10 @@ const TlProjectList = () => {
                 startTime: timeLogData.startTime,
                 endTime: timeLogData.endTime,
                 note: timeLogData.description,
-                status: 'WORKED'
+                status: 'WORKED',
+
+                stage: selectedTaskfortimelog.stage,
+                
             })).unwrap();
             dispatch(showSnackbar({ message: 'Work hours saved successfully!', type: 'success' }));
             const mixedData = { ...selectedTaskfortimelog, date: timeLogData.date, startTime: timeLogData.startTime, endTime: timeLogData.endTime, description: timeLogData.description };
