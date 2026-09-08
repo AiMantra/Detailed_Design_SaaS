@@ -409,6 +409,7 @@ const TlProjectList = () => {
                 const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
                 return (status === "DELAYED" || daysLeft < 0) && progress < 100;
             }).length,
+            
             critical: projectsOnly.filter(p => {
                 const progress = p.progress || 0;
                 const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
