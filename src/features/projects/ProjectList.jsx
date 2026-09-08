@@ -45,6 +45,7 @@ import {
   Pencil,
   UserStar,
   AlertTriangle,
+  Handshake,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
@@ -1585,7 +1586,13 @@ const ProjectList = () => {
                     ? "Raised Work Proof"
                     : proofData?.to_status === "Received"
                       ? "Received Work Proof"
-                      : "Submit Work Proof"}
+                      : proofData?.to_status === "Approved"
+                        ? "Approve Work"
+                        : proofData?.to_status === "Rejected"
+                          ? "Reject Work"
+                          : proofData?.to_status === "Submitted"
+                            ? "Submit Work Proof"
+                            : "Submit Work Proof"}
                 </h3>
                 <button
                   onClick={() => {
@@ -3544,6 +3551,7 @@ const ProjectList = () => {
                                                                           <th className="px-2 py-3 text-center">Remaining</th>
 
                                                                           <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                          <th className="px-2 py-3 text-center">Action</th>
                                                                           <th className="px-2 py-3 text-center">Invoice Status</th>
                                                                         </>
                                                                       }
@@ -3657,6 +3665,25 @@ const ProjectList = () => {
 
                                                                                               {workStatus === "Pending" ? "Not Started" : workStatus}
                                                                                             </span>
+                                                                                            {(workStatus === "Submitted" || workStatus === "Approved" || workStatus === "Rejected") && (
+                                                                                              <FileText
+                                                                                                className="inline-block ml-1 text-red-500 cursor-pointer"
+                                                                                                size={13}
+                                                                                                title="Work Proof Files"
+                                                                                                onClick={(e) => {
+                                                                                                  e.stopPropagation();
+                                                                                                  setViewDocumentModel({
+                                                                                                    model: true,
+                                                                                                    data: (stage.work_logs || []).filter((log) =>
+                                                                                                      workStatus === "Rejected"
+                                                                                                        ? log.to_status === "Rejected" || log.to_status === "Submitted"
+                                                                                                        : log.to_status === workStatus
+                                                                                                    ),
+                                                                                                    title: `${stage.name} Work Proofs`
+                                                                                                  });
+                                                                                                }}
+                                                                                              />
+                                                                                            )}
                                                                                           </div>
                                                                                         </td>
 
@@ -3883,18 +3910,143 @@ const ProjectList = () => {
                                                                                             {workStatus === "Pending" ? "Not Started" : workStatus}
 
                                                                                           </span>
-                                                                                          {
-                                                                                            (workStatus === "Submitted" || workStatus === "Approved") &&
-                                                                                            <FileText className="inline-block ml-1 text-red-500 cursor-pointer" size={13} title="Work Proof Files" onClick={(e) => {
-                                                                                              e.stopPropagation();
-                                                                                              setViewDocumentModel({
-                                                                                                model: true,
-                                                                                                data: (stage.work_logs || []).filter((log) => log.to_status === workStatus),
-                                                                                                title: `${stage.name} Work Proofs`
-                                                                                              });
-                                                                                            }} />
-                                                                                          }
+                                                                                          {(workStatus === "Submitted" || workStatus === "Approved" || workStatus === "Rejected") && (
+                                                                                            <FileText
+                                                                                              className="inline-block ml-1 text-red-500 cursor-pointer"
+                                                                                              size={13}
+                                                                                              title="Work Proof Files"
+                                                                                              onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                setViewDocumentModel({
+                                                                                                  model: true,
+                                                                                                  data: (stage.work_logs || []).filter((log) =>
+                                                                                                    workStatus === "Rejected"
+                                                                                                      ? log.to_status === "Rejected" || log.to_status === "Submitted"
+                                                                                                      : log.to_status === workStatus
+                                                                                                  ),
+                                                                                                  title: `${stage.name} Work Proofs`
+                                                                                                });
+                                                                                              }}
+                                                                                            />
+                                                                                          )}
                                                                                         </div>
+                                                                                      </td>
+
+                                                                                      {/* Action (Approve/Reject for Submitted, Submit for others) */}
+                                                                                      <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                                                                        {workStatus === "Submitted" ? (
+                                                                                          <div className="inline-flex items-center justify-center gap-1">
+                                                                                            <button
+                                                                                              onClick={() => {
+                                                                                                setShowProofModal(true);
+                                                                                                setProofData({
+                                                                                                  ...proofData,
+                                                                                                  stage: stage.id,
+                                                                                                  subactivity: sub.id,
+                                                                                                  to_status: "Approved",
+                                                                                                  projectId: projectId,
+                                                                                                  documents: [],
+                                                                                                  remarks: "",
+                                                                                                  rejection_proof: [],
+                                                                                                  rejection_reason: "",
+                                                                                                  rejection_type: "",
+                                                                                                  url: "",
+                                                                                                  created_by: user?.emp_code || "",
+                                                                                                });
+                                                                                              }}
+                                                                                              className="h-8 px-2 box-border border border-transparent text-xs flex items-center justify-center gap-1 rounded transition bg-green-100 text-green-700 hover:bg-green-200"
+                                                                                              title="Approve"
+                                                                                            >
+                                                                                              <Handshake size={12} />
+                                                                                              Approve
+                                                                                            </button>
+                                                                                            <button
+                                                                                              onClick={() => {
+                                                                                                setShowProofModal(true);
+                                                                                                setProofData({
+                                                                                                  ...proofData,
+                                                                                                  stage: stage.id,
+                                                                                                  subactivity: sub.id,
+                                                                                                  to_status: "Rejected",
+                                                                                                  projectId: projectId,
+                                                                                                  documents: [],
+                                                                                                  remarks: "",
+                                                                                                  rejection_proof: [],
+                                                                                                  rejection_reason: "",
+                                                                                                  rejection_type: "",
+                                                                                                  url: "",
+                                                                                                  created_by: user?.emp_code || "",
+                                                                                                });
+                                                                                              }}
+                                                                                              className="h-8 px-2 box-border text-xs flex items-center justify-center gap-1 rounded transition bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                                                              title="Reject"
+                                                                                            >
+                                                                                              Reject
+                                                                                            </button>
+                                                                                          </div>
+                                                                                        ) : workStatus === "Approved" ? (
+                                                                                          <div className="relative inline-block">
+                                                                                            <select
+                                                                                              onChange={(e) => {
+                                                                                                const action = e.target.value;
+                                                                                                if (action === "Reject") {
+                                                                                                  setShowProofModal(true);
+                                                                                                  setProofData({
+                                                                                                    ...proofData,
+                                                                                                    stage: stage.id,
+                                                                                                    subactivity: sub.id,
+                                                                                                    to_status: "Rejected",
+                                                                                                    projectId: projectId,
+                                                                                                    documents: [],
+                                                                                                    remarks: "",
+                                                                                                    rejection_proof: [],
+                                                                                                    rejection_reason: "",
+                                                                                                    rejection_type: "",
+                                                                                                    url: "",
+                                                                                                    created_by: user?.emp_code || "",
+                                                                                                  });
+                                                                                                }
+                                                                                                e.target.value = "";
+                                                                                              }}
+                                                                                              defaultValue=""
+                                                                                              className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                            >
+                                                                                              <option value="" disabled>Action</option>
+                                                                                              <option value="Reject" className="text-red-600">❌ Reject</option>
+                                                                                            </select>
+                                                                                          </div>
+                                                                                        ) : (
+                                                                                          <button
+                                                                                            onClick={() => {
+                                                                                              setShowProofModal(true);
+                                                                                              setProofData({
+                                                                                                ...proofData,
+                                                                                                stage: stage.id,
+                                                                                                subactivity: sub.id,
+                                                                                                to_status: "Submitted",
+                                                                                                projectId: projectId,
+                                                                                                documents: [],
+                                                                                                remarks: "",
+                                                                                                rejection_proof: [],
+                                                                                                rejection_reason: "",
+                                                                                                rejection_type: "",
+                                                                                                url: "",
+                                                                                                created_by: user?.emp_code || "",
+                                                                                              });
+                                                                                            }}
+                                                                                            disabled={workStatus === "Completed"}
+                                                                                            className={`h-8 w-24 box-border border border-transparent text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Completed"
+                                                                                              ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
+                                                                                              : workStatus === "Rejected"
+                                                                                                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                                : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                              }`}
+                                                                                            title={workStatus === "Rejected" ? "Resubmit with corrections" : "Submit Proof"}
+                                                                                          >
+                                                                                            <CheckCircle size={12} />
+                                                                                            {workStatus === "Rejected" ? "Resubmit" : "Submit"}
+                                                                                          </button>
+                                                                                        )}
                                                                                       </td>
 
                                                                                       {/* 2. Invoice Status (Dropdown) - Now matches the 8th column header */}
@@ -3969,7 +4121,7 @@ const ProjectList = () => {
                                                                                   <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
-                                                                                  <td colSpan="8" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
+                                                                                  <td colSpan="9" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
                                                                                 </tr>
                                                                               )
                                                                             )}
