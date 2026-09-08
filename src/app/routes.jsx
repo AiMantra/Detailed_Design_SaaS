@@ -30,6 +30,8 @@ import TaskPlanner from "../features/projects/Taskplanner";
 import TrackWorkLog from "../features/projects/TrackWorkLog";
 import EmployeeWorklogHistory from "../features/projects/EmployeeWorkLogHistory"
 import BulkProjectUpload from "../features/projects/BulkCreateProject";
+import ProjectSummary from "../features/projects/ProjectSummary";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -127,6 +129,16 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["USER", "TL", "ADMIN", "ACCOUNT"]}>
               <EmployeeWorklogHistory />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/project-summary"
+          element={
+            <ProtectedRoute allowedRoles={["TL", "ACCOUNT"]}>
+              <ProjectSummary />
             </ProtectedRoute>
           }
         />

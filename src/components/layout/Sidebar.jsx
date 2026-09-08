@@ -161,6 +161,15 @@ const Sidebar = () => {
       description: "View history of employee work logs",
     },
 
+    {
+      name: "Project Summary",
+      icon: ClipboardList, 
+      path: "/project-summary", 
+      roles: ["TL", "ACCOUNT"],
+      badge: null,
+      description: "View overall project summaries",
+    },
+
     // Work Logs - Different for User vs Admin
     // Admin sees all logs, User sees only their own logs
     {
@@ -188,7 +197,7 @@ const Sidebar = () => {
   const mainMenu = filteredMenu.filter(item =>
     [
       // "Dashboard",
-      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support", "Track Rework", "Employee Worklog History", "Bulk Project Upload"
+      "My Work Logs", "All Projects", "My Tasks", "Task Planner", "My Projects", "Submitted Task", "Employee Report", "Project Report", "Daily Logs", "Tech Support", "Track Rework", "Employee Worklog History","Project Summary", "Bulk Project Upload"
       // "settings"
     ].includes(item.name)
   );

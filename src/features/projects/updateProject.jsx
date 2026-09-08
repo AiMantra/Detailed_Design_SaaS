@@ -2063,11 +2063,11 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
 
         // 🟢 Make client and branch mandatory ONLY if NOT DPR
         if (!isDPR && (!form.client || !form.clientbranch)) {
-            missingFields.push("Please select a Client & branch");
-        }
+        missingFields.push("Please select a Client & branch");
+    }
 
         
-        if (!form.clientbranch) missingFields.push("Please select a Client & branch");
+        // if (!form.clientbranch) missingFields.push("Please select a Client & branch");
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
         if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
         if (!selectedActivities.length) missingFields.push("Please select at least one activity");
@@ -2106,6 +2106,7 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
             }
             for (const subId of selectedSubs) {
                 const subObj = activityObj?.subActivities.find((s) => s.id === subId);
+                console.log(subObj, 'subObj')
 
                 // 1. Validate Unit
                 if (subObj && (!subObj.unit || subObj.unit === "")) {

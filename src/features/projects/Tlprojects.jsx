@@ -104,6 +104,9 @@ const TlProjectList = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [handleApprovalStatus, setHandleStatus] = useState({});
     const [showProofModal, setShowProofModal] = useState(false);
+
+    const [filterProjectType, setFilterProjectType] = useState("all"); // <-- ADD THIS LINE
+
     const [proofData, setProofData] = useState({
         documents: [],
         rejection_proof: [],
@@ -344,9 +347,118 @@ const TlProjectList = () => {
     };
 
     // Filter and sort projects
+    // const filteredProjects = useMemo(() => {
+    //     if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
+    //     let filtered = [...projectsOnly];
+    //     if (searchTerm) {
+    //         filtered = filtered.filter(project => {
+    //             const name = (project.project_name || project.name || "").toLowerCase();
+    //             const code = (project.project_code || project.code || "").toLowerCase();
+    //             const term = searchTerm.toLowerCase();
+    //             return name.includes(term) || code.includes(term);
+    //         });
+    //     }
+    //     if (filterStatus !== "all") {
+    //         filtered = filtered.filter(project => {
+    //             const projectStatus = project.status || "ONGOING";
+    //             const progress = project.progress || 0;
+    //             const daysLeft = getDaysUntilDeadline(project.completion_date || project.completionDate);
+    //             if (filterStatus === "delayed") return (projectStatus === "DELAYED" || daysLeft < 0) && progress < 100;
+    //             if (filterStatus === "critical") return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
+    //             if (filterStatus === "ongoing") return projectStatus === "ONGOING" && progress < 100;
+    //             if (filterStatus === "completed") return progress === 100 || projectStatus === "COMPLETED";
+    //             return true;
+    //         });
+    //     }
+    //     filtered.sort((a, b) => {
+    //         const aDays = getDaysUntilDeadline(a.completion_date || a.completionDate) || 999;
+    //         const bDays = getDaysUntilDeadline(b.completion_date || b.completionDate) || 999;
+    //         const aProgress = a.progress || 0;
+    //         const bProgress = b.progress || 0;
+    //         const aName = a.project_name || a.name || "";
+    //         const bName = b.project_name || b.name || "";
+    //         if (sortBy === "deadline") return aDays - bDays;
+    //         if (sortBy === "progress") return bProgress - aProgress;
+    //         if (sortBy === "name") return aName.localeCompare(bName);
+    //         return 0;
+    //     });
+    //     return filtered;
+    // }, [projectsOnly, searchTerm, filterStatus, sortBy]);
+
+    // const stats = useMemo(() => {
+    //     if (!projectsOnly || !Array.isArray(projectsOnly)) {
+    //         return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0 };
+    //     }
+    //     return {
+    //         total: projectsOnly.length,
+    //         delayed: projectsOnly.filter(p => {
+    //             const status = p.status || "ONGOING";
+    //             const progress = p.progress || 0;
+    //             const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
+    //             return (status === "DELAYED" || daysLeft < 0) && progress < 100;
+    //         }).length,
+    //         critical: projectsOnly.filter(p => {
+    //             const progress = p.progress || 0;
+    //             const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
+    //             return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
+    //         }).length,
+    //         completed: projectsOnly.filter(p => (p.progress || 0) === 100 || (p.status || "ONGOING") === "COMPLETED").length,
+    //         ongoing: projectsOnly.filter(p => {
+    //             const progress = p.progress || 0;
+    //             return progress > 0 && progress < 100;
+    //         }).length
+    //     };
+    // }, [projectsOnly]);
+
+    // const ProjectListStats = useMemo(() => {
+    //     if (!projectsOnly || !Array.isArray(projectsOnly)) {
+    //         return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0, notStarted: 0 };
+    //     }
+
+    //     return {
+    //         total: projectsOnly.length,
+
+    //         // Delayed: projectsOnly where completion date is past AND progress < 100
+    //         delayed: projectsOnly.filter(p => {
+    //             const progress = p.overall_progress || p.progress || 0;
+    //             const completionDate = p.completion_date;
+    //             const daysLeft = getDaysUntilDeadline(completionDate);
+    //             return daysLeft < 0 && progress < 100;
+    //         }).length,
+
+    //         // Critical: projectsOnly with 0-2 days left AND progress < 100
+    //         critical: projectsOnly.filter(p => {
+    //             const progress = p.overall_progress || p.progress || 0;
+    //             const completionDate = p.completion_date;
+    //             const daysLeft = getDaysUntilDeadline(completionDate);
+    //             return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
+    //         }).length,
+
+    //         // Completed: projectsOnly with 100% progress
+    //         completed: projectsOnly.filter(p => {
+    //             const progress = p.overall_progress || p.progress || 0;
+    //             return progress === 100;
+    //         }).length,
+
+    //         // Ongoing: projectsOnly with progress > 0 and < 100
+    //         ongoing: projectsOnly.filter(p => {
+    //             const progress = p.overall_progress || p.progress || 0;
+    //             return progress > 0 && progress < 100;
+    //         }).length,
+
+    //         // Not Started: projectsOnly with 0% progress
+    //         notStarted: projectsOnly.filter(p => {
+    //             const progress = p.overall_progress || p.progress || 0;
+    //             return progress === 0;
+    //         }).length,
+    //     };
+    // }, [projectsOnly]);
+
+    // Filter and sort projects
     const filteredProjects = useMemo(() => {
         if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
         let filtered = [...projectsOnly];
+
         if (searchTerm) {
             filtered = filtered.filter(project => {
                 const name = (project.project_name || project.name || "").toLowerCase();
@@ -355,6 +467,20 @@ const TlProjectList = () => {
                 return name.includes(term) || code.includes(term);
             });
         }
+
+        // ADDED PROJECT TYPE FILTER
+        if (filterProjectType !== "all") {
+            filtered = filtered.filter((project) => {
+                if (filterProjectType === "detail design") {
+                    return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
+                }
+                if (filterProjectType === "dpr") {
+                    return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
+                }
+                return true;
+            });
+        }
+
         if (filterStatus !== "all") {
             filtered = filtered.filter(project => {
                 const projectStatus = project.status || "ONGOING";
@@ -367,6 +493,7 @@ const TlProjectList = () => {
                 return true;
             });
         }
+
         filtered.sort((a, b) => {
             const aDays = getDaysUntilDeadline(a.completion_date || a.completionDate) || 999;
             const bDays = getDaysUntilDeadline(b.completion_date || b.completionDate) || 999;
@@ -380,76 +507,85 @@ const TlProjectList = () => {
             return 0;
         });
         return filtered;
-    }, [projectsOnly, searchTerm, filterStatus, sortBy]);
+    }, [projectsOnly, searchTerm, filterStatus, sortBy, filterProjectType]); // ADDED filterProjectType DEP
 
     const stats = useMemo(() => {
         if (!projectsOnly || !Array.isArray(projectsOnly)) {
             return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0 };
         }
+
+        // ADDED PROJECT TYPE FILTER FOR STATS
+        let baseProjects = projectsOnly;
+        if (filterProjectType !== "all") {
+            baseProjects = baseProjects.filter((project) => {
+                if (filterProjectType === "detail design") return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
+                if (filterProjectType === "dpr") return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
+                return true;
+            });
+        }
+
         return {
-            total: projectsOnly.length,
-            delayed: projectsOnly.filter(p => {
+            total: baseProjects.length,
+            delayed: baseProjects.filter(p => {
                 const status = p.status || "ONGOING";
                 const progress = p.progress || 0;
                 const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
                 return (status === "DELAYED" || daysLeft < 0) && progress < 100;
             }).length,
-            critical: projectsOnly.filter(p => {
+            critical: baseProjects.filter(p => {
                 const progress = p.progress || 0;
                 const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
                 return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
             }).length,
-            completed: projectsOnly.filter(p => (p.progress || 0) === 100 || (p.status || "ONGOING") === "COMPLETED").length,
-            ongoing: projectsOnly.filter(p => {
+            completed: baseProjects.filter(p => (p.progress || 0) === 100 || (p.status || "ONGOING") === "COMPLETED").length,
+            ongoing: baseProjects.filter(p => {
                 const progress = p.progress || 0;
                 return progress > 0 && progress < 100;
             }).length
         };
-    }, [projectsOnly]);
+    }, [projectsOnly, filterProjectType]); // ADDED filterProjectType DEP
 
     const ProjectListStats = useMemo(() => {
         if (!projectsOnly || !Array.isArray(projectsOnly)) {
             return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0, notStarted: 0 };
         }
 
-        return {
-            total: projectsOnly.length,
+        // ADDED PROJECT TYPE FILTER FOR STATS
+        let baseProjects = projectsOnly;
+        if (filterProjectType !== "all") {
+            baseProjects = baseProjects.filter((project) => {
+                if (filterProjectType === "detail design") return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
+                if (filterProjectType === "dpr") return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
+                return true;
+            });
+        }
 
-            // Delayed: projectsOnly where completion date is past AND progress < 100
-            delayed: projectsOnly.filter(p => {
+        return {
+            total: baseProjects.length,
+            delayed: baseProjects.filter(p => {
                 const progress = p.overall_progress || p.progress || 0;
-                const completionDate = p.completion_date;
-                const daysLeft = getDaysUntilDeadline(completionDate);
+                const daysLeft = getDaysUntilDeadline(p.completion_date);
                 return daysLeft < 0 && progress < 100;
             }).length,
-
-            // Critical: projectsOnly with 0-2 days left AND progress < 100
-            critical: projectsOnly.filter(p => {
+            critical: baseProjects.filter(p => {
                 const progress = p.overall_progress || p.progress || 0;
-                const completionDate = p.completion_date;
-                const daysLeft = getDaysUntilDeadline(completionDate);
+                const daysLeft = getDaysUntilDeadline(p.completion_date);
                 return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
             }).length,
-
-            // Completed: projectsOnly with 100% progress
-            completed: projectsOnly.filter(p => {
+            completed: baseProjects.filter(p => {
                 const progress = p.overall_progress || p.progress || 0;
                 return progress === 100;
             }).length,
-
-            // Ongoing: projectsOnly with progress > 0 and < 100
-            ongoing: projectsOnly.filter(p => {
+            ongoing: baseProjects.filter(p => {
                 const progress = p.overall_progress || p.progress || 0;
                 return progress > 0 && progress < 100;
             }).length,
-
-            // Not Started: projectsOnly with 0% progress
-            notStarted: projectsOnly.filter(p => {
+            notStarted: baseProjects.filter(p => {
                 const progress = p.overall_progress || p.progress || 0;
                 return progress === 0;
             }).length,
         };
-    }, [projectsOnly]);
+    }, [projectsOnly, filterProjectType]); // ADDED filterProjectType DEP
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -2088,6 +2224,22 @@ const TlProjectList = () => {
                                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
+
+
+                                {/* ADD THIS NEW PROJECT TYPE FILTER BLOCK HERE */}
+                                <div className="relative">
+                                    <select
+                                        value={filterProjectType}
+                                        onChange={(e) => setFilterProjectType(e.target.value)}
+                                        className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
+                                    >
+                                        <option value="all">All Types</option>
+                                        <option value="detail design">Detail Design</option>
+                                        <option value="dpr">DPR</option>
+                                    </select>
+                                    <Filter className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={20} />
+                                </div>
+
                                 <div className="relative">
                                     <select
                                         value={filterStatus}

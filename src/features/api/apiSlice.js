@@ -14,6 +14,7 @@ import { showError, showSuccess } from '../../utils/toast.js'; // <-- ADD THIS
 import { trackWorkLogService } from '../../services/trackworklogService.js';
 import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
 import { employeeWorklogHistoryService } from '../../services/employeeWorkLogHistory';
+import { projectSummaryService } from '../../services/projectSummaryService';
 
 
 const initialState = {
@@ -36,11 +37,32 @@ const initialState = {
   taskPlannersData: null, // Store the full response
   taskPlanners: [], // Keep for backward compatibility
 
+  projectSummary: null,
+
   trackWorkLogData: null, // <-- ADDED THIS
   employeeWorklogHistory: null,
 };
 
 
+
+
+// ============ PROJECT SUMMARY THUNK ============
+export const fetchProjectSummary = createAsyncThunk(
+  "api/fetchProjectSummary",
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      // Make sure getProjectSummary is defined in your projectService 
+      // or adjust the service name to match your API structure
+      const response = await projectSummaryService.getProjectSummary(filters);
+      return response;
+    } catch (error) {
+      // Exact error handling pattern used in your other thunks
+      console.error('Error fetching project summary:', error);
+      showError(error.message || 'Failed to fetch project summary');
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 
 
@@ -844,6 +866,25 @@ const apiSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+
+
+
+
+    // ============ PROJECT SUMMARY ============
+      .addCase(fetchProjectSummary.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        // Optional: uncomment below if you want to clear old data when fetching new dates
+        // state.projectSummary = null; 
+      })
+      .addCase(fetchProjectSummary.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projectSummary = action.payload; 
+      })
+      .addCase(fetchProjectSummary.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
 
    // ============ EMPLOYEE WORKLOG HISTORY ============
