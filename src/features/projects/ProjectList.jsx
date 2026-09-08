@@ -12,6 +12,8 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   AlertCircle,
   CheckCircle2,
   XCircle,
@@ -43,6 +45,7 @@ import {
   Pencil,
   UserStar,
   AlertTriangle,
+  Handshake,
 } from "lucide-react";
 import {
   getProjectStatusInfo,
@@ -68,6 +71,7 @@ import { SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
 import { saveDailyWorkLog } from "../tasks/taskSlice";
 import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
+import { projectService } from "../../services/projectService";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 import MultiWorkLogModal from "./MultilogModal";
 
@@ -82,6 +86,7 @@ const ProjectList = () => {
   const {
     // projects = [],
     projectsOnly = [],
+    projectsOnlyPagination = {},
     projectDetails = {},
     loading: apiLoading = false,
     companies = [],
@@ -91,8 +96,9 @@ const ProjectList = () => {
   const { user } = useSelector((state) => state.auth);
   const [showMultiLog, setShowMultiLog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("deadline");
+  const [projectCodeQuery, setProjectCodeQuery] = useState("");
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
   const [expandedCard, setExpandedCard] = useState(null);
   const [expandedActivities, setExpandedActivities] = useState({});
   const [refreshing, setRefreshing] = useState(false);
@@ -127,6 +133,22 @@ const ProjectList = () => {
   const [loadingSubActivity, setLoadingSubActivity] = useState(false);
 
   const [filterProjectType, setFilterProjectType] = useState("all"); // NEW FILTER STATE
+  const totalCount = projectsOnlyPagination.total_projects || 0;
+  const totalPages = projectsOnlyPagination.total_pages || Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const PROJECT_TYPE_SOURCE_IDS = {
+    "detail design": "266931d6-0486-4760-b5a5-fd9f823b3383",
+    dpr: "994947cd-a0cf-4648-bef3-42704e955ff0",
+    prebid: "c4e54604-9a83-4065-b798-ad0e58673788",
+  };
+  const sourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
+
+  const getProjectListParams = (page = currentPage) => ({
+    page,
+    page_size: PAGE_SIZE,
+    ...(sourceId ? { source_id: sourceId } : {}),
+    ...(projectCodeQuery ? { project_code: projectCodeQuery } : {}),
+  });
 
   // Create lookup maps for IDs to names
   const companyMap = useMemo(() => {
@@ -188,20 +210,27 @@ const ProjectList = () => {
     return ((completedWeight / totalWeight) * 100);
   };
 
-  // Load all data in a single loading session
+  // Call API only after the user stops typing in project code search
   useEffect(() => {
-    const loadAllData = async () => {
-      setIsInitialLoading(true);
-      setLoadingMessage("Loading Projects");
-      setLoadingSubMessage("Fetching project data...");
+    const timer = setTimeout(() => {
+      const nextQuery = searchTerm.trim();
+      if (nextQuery === projectCodeQuery) return;
+      setCurrentPage(1);
+      setProjectCodeQuery(nextQuery);
+    }, 2000);
+    return () => clearTimeout(timer);
+    // Only restart the timer when the input changes, not when the last API query updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
+  // Load lookup data once
+  useEffect(() => {
+    const loadLookups = async () => {
       try {
         await Promise.all([
           dispatch(fetchCompanies()).unwrap(),
           dispatch(fetchSectors()).unwrap(),
           dispatch(fetchClients()).unwrap(),
-          // dispatch(fetchProjects()).unwrap(),
-          dispatch(fetchOnlyProjectsList()).unwrap(),
         ]);
       } catch (error) {
         dispatch(
@@ -210,13 +239,38 @@ const ProjectList = () => {
             type: "warning",
           }),
         );
-      } finally {
-        setIsInitialLoading(false);
       }
     };
-
-    loadAllData();
+    loadLookups();
   }, [dispatch]);
+
+  // Fetch projects whenever page or filters change
+  useEffect(() => {
+    let cancelled = false;
+    const loadProjects = async () => {
+      setIsInitialLoading(true);
+      setLoadingMessage("Loading Projects");
+      setLoadingSubMessage("Fetching project data...");
+      try {
+        await dispatch(fetchOnlyProjectsList(getProjectListParams())).unwrap();
+      } catch (error) {
+        if (!cancelled) {
+          dispatch(
+            showSnackbar({
+              message: "Failed to load data from server",
+              type: "warning",
+            }),
+          );
+        }
+      } finally {
+        if (!cancelled) setIsInitialLoading(false);
+      }
+    };
+    loadProjects();
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, currentPage, projectCodeQuery, sourceId]);
 
   // Refresh data
   const loadData = async () => {
@@ -229,8 +283,7 @@ const ProjectList = () => {
         dispatch(fetchCompanies()).unwrap(),
         dispatch(fetchSectors()).unwrap(),
         dispatch(fetchClients()).unwrap(),
-        // dispatch(fetchProjects()).unwrap(),
-        dispatch(fetchOnlyProjectsList()).unwrap(),
+        dispatch(fetchOnlyProjectsList(getProjectListParams())).unwrap(),
       ]);
       dispatch(
         showSnackbar({
@@ -368,20 +421,19 @@ const ProjectList = () => {
 
   // Helper function to calculate GST amount
   const calculateGSTAmount = (project) => {
-    const cost = getCost(project);
-    const igst = project.igst_percentage || 0;
-    const cgst = project.cgst_percentage || 0;
-    const total = ((cost * igst) / 100 + (cost * cgst) / 100).toFixed(2);
-    return total != 0.0 ? total : ((cost * 18) / 100).toFixed(2);
+    const cost = Number(getCost(project)) || 0;
+    const igst = Number(project.igst_percentage) || 0;
+    const cgst = Number(project.cgst_percentage) || 0;
+    const gst = (cost * igst) / 100 + (cost * cgst) / 100;
+    const amount = gst !== 0 ? gst : (cost * 18) / 100;
+    return amount.toFixed(2);
   };
 
   // Helper function to calculate total with GST
   const calculateTotalWithGST = (project) => {
-    const cost = getCost(project);
-    const igst = project.igst_percentage || 0;
-    const cgst = project.cgst_percentage || 0;
-    const total = ((cost * igst) / 100 + (cost * cgst) / 100).toFixed(2);
-    return (cost + (total != 0.0 ? total : (cost * 18) / 100)).toFixed(2);
+    const cost = Number(getCost(project)) || 0;
+    const gst = Number(calculateGSTAmount(project)) || 0;
+    return (cost + gst).toFixed(2);
   };
 
   // Filter and sort projects
@@ -433,73 +485,7 @@ const ProjectList = () => {
   //   return filtered;
   // }, [projectsOnly, searchTerm, filterStatus, sortBy]);
 
-  // Filter and sort projects
-  const filteredProjects = useMemo(() => {
-    if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
-    let filtered = [...projectsOnly];
-    
-    // Search Term Filter
-    if (searchTerm) {
-      filtered = filtered.filter((project) => {
-        const name = (project.project_name || project.name || "").toLowerCase();
-        const code = (project.project_code || project.code || "").toLowerCase();
-        const term = searchTerm.toLowerCase();
-        return name.includes(term) || code.includes(term);
-      });
-    }
-
-    // 🟢 NEW: Type Filter (Detail Design / DPR) via source_id
-    if (filterProjectType !== "all") {
-      filtered = filtered.filter((project) => {
-        if (filterProjectType === "detail design") {
-          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-        }
-        if (filterProjectType === "dpr") {
-          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-        }
-        return true;
-      });
-    }
-
-    // Status Filter
-    if (filterStatus !== "all") {
-      filtered = filtered.filter((project) => {
-        const projectStatus = project.status || "ONGOING";
-        const progress = project.progress || 0;
-        const daysLeft = getDaysUntilDeadline(
-          project.completion_date || project.completionDate,
-        );
-        if (filterStatus === "delayed")
-          return (
-            (projectStatus === "DELAYED" || daysLeft < 0) && progress < 100
-          );
-        if (filterStatus === "critical")
-          return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
-        if (filterStatus === "ongoing")
-          return projectStatus === "ONGOING" && progress < 100;
-        if (filterStatus === "completed")
-          return progress === 100 || projectStatus === "COMPLETED";
-        return true;
-      });
-    }
-
-    // Sort Logic
-    filtered.sort((a, b) => {
-      const aDays =
-        getDaysUntilDeadline(a.created_at || a.completionDate) || 999;
-      const bDays =
-        getDaysUntilDeadline(b.created_at || b.completionDate) || 999;
-      const aProgress = a.progress || 0;
-      const bProgress = b.progress || 0;
-      const aName = a.project_name || a.name || "";
-      const bName = b.project_name || b.name || "";
-      if (sortBy === "deadline") return bDays - aDays;
-      if (sortBy === "progress") return bProgress - aProgress;
-      if (sortBy === "name") return aName.localeCompare(bName);
-      return 0;
-    });
-    return filtered;
-  }, [projectsOnly, searchTerm, filterStatus, sortBy, filterProjectType]); // Added filterProjectType to dependencies
+  const filteredProjects = Array.isArray(projectsOnly) ? projectsOnly : [];
 
   // const stats = useMemo(() => {
   //   if (!projectsOnly || !Array.isArray(projectsOnly)) {
@@ -577,28 +563,16 @@ const ProjectList = () => {
   //   };
   // }, [projectsOnly]);
 
-  
-const stats = useMemo(() => {
+
+  const stats = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) {
       return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0 };
     }
 
-    // 🟢 Base filter for Project Type
-    let baseProjects = projectsOnly;
-    if (filterProjectType !== "all") {
-      baseProjects = baseProjects.filter((project) => {
-        if (filterProjectType === "detail design") {
-          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-        }
-        if (filterProjectType === "dpr") {
-          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-        }
-        return true;
-      });
-    }
+    const baseProjects = projectsOnly;
 
     return {
-      total: baseProjects.length,
+      total: projectsOnlyPagination.total_projects || baseProjects.length,
       delayed: baseProjects.filter((p) => {
         const status = p.status || "ONGOING";
         const progress = p.progress || 0;
@@ -623,29 +597,17 @@ const stats = useMemo(() => {
         return progress > 0 && progress < 100;
       }).length,
     };
-  }, [projectsOnly, filterProjectType]); // 🟢 Added filterProjectType
+  }, [projectsOnly, projectsOnlyPagination.total_projects]);
 
   const ProjectListStats = useMemo(() => {
     if (!projectsOnly || !Array.isArray(projectsOnly)) {
       return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0, notStarted: 0 };
     }
 
-    // 🟢 Base filter for Project Type
-    let baseProjects = projectsOnly;
-    if (filterProjectType !== "all") {
-      baseProjects = baseProjects.filter((project) => {
-        if (filterProjectType === "detail design") {
-          return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-        }
-        if (filterProjectType === "dpr") {
-          return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-        }
-        return true;
-      });
-    }
+    const baseProjects = projectsOnly;
 
     return {
-      total: baseProjects.length,
+      total: projectsOnlyPagination.total_projects || baseProjects.length,
 
       // Delayed: projects where completion date is past AND progress < 100
       delayed: baseProjects.filter((p) => {
@@ -681,10 +643,10 @@ const stats = useMemo(() => {
         return progress === 0;
       }).length,
     };
-  }, [projectsOnly, filterProjectType]); // 🟢 Added filterProjectType
+  }, [projectsOnly, projectsOnlyPagination.total_projects]);
 
 
-  
+
   const projectCodeCounts = useMemo(() => {
     const counts = {};
     if (filteredProjects && Array.isArray(filteredProjects)) {
@@ -701,7 +663,23 @@ const stats = useMemo(() => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleDateString("en-IN", {
+      const dateOnly = String(dateString).split("T")[0];
+      const parts = dateOnly.split("-");
+      if (parts.length === 3) {
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        const day = Number(parts[2]);
+        if (year && month && day) {
+          return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+      }
+      const parsed = new Date(dateString);
+      if (Number.isNaN(parsed.getTime())) return "N/A";
+      return parsed.toLocaleDateString("en-IN", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -1201,58 +1179,118 @@ const stats = useMemo(() => {
   // }, [maxSelectableDate]);
 
 
-  // Function to download project data as an Excel-compatible CSV
-  const handleDownloadExcel = () => {
-    if (!projectsOnly || projectsOnly.length === 0) {
-      dispatch(showSnackbar({ message: "No project data available to download", type: "warning" }));
-      return;
+  // Function to download all project data as an Excel-compatible CSV
+  const handleDownloadExcel = async () => {
+    setRefreshing(true);
+    setLoadingMessage("Exporting Projects");
+    setLoadingSubMessage("Fetching all project data...");
+
+    try {
+      const allProjects = await projectService.getAllProjectsLessDetails(user, {
+        ...(sourceId ? { source_id: sourceId } : {}),
+        ...(projectCodeQuery ? { project_code: projectCodeQuery } : {}),
+      });
+
+      if (!allProjects || allProjects.length === 0) {
+        dispatch(showSnackbar({ message: "No project data available to download", type: "warning" }));
+        return;
+      }
+
+      const PROJECT_TYPE_LABELS = {
+        "266931d6-0486-4760-b5a5-fd9f823b3383": "Detail Design",
+        "994947cd-a0cf-4648-bef3-42704e955ff0": "DPR",
+        "c4e54604-9a83-4065-b798-ad0e58673788": "Prebid",
+      };
+
+      const getExportClientName = (project) => {
+        if (project?.client_detail?.client_name) return project.client_detail.client_name;
+        const clientId = project.client || project.client_id;
+        if (clientId && clientMap[clientId]) return clientMap[clientId];
+        return "";
+      };
+
+      const exportData = allProjects.map((project) => {
+        try {
+          return {
+            "Project Name": project.project_name || project.name || "",
+            "Project Code": project.project_code || project.code || "",
+            "Project Type": PROJECT_TYPE_LABELS[project.source_id] || "",
+            "Client Name": getExportClientName(project),
+            "Company": getCompanyName(project) || "",
+            "Sector": getSectorName(project) || "",
+            "Location": project.location || "",
+            "Total Length": getTotalLength(project) || 0,
+            "Workorder Amount (Lakhs)": getCost(project) || 0,
+            "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
+            "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
+            "LOA Date": formatDate(getLoaDate(project)),
+            "Deadline": formatDate(project.completion_date || project.completionDate),
+            "Status": project.status || "Ongoing",
+            "Physical Progress (%)": project.physical_progress ?? 0,
+            "Financial Progress (%)": project.financial_progress ?? 0,
+            "Overall Progress (%)": project.overall_progress ?? 0,
+          };
+        } catch (rowError) {
+          console.error("Export row failed", project?.id, rowError);
+          return {
+            "Project Name": project.project_name || project.name || "",
+            "Project Code": project.project_code || project.code || "",
+            "Project Type": PROJECT_TYPE_LABELS[project.source_id] || "",
+            "Client Name": "",
+            "Company": "",
+            "Sector": "",
+            "Location": project.location || "",
+            "Total Length": "",
+            "Workorder Amount (Lakhs)": "",
+            "GST Amount (Lakhs)": "",
+            "Total with GST (Lakhs)": "",
+            "LOA Date": formatDate(project.loa_date),
+            "Deadline": formatDate(project.completion_date),
+            "Status": project.status || "Ongoing",
+            "Physical Progress (%)": project.physical_progress ?? 0,
+            "Financial Progress (%)": project.financial_progress ?? 0,
+            "Overall Progress (%)": project.overall_progress ?? 0,
+          };
+        }
+      });
+
+      const headers = Object.keys(exportData[0]);
+      const csvContent = [
+        headers.join(","),
+        ...exportData.map((row) =>
+          headers
+            .map((fieldName) => {
+              const value = row[fieldName];
+              const str = value === null || value === undefined ? "" : String(value);
+              return `"${str.replace(/"/g, '""')}"`;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Project_List_Export_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      dispatch(showSnackbar({
+        message: `Exported ${allProjects.length} projects`,
+        type: "success",
+      }));
+    } catch (error) {
+      dispatch(showSnackbar({
+        message: "Failed to export projects",
+        type: "error",
+      }));
+    } finally {
+      setRefreshing(false);
     }
-
-    // Map the project data to the desired Excel columns
-    const exportData = projectsOnly.map((project) => ({
-      "Project Name": project.project_name || project.name || "",
-      "Project Code": project.project_code || project.code || "",
-      "Client Name": project?.client_detail?.client_name || getClientName(project) || "",
-      "Company": getCompanyName(project) || "",
-      "Sector": getSectorName(project) || "",
-      "Location": project.location || "",
-      "Total Length": getTotalLength(project) || 0,
-      "Workorder Amount (Lakhs)": getCost(project) || 0,
-      "GST Amount (Lakhs)": calculateGSTAmount(project) || 0,
-      "Total with GST (Lakhs)": calculateTotalWithGST(project) || 0,
-      "LOA Date": project.loa_date ? new Date(project.loa_date).toLocaleDateString() : "",
-      "Deadline": project.completion_date ? new Date(project.completion_date).toLocaleDateString() : "",
-      "Status": project.status || "Ongoing",
-      "Physical Progress (%)": project.physical_progress || 0,
-      "Financial Progress (%)": project.financial_progress || 0,
-      "Overall Progress (%)": project.overall_progress || 0,
-    }));
-
-    // Extract headers and create CSV string
-    const headers = Object.keys(exportData[0]);
-    const csvContent = [
-      headers.join(","), // Header row
-      ...exportData.map((row) =>
-        headers
-          .map((fieldName) => {
-            // Escape double quotes and wrap in quotes to handle commas within data
-            const value = String(row[fieldName] || "");
-            return `"${value.replace(/"/g, '""')}"`;
-          })
-          .join(",")
-      ),
-    ].join("\n");
-
-    // Create a Blob from the CSV string and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Project_List_Export_${new Date().toISOString().split("T")[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
 
@@ -1548,7 +1586,13 @@ const stats = useMemo(() => {
                     ? "Raised Work Proof"
                     : proofData?.to_status === "Received"
                       ? "Received Work Proof"
-                      : "Submit Work Proof"}
+                      : proofData?.to_status === "Approved"
+                        ? "Approve Work"
+                        : proofData?.to_status === "Rejected"
+                          ? "Reject Work"
+                          : proofData?.to_status === "Submitted"
+                            ? "Submit Work Proof"
+                            : "Submit Work Proof"}
                 </h3>
                 <button
                   onClick={() => {
@@ -2423,7 +2467,7 @@ const stats = useMemo(() => {
           {/* Stats Cards - Removed Critical/Delayed for user, only shown to Admin */}
 
           {/* Stats Cards - Only shown to Admin */}
-          {isAdmin && projectsOnly.length > 0 && (
+          {isAdmin && (totalCount > 0 || projectsOnly.length > 0) && (
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -2514,7 +2558,7 @@ const stats = useMemo(() => {
                 />
                 <input
                   type="text"
-                  placeholder="Search projects by name or code..."
+                  placeholder="Search by project code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
@@ -2524,12 +2568,16 @@ const stats = useMemo(() => {
               <div className="relative">
                 <select
                   value={filterProjectType}
-                  onChange={(e) => setFilterProjectType(e.target.value)}
+                  onChange={(e) => {
+                    setFilterProjectType(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
                 >
                   <option value="all">All Types</option>
                   <option value="detail design">Detail Design</option>
                   <option value="dpr">DPR</option>
+                  <option value="prebid">Prebid</option>
                 </select>
                 <Filter
                   className="absolute right-3 top-3 text-gray-400 pointer-events-none"
@@ -2537,51 +2585,6 @@ const stats = useMemo(() => {
                 />
               </div>
 
-              <div className="relative">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
-                >
-                  <option value="all">All Projects</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="critical">Critical</option>
-                  <option value="delayed">Delayed</option>
-                  <option value="completed">Completed</option>
-                </select>
-                <Filter
-                  className="absolute right-3 top-3 text-gray-400 pointer-events-none"
-                  size={20}
-                />
-              </div>
-
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
-                >
-                  <option value="deadline">Sort by Deadline</option>
-                  <option value="progress">Sort by Progress</option>
-                  <option value="name">Sort by Name</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-3 top-3 text-gray-400 pointer-events-none"
-                  size={20}
-                />
-              </div>
-
-              {/* {isAdmin && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/project/create")}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all flex items-center gap-2"
-                >
-                  <Plus size={20} />
-                  New Project
-                </motion.button>
-              )} */}
               {isAdmin && (
                 <div className="flex items-center gap-3">
                   {/* Excel Download Button */}
@@ -2619,7 +2622,7 @@ const stats = useMemo(() => {
             )}
           </motion.div>
 
-         
+
 
           {/* ========================================== */}
           {/* 🟢 NEW: PROJECT CODE COUNTS TABLE UI       */}
@@ -2636,7 +2639,7 @@ const stats = useMemo(() => {
                   Project Code Distribution
                 </h4>
               </div>
-              
+
               <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-6 pt-0 mt-4">
                 <table className="w-full text-sm text-left border-collapse">
                   <thead className="sticky top-0 bg-gray-100 text-gray-600 uppercase text-xs font-bold shadow-sm z-10">
@@ -3548,6 +3551,7 @@ const stats = useMemo(() => {
                                                                           <th className="px-2 py-3 text-center">Remaining</th>
 
                                                                           <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                          <th className="px-2 py-3 text-center">Action</th>
                                                                           <th className="px-2 py-3 text-center">Invoice Status</th>
                                                                         </>
                                                                       }
@@ -3661,6 +3665,25 @@ const stats = useMemo(() => {
 
                                                                                               {workStatus === "Pending" ? "Not Started" : workStatus}
                                                                                             </span>
+                                                                                            {(workStatus === "Submitted" || workStatus === "Approved" || workStatus === "Rejected") && (
+                                                                                              <FileText
+                                                                                                className="inline-block ml-1 text-red-500 cursor-pointer"
+                                                                                                size={13}
+                                                                                                title="Work Proof Files"
+                                                                                                onClick={(e) => {
+                                                                                                  e.stopPropagation();
+                                                                                                  setViewDocumentModel({
+                                                                                                    model: true,
+                                                                                                    data: (stage.work_logs || []).filter((log) =>
+                                                                                                      workStatus === "Rejected"
+                                                                                                        ? log.to_status === "Rejected" || log.to_status === "Submitted"
+                                                                                                        : log.to_status === workStatus
+                                                                                                    ),
+                                                                                                    title: `${stage.name} Work Proofs`
+                                                                                                  });
+                                                                                                }}
+                                                                                              />
+                                                                                            )}
                                                                                           </div>
                                                                                         </td>
 
@@ -3887,18 +3910,143 @@ const stats = useMemo(() => {
                                                                                             {workStatus === "Pending" ? "Not Started" : workStatus}
 
                                                                                           </span>
-                                                                                          {
-                                                                                            (workStatus === "Submitted" || workStatus === "Approved") &&
-                                                                                            <FileText className="inline-block ml-1 text-red-500 cursor-pointer" size={13} title="Work Proof Files" onClick={(e) => {
-                                                                                              e.stopPropagation();
-                                                                                              setViewDocumentModel({
-                                                                                                model: true,
-                                                                                                data: (stage.work_logs || []).filter((log) => log.to_status === workStatus),
-                                                                                                title: `${stage.name} Work Proofs`
-                                                                                              });
-                                                                                            }} />
-                                                                                          }
+                                                                                          {(workStatus === "Submitted" || workStatus === "Approved" || workStatus === "Rejected") && (
+                                                                                            <FileText
+                                                                                              className="inline-block ml-1 text-red-500 cursor-pointer"
+                                                                                              size={13}
+                                                                                              title="Work Proof Files"
+                                                                                              onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                setViewDocumentModel({
+                                                                                                  model: true,
+                                                                                                  data: (stage.work_logs || []).filter((log) =>
+                                                                                                    workStatus === "Rejected"
+                                                                                                      ? log.to_status === "Rejected" || log.to_status === "Submitted"
+                                                                                                      : log.to_status === workStatus
+                                                                                                  ),
+                                                                                                  title: `${stage.name} Work Proofs`
+                                                                                                });
+                                                                                              }}
+                                                                                            />
+                                                                                          )}
                                                                                         </div>
+                                                                                      </td>
+
+                                                                                      {/* Action (Approve/Reject for Submitted, Submit for others) */}
+                                                                                      <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                                                                        {workStatus === "Submitted" ? (
+                                                                                          <div className="inline-flex items-center justify-center gap-1">
+                                                                                            <button
+                                                                                              onClick={() => {
+                                                                                                setShowProofModal(true);
+                                                                                                setProofData({
+                                                                                                  ...proofData,
+                                                                                                  stage: stage.id,
+                                                                                                  subactivity: sub.id,
+                                                                                                  to_status: "Approved",
+                                                                                                  projectId: projectId,
+                                                                                                  documents: [],
+                                                                                                  remarks: "",
+                                                                                                  rejection_proof: [],
+                                                                                                  rejection_reason: "",
+                                                                                                  rejection_type: "",
+                                                                                                  url: "",
+                                                                                                  created_by: user?.emp_code || "",
+                                                                                                });
+                                                                                              }}
+                                                                                              className="h-8 px-2 box-border border border-transparent text-xs flex items-center justify-center gap-1 rounded transition bg-green-100 text-green-700 hover:bg-green-200"
+                                                                                              title="Approve"
+                                                                                            >
+                                                                                              <Handshake size={12} />
+                                                                                              Approve
+                                                                                            </button>
+                                                                                            <button
+                                                                                              onClick={() => {
+                                                                                                setShowProofModal(true);
+                                                                                                setProofData({
+                                                                                                  ...proofData,
+                                                                                                  stage: stage.id,
+                                                                                                  subactivity: sub.id,
+                                                                                                  to_status: "Rejected",
+                                                                                                  projectId: projectId,
+                                                                                                  documents: [],
+                                                                                                  remarks: "",
+                                                                                                  rejection_proof: [],
+                                                                                                  rejection_reason: "",
+                                                                                                  rejection_type: "",
+                                                                                                  url: "",
+                                                                                                  created_by: user?.emp_code || "",
+                                                                                                });
+                                                                                              }}
+                                                                                              className="h-8 px-2 box-border text-xs flex items-center justify-center gap-1 rounded transition bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                                                              title="Reject"
+                                                                                            >
+                                                                                              Reject
+                                                                                            </button>
+                                                                                          </div>
+                                                                                        ) : workStatus === "Approved" ? (
+                                                                                          <div className="relative inline-block">
+                                                                                            <select
+                                                                                              onChange={(e) => {
+                                                                                                const action = e.target.value;
+                                                                                                if (action === "Reject") {
+                                                                                                  setShowProofModal(true);
+                                                                                                  setProofData({
+                                                                                                    ...proofData,
+                                                                                                    stage: stage.id,
+                                                                                                    subactivity: sub.id,
+                                                                                                    to_status: "Rejected",
+                                                                                                    projectId: projectId,
+                                                                                                    documents: [],
+                                                                                                    remarks: "",
+                                                                                                    rejection_proof: [],
+                                                                                                    rejection_reason: "",
+                                                                                                    rejection_type: "",
+                                                                                                    url: "",
+                                                                                                    created_by: user?.emp_code || "",
+                                                                                                  });
+                                                                                                }
+                                                                                                e.target.value = "";
+                                                                                              }}
+                                                                                              defaultValue=""
+                                                                                              className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                            >
+                                                                                              <option value="" disabled>Action</option>
+                                                                                              <option value="Reject" className="text-red-600">❌ Reject</option>
+                                                                                            </select>
+                                                                                          </div>
+                                                                                        ) : (
+                                                                                          <button
+                                                                                            onClick={() => {
+                                                                                              setShowProofModal(true);
+                                                                                              setProofData({
+                                                                                                ...proofData,
+                                                                                                stage: stage.id,
+                                                                                                subactivity: sub.id,
+                                                                                                to_status: "Submitted",
+                                                                                                projectId: projectId,
+                                                                                                documents: [],
+                                                                                                remarks: "",
+                                                                                                rejection_proof: [],
+                                                                                                rejection_reason: "",
+                                                                                                rejection_type: "",
+                                                                                                url: "",
+                                                                                                created_by: user?.emp_code || "",
+                                                                                              });
+                                                                                            }}
+                                                                                            disabled={workStatus === "Completed"}
+                                                                                            className={`h-8 w-24 box-border border border-transparent text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Completed"
+                                                                                              ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
+                                                                                              : workStatus === "Rejected"
+                                                                                                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                                : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                              }`}
+                                                                                            title={workStatus === "Rejected" ? "Resubmit with corrections" : "Submit Proof"}
+                                                                                          >
+                                                                                            <CheckCircle size={12} />
+                                                                                            {workStatus === "Rejected" ? "Resubmit" : "Submit"}
+                                                                                          </button>
+                                                                                        )}
                                                                                       </td>
 
                                                                                       {/* 2. Invoice Status (Dropdown) - Now matches the 8th column header */}
@@ -3973,7 +4121,7 @@ const stats = useMemo(() => {
                                                                                   <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
-                                                                                  <td colSpan="8" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
+                                                                                  <td colSpan="9" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
                                                                                 </tr>
                                                                               )
                                                                             )}
@@ -4106,6 +4254,39 @@ const stats = useMemo(() => {
                 })}
               </motion.div >
             )}
+            {totalCount > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 bg-white rounded-2xl shadow-xl px-6 py-4 border border-gray-100">
+                <p className="text-sm text-gray-500">
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}
+                  {" - "}
+                  {Math.min(currentPage * PAGE_SIZE, totalCount)}
+                  {" of "}
+                  {totalCount} projects
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={16} /> Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <MultiWorkLogModal
               isOpen={showMultiLog}
               onClose={() => setShowMultiLog(false)}

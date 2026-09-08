@@ -35,21 +35,56 @@ export const projectService = {
     }
   },
 
-  getProjectsLessDetails: async (user) => {
+  getProjectsListSimple: async () => {
     try {
-      let url;
-      let emp_code = sessionStorage.getItem('emp_code')
-      // 🔥 Role-based API logic
-      // if (user?.role === 'TL') {
-      //   url = `user-assigned-projects-nodetails/${emp_code}/`;
-      // } else {
-      //   url = '/get-projects-list/';
-      // }
-      url = '/get-projects-list/';
-      const response = await api.get(url);
+      const response = await api.get('/get-projects-lists/');
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      return data?.results || [];
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      throw error;
+    }
+  },
+
+  getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {
+    try {
+      const params = { page, page_size };
+      if (source_id) params.source_id = source_id;
+      if (project_code) params.project_code = project_code;
+      const response = await api.get('/get-projects-list/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching projects:', error);
+      throw error;
+    }
+  },
+
+  getAllProjectsLessDetails: async (user, { source_id, project_code } = {}) => {
+    try {
+      const page_size = 100;
+      const params = { page: 1, page_size };
+      if (source_id) params.source_id = source_id;
+      if (project_code) params.project_code = project_code;
+
+      const firstResponse = await api.get('/get-projects-list/', { params });
+      const firstData = firstResponse.data;
+
+      if (Array.isArray(firstData)) return firstData;
+
+      let results = [...(firstData?.results || [])];
+      const totalPages = firstData?.total_pages || 1;
+
+      for (let page = 2; page <= totalPages; page++) {
+        const nextResponse = await api.get('/get-projects-list/', {
+          params: { ...params, page },
+        });
+        results = results.concat(nextResponse.data?.results || []);
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error fetching all projects:', error);
       throw error;
     }
   },

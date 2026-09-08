@@ -10,7 +10,7 @@ import {
     ChevronDown, ChevronRight, Sparkles, XCircle
 } from "lucide-react";
 
-import { fetchTaskPlanners, fetchOnlyProjectsList } from "../api/apiSlice";
+import { fetchTaskPlanners, fetchProjectsListSimple } from "../api/apiSlice";
 import LoadingModal from "../../components/modals/LoadingModal";
 import MultiWorkLogModal from "./MultilogModal";
 import UpdateGroupModal from "./UpdateGroupModal";
@@ -607,7 +607,7 @@ const TaskPlanner = () => {
     const {
         taskPlanners = [],       // flat array — used for My Tasks
         taskPlannersData = null, // { employees[], summary } — used for comparison
-        projectsOnly = [],
+        projectsListAll = [],
         loading: apiLoading = false,
     } = useSelector((state) => state.api || {});
 
@@ -636,7 +636,7 @@ const TaskPlanner = () => {
             try {
                 await Promise.all([
                     dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() })).unwrap(),
-                    dispatch(fetchOnlyProjectsList()).unwrap(),
+                    dispatch(fetchProjectsListSimple()).unwrap(),
                 ]);
             } catch (e) {
             } finally {
@@ -914,7 +914,7 @@ const TaskPlanner = () => {
             <MultiWorkLogModal
                 isOpen={showMultiLog}
                 onClose={() => setShowMultiLog(false)}
-                projects={projectsOnly}
+                projects={projectsListAll}
                 onSave={async (date, rows) => {
                     try {
                         const payload = rows.map((r) => ({ ...r, date, status: r.status || "WORKED" }));
@@ -929,7 +929,7 @@ const TaskPlanner = () => {
             <UpdateGroupModal
                 isOpen={updateModalData.isOpen}
                 onClose={() => setUpdateModalData({ ...updateModalData, isOpen: false })}
-                projects={projectsOnly}
+                projects={projectsListAll}
                 isEdit={isEdit}
                 initialData={updateModalData}
                 onSave={async (date, rows) => {

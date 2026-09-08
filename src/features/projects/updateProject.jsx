@@ -104,6 +104,8 @@ const UpdateProject = () => {
         existing_workorder_document: "",
         source_id: "",
     });
+    const DPR_SOURCE_ID = "994947cd-a0cf-4648-bef3-42704e955ff0";
+    const isDPR = form.source_id === DPR_SOURCE_ID;
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [currentStep, setCurrentStep] = useState(1);
@@ -398,7 +400,7 @@ const UpdateProject = () => {
             clientbranch: projectData.clientbranch || "",
             existing_workorder_document: projectData.workorder_document || "",
             workorder_document: null,
-            source_id: projectData.source || "",
+            source_id: projectData.source || projectData.source_id || "",
         });
 
         // Set client search display
@@ -2050,9 +2052,6 @@ const UpdateProject = () => {
 
         const missingFields = [];
 
-        // 🟢 Check if selected project type is DPR
-const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-
         if (!form.project_code) missingFields.push("Project Code");
         if (!form.project_name) missingFields.push("Project Name");
         if (!form.short_name) missingFields.push("Short Name");
@@ -2066,8 +2065,6 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
         missingFields.push("Please select a Client & branch");
     }
 
-        
-        // if (!form.clientbranch) missingFields.push("Please select a Client & branch");
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
         if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
         if (!selectedActivities.length) missingFields.push("Please select at least one activity");
@@ -2108,8 +2105,9 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                 const subObj = activityObj?.subActivities.find((s) => s.id === subId);
                 console.log(subObj, 'subObj')
 
-                // 1. Validate Unit
-                if (subObj && (!subObj.unit || subObj.unit === "")) {
+                // 1. Validate Unit (not required for DPR)
+                const currentUnit = subActivityUnits[`${activityId}_${subId}`] || subObj?.unit;
+                if (!isDPR && subObj && (!currentUnit || currentUnit === "")) {
                     return showError(
                         `Please select a unit for "${subObj.subactivity_name}" in activity "${activityLabel}"`
                     );
@@ -2903,6 +2901,9 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                         }
                                         className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                     >
+                                        {isDPR && (
+                                            <option value="">Select unit</option>
+                                        )}
                                         {UNIT_OPTIONS.map((option) => (
                                             <option key={option.value} value={option.value}>
                                                 {option.label}
@@ -3309,7 +3310,7 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                     {/* Unit - READ ONLY */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Unit *
+                                            Unit {isDPR ? "" : "*"}
                                         </label>
                                         <select
                                             value={cloningSubActivity.unit}
@@ -3884,6 +3885,9 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                         }
                                         className="w-full p-2.5 border rounded-xl text-sm"
                                     >
+                                        {isDPR && (
+                                            <option value="">Select unit</option>
+                                        )}
                                         {UNIT_OPTIONS.map((option) => (
                                             <option key={option.value} value={option.value}>
                                                 {option.label}
@@ -4051,6 +4055,7 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                     <option value="" disabled>Select Project Type</option>
                                     <option value="266931d6-0486-4760-b5a5-fd9f823b3383">Detail Design</option>
                                     <option value="994947cd-a0cf-4648-bef3-42704e955ff0">DPR</option>
+                                    <option value='c4e54604-9a83-4065-b798-ad0e58673788'>Prebid</option>
                                 </select>
                                 <ChevronDown
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -4387,8 +4392,8 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                             <>
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs text-gray-500">
-                                    Branch {form.source_id !== "994947cd-a0cf-4648-bef3-42704e955ff0" && "*"}
-                                </label>
+                                        Branch {form.source_id !== "994947cd-a0cf-4648-bef3-42704e955ff0" && "*"}
+                                    </label>
                                     <div className="relative">
                                         <MapPinned
                                             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -5364,7 +5369,7 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                                                                                     <div className="grid grid-cols-3 gap-2 mt-2 pl-5">
                                                                                                         <div>
                                                                                                             <label className="block text-[10px] text-gray-500 mb-1">
-                                                                                                                Unit *
+                                                                                                                Unit {isDPR ? "" : "*"}
                                                                                                             </label>
                                                                                                             <select
                                                                                                                 value={currentUnit}
@@ -5377,6 +5382,9 @@ const isDPR = form.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
                                                                                                                 }
                                                                                                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                                                                             >
+                                                                                                                {isDPR && (
+                                                                                                                    <option value="">Select unit</option>
+                                                                                                                )}
                                                                                                                 {UNIT_OPTIONS.map(
                                                                                                                     (option) => (
                                                                                                                         <option

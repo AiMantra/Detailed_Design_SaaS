@@ -12,6 +12,8 @@ import {
     Filter,
     ChevronDown,
     ChevronUp,
+    ChevronLeft,
+    ChevronRight,
     AlertCircle,
     CheckCircle2,
     XCircle,
@@ -77,6 +79,7 @@ const TlProjectList = () => {
     const {
         projects = [],
         projectsOnly = [],
+        projectsOnlyPagination = {},
         projectDetails = {},
         loading: apiLoading = false,
         companies = [],
@@ -87,8 +90,9 @@ const TlProjectList = () => {
     const { user } = useSelector((state) => state.auth);
 
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterStatus, setFilterStatus] = useState("all");
-    const [sortBy, setSortBy] = useState("deadline");
+    const [projectCodeQuery, setProjectCodeQuery] = useState("");
+    const PAGE_SIZE = 10;
+    const [currentPage, setCurrentPage] = useState(1);
     const [expandedCard, setExpandedCard] = useState(null);
     const [expandedActivities, setExpandedActivities] = useState({});
     const [refreshing, setRefreshing] = useState(false);
@@ -138,6 +142,23 @@ const TlProjectList = () => {
 
     const [expandedProjectDetails, setExpandedProjectDetails] = useState({});
     const [loadingProjectDetails, setLoadingProjectDetails] = useState({});
+    const [filterProjectType, setFilterProjectType] = useState("all");
+    const totalCount = projectsOnlyPagination.total_projects || 0;
+    const totalPages = projectsOnlyPagination.total_pages || Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+    const PROJECT_TYPE_SOURCE_IDS = {
+        "detail design": "266931d6-0486-4760-b5a5-fd9f823b3383",
+        dpr: "994947cd-a0cf-4648-bef3-42704e955ff0",
+        prebid: "c4e54604-9a83-4065-b798-ad0e58673788",
+    };
+    const sourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
+
+    const getProjectListParams = (page = currentPage) => ({
+        page,
+        page_size: PAGE_SIZE,
+        ...(sourceId ? { source_id: sourceId } : {}),
+        ...(projectCodeQuery ? { project_code: projectCodeQuery } : {}),
+    });
 
     // Create lookup maps for IDs to names
     const companyMap = useMemo(() => {
@@ -180,31 +201,63 @@ const TlProjectList = () => {
         return map;
     }, [clients]);
 
-    // Load all data in a single loading session
+    // Call API only after the user stops typing in project code search
     useEffect(() => {
-        const loadAllData = async () => {
-            setIsInitialLoading(true);
-            setLoadingMessage("Loading Projects");
-            setLoadingSubMessage("Fetching project data...");
+        const timer = setTimeout(() => {
+            const nextQuery = searchTerm.trim();
+            if (nextQuery === projectCodeQuery) return;
+            setCurrentPage(1);
+            setProjectCodeQuery(nextQuery);
+        }, 2000);
+        return () => clearTimeout(timer);
+        // Only restart the timer when the input changes, not when the last API query updates
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]);
+
+    // Load lookup data once
+    useEffect(() => {
+        const loadLookups = async () => {
             try {
                 await Promise.all([
                     dispatch(fetchCompanies()).unwrap(),
                     dispatch(fetchSectors()).unwrap(),
                     dispatch(fetchClients()).unwrap(),
-                    // dispatch(fetchProjects()).unwrap()
-                    dispatch(fetchOnlyProjectsList()).unwrap(),
                 ]);
             } catch (error) {
                 dispatch(showSnackbar({
                     message: "Failed to load data from server",
                     type: "warning"
                 }));
-            } finally {
-                setIsInitialLoading(false);
             }
         };
-        loadAllData();
+        loadLookups();
     }, [dispatch]);
+
+    // Fetch projects whenever page or filters change
+    useEffect(() => {
+        let cancelled = false;
+        const loadProjects = async () => {
+            setIsInitialLoading(true);
+            setLoadingMessage("Loading Projects");
+            setLoadingSubMessage("Fetching project data...");
+            try {
+                await dispatch(fetchOnlyProjectsList(getProjectListParams())).unwrap();
+            } catch (error) {
+                if (!cancelled) {
+                    dispatch(showSnackbar({
+                        message: "Failed to load data from server",
+                        type: "warning"
+                    }));
+                }
+            } finally {
+                if (!cancelled) setIsInitialLoading(false);
+            }
+        };
+        loadProjects();
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, currentPage, projectCodeQuery, sourceId]);
 
     // Refresh data
     const loadData = async () => {
@@ -216,8 +269,7 @@ const TlProjectList = () => {
                 dispatch(fetchCompanies()).unwrap(),
                 dispatch(fetchSectors()).unwrap(),
                 dispatch(fetchClients()).unwrap(),
-                // dispatch(fetchProjects()).unwrap(),
-                dispatch(fetchOnlyProjectsList()).unwrap(),
+                dispatch(fetchOnlyProjectsList(getProjectListParams())).unwrap(),
             ]);
             dispatch(showSnackbar({
                 message: "Data refreshed successfully",
@@ -454,60 +506,7 @@ const TlProjectList = () => {
     //     };
     // }, [projectsOnly]);
 
-    // Filter and sort projects
-    const filteredProjects = useMemo(() => {
-        if (!projectsOnly || !Array.isArray(projectsOnly)) return [];
-        let filtered = [...projectsOnly];
-
-        if (searchTerm) {
-            filtered = filtered.filter(project => {
-                const name = (project.project_name || project.name || "").toLowerCase();
-                const code = (project.project_code || project.code || "").toLowerCase();
-                const term = searchTerm.toLowerCase();
-                return name.includes(term) || code.includes(term);
-            });
-        }
-
-        // ADDED PROJECT TYPE FILTER
-        if (filterProjectType !== "all") {
-            filtered = filtered.filter((project) => {
-                if (filterProjectType === "detail design") {
-                    return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-                }
-                if (filterProjectType === "dpr") {
-                    return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-                }
-                return true;
-            });
-        }
-
-        if (filterStatus !== "all") {
-            filtered = filtered.filter(project => {
-                const projectStatus = project.status || "ONGOING";
-                const progress = project.progress || 0;
-                const daysLeft = getDaysUntilDeadline(project.completion_date || project.completionDate);
-                if (filterStatus === "delayed") return (projectStatus === "DELAYED" || daysLeft < 0) && progress < 100;
-                if (filterStatus === "critical") return daysLeft <= 2 && daysLeft >= 0 && progress < 100;
-                if (filterStatus === "ongoing") return projectStatus === "ONGOING" && progress < 100;
-                if (filterStatus === "completed") return progress === 100 || projectStatus === "COMPLETED";
-                return true;
-            });
-        }
-
-        filtered.sort((a, b) => {
-            const aDays = getDaysUntilDeadline(a.completion_date || a.completionDate) || 999;
-            const bDays = getDaysUntilDeadline(b.completion_date || b.completionDate) || 999;
-            const aProgress = a.progress || 0;
-            const bProgress = b.progress || 0;
-            const aName = a.project_name || a.name || "";
-            const bName = b.project_name || b.name || "";
-            if (sortBy === "deadline") return aDays - bDays;
-            if (sortBy === "progress") return bProgress - aProgress;
-            if (sortBy === "name") return aName.localeCompare(bName);
-            return 0;
-        });
-        return filtered;
-    }, [projectsOnly, searchTerm, filterStatus, sortBy, filterProjectType]); // ADDED filterProjectType DEP
+    const filteredProjects = Array.isArray(projectsOnly) ? projectsOnly : [];
 
     const stats = useMemo(() => {
         if (!projectsOnly || !Array.isArray(projectsOnly)) {
@@ -525,8 +524,8 @@ const TlProjectList = () => {
         }
 
         return {
-            total: baseProjects.length,
-            delayed: baseProjects.filter(p => {
+            total: projectsOnlyPagination.total_projects || projectsOnly.length,
+            delayed: projectsOnly.filter(p => {
                 const status = p.status || "ONGOING";
                 const progress = p.progress || 0;
                 const daysLeft = getDaysUntilDeadline(p.completion_date || p.completionDate);
@@ -550,19 +549,11 @@ const TlProjectList = () => {
             return { total: 0, delayed: 0, critical: 0, completed: 0, ongoing: 0, notStarted: 0 };
         }
 
-        // ADDED PROJECT TYPE FILTER FOR STATS
-        let baseProjects = projectsOnly;
-        if (filterProjectType !== "all") {
-            baseProjects = baseProjects.filter((project) => {
-                if (filterProjectType === "detail design") return project.source_id === "266931d6-0486-4760-b5a5-fd9f823b3383";
-                if (filterProjectType === "dpr") return project.source_id === "994947cd-a0cf-4648-bef3-42704e955ff0";
-                return true;
-            });
-        }
-
         return {
-            total: baseProjects.length,
-            delayed: baseProjects.filter(p => {
+            total: projectsOnlyPagination.total_projects || projectsOnly.length,
+
+            // Delayed: projectsOnly where completion date is past AND progress < 100
+            delayed: projectsOnly.filter(p => {
                 const progress = p.overall_progress || p.progress || 0;
                 const daysLeft = getDaysUntilDeadline(p.completion_date);
                 return daysLeft < 0 && progress < 100;
@@ -585,7 +576,7 @@ const TlProjectList = () => {
                 return progress === 0;
             }).length,
         };
-    }, [projectsOnly, filterProjectType]); // ADDED filterProjectType DEP
+    }, [projectsOnly, projectsOnlyPagination.total_projects]);
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -645,7 +636,10 @@ const TlProjectList = () => {
                 startTime: timeLogData.startTime,
                 endTime: timeLogData.endTime,
                 note: timeLogData.description,
-                status: 'WORKED'
+                status: 'WORKED',
+
+                stage: selectedTaskfortimelog.stage,
+                
             })).unwrap();
             dispatch(showSnackbar({ message: 'Work hours saved successfully!', type: 'success' }));
             const mixedData = { ...selectedTaskfortimelog, date: timeLogData.date, startTime: timeLogData.startTime, endTime: timeLogData.endTime, description: timeLogData.description };
@@ -2131,7 +2125,7 @@ const TlProjectList = () => {
 
 
                         {/* Stats Cards - Full set for TL */}
-                        {projects.length > 0 && (
+                        {(totalCount > 0 || projectsOnly.length > 0) && (
                             <motion.div
                                 variants={containerVariants}
                                 initial="hidden"
@@ -2218,7 +2212,7 @@ const TlProjectList = () => {
                                     <Search className="absolute left-3 top-3 text-gray-400" size={20} />
                                     <input
                                         type="text"
-                                        placeholder="Search projects by name or code..."
+                                        placeholder="Search by project code..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
@@ -2242,29 +2236,19 @@ const TlProjectList = () => {
 
                                 <div className="relative">
                                     <select
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        value={filterProjectType}
+                                        onChange={(e) => {
+                                            setFilterProjectType(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
                                         className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
                                     >
-                                        <option value="all">All Projects</option>
-                                        <option value="ongoing">Ongoing</option>
-                                        <option value="critical">Critical</option>
-                                        <option value="delayed">Delayed</option>
-                                        <option value="completed">Completed</option>
+                                        <option value="all">All Types</option>
+                                        <option value="detail design">Detail Design</option>
+                                        <option value="dpr">DPR</option>
+                                        <option value="prebid">Prebid</option>
                                     </select>
                                     <Filter className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={20} />
-                                </div>
-                                <div className="relative">
-                                    <select
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                        className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
-                                    >
-                                        <option value="deadline">Sort by Deadline</option>
-                                        <option value="progress">Sort by Progress</option>
-                                        <option value="name">Sort by Name</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={20} />
                                 </div>
                                 {isAdmin && (
                                     <motion.button
@@ -2871,48 +2855,102 @@ const TlProjectList = () => {
                                                                                                                                                                                         {/* {workStatus === "Approved" ? "Submitted" : workStatus === "Pending" ? "Not Started" : workStatus} */}
                                                                                                                                                                                         {workStatus === "Pending" ? "Not Started" : workStatus}
                                                                                                                                                                                     </span>
+                                                                                                                                                                                    {(workStatus === "Submitted" || workStatus === "Approved" || workStatus === "Rejected") && (
+                                                                                                                                                                                        <FileText
+                                                                                                                                                                                            className="inline-block ml-1 text-red-500 cursor-pointer"
+                                                                                                                                                                                            size={13}
+                                                                                                                                                                                            title="Work Proof Files"
+                                                                                                                                                                                            onClick={(e) => {
+                                                                                                                                                                                                e.stopPropagation();
+                                                                                                                                                                                                setViewDocumentModel({
+                                                                                                                                                                                                    model: true,
+                                                                                                                                                                                                    data: (stage.work_logs || []).filter((log) =>
+                                                                                                                                                                                                        workStatus === "Rejected"
+                                                                                                                                                                                                            ? log.to_status === "Rejected" || log.to_status === "Submitted"
+                                                                                                                                                                                                            : log.to_status === workStatus
+                                                                                                                                                                                                    ),
+                                                                                                                                                                                                    title: `${stage.name} Work Proofs`
+                                                                                                                                                                                                });
+                                                                                                                                                                                            }}
+                                                                                                                                                                                        />
+                                                                                                                                                                                    )}
                                                                                                                                                                                 </div>
                                                                                                                                                                             </td>
 
 
 
-                                                                                                                                                                            {/* Action (Approve/Reject Dropdown for Submitted/Approved tasks, Submit button for others) */}
+                                                                                                                                                                            {/* Action (Approve/Reject for Submitted/Approved tasks, Submit button for others) */}
                                                                                                                                                                             <td className="text-center">
                                                                                                                                                                                 {!isUser && (
-                                                                                                                                                                                    (workStatus === "Submitted" || workStatus === "Approved") ? (
-                                                                                                                                                                                        // Show Approve/Reject dropdown when status is Submitted OR Approved
+                                                                                                                                                                                    workStatus === "Submitted" ? (
+                                                                                                                                                                                        <div className="inline-flex items-center justify-center gap-1">
+                                                                                                                                                                                            <button
+                                                                                                                                                                                                onClick={(e) => {
+                                                                                                                                                                                                    e.stopPropagation();
+                                                                                                                                                                                                    setShowProofModal(true);
+                                                                                                                                                                                                    setProofData({
+                                                                                                                                                                                                        ...proofData,
+                                                                                                                                                                                                        stage: stage.id,
+                                                                                                                                                                                                        to_status: "Approved",
+                                                                                                                                                                                                        projectId: projectId,
+                                                                                                                                                                                                        documents: [],
+                                                                                                                                                                                                        remarks: "",
+                                                                                                                                                                                                        event_type: "",
+                                                                                                                                                                                                        extra_payment_percent: "",
+                                                                                                                                                                                                    });
+                                                                                                                                                                                                }}
+                                                                                                                                                                                                className="h-8 px-2 box-border border border-transparent text-xs flex items-center justify-center gap-1 rounded transition bg-green-100 text-green-700 hover:bg-green-200"
+                                                                                                                                                                                                title="Approve"
+                                                                                                                                                                                            >
+                                                                                                                                                                                                <Handshake size={12} />
+                                                                                                                                                                                                Approve
+                                                                                                                                                                                            </button>
+                                                                                                                                                                                            <button
+                                                                                                                                                                                                onClick={(e) => {
+                                                                                                                                                                                                    e.stopPropagation();
+                                                                                                                                                                                                    setShowProofModal(true);
+                                                                                                                                                                                                    setProofData({
+                                                                                                                                                                                                        ...proofData,
+                                                                                                                                                                                                        stage: stage.id,
+                                                                                                                                                                                                        to_status: "Rejected",
+                                                                                                                                                                                                        projectId: projectId,
+                                                                                                                                                                                                        documents: [],
+                                                                                                                                                                                                        remarks: "",
+                                                                                                                                                                                                        event_type: "",
+                                                                                                                                                                                                        extra_payment_percent: "",
+                                                                                                                                                                                                    });
+                                                                                                                                                                                                }}
+                                                                                                                                                                                                className="h-8 px-2 box-border text-xs flex items-center justify-center gap-1 rounded transition bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                                                                                                                                                                title="Reject"
+                                                                                                                                                                                            >
+                                                                                                                                                                                                Reject
+                                                                                                                                                                                            </button>
+                                                                                                                                                                                        </div>
+                                                                                                                                                                                    ) : workStatus === "Approved" ? (
                                                                                                                                                                                         <div className="relative inline-block">
                                                                                                                                                                                             <select
                                                                                                                                                                                                 onChange={(e) => {
                                                                                                                                                                                                     e.stopPropagation();
                                                                                                                                                                                                     const action = e.target.value;
-                                                                                                                                                                                                    if (action === "Approve") {
-                                                                                                                                                                                                        setShowProofModal(true);
-                                                                                                                                                                                                        setProofData({
-                                                                                                                                                                                                            ...proofData,
-                                                                                                                                                                                                            stage: stage.id,
-                                                                                                                                                                                                            to_status: "Approved",
-                                                                                                                                                                                                            projectId: projectId
-                                                                                                                                                                                                        });
-                                                                                                                                                                                                    } else if (action === "Reject") {
+                                                                                                                                                                                                    if (action === "Reject") {
                                                                                                                                                                                                         setShowProofModal(true);
                                                                                                                                                                                                         setProofData({
                                                                                                                                                                                                             ...proofData,
                                                                                                                                                                                                             stage: stage.id,
                                                                                                                                                                                                             to_status: "Rejected",
-                                                                                                                                                                                                            projectId: projectId
+                                                                                                                                                                                                            projectId: projectId,
+                                                                                                                                                                                                            documents: [],
+                                                                                                                                                                                                            remarks: "",
+                                                                                                                                                                                                            event_type: "",
+                                                                                                                                                                                                            extra_payment_percent: "",
                                                                                                                                                                                                         });
                                                                                                                                                                                                     }
-                                                                                                                                                                                                    // Reset select value to default
                                                                                                                                                                                                     e.target.value = "";
                                                                                                                                                                                                 }}
                                                                                                                                                                                                 defaultValue=""
-                                                                                                                                                                                                className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"                                                                                                                                                                                            >
+                                                                                                                                                                                                className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                                                                                                                            >
                                                                                                                                                                                                 <option value="" disabled>Action</option>
-                                                                                                                                                                                                {/* Hide Approve option if it's already Approved */}
-                                                                                                                                                                                                {workStatus !== "Approved" && (
-                                                                                                                                                                                                    <option value="Approve" className="text-green-600">✅ Approve</option>
-                                                                                                                                                                                                )}
                                                                                                                                                                                                 <option value="Reject" className="text-red-600">❌ Reject</option>
                                                                                                                                                                                             </select>
                                                                                                                                                                                         </div>
@@ -3275,6 +3313,39 @@ const TlProjectList = () => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
+                        {totalCount > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 bg-white rounded-2xl shadow-xl px-6 py-4 border border-gray-100">
+                                <p className="text-sm text-gray-500">
+                                    Showing {(currentPage - 1) * PAGE_SIZE + 1}
+                                    {" - "}
+                                    {Math.min(currentPage * PAGE_SIZE, totalCount)}
+                                    {" of "}
+                                    {totalCount} projects
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={currentPage <= 1}
+                                        className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronLeft size={16} /> Previous
+                                    </button>
+                                    <span className="px-4 py-2 text-sm text-gray-600">
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage >= totalPages}
+                                        className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
