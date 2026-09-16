@@ -1,5 +1,6 @@
 
 import api from './api';
+import { PROJECT_TYPE_SOURCE_IDS } from '../constants/projectSources';
 
 
 
@@ -35,9 +36,11 @@ export const projectService = {
     }
   },
 
-  getProjectsListSimple: async () => {
+  getProjectsListSimple: async ({ source_id } = {}) => {
     try {
-      const response = await api.get('/get-projects-lists/');
+      const params = {};
+      if (source_id) params.source_id = source_id;
+      const response = await api.get('/get-projects-lists/', { params });
       const data = response.data;
       if (Array.isArray(data)) return data;
       return data?.results || [];
@@ -45,6 +48,18 @@ export const projectService = {
       console.error('Error fetching projects:', error);
       throw error;
     }
+  },
+
+  getProjectsByTypeKey: async (typeKey) => {
+    const source_id = PROJECT_TYPE_SOURCE_IDS[typeKey];
+    if (!source_id) return projectService.getProjectsListSimple();
+    try {
+      const all = await projectService.getAllProjectsLessDetails(null, { source_id });
+      if (Array.isArray(all) && all.length) return all;
+    } catch {
+      /* fall through */
+    }
+    return projectService.getProjectsListSimple({ source_id });
   },
 
   getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {

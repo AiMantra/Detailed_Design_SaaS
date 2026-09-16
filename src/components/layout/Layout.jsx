@@ -21,6 +21,9 @@ import DevRoleSwitcher from "../DevRoleSwitcher";
 import NotificationsModal from "./Notifications";
 import { CustomImageModal } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
+// --- AI USER GUIDE (removable) ---
+// To remove: delete this import + <AiUserGuide /> below, then delete src/features/userGuide/
+import AiUserGuide from "../../features/userGuide";
 
 const ThemeToggle = () => {
   const dispatch = useDispatch();
@@ -65,9 +68,12 @@ const Notifications = () => {
   );
 };
 
+const CHATBOT_ROLES = ["TL", "ACCOUNT"];
+
 const Layout = () => {
   const dispatch = useDispatch();
   const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const { desktopCollapsed } = useSelector((state) => state.ui);
@@ -181,6 +187,9 @@ const Layout = () => {
 
       {/* Dev Role Switcher - Only visible in development mode */}
       {/* <DevRoleSwitcher /> */}
+
+      {/* --- AI USER GUIDE (removable) — TL & Account only; hidden from Admin --- */}
+      {CHATBOT_ROLES.includes(user?.role) && <AiUserGuide />}
     </div>
   );
 };

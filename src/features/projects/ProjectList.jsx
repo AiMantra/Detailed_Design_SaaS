@@ -74,6 +74,12 @@ import { IMAGE_URL } from "../../services/api";
 import { projectService } from "../../services/projectService";
 import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationDetailed } from "../../utils/CustomFormatters";
 import MultiWorkLogModal from "./MultilogModal";
+import {
+  PROJECT_TYPE_SOURCE_IDS,
+  PROJECT_TYPE_LABELS,
+  PROJECT_TYPE_FILTER_OPTIONS,
+  getProjectTypeLabel,
+} from "../../constants/projectSources";
 
 const ProjectList = () => {
   const navigate = useNavigate();
@@ -132,15 +138,10 @@ const ProjectList = () => {
   const [subActivityModalData, setSubActivityModalData] = useState(null);
   const [loadingSubActivity, setLoadingSubActivity] = useState(false);
 
-  const [filterProjectType, setFilterProjectType] = useState("all"); // NEW FILTER STATE
+  const [filterProjectType, setFilterProjectType] = useState("all");
   const totalCount = projectsOnlyPagination.total_projects || 0;
   const totalPages = projectsOnlyPagination.total_pages || Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  const PROJECT_TYPE_SOURCE_IDS = {
-    "detail design": "266931d6-0486-4760-b5a5-fd9f823b3383",
-    dpr: "994947cd-a0cf-4648-bef3-42704e955ff0",
-    prebid: "c4e54604-9a83-4065-b798-ad0e58673788",
-  };
   const sourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
 
   const getProjectListParams = (page = currentPage) => ({
@@ -1196,11 +1197,7 @@ const ProjectList = () => {
         return;
       }
 
-      const PROJECT_TYPE_LABELS = {
-        "266931d6-0486-4760-b5a5-fd9f823b3383": "Detail Design",
-        "994947cd-a0cf-4648-bef3-42704e955ff0": "DPR",
-        "c4e54604-9a83-4065-b798-ad0e58673788": "Prebid",
-      };
+      const PROJECT_TYPE_LABELS_EXPORT = PROJECT_TYPE_LABELS;
 
       const getExportClientName = (project) => {
         if (project?.client_detail?.client_name) return project.client_detail.client_name;
@@ -1214,7 +1211,7 @@ const ProjectList = () => {
           return {
             "Project Name": project.project_name || project.name || "",
             "Project Code": project.project_code || project.code || "",
-            "Project Type": PROJECT_TYPE_LABELS[project.source_id] || "",
+            "Project Type": getProjectTypeLabel(project) || PROJECT_TYPE_LABELS_EXPORT[project.source_id] || "",
             "Client Name": getExportClientName(project),
             "Company": getCompanyName(project) || "",
             "Sector": getSectorName(project) || "",
@@ -2564,25 +2561,33 @@ const ProjectList = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              {/* 🟢 NEW Filter for Detail Design & DPR */}
-              <div className="relative">
-                <select
-                  value={filterProjectType}
-                  onChange={(e) => {
-                    setFilterProjectType(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="appearance-none pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white min-w-[160px]"
-                >
-                  <option value="all">All Types</option>
-                  <option value="detail design">Detail Design</option>
-                  <option value="dpr">DPR</option>
-                  <option value="prebid">Prebid</option>
-                </select>
-                <Filter
-                  className="absolute right-3 top-3 text-gray-400 pointer-events-none"
-                  size={20}
-                />
+              {/* Project type filter — Detail Design / DPR / Prebid */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Type
+                </span>
+                <div className="inline-flex flex-wrap rounded-xl border border-gray-200 bg-gray-50 p-1">
+                  {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => {
+                    const active = filterProjectType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setFilterProjectType(opt.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                          active
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "text-gray-600 hover:bg-white hover:text-gray-900"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {isAdmin && (
@@ -2759,6 +2764,11 @@ const ProjectList = () => {
                               <h3 className="text-lg md:text-lg font-semibold text-gray-800  flex items-center gap-2 w-full" title={projectName}>
                                 {projectName.length > 200 ? `${projectName.substring(0, 200)}...` : projectName}
                               </h3>
+                              {getProjectTypeLabel(project) && (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+                                  {getProjectTypeLabel(project)}
+                                </span>
+                              )}
                               <motion.span
                                 whileHover={{ scale: 1.05 }}
                                 className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1

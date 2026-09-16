@@ -7,8 +7,16 @@ import {
 } from "lucide-react";
 import { fetchProjectDetails } from "../api/apiSlice"; // ← adjust path
 import { showSnackbar } from "../notifications/notificationSlice";
+import {
+    PROJECT_TYPE_FILTER_OPTIONS,
+    PROJECT_TYPE_SOURCE_IDS,
+    getProjectSourceId,
+    getProjectTypeFilterValue,
+    resolveProjectsForType,
+} from "../../constants/projectSources";
 // ─── constants ────────────────────────────────────────────────────────────────
 import api, { getLatestServerDate } from "../../services/api";
+import { projectService } from "../../services/projectService";
 const TIME_PRESETS = [
     { label: "Full Day", start: "09:00", end: "18:00" },
     { label: "Half Day", start: "09:00", end: "13:00" },
@@ -44,6 +52,7 @@ const timeOptions = (() => {
 
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
+    projectType: "all",
     projectId: "",
     activityId: "",
     subActivityId: "",
@@ -260,7 +269,7 @@ const ProjectSearchInput = ({ projects, value, onChange, error, onToggle }) => {
 
 // ─── plain select ─────────────────────────────────────────────────────────────
 
-const Sel = ({ value, onChange, disabled, placeholder, children, error, loading }) => (
+const Sel = ({ value, onChange, disabled, placeholder, children, error, loading, hidePlaceholder }) => (
     <div className="relative">
         <select
             value={value}
@@ -271,7 +280,7 @@ const Sel = ({ value, onChange, disabled, placeholder, children, error, loading 
         disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed
         ${error ? "border-red-400 bg-red-50" : "border-gray-200"}`}
         >
-            <option value="">{loading ? "Loading…" : placeholder}</option>
+            {!hidePlaceholder && <option value="">{loading ? "Loading…" : placeholder}</option>}
             {children}
         </select>
         {loading
@@ -342,6 +351,35 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     const isAnyDropdownOpen = Object.values(openDropdowns).some(Boolean);
     const [detailCache, setDetailCache] = useState({});
     const [loadingDetail, setLoadingDetail] = useState({});
+    const [typedProjectCache, setTypedProjectCache] = useState({});
+    const [loadingTypedProjects, setLoadingTypedProjects] = useState({});
+
+    const hasSourceMeta = useMemo(
+        () => (projects || []).some((p) => getProjectSourceId(p)),
+        [projects]
+    );
+
+    useEffect(() => {
+        if (!isOpen || hasSourceMeta) return;
+        const keys = [...new Set(rows.map((r) => r.projectType).filter((k) => k && k !== "all"))];
+        keys.forEach((typeKey) => {
+            if (typedProjectCache[typeKey] || loadingTypedProjects[typeKey]) return;
+            setLoadingTypedProjects((prev) => ({ ...prev, [typeKey]: true }));
+            projectService.getProjectsByTypeKey(typeKey)
+                .then((list) => {
+                    setTypedProjectCache((prev) => ({
+                        ...prev,
+                        [typeKey]: Array.isArray(list) ? list : [],
+                    }));
+                })
+                .catch(() => {
+                    setTypedProjectCache((prev) => ({ ...prev, [typeKey]: [] }));
+                })
+                .finally(() => {
+                    setLoadingTypedProjects((prev) => ({ ...prev, [typeKey]: false }));
+                });
+        });
+    }, [isOpen, rows, hasSourceMeta, typedProjectCache, loadingTypedProjects]);
 
     useEffect(() => {
         if (isOpen) {
@@ -396,10 +434,55 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
         setErrors((prev) => { const n = { ...prev }; delete n[`${id}.${field}`]; return n; });
     }, []);
 
+    const handleProjectTypeChange = useCallback((rowId, typeKey) => {
+        setRows((prev) =>
+            prev.map((r) => {
+                if (r._id !== rowId) return r;
+                const sourceId = PROJECT_TYPE_SOURCE_IDS[typeKey];
+                const current = projects.find((p) => (p.id || p.project_id) === r.projectId);
+                const currentSource = getProjectSourceId(current);
+                const keepProject = !r.projectId || !sourceId || !currentSource || currentSource === sourceId;
+                if (keepProject) return { ...r, projectType: typeKey };
+                return {
+                    ...r,
+                    projectType: typeKey,
+                    projectId: "",
+                    activityId: "",
+                    subActivityId: "",
+                    workType: "",
+                };
+            })
+        );
+        setErrors((prev) => {
+            const n = { ...prev };
+            delete n[`${rowId}.projectId`];
+            return n;
+        });
+    }, [projects]);
+
     const handleProjectChange = useCallback((rowId, pid) => {
-        updateRow(rowId, "projectId", pid);
+        const selected = projects.find((p) => (p.id || p.project_id) === pid);
+        const inferredType = selected ? getProjectTypeFilterValue(selected) : "all";
+        setRows((prev) =>
+            prev.map((r) => {
+                if (r._id !== rowId) return r;
+                return {
+                    ...r,
+                    projectId: pid,
+                    projectType: pid && inferredType !== "all" ? inferredType : r.projectType,
+                    activityId: "",
+                    subActivityId: "",
+                    workType: "",
+                };
+            })
+        );
+        setErrors((prev) => {
+            const n = { ...prev };
+            delete n[`${rowId}.projectId`];
+            return n;
+        });
         if (pid) ensureProjectDetail(pid);
-    }, [updateRow, ensureProjectDetail]);
+    }, [projects, ensureProjectDetail]);
 
     const applyPreset = useCallback((rowId, start, end) => {
         setRows((prev) => prev.map((r) => r._id === rowId ? { ...r, startTime: start, endTime: end } : r));
@@ -470,7 +553,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
         if (!validate()) return;
         setSaving(true);
         try {
-            const payload = rows.map(({ _id, ...rest }) => rest);
+            const payload = rows.map(({ _id, projectType, ...rest }) => rest);
             await onSave(date, payload);
 
             onClose();
@@ -617,6 +700,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                 <thead>
                                     <tr className="text-[10px] uppercase tracking-wider text-gray-400">
                                         <th className="px-2 pb-1 text-center w-7">#</th>
+                                        <th className="px-2 pb-1 text-left min-w-[130px]">Project Type</th>
                                         <th className="px-2 pb-1 text-left min-w-[170px]">Project <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[140px]">Activity <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[160px]">Sub-Activity <span className="text-red-400">*</span></th>
@@ -639,6 +723,13 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             const workTypes = workTypesFor(row.projectId);
                                             const timeInvalid = row.startTime && row.endTime && row.endTime <= row.startTime;
                                             const e = (f) => !!errors[`${row._id}.${f}`];
+                                            const typeFilteredProjects = resolveProjectsForType({
+                                                projects,
+                                                typeKey: row.projectType || "all",
+                                                includeProjectId: row.projectId,
+                                                hasSourceMeta,
+                                                remoteList: typedProjectCache[row.projectType],
+                                            });
 
                                             return (
                                                 <motion.tr
@@ -662,10 +753,23 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                         </span>
                                                     </td>
 
+                                                    {/* Project Type — filters the project dropdown */}
+                                                    <td className="px-1 py-2 align-top">
+                                                        <Sel
+                                                            value={row.projectType || "all"}
+                                                            onChange={(v) => handleProjectTypeChange(row._id, v)}
+                                                            hidePlaceholder
+                                                        >
+                                                            {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                            ))}
+                                                        </Sel>
+                                                    </td>
+
                                                     {/* ✅ Project – searchable typeahead */}
                                                     <td className="px-1 py-2 align-top">
                                                         <ProjectSearchInput
-                                                            projects={projects}
+                                                            projects={typeFilteredProjects}
                                                             value={row.projectId}
                                                             onChange={(pid) => handleProjectChange(row._id, pid)}
                                                             error={e("projectId")}
@@ -796,7 +900,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
 
                                     {/* totals */}
                                     <tr>
-                                        <td colSpan={7} className="px-4 pt-2 pb-1 text-right">
+                                        <td colSpan={8} className="px-4 pt-2 pb-1 text-right">
                                             <span className="text-xs font-semibold text-gray-500">Total Duration:</span>
                                         </td>
                                         <td className="px-2 pt-2 pb-1 text-center">

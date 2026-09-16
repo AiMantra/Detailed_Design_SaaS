@@ -7,6 +7,14 @@ import {
 } from "lucide-react";
 import { fetchProjectDetails } from "../api/apiSlice";
 import api, { getLatestServerDate } from "../../services/api";
+import { projectService } from "../../services/projectService";
+import {
+    PROJECT_TYPE_FILTER_OPTIONS,
+    PROJECT_TYPE_SOURCE_IDS,
+    getProjectSourceId,
+    getProjectTypeFilterValue,
+    resolveProjectsForType,
+} from "../../constants/projectSources";
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
 const TIME_PRESETS = [
@@ -46,6 +54,7 @@ const timeOptions = (() => {
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
     taskId: null,
+    projectType: "all",
     projectId: "",
     activityId: "",
     subActivityId: "",
@@ -204,7 +213,7 @@ const ProjectSearchInput = ({ projects, value, onChange, error, disabled, onTogg
     );
 };
 
-const Sel = ({ value, onChange, disabled, placeholder, children, error, loading }) => (
+const Sel = ({ value, onChange, disabled, placeholder, children, error, loading, hidePlaceholder }) => (
     <div className="relative">
         <select
             value={value}
@@ -214,7 +223,7 @@ const Sel = ({ value, onChange, disabled, placeholder, children, error, loading 
         focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed
         ${error ? "border-red-400 bg-red-50" : "border-gray-200"}`}
         >
-            <option value="">{loading ? "Loading…" : placeholder}</option>
+            {!hidePlaceholder && <option value="">{loading ? "Loading…" : placeholder}</option>}
             {children}
         </select>
         {loading ? <Loader2 size={11} className="animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" /> : <ChevronDown size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" />}
@@ -267,6 +276,35 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
 
     const [detailCache, setDetailCache] = useState({});
     const [loadingDetail, setLoadingDetail] = useState({});
+    const [typedProjectCache, setTypedProjectCache] = useState({});
+    const [loadingTypedProjects, setLoadingTypedProjects] = useState({});
+
+    const hasSourceMeta = useMemo(
+        () => (projects || []).some((p) => getProjectSourceId(p)),
+        [projects]
+    );
+
+    useEffect(() => {
+        if (!isOpen || hasSourceMeta) return;
+        const keys = [...new Set(rows.map((r) => r.projectType).filter((k) => k && k !== "all"))];
+        keys.forEach((typeKey) => {
+            if (typedProjectCache[typeKey] || loadingTypedProjects[typeKey]) return;
+            setLoadingTypedProjects((prev) => ({ ...prev, [typeKey]: true }));
+            projectService.getProjectsByTypeKey(typeKey)
+                .then((list) => {
+                    setTypedProjectCache((prev) => ({
+                        ...prev,
+                        [typeKey]: Array.isArray(list) ? list : [],
+                    }));
+                })
+                .catch(() => {
+                    setTypedProjectCache((prev) => ({ ...prev, [typeKey]: [] }));
+                })
+                .finally(() => {
+                    setLoadingTypedProjects((prev) => ({ ...prev, [typeKey]: false }));
+                });
+        });
+    }, [isOpen, rows, hasSourceMeta, typedProjectCache, loadingTypedProjects]);
 
     const [openDropdowns, setOpenDropdowns] = useState({});
     const isAnyDropdownOpen = Object.values(openDropdowns).some(Boolean);
@@ -288,19 +326,25 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         if (isOpen && initialData) {
             setDate(initialData.date && initialData.date !== "Unscheduled" ? initialData.date : todayStr());
             if (initialData.tasks && initialData.tasks.length > 0) {
-                const mappedRows = initialData.tasks.map(task => ({
-                    _id: crypto.randomUUID(),
-                    taskId: task.id,
-                    projectId: task.project_id || "",
-                    activityId: task.activity_id || "",
-                    subActivityId: task.subactivity_id || "",
-                    startTime: extractTime(task.start_time),
-                    endTime: extractTime(task.end_time),
-                    workType: task.work_type || "",
-                    description: task.note || "",
-                    isSelected: false, // ✅ Existing tasks are unchecked by default
-                    status: task.status || "not_done",
-                }));
+                const mappedRows = initialData.tasks.map(task => {
+                    const pid = task.project_id || "";
+                    const listed = projects.find((p) => (p.id || p.project_id) === pid);
+                    const inferredType = getProjectTypeFilterValue(task);
+                    return {
+                        _id: crypto.randomUUID(),
+                        taskId: task.id,
+                        projectType: inferredType !== "all" ? inferredType : getProjectTypeFilterValue(listed),
+                        projectId: pid,
+                        activityId: task.activity_id || "",
+                        subActivityId: task.subactivity_id || "",
+                        startTime: extractTime(task.start_time),
+                        endTime: extractTime(task.end_time),
+                        workType: task.work_type || "",
+                        description: task.note || "",
+                        isSelected: false, // ✅ Existing tasks are unchecked by default
+                        status: task.status || "not_done",
+                    };
+                });
                 setRows(mappedRows);
                 const uniquePids = [...new Set(mappedRows.map(r => r.projectId).filter(Boolean))];
                 uniquePids.forEach(pid => ensureProjectDetail(pid));
@@ -334,10 +378,45 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         setErrors((prev) => { const n = { ...prev }; delete n[`${id}.${field}`]; return n; });
     }, []);
 
+    const handleProjectTypeChange = useCallback((rowId, typeKey) => {
+        setRows((prev) => prev.map((r) => {
+            if (r._id !== rowId) return r;
+            const sourceId = PROJECT_TYPE_SOURCE_IDS[typeKey];
+            const current = projects.find((p) => (p.id || p.project_id) === r.projectId);
+            const currentSource = getProjectSourceId(current);
+            const keepProject = !r.projectId || !sourceId || !currentSource || currentSource === sourceId;
+            if (keepProject) return { ...r, projectType: typeKey, isSelected: true };
+            return {
+                ...r,
+                projectType: typeKey,
+                projectId: "",
+                activityId: "",
+                subActivityId: "",
+                workType: "",
+                isSelected: true,
+            };
+        }));
+        setErrors((prev) => { const n = { ...prev }; delete n[`${rowId}.projectId`]; return n; });
+    }, [projects]);
+
     const handleProjectChange = useCallback((rowId, pid) => {
-        updateRow(rowId, "projectId", pid);
+        const selected = projects.find((p) => (p.id || p.project_id) === pid);
+        const inferredType = selected ? getProjectTypeFilterValue(selected) : "all";
+        setRows((prev) => prev.map((r) => {
+            if (r._id !== rowId) return r;
+            return {
+                ...r,
+                projectId: pid,
+                projectType: pid && inferredType !== "all" ? inferredType : r.projectType,
+                activityId: "",
+                subActivityId: "",
+                workType: "",
+                isSelected: true,
+            };
+        }));
+        setErrors((prev) => { const n = { ...prev }; delete n[`${rowId}.projectId`]; return n; });
         if (pid) ensureProjectDetail(pid);
-    }, [updateRow, ensureProjectDetail]);
+    }, [projects, ensureProjectDetail]);
 
     const applyPreset = useCallback((rowId, start, end) => {
         setRows((prev) => prev.map((r) => r._id === rowId ? { ...r, startTime: start, endTime: end, isSelected: true } : r));
@@ -578,6 +657,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                     className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                                 />
                                             </th>)}
+                                        <th className="px-2 pb-1 text-left min-w-[130px]">Project Type</th>
                                         <th className="px-2 pb-1 text-left min-w-[170px]">Project <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[140px]">Activity <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[160px]">Sub-Activity <span className="text-red-400">*</span></th>
@@ -608,6 +688,13 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                             const e = (f) => !!errors[`${row._id}.${f}`];
                                             const workTypes = workTypesFor(row.projectId);
                                             const isEditing = editingRow === row._id;
+                                            const typeFilteredProjects = resolveProjectsForType({
+                                                projects,
+                                                typeKey: row.projectType || "all",
+                                                includeProjectId: row.projectId,
+                                                hasSourceMeta,
+                                                remoteList: typedProjectCache[row.projectType],
+                                            });
 
                                             // Row is editable only when selected AND Edit button clicked
                                             const disabled = !isEdit;
@@ -648,13 +735,26 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         </td>
                                                     )}
 
+                                                    {/* PROJECT TYPE */}
+                                                    <td className="px-1 py-2 align-top">
+                                                        <Sel
+                                                            value={row.projectType || "all"}
+                                                            onChange={(v) => handleProjectTypeChange(row._id, v)}
+                                                            disabled={disabled}
+                                                            hidePlaceholder
+                                                        >
+                                                            {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                            ))}
+                                                        </Sel>
+                                                    </td>
+
                                                     {/* PROJECT */}
                                                     <td className="px-1 py-2 align-top">
                                                         <ProjectSearchInput
-                                                            projects={projects}
+                                                            projects={typeFilteredProjects}
                                                             value={row.projectId}
                                                             onChange={(pid) =>
-                                                                // updateRow(row._id, "projectId", pid)
                                                                 handleProjectChange(row._id, pid)
                                                             }
                                                             error={e("projectId")}

@@ -63,6 +63,10 @@ import { IMAGE_URL } from "../../services/api";
 import { CustomImageModal } from "../../utils/CustomFunctions";
 import { validateName } from "../../utils/HelperValidations";
 import { AddSectorButton } from "../setupsettings/SetupComponents";
+import {
+  PROJECT_TYPE_FORM_OPTIONS,
+  isRelaxedProjectType,
+} from "../../constants/projectSources";
 
 const CreateProject = () => {
   const dispatch = useDispatch();
@@ -103,6 +107,8 @@ const CreateProject = () => {
     workorder_document: "",
     source_id: ""
   });
+
+  const isRelaxedType = isRelaxedProjectType(form.source_id);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentStep, setCurrentStep] = useState(1);
@@ -2255,7 +2261,10 @@ const CreateProject = () => {
     if (!form.workorder_Amount) missingFields.push("Workorder Amount");
     if (!form.location) missingFields.push("Work location");
     if (!form.workorder_document) missingFields.push("Workorder Document");
-    if (!form.clientbranch) missingFields.push("Please select a Client & branch");
+    // Client & branch required for Detail Design only (optional for DPR / Prebid)
+    if (!isRelaxedType && (!form.client || !form.clientbranch)) {
+      missingFields.push("Please select a Client & branch");
+    }
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
     if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
     if (!selectedActivities.length) missingFields.push("Please select at least one activity");
@@ -4361,10 +4370,11 @@ const CreateProject = () => {
                   className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
                 >
                   <option value="" disabled>Select Project Type</option>
-                  <option value="266931d6-0486-4760-b5a5-fd9f823b3383">Detail Design</option>
-                  <option value="994947cd-a0cf-4648-bef3-42704e955ff0">DPR</option>
-                  <option value='c4e54604-9a83-4065-b798-ad0e58673788'>Prebid</option>
-
+                  {PROJECT_TYPE_FORM_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -4531,7 +4541,9 @@ const CreateProject = () => {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Client *</label>
+              <label className="text-xs text-gray-500">
+                Client {isRelaxedType ? "" : "*"}
+              </label>
               <div className="relative" ref={clientDropdownRef}>
                 <Handshake
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -4632,7 +4644,9 @@ const CreateProject = () => {
 
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Branch *</label>
+                  <label className="text-xs text-gray-500">
+                    Branch {isRelaxedType ? "" : "*"}
+                  </label>
                   <div className="relative">
                     <MapPinned
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
