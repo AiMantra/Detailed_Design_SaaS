@@ -2261,7 +2261,7 @@ const CreateProject = () => {
     if (!form.workorder_Amount) missingFields.push("Workorder Amount");
     if (!form.location) missingFields.push("Work location");
     if (!form.workorder_document) missingFields.push("Workorder Document");
-    // Client & branch required for Detail Design only (optional for DPR / Prebid)
+    // Client & branch required for Detail Design only (optional for DPR / Prebid / BD)
     if (!isRelaxedType && (!form.client || !form.clientbranch)) {
       missingFields.push("Please select a Client & branch");
     }

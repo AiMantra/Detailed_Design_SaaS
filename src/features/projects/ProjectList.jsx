@@ -2561,33 +2561,31 @@ const ProjectList = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              {/* Project type filter — Detail Design / DPR / Prebid */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Type
-                </span>
-                <div className="inline-flex flex-wrap rounded-xl border border-gray-200 bg-gray-50 p-1">
-                  {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => {
-                    const active = filterProjectType === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          setFilterProjectType(opt.value);
-                          setCurrentPage(1);
-                        }}
-                        className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-                          active
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "text-gray-600 hover:bg-white hover:text-gray-900"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Project type filter — Detail Design / DPR / Prebid / BD */}
+              <div className="relative w-full md:w-56">
+                <Filter
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={18}
+                />
+                <select
+                  value={filterProjectType}
+                  onChange={(e) => {
+                    setFilterProjectType(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full appearance-none pl-10 pr-10 py-3 border border-gray-200 rounded-xl bg-white text-sm text-gray-700 focus:ring-2 focus:ring-blue-500"
+                  aria-label="Filter by project type"
+                >
+                  {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={16}
+                />
               </div>
 
               {isAdmin && (

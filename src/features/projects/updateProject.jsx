@@ -2063,7 +2063,7 @@ const UpdateProject = () => {
         if (!form.workorder_Amount) missingFields.push("Workorder Amount");
         if (!form.location) missingFields.push("Work location");
 
-        // Client and branch mandatory ONLY if NOT DPR / Prebid
+        // Client and branch mandatory ONLY if NOT DPR / Prebid / BD
         if (!isRelaxedType && (!form.client || !form.clientbranch)) {
             missingFields.push("Please select a Client & branch");
         }

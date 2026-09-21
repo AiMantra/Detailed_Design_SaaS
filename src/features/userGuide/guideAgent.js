@@ -157,6 +157,7 @@ function stripDates(text) {
 function parseSourceFromText(text) {
   const lower = (text || "").toLowerCase();
   if (/\bpre[\s-]?bid\b|\bprebid\b/i.test(lower)) return PROJECT_SOURCE_IDS.PREBID;
+  if (/\bbd\b/i.test(lower)) return PROJECT_SOURCE_IDS.BD;
   if (/\bdpr\b/i.test(lower)) return PROJECT_SOURCE_IDS.DPR;
   if (/\bdetail\s*design\b|\bdetaildesign\b/i.test(lower)) {
     return PROJECT_SOURCE_IDS.DETAIL_DESIGN;
