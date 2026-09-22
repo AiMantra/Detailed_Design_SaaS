@@ -1694,10 +1694,7 @@ const ClientModal = ({ isOpen, onClose, clientToEdit = null, existingClients = [
 
             if (!branch.gst?.trim()) {
                 newErrors[`branch_${i}_gst`] = `GST number for branch ${i + 1} is required`;
-            } else if (!validateGST(branch.gst)) {
-                newErrors[`branch_${i}_gst`] = `Invalid GST number format for branch ${i + 1}`;
             }
-
             if (!branch.state?.trim()) {
                 newErrors[`branch_${i}_state`] = `State for branch ${i + 1} is required`;
             }
