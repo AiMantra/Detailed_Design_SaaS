@@ -409,6 +409,7 @@ export const saveDailyWorkplan = createAsyncThunk(
         const {
           projectId, subActivityId, date, startTime, endTime,
           workType, note, status, phase = "R0",
+          stage, stageId,
           submission_po_status = "", submission_invoice_status = "",
           approval_po_status = "", approval_invoice_status = ""
         } = log;
@@ -452,6 +453,7 @@ export const saveDailyWorkplan = createAsyncThunk(
           work_type: workType,
           date: date,
           note: note,
+          stage: stage || stageId || null,
           phase: phase,
           submission_po_status: submission_po_status,
           submission_invoice_status: submission_invoice_status,

@@ -56,6 +56,7 @@ const emptyRow = () => ({
     projectId: "",
     activityId: "",
     subActivityId: "",
+    stageId: "",
     startTime: "",
     endTime: "",
     workType: "",
@@ -419,6 +420,11 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
 
     const workTypesFor = (pid) =>
         detailFor(pid)?.sector_detail?.stage_work_types || [];
+
+    const stagesFor = (pid, aid, sid) => {
+        const sub = subActivitiesFor(pid, aid).find((s) => s.id === sid);
+        return [...(sub?.stages || sub?.work_stages || [])];
+    };
     // ── row helpers ────────────────────────────────────────────────────────────
 
     const updateRow = useCallback((id, field, value) => {
@@ -426,8 +432,9 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             prev.map((r) => {
                 if (r._id !== id) return r;
                 const u = { ...r, [field]: value };
-                if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.workType = ""; }
-                if (field === "activityId") { u.subActivityId = ""; }
+                if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.stageId = ""; u.workType = ""; }
+                if (field === "activityId") { u.subActivityId = ""; u.stageId = ""; }
+                if (field === "subActivityId") { u.stageId = ""; }
                 return u;
             })
         );
@@ -449,6 +456,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                     projectId: "",
                     activityId: "",
                     subActivityId: "",
+                    stageId: "",
                     workType: "",
                 };
             })
@@ -472,6 +480,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                     projectType: pid && inferredType !== "all" ? inferredType : r.projectType,
                     activityId: "",
                     subActivityId: "",
+                    stageId: "",
                     workType: "",
                 };
             })
@@ -508,6 +517,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             if (!r.projectId) errs[`${r._id}.projectId`] = true;
             if (!r.activityId) errs[`${r._id}.activityId`] = true;
             if (!r.subActivityId) errs[`${r._id}.subActivityId`] = true;
+            if (!r.stageId) errs[`${r._id}.stageId`] = true;
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
 
@@ -704,6 +714,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                         <th className="px-2 pb-1 text-left min-w-[170px]">Project <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[140px]">Activity <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-left min-w-[160px]">Sub-Activity <span className="text-red-400">*</span></th>
+                                        <th className="px-2 pb-1 text-left min-w-[150px]">Work Stage <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[85px]">Start Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[85px]">End Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
@@ -721,6 +732,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             const activities = activitiesFor(row.projectId);
                                             const subActivities = subActivitiesFor(row.projectId, row.activityId);
                                             const workTypes = workTypesFor(row.projectId);
+                                            const workStages = stagesFor(row.projectId, row.activityId, row.subActivityId);
                                             const timeInvalid = row.startTime && row.endTime && row.endTime <= row.startTime;
                                             const e = (f) => !!errors[`${row._id}.${f}`];
                                             const typeFilteredProjects = resolveProjectsForType({
@@ -812,6 +824,33 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                         </Sel>
                                                     </td>
 
+                                                    {/* Work Stage */}
+                                                    <td className="px-1 py-2 align-top">
+                                                        <Sel
+                                                            value={row.stageId}
+                                                            onChange={(v) => updateRow(row._id, "stageId", v)}
+                                                            placeholder={
+                                                                !row.subActivityId ? "Select stage" :
+                                                                    isLoadingThis ? "Loading…" :
+                                                                        workStages.length === 0 ? "No stages" : "Select stage"
+                                                            }
+                                                            disabled={!row.subActivityId || isLoadingThis || workStages.length === 0}
+                                                            loading={isLoadingThis}
+                                                            error={e("stageId")}
+                                                        >
+                                                            {workStages.map((st) => (
+                                                                <option key={st.id} value={st.id}>
+                                                                    {st.name || st.stage_name || "Stage"}
+                                                                </option>
+                                                            ))}
+                                                        </Sel>
+                                                        {row.subActivityId && !isLoadingThis && workStages.length === 0 && (
+                                                            <p className="text-[9px] text-amber-500 mt-0.5 leading-tight">
+                                                                No work stages for this sub-activity
+                                                            </p>
+                                                        )}
+                                                    </td>
+
                                                     {/* Start */}
                                                     <td className="px-1 py-2 align-top">
                                                         <TimeSel
@@ -900,7 +939,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
 
                                     {/* totals */}
                                     <tr>
-                                        <td colSpan={8} className="px-4 pt-2 pb-1 text-right">
+                                        <td colSpan={9} className="px-4 pt-2 pb-1 text-right">
                                             <span className="text-xs font-semibold text-gray-500">Total Duration:</span>
                                         </td>
                                         <td className="px-2 pt-2 pb-1 text-center">
