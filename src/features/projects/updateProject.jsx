@@ -2063,7 +2063,7 @@ const UpdateProject = () => {
         if (!form.workorder_Amount) missingFields.push("Workorder Amount");
         if (!form.location) missingFields.push("Work location");
 
-        // Client and branch mandatory ONLY if NOT DPR / Prebid / BD
+        // Client and branch mandatory ONLY if NOT DPR / Prebid / BD / Account
         if (!isRelaxedType && (!form.client || !form.clientbranch)) {
             missingFields.push("Please select a Client & branch");
         }
@@ -2266,6 +2266,7 @@ const UpdateProject = () => {
                 project_confirmation_date: form.project_confirmation_date || null,
                 sector: sectorsMap[form.sector] || null,
                 client: form.client || null,
+                source: form.source_id,
                 source_id: form.source_id,
                 // workorder_document: form.workorder_document ? form.workorder_document : form.existing_workorder_document,
                 activities: activitiesPayload,

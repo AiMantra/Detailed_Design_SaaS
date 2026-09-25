@@ -7,6 +7,7 @@ export const PROJECT_SOURCE_IDS = {
   DPR: "994947cd-a0cf-4648-bef3-42704e955ff0",
   PREBID: "c4e54604-9a83-4065-b798-ad0e58673788",
   BD: "c4e54604-9a83-4065-b798-ad0e58673789",
+  ACCOUNT: "c4e54604-9a83-4065-b798-ad0e58673790",
 };
 
 /** Filter select keys → source UUID */
@@ -15,6 +16,7 @@ export const PROJECT_TYPE_SOURCE_IDS = {
   dpr: PROJECT_SOURCE_IDS.DPR,
   prebid: PROJECT_SOURCE_IDS.PREBID,
   bd: PROJECT_SOURCE_IDS.BD,
+  account: PROJECT_SOURCE_IDS.ACCOUNT,
 };
 
 /** source UUID → display label */
@@ -23,6 +25,7 @@ export const PROJECT_TYPE_LABELS = {
   [PROJECT_SOURCE_IDS.DPR]: "DPR",
   [PROJECT_SOURCE_IDS.PREBID]: "Prebid",
   [PROJECT_SOURCE_IDS.BD]: "BD",
+  [PROJECT_SOURCE_IDS.ACCOUNT]: "Account",
 };
 
 export const PROJECT_TYPE_FILTER_OPTIONS = [
@@ -31,6 +34,7 @@ export const PROJECT_TYPE_FILTER_OPTIONS = [
   { value: "dpr", label: "DPR" },
   { value: "prebid", label: "Prebid" },
   { value: "bd", label: "BD" },
+  { value: "account", label: "Account" },
 ];
 
 /** Create / Update Project Type dropdown options */
@@ -39,14 +43,16 @@ export const PROJECT_TYPE_FORM_OPTIONS = [
   { value: PROJECT_SOURCE_IDS.DPR, label: "DPR" },
   { value: PROJECT_SOURCE_IDS.PREBID, label: "Prebid" },
   { value: PROJECT_SOURCE_IDS.BD, label: "BD" },
+  { value: PROJECT_SOURCE_IDS.ACCOUNT, label: "Account" },
 ];
 
-/** DPR, Prebid & BD: client/branch (and some units) optional */
+/** DPR, Prebid, BD & Account: client/branch (and some units) optional */
 export function isRelaxedProjectType(sourceId) {
   return (
     sourceId === PROJECT_SOURCE_IDS.DPR ||
     sourceId === PROJECT_SOURCE_IDS.PREBID ||
-    sourceId === PROJECT_SOURCE_IDS.BD
+    sourceId === PROJECT_SOURCE_IDS.BD ||
+    sourceId === PROJECT_SOURCE_IDS.ACCOUNT
   );
 }
 
@@ -79,7 +85,7 @@ export function getProjectTypeFilterValue(projectOrSourceId) {
   return match ? match[0] : "all";
 }
 
-/** Filter a project list by type key (`all` | `detail design` | `dpr` | `prebid` | `bd`). */
+/** Filter a project list by type key (`all` | `detail design` | `dpr` | `prebid` | `bd` | `account`). */
 export function filterProjectsByType(projects = [], typeKey, includeProjectId) {
   const sourceId = PROJECT_TYPE_SOURCE_IDS[typeKey];
   if (!sourceId) return projects;
