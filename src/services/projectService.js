@@ -188,7 +188,7 @@ export const projectService = {
         else if (typeof value === "object") {
           formData.append(key, JSON.stringify(value));
         }
-        else if (key == "sector" || key == "client" || key == "source" || key == "source_id") {
+        else if (key == "sector" || key == "client") {
           formData.append(key, '"' + value + '"');
         }
         // ✅ Normal fields
@@ -258,7 +258,7 @@ export const projectService = {
           formData.append(key, JSON.stringify(value));
         }
         // ✅ Handle sector and client - send them as regular strings (not quoted)
-        else if (key === "sector" || key === "client" || key === "source" || key === "source_id") {
+        else if (key === "sector" || key === "client") {
           // If it's already an ID (UUID), send as is
           // If it's a string ID, send directly without extra quotes
           formData.append(key, JSON.stringify(value));
