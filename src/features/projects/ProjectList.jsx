@@ -3501,15 +3501,23 @@ const ProjectList = () => {
                                                                         <>
                                                                           <th className="px-2 py-3 text-center">view</th>
                                                                           <th className="px-2 py-3 text-center">Stage</th>
+                                                                          {!hidesProjectWeightage(projectData || project) && (
+                                                                          <>
                                                                           <th className="px-2 py-3 text-center">%</th>
                                                                           <th className="px-2 py-3 text-center">Amount ₹</th>
                                                                           <th className="px-2 py-3 text-center">Raised</th>
                                                                           <th className="px-2 py-3 text-center">Received</th>
                                                                           <th className="px-2 py-3 text-center">Remaining</th>
+                                                                          </>
+                                                                          )}
 
                                                                           <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
+                                                                          {!hidesProjectWeightage(projectData || project) && (
+                                                                          <>
                                                                           <th className="px-2 py-3 text-center">Action</th>
                                                                           <th className="px-2 py-3 text-center">Invoice Status</th>
+                                                                          </>
+                                                                          )}
                                                                         </>
                                                                       }
                                                                       {
@@ -3790,13 +3798,10 @@ const ProjectList = () => {
 
                                                                                       {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
                                                                                       <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
+                                                                                      {!hidesProjectWeightage(projectData || project) && (
+                                                                                      <>
                                                                                       <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
                                                                                       <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
-
-
-
-
-
 
                                                                                       {/* Raised */}
                                                                                       <td className="text-center">
@@ -3850,6 +3855,8 @@ const ProjectList = () => {
                                                                                       <td className={`text-center font-medium ${stageRemaining <= 0 ? "text-green-500" : "text-red-500"}`}>
                                                                                         {stageRemaining <= 0 ? "0.00" : stageRemaining.toFixed(2)} L
                                                                                       </td>
+                                                                                      </>
+                                                                                      )}
 
                                                                                       {/* PO Status (Invoice Status Dropdown) */}
                                                                                       {/* 1. PO Status (Work Status Display) - Now matches the 7th column header */}
@@ -3890,6 +3897,8 @@ const ProjectList = () => {
                                                                                       </td>
 
                                                                                       {/* Action (Approve/Reject for Submitted, Submit for others) */}
+                                                                                      {!hidesProjectWeightage(projectData || project) && (
+                                                                                      <>
                                                                                       <td className="text-center" onClick={(e) => e.stopPropagation()}>
                                                                                         {workStatus === "Submitted" ? (
                                                                                           <div className="inline-flex items-center justify-center gap-1">
@@ -4066,6 +4075,8 @@ const ProjectList = () => {
                                                                                           </select>
                                                                                         </div>
                                                                                       </td>
+                                                                                      </>
+                                                                                      )}
 
                                                                                     </tr>
                                                                                   );

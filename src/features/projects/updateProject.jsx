@@ -245,7 +245,7 @@ const UpdateProject = () => {
 
     const handleStageUpdate = (subId, stageId, field, value) => {
         // 1. Intercept weightage changes to prevent exceeding 100%
-        if (field === 'payment_percent') {
+        if (field === 'payment_percent' && !hideWeightage) {
             const newPercent = parseFloat(value) || 0;
 
             let otherStagesTotal = 0;
@@ -5631,7 +5631,7 @@ const UpdateProject = () => {
 
                                                                                                         <div className="col-span-3 mt-4 pl-5">
                                                                                                             <label className="block text-[10px] text-gray-500 mb-1 font-medium">
-                                                                                                                Work Stages & Payment (%) *
+                                                                                                                {hideWeightage ? "Work Stages *" : "Work Stages & Payment (%) *"}
                                                                                                             </label>
                                                                                                             <div className="space-y-2">
                                                                                                                 {(workStages[sub.id] || []).map((stage, idx) => (
@@ -5645,6 +5645,7 @@ const UpdateProject = () => {
                                                                                                                             }
                                                                                                                             className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                                                                                         />
+                                                                                                                        {!hideWeightage && (
                                                                                                                         <div className="relative w-28">
                                                                                                                             <input
                                                                                                                                 type="number"
@@ -5667,6 +5668,7 @@ const UpdateProject = () => {
                                                                                                                                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
                                                                                                                             />
                                                                                                                         </div>
+                                                                                                                        )}
                                                                                                                         <button
                                                                                                                             type="button"
                                                                                                                             onClick={() => handleRemoveStage(sub.id, stage.id)}

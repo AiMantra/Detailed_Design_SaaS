@@ -2500,15 +2500,23 @@ const TlProjectList = () => {
                                                                                                                                                 <th className="px-2 py-3 text-center">Area</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">View</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Stage</th>
+                                                                                                                                                {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                <>
                                                                                                                                                 <th className="px-2 py-3 text-center">%</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Amount ₹</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Raised</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Received</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Remaining</th>
+                                                                                                                                                </>
+                                                                                                                                                )}
                                                                                                                                                 <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
                                                                                                                                                 {/* <th className="px-2 py-3 text-center" >Status</th> */}
+                                                                                                                                                {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                <>
                                                                                                                                                 <th className="px-2 py-3 text-center">Action</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Invoice Status</th>
+                                                                                                                                                </>
+                                                                                                                                                )}
                                                                                                                                                 <th className="px-2 py-3 text-center">Tl Work Log</th>
                                                                                                                                             </tr>
                                                                                                                                         </thead>
@@ -2638,6 +2646,8 @@ const TlProjectList = () => {
                                                                                                                                                                             {/* 🔵 Dynamic Stage Info Columns */}
 
                                                                                                                                                                             <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
+                                                                                                                                                                            {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                                            <>
                                                                                                                                                                             <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
                                                                                                                                                                             <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)}` : ''} L</td>
 
@@ -2677,6 +2687,8 @@ const TlProjectList = () => {
                                                                                                                                                                             <td className={`text-center font-medium ${stageRemaining <= 0 ? "text-green-500" : "text-red-500"}`}>
                                                                                                                                                                                 {stageRemaining <= 0 ? "0.00" : stageRemaining.toFixed(2)} L
                                                                                                                                                                             </td>
+                                                                                                                                                                            </>
+                                                                                                                                                                            )}
 
                                                                                                                                                                             {/* PO Work Status */}
                                                                                                                                                                             <td className="text-center">
@@ -2717,6 +2729,8 @@ const TlProjectList = () => {
 
 
                                                                                                                                                                             {/* Action (Approve/Reject for Submitted/Approved tasks, Submit button for others) */}
+                                                                                                                                                                            {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                                            <>
                                                                                                                                                                             <td className="text-center">
                                                                                                                                                                                 {!isUser && (
                                                                                                                                                                                     workStatus === "Submitted" ? (
@@ -2834,6 +2848,8 @@ const TlProjectList = () => {
                                                                                                                                                                                     </span>
                                                                                                                                                                                 </div>
                                                                                                                                                                             </td>
+                                                                                                                                                                            </>
+                                                                                                                                                                            )}
                                                                                                                                                                             <td className="text-center align-middle px-2 py-2 border-l border-gray-100">
                                                                                                                                                                                 <button
                                                                                                                                                                                     className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 inline-flex items-center gap-1"
