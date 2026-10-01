@@ -66,6 +66,7 @@ import { AddSectorButton } from "../setupsettings/SetupComponents";
 import {
   PROJECT_TYPE_FORM_OPTIONS,
   isRelaxedProjectType,
+  hidesProjectWeightage,
 } from "../../constants/projectSources";
 
 const CreateProject = () => {
@@ -109,6 +110,7 @@ const CreateProject = () => {
   });
 
   const isRelaxedType = isRelaxedProjectType(form.source_id);
+  const hideWeightage = hidesProjectWeightage(form.source_id);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentStep, setCurrentStep] = useState(1);
@@ -2276,16 +2278,18 @@ const CreateProject = () => {
 
 
 
-    // 🔹 Weightage Check
-    const totalWeightage = Object.values(activityWeightages).reduce(
-      (sum, w) => sum + (w || 0),
-      0
-    );
-
-    if (Math.abs(totalWeightage - 100) > 0.01) {
-      return showError(
-        `Total activity weightage must be 100%. Current: ${totalWeightage}%`
+    // 🔹 Weightage Check (not required for BD)
+    if (!hideWeightage) {
+      const totalWeightage = Object.values(activityWeightages).reduce(
+        (sum, w) => sum + (w || 0),
+        0
       );
+
+      if (Math.abs(totalWeightage - 100) > 0.01) {
+        return showError(
+          `Total activity weightage must be 100%. Current: ${totalWeightage}%`
+        );
+      }
     }
 
     const allActivities = getAllActivities();
@@ -5174,7 +5178,7 @@ const CreateProject = () => {
             </button>
           </div>
 
-          {selectedActivities.length > 0 && (
+          {selectedActivities.length > 0 && !hideWeightage && (
             <div className="mb-4 p-3 bg-blue-50 rounded-xl">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-blue-700">
@@ -5427,6 +5431,7 @@ const CreateProject = () => {
                               exit={{ height: 0, opacity: 0 }}
                               className="border-t border-gray-200 bg-white p-3 md:p-4"
                             >
+                              {!hideWeightage && (
                               <div className="mb-3 md:mb-4 cursor-not-allowed">
                                 <label className="block text-xs font-medium text-gray-600 mb-1">
                                   Activity Weightage (% of total project) *
@@ -5453,6 +5458,7 @@ const CreateProject = () => {
                                   />
                                 </div>
                               </div>
+                              )}
                               <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
                                 <div className="space-y-1">
                                   <label className="text-xs font-medium text-gray-600">

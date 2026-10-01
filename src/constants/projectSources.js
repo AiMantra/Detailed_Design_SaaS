@@ -66,6 +66,15 @@ export function getProjectSourceId(project) {
   );
 }
 
+/** BD projects: hide weightage in UI and skip 100% validation */
+export function hidesProjectWeightage(projectOrSourceId) {
+  const sid =
+    typeof projectOrSourceId === "string"
+      ? projectOrSourceId
+      : getProjectSourceId(projectOrSourceId);
+  return sid === PROJECT_SOURCE_IDS.BD;
+}
+
 export function getProjectTypeLabel(projectOrSourceId) {
   if (!projectOrSourceId) return "";
   if (typeof projectOrSourceId === "string") {

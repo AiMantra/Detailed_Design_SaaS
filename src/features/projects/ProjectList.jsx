@@ -79,6 +79,7 @@ import {
   PROJECT_TYPE_LABELS,
   PROJECT_TYPE_FILTER_OPTIONS,
   getProjectTypeLabel,
+  hidesProjectWeightage,
 } from "../../constants/projectSources";
 
 const ProjectList = () => {
@@ -1223,8 +1224,6 @@ const ProjectList = () => {
             "LOA Date": formatDate(getLoaDate(project)),
             "Deadline": formatDate(project.completion_date || project.completionDate),
             "Status": project.status || "Ongoing",
-            "Physical Progress (%)": project.physical_progress ?? 0,
-            "Financial Progress (%)": project.financial_progress ?? 0,
             "Overall Progress (%)": project.overall_progress ?? 0,
           };
         } catch (rowError) {
@@ -1244,8 +1243,6 @@ const ProjectList = () => {
             "LOA Date": formatDate(project.loa_date),
             "Deadline": formatDate(project.completion_date),
             "Status": project.status || "Ongoing",
-            "Physical Progress (%)": project.physical_progress ?? 0,
-            "Financial Progress (%)": project.financial_progress ?? 0,
             "Overall Progress (%)": project.overall_progress ?? 0,
           };
         }
@@ -2713,8 +2710,6 @@ const ProjectList = () => {
                   const isCompleted = progress === 100;
                   // const weightedProgress = getWeightedProgress(project);
                   const weightedProgress = project.overall_progress || 0;
-                  const physicalProgress = project.physical_progress || 0;
-                  const financialProgress = project.financial_progress || 0;
                   const statusInfo = getProjectStatusInfo({
                     // status: project.status || "ONGOING",
                     completionDate: completionDate,
@@ -3038,53 +3033,6 @@ const ProjectList = () => {
 
 
                           </div>
-                        </div>
-                        {/* 🔥 Progress Section */}
-
-                        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                          {/* Physical Progress */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium text-gray-600">
-                                Physical Progress
-                              </span>
-                              <span className="text-sm font-bold text-green-600">
-                                {physicalProgress}%
-                              </span>
-                            </div>
-
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${physicalProgress}%` }}
-                                transition={{ duration: 0.8 }}
-                                className="h-3 rounded-full bg-green-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Financial Progress */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium text-gray-600">
-                                Financial Progress
-                              </span>
-                              <span className="text-sm font-bold text-blue-600">
-                                {financialProgress}%
-                              </span>
-                            </div>
-
-                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${financialProgress}%` }}
-                                transition={{ duration: 0.8 }}
-                                className="h-3 rounded-full bg-blue-500"
-                              />
-                            </div>
-                          </div>
-
                         </div>
 
 
@@ -3447,7 +3395,6 @@ const ProjectList = () => {
                                                     expandedActivities[activity.id];
 
                                                   const activityProgress = activity.activity_progress || 0
-                                                  const financialProgress = activity.financial_progress || 0
 
 
 
@@ -3471,10 +3418,12 @@ const ProjectList = () => {
                                                             <h5 className="font-semibold text-gray-800">
                                                               {activity.activity_name}
                                                             </h5>
+                                                            {!hidesProjectWeightage(projectData || project) && (
                                                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">
                                                               Weightage:{" "}
                                                               {activity.weightage.toFixed(2) || 0}%
                                                             </span>
+                                                            )}
                                                             <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600">
                                                               {subs.length} tasks
                                                             </span>

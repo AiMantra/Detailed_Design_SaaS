@@ -74,6 +74,7 @@ import {
     PROJECT_TYPE_SOURCE_IDS,
     PROJECT_TYPE_FILTER_OPTIONS,
     getProjectTypeLabel,
+    hidesProjectWeightage,
 } from "../../constants/projectSources";
 
 const TlProjectList = () => {
@@ -2169,8 +2170,6 @@ const TlProjectList = () => {
                                         const daysLeft = getDaysUntilDeadline(completionDate);
                                         const isCompleted = progress === 100;
                                         const weightedProgress = project.overall_progress || 0;
-                                        const physicalProgress = project.physical_progress || 0;
-                                        const financialProgress = project.financial_progress || 0;
                                         const statusInfo = getProjectStatusInfo({
                                             // status: project.status || "ONGOING",
                                             completionDate: completionDate,
@@ -2299,55 +2298,6 @@ const TlProjectList = () => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-
-
-
-                                                    {/* Progress Section */}
-                                                    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                                        {/* Physical Progress */}
-                                                        <div>
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <span className="text-sm font-medium text-gray-600">
-                                                                    Physical Progress
-                                                                </span>
-                                                                <span className="text-sm font-bold text-green-600">
-                                                                    {physicalProgress}%
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                                                <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${physicalProgress}%` }}
-                                                                    transition={{ duration: 0.8 }}
-                                                                    className="h-3 rounded-full bg-green-500"
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Financial Progress */}
-                                                        <div>
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <span className="text-sm font-medium text-gray-600">
-                                                                    Financial Progress
-                                                                </span>
-                                                                <span className="text-sm font-bold text-blue-600">
-                                                                    {financialProgress}%
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                                                <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${financialProgress}%` }}
-                                                                    transition={{ duration: 0.8 }}
-                                                                    className="h-3 rounded-full bg-blue-500"
-                                                                />
-                                                            </div>
-                                                        </div>
-
                                                     </div>
 
                                                     <AnimatePresence>
@@ -2510,7 +2460,6 @@ const TlProjectList = () => {
                                                                                                         const isActivityExpanded = expandedActivities[activity.id];
                                                                                                         // const activityProgress = subs.length > 0 ? (subs.filter(s => s.is_completed || s.status === "Complete").length / subs.length) * 100 : 0;
                                                                                                         const activityProgress = activity.physical_progress || 0
-                                                                                                        const financialProgress = activity.financial_progress || 0;
                                                                                                         const daysLeft = calculateDaysLeft(activity?.end_date || activity.endDate);
                                                                                                         return (
                                                                                                             <div key={activity.id || actIndex} className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
@@ -2518,7 +2467,9 @@ const TlProjectList = () => {
                                                                                                                     <div className="flex-1">
                                                                                                                         <div className="flex items-center gap-3 flex-wrap">
                                                                                                                             <h5 className="font-semibold text-gray-800">{activity.activity_name}</h5>
+                                                                                                                            {!hidesProjectWeightage(projectData) && (
                                                                                                                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">Weightage: {activity.weightage || 0}%</span>
+                                                                                                                            )}
                                                                                                                             <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600">{subs.length} tasks</span>
                                                                                                                             <span className={`text-xs px-2 py-1 rounded-full ${activityProgress == 100 ? "bg-green-100 text-green-600" : daysLeft < 0 ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"}`}>
                                                                                                                                 {activityProgress == 100 ? "Completed" : daysLeft < 0 ? "Delayed" : "Ongoing"}

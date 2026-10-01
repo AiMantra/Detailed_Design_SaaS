@@ -64,6 +64,7 @@ import {
   Factory
 } from "lucide-react";
 import LoadingModal from "../../components/modals/LoadingModal";
+import { hidesProjectWeightage } from "../../constants/projectSources";
 
 // Helper functions
 const mapStatusToBackend = (status, unit) => {
@@ -1699,7 +1700,7 @@ const ProjectDetails = () => {
                             <span className={`text-xs px-2 py-1 rounded-full ${isActivityCompleted ? "bg-green-100 text-green-600" : daysLeft < 0 ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"}`}>
                               {isActivityCompleted ? "Completed" : daysLeft < 0 ? "Delayed" : "Ongoing"}
                             </span>
-                            {activity.weightage && <span className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded-full">{activity.weightage}%</span>}
+                            {activity.weightage && !hidesProjectWeightage(project) && <span className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded-full">{activity.weightage}%</span>}
                             <div className="flex items-center gap-1 ml-auto">
                               {(user?.role === "ADMIN" || user?.role === "ACCOUNT") && (
                                 <button onClick={() => {
