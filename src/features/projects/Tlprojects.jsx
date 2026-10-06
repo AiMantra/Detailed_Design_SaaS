@@ -71,8 +71,9 @@ import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationD
 import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
 import {
-    PROJECT_TYPE_SOURCE_IDS,
-    PROJECT_TYPE_FILTER_OPTIONS,
+    getVisibleProjectTypeFilterOptions,
+    getDefaultProjectTypeFilter,
+    resolveListSourceId,
     getProjectTypeLabel,
     hidesProjectWeightage,
 } from "../../constants/projectSources";
@@ -145,11 +146,11 @@ const TlProjectList = () => {
 
     const [expandedProjectDetails, setExpandedProjectDetails] = useState({});
     const [loadingProjectDetails, setLoadingProjectDetails] = useState({});
-    const [filterProjectType, setFilterProjectType] = useState("all");
+    const [filterProjectType, setFilterProjectType] = useState(getDefaultProjectTypeFilter);
     const totalCount = projectsOnlyPagination.total_projects || 0;
     const totalPages = projectsOnlyPagination.total_pages || Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-    const sourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
+    const sourceId = resolveListSourceId(filterProjectType);
 
     const getProjectListParams = (page = currentPage) => ({
         page,
@@ -2121,7 +2122,7 @@ const TlProjectList = () => {
                                         className="w-full appearance-none pl-10 pr-10 py-3 border border-gray-200 rounded-xl bg-white text-sm text-gray-700 focus:ring-2 focus:ring-blue-500"
                                         aria-label="Filter by project type"
                                     >
-                                        {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => (
+                                        {getVisibleProjectTypeFilterOptions().map((opt) => (
                                             <option key={opt.value} value={opt.value}>
                                                 {opt.label}
                                             </option>

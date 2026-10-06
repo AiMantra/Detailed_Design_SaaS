@@ -8,8 +8,9 @@ import {
 import { fetchProjectDetails } from "../api/apiSlice"; // ← adjust path
 import { showSnackbar } from "../notifications/notificationSlice";
 import {
-    PROJECT_TYPE_FILTER_OPTIONS,
     PROJECT_TYPE_SOURCE_IDS,
+    getVisibleProjectTypeFilterOptions,
+    getDefaultProjectTypeFilter,
     getProjectSourceId,
     getProjectTypeFilterValue,
     resolveProjectsForType,
@@ -52,7 +53,7 @@ const timeOptions = (() => {
 
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
-    projectType: "all",
+    projectType: getDefaultProjectTypeFilter(),
     projectId: "",
     activityId: "",
     subActivityId: "",
@@ -772,7 +773,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                             onChange={(v) => handleProjectTypeChange(row._id, v)}
                                                             hidePlaceholder
                                                         >
-                                                            {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => (
+                                                            {getVisibleProjectTypeFilterOptions().map((opt) => (
                                                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                             ))}
                                                         </Sel>

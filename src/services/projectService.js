@@ -1,6 +1,6 @@
 
 import api from './api';
-import { PROJECT_TYPE_SOURCE_IDS } from '../constants/projectSources';
+import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, isAimantraSubCompanyUser, applyUserProjectVisibility } from '../constants/projectSources';
 
 
 
@@ -39,11 +39,12 @@ export const projectService = {
   getProjectsListSimple: async ({ source_id } = {}) => {
     try {
       const params = {};
-      if (source_id) params.source_id = source_id;
+      const lockedSource = isAimantraSubCompanyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      if (lockedSource) params.source_id = lockedSource;
       const response = await api.get('/get-projects-lists/', { params });
       const data = response.data;
-      if (Array.isArray(data)) return data;
-      return data?.results || [];
+      const list = Array.isArray(data) ? data : (data?.results || []);
+      return applyUserProjectVisibility(list);
     } catch (error) {
       console.error('Error fetching projects:', error);
       throw error;
@@ -51,7 +52,15 @@ export const projectService = {
   },
 
   getProjectsByTypeKey: async (typeKey) => {
-    const source_id = PROJECT_TYPE_SOURCE_IDS[typeKey];
+    if (isAimantraSubCompanyUser() && typeKey && typeKey !== "all" && typeKey !== "aimantra") {
+      return [];
+    }
+    if (!isAimantraSubCompanyUser() && typeKey === "aimantra") {
+      return [];
+    }
+    const source_id = isAimantraSubCompanyUser()
+      ? PROJECT_SOURCE_IDS.AIMANTRA
+      : PROJECT_TYPE_SOURCE_IDS[typeKey];
     if (!source_id) return projectService.getProjectsListSimple();
     try {
       const all = await projectService.getAllProjectsLessDetails(null, { source_id });
@@ -65,10 +74,16 @@ export const projectService = {
   getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {
     try {
       const params = { page, page_size };
-      if (source_id) params.source_id = source_id;
+      const lockedSource = isAimantraSubCompanyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
       const response = await api.get('/get-projects-list/', { params });
-      return response.data;
+      const data = response.data;
+      if (Array.isArray(data)) return applyUserProjectVisibility(data);
+      return {
+        ...data,
+        results: applyUserProjectVisibility(data?.results || []),
+      };
     } catch (error) {
       console.error('Error fetching projects:', error);
       throw error;
@@ -79,13 +94,14 @@ export const projectService = {
     try {
       const page_size = 100;
       const params = { page: 1, page_size };
-      if (source_id) params.source_id = source_id;
+      const lockedSource = isAimantraSubCompanyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
 
       const firstResponse = await api.get('/get-projects-list/', { params });
       const firstData = firstResponse.data;
 
-      if (Array.isArray(firstData)) return firstData;
+      if (Array.isArray(firstData)) return applyUserProjectVisibility(firstData);
 
       let results = [...(firstData?.results || [])];
       const totalPages = firstData?.total_pages || 1;
@@ -97,7 +113,7 @@ export const projectService = {
         results = results.concat(nextResponse.data?.results || []);
       }
 
-      return results;
+      return applyUserProjectVisibility(results);
     } catch (error) {
       console.error('Error fetching all projects:', error);
       throw error;

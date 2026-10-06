@@ -9,8 +9,9 @@ import { fetchProjectDetails } from "../api/apiSlice";
 import api, { getLatestServerDate } from "../../services/api";
 import { projectService } from "../../services/projectService";
 import {
-    PROJECT_TYPE_FILTER_OPTIONS,
     PROJECT_TYPE_SOURCE_IDS,
+    getVisibleProjectTypeFilterOptions,
+    getDefaultProjectTypeFilter,
     getProjectSourceId,
     getProjectTypeFilterValue,
     resolveProjectsForType,
@@ -54,7 +55,7 @@ const timeOptions = (() => {
 const emptyRow = () => ({
     _id: crypto.randomUUID(),
     taskId: null,
-    projectType: "all",
+    projectType: getDefaultProjectTypeFilter(),
     projectId: "",
     activityId: "",
     subActivityId: "",
@@ -743,7 +744,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             disabled={disabled}
                                                             hidePlaceholder
                                                         >
-                                                            {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => (
+                                                            {getVisibleProjectTypeFilterOptions().map((opt) => (
                                                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                             ))}
                                                         </Sel>
