@@ -2323,6 +2323,119 @@ export const DeleteClientButton = ({ client, onSuccess, loadData }) => {
 };
 
 
+const emptySubactivity = () => ({
+    subactivity_name: "",
+    sorting_var: "",
+    description: "",
+    unit: "",
+    chainage_exist: true,
+    planned_quantity_exist: true,
+    length_exist: true,
+    submission_exist: true,
+    approval_exist: true,
+});
+
+const SUBACTIVITY_UNIT_OPTIONS = ["Percentage", "Kilometer", "Numbers", "Status"];
+
+const SUBACTIVITY_CONFIG_OPTIONS = [
+    { id: "planned_quantity_exist", label: "Planned Quantity", desc: "Enable planned quantity tracking for this sub-activity" },
+    { id: "chainage_exist", label: "Chainage Range", desc: "Enable chainage start and end range tracking" },
+    { id: "length_exist", label: "Length / Area", desc: "Enable length or covered area tracking" },
+    { id: "submission_exist", label: "Submission Payment", desc: "Enable submission payment tracking" },
+    { id: "approval_exist", label: "Approval Payment", desc: "Enable approval payment tracking" },
+];
+
+const SubactivityFields = ({ sub, index, onChange, onRemove, canRemove }) => (
+    <div className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
+        <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-gray-700">Sub-activity {index + 1}</h4>
+            {canRemove && (
+                <button
+                    type="button"
+                    onClick={() => onRemove(index)}
+                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                    title="Remove sub-activity"
+                >
+                    <Trash2 size={14} />
+                </button>
+            )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Sub-activity Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    value={sub.subactivity_name}
+                    onChange={(e) => onChange(index, "subactivity_name", restrictToLetters(e.target.value))}
+                    placeholder="Enter sub-activity name"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+            <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Sort Order</label>
+                <input
+                    type="text"
+                    value={sub.sorting_var}
+                    onChange={(e) => onChange(index, "sorting_var", restrictToNumbers(e.target.value))}
+                    placeholder="1, 2, 3..."
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+        </div>
+        <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+            <textarea
+                value={sub.description}
+                onChange={(e) => onChange(index, "description", e.target.value)}
+                placeholder="Sub-activity description..."
+                rows={2}
+                maxLength={500}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+            />
+        </div>
+        <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">
+                Unit of Measurement <span className="text-red-500">*</span>
+            </label>
+            <select
+                value={sub.unit}
+                onChange={(e) => onChange(index, "unit", e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+            >
+                <option value="">Select Unit</option>
+                {SUBACTIVITY_UNIT_OPTIONS.map((unit) => (
+                    <option key={unit} value={unit}>{unit}</option>
+                ))}
+            </select>
+        </div>
+        <div className="border-t border-gray-200 pt-3">
+            <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <Settings size={14} />
+                Template Configuration
+            </h5>
+            <div className="space-y-2">
+                {SUBACTIVITY_CONFIG_OPTIONS.map(({ id, label, desc }) => (
+                    <div key={id} className="flex items-center p-3 bg-white rounded-lg border border-gray-100">
+                        <input
+                            type="checkbox"
+                            id={`sub-${index}-${id}`}
+                            checked={sub[id]}
+                            onChange={(e) => onChange(index, id, e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor={`sub-${index}-${id}`} className="ml-3 flex-1">
+                            <div className="font-medium text-gray-700 text-sm">{label}</div>
+                            <div className="text-xs text-gray-500">{desc}</div>
+                        </label>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
 // Activity Modal Content (Internal Component)
 const ActivityModalContent = ({
     isOpen,
@@ -2333,6 +2446,10 @@ const ActivityModalContent = ({
     onFormChange,
     loading,
     title,
+    includeSubactivities = false,
+    onSubactivityChange,
+    onAddSubactivity,
+    onRemoveSubactivity,
 }) => {
     return (
         <AnimatePresence>
@@ -2348,7 +2465,7 @@ const ActivityModalContent = ({
                         initial={{ scale: 0.95, y: 30 }}
                         animate={{ scale: 1, y: 0 }}
                         exit={{ scale: 0.95, y: 30 }}
-                        className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border relative z-[10000]"
+                        className={`bg-white rounded-2xl p-6 w-full shadow-2xl border relative z-[10000] max-h-[90vh] overflow-y-auto ${includeSubactivities ? "max-w-2xl" : "max-w-md"}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex justify-between items-center mb-5">
@@ -2372,9 +2489,6 @@ const ActivityModalContent = ({
                                 <input
                                     type="text"
                                     value={formData.activity_name}
-                                    // onChange={(e) =>
-                                    //     onFormChange("activity_name", e.target.value)
-                                    // }
                                     onChange={(e) => onFormChange("activity_name", restrictToLetters(e.target.value))}
                                     placeholder="Enter Activity Name"
                                     maxLength={50}
@@ -2382,7 +2496,6 @@ const ActivityModalContent = ({
                                 />
                             </div>
 
-                            {/* <div className="grid grid-cols-2 gap-4"> */}
                             <div>
                                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                                     Sequence Position
@@ -2396,7 +2509,6 @@ const ActivityModalContent = ({
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
-
 
                             <div>
                                 <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -2412,7 +2524,37 @@ const ActivityModalContent = ({
                                 />
                             </div>
 
-
+                            {includeSubactivities && (
+                                <div className="border-t border-gray-200 pt-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-md font-semibold text-gray-800 flex items-center gap-2">
+                                            <Layers size={16} className="text-blue-600" />
+                                            Sub-activities <span className="text-red-500">*</span>
+                                        </h4>
+                                        <button
+                                            type="button"
+                                            onClick={onAddSubactivity}
+                                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-1"
+                                        >
+                                            <Plus size={14} />
+                                            Add Sub-activity
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        At least one sub-activity is required when creating an activity.
+                                    </p>
+                                    {(formData.subactivities || []).map((sub, index) => (
+                                        <SubactivityFields
+                                            key={index}
+                                            sub={sub}
+                                            index={index}
+                                            onChange={onSubactivityChange}
+                                            onRemove={onRemoveSubactivity}
+                                            canRemove={(formData.subactivities || []).length > 1}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex gap-3 mt-6">
@@ -2451,15 +2593,34 @@ export const AddActivityButton = ({ onSuccess, loadData }) => {
         activity_name: "",
         sorting_var: "",
         template_description: "",
-        // start_date: "",
-        // end_date: "",
-        // weightage: "",
-        // company: "",
-        // sector: "",
+        subactivities: [emptySubactivity()],
     });
 
     const handleFormChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubactivityChange = (index, field, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            subactivities: prev.subactivities.map((sub, i) =>
+                i === index ? { ...sub, [field]: value } : sub
+            ),
+        }));
+    };
+
+    const handleAddSubactivity = () => {
+        setFormData((prev) => ({
+            ...prev,
+            subactivities: [...prev.subactivities, emptySubactivity()],
+        }));
+    };
+
+    const handleRemoveSubactivity = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            subactivities: prev.subactivities.filter((_, i) => i !== index),
+        }));
     };
 
     const resetForm = () => {
@@ -2467,11 +2628,7 @@ export const AddActivityButton = ({ onSuccess, loadData }) => {
             activity_name: "",
             sorting_var: "",
             template_description: "",
-            // start_date: "",
-            // end_date: "",
-            // weightage: "",
-            // company: "",
-            // sector: "",
+            subactivities: [emptySubactivity()],
         });
     };
 
@@ -2500,19 +2657,54 @@ export const AddActivityButton = ({ onSuccess, loadData }) => {
             }
         }
 
+        const filledSubs = (formData.subactivities || []).filter((sub) => sub.subactivity_name?.trim());
+        if (!filledSubs.length) {
+            dispatch(showSnackbar({ message: "At least one sub-activity is required", type: "error" }));
+            return;
+        }
+
+        for (const sub of filledSubs) {
+            if (!validateName(sub.subactivity_name.trim())) {
+                dispatch(showSnackbar({
+                    message: "Sub-activity name should only contain letters, spaces, hyphens, and apostrophes (max 50 characters)",
+                    type: "error"
+                }));
+                return;
+            }
+            if (!sub.unit) {
+                dispatch(showSnackbar({ message: `Please select a unit for "${sub.subactivity_name.trim()}"`, type: "error" }));
+                return;
+            }
+            if (sub.sorting_var && sub.sorting_var.trim()) {
+                const sortingNum = parseInt(sub.sorting_var);
+                if (isNaN(sortingNum) || sortingNum < 0) {
+                    dispatch(showSnackbar({ message: "Sub-activity sort order must be a positive number", type: "error" }));
+                    return;
+                }
+            }
+        }
+
         setLoading(true);
         try {
+            const createdBy = sessionStorage.getItem('emp_code');
             await dispatch(
                 createStageTemplate({
                     activity_name: activityName,
                     sorting_var: formData.sorting_var || "1",
-                    template_description: formData.template_description,
-                    created_by: sessionStorage.getItem('emp_code'),
-                    // start_date: formData.start_date || null,
-                    // end_date: formData.end_date || null,
-                    // weightage: formData.weightage || null,
-                    // company: formData.company || null,
-                    // sector: formData.sector || null,
+                    template_description: formData.template_description || "",
+                    created_by: createdBy,
+                    subactivities: filledSubs.map((sub, idx) => ({
+                        subactivity_name: sub.subactivity_name.trim(),
+                        sorting_var: sub.sorting_var || String(idx + 1),
+                        description: sub.description || "",
+                        unit: sub.unit,
+                        chainage_exist: sub.chainage_exist,
+                        planned_quantity_exist: sub.planned_quantity_exist,
+                        length_exist: sub.length_exist,
+                        submission_exist: sub.submission_exist,
+                        approval_exist: sub.approval_exist,
+                        created_by: createdBy,
+                    })),
                 }),
             ).unwrap();
 
@@ -2522,7 +2714,15 @@ export const AddActivityButton = ({ onSuccess, loadData }) => {
             if (onSuccess) onSuccess();
             if (loadData) loadData();
         } catch (error) {
-            dispatch(showSnackbar({ message: error.message || "Failed to create activity", type: "error" }));
+            const apiError = error?.data || error;
+            const first = Array.isArray(apiError) ? apiError[0] : apiError;
+            const message =
+                first?.subactivities?.[0] ||
+                first?.activity_name?.[0] ||
+                first?.message ||
+                error?.message ||
+                "Failed to create activity";
+            dispatch(showSnackbar({ message: String(message), type: "error" }));
         } finally {
             setLoading(false);
         }
@@ -2552,6 +2752,10 @@ export const AddActivityButton = ({ onSuccess, loadData }) => {
                 onFormChange={handleFormChange}
                 loading={loading}
                 title="Create New Activity"
+                includeSubactivities
+                onSubactivityChange={handleSubactivityChange}
+                onAddSubactivity={handleAddSubactivity}
+                onRemoveSubactivity={handleRemoveSubactivity}
             />
         </>
     );

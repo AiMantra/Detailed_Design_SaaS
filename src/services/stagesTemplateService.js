@@ -26,9 +26,13 @@ export const stagesTemplateService = {
 
   createStageTemplate: async (stageTemplateData) => {
     try {
-      const payload = Array.isArray(stageTemplateData) ? stageTemplateData : [stageTemplateData];
+      const items = Array.isArray(stageTemplateData) ? stageTemplateData : [stageTemplateData];
+      const payload = items.map((item) => ({
+        ...item,
+        subactivities: Array.isArray(item.subactivities) ? item.subactivities : [],
+      }));
       const response = await api.post('/activity-template/', payload);
-      return Array.isArray(response.data) ? response.data[0] : response.data; // Doubt : why 1st item of list 
+      return Array.isArray(response.data) ? response.data[0] : response.data;
     } catch (error) {
       console.error('Error creating activity template:', error);
       throw error;

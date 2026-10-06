@@ -8,6 +8,7 @@ export const PROJECT_SOURCE_IDS = {
   PREBID: "c4e54604-9a83-4065-b798-ad0e58673788",
   BD: "c4e54604-9a83-4065-b798-ad0e58673789",
   ACCOUNT: "c4e54604-9a83-4065-b798-ad0e58673790",
+  AIMANTRA: "c4e54604-9a83-4065-b798-ad0e58673791",
 };
 
 /** Filter select keys → source UUID */
@@ -17,6 +18,7 @@ export const PROJECT_TYPE_SOURCE_IDS = {
   prebid: PROJECT_SOURCE_IDS.PREBID,
   bd: PROJECT_SOURCE_IDS.BD,
   account: PROJECT_SOURCE_IDS.ACCOUNT,
+  aimantra: PROJECT_SOURCE_IDS.AIMANTRA,
 };
 
 /** source UUID → display label */
@@ -26,6 +28,7 @@ export const PROJECT_TYPE_LABELS = {
   [PROJECT_SOURCE_IDS.PREBID]: "Prebid",
   [PROJECT_SOURCE_IDS.BD]: "BD",
   [PROJECT_SOURCE_IDS.ACCOUNT]: "Account",
+  [PROJECT_SOURCE_IDS.AIMANTRA]: "Aimantra",
 };
 
 export const PROJECT_TYPE_FILTER_OPTIONS = [
@@ -35,6 +38,7 @@ export const PROJECT_TYPE_FILTER_OPTIONS = [
   { value: "prebid", label: "Prebid" },
   { value: "bd", label: "BD" },
   { value: "account", label: "Account" },
+  { value: "aimantra", label: "Aimantra" },
 ];
 
 /** Create / Update Project Type dropdown options */
@@ -44,6 +48,7 @@ export const PROJECT_TYPE_FORM_OPTIONS = [
   { value: PROJECT_SOURCE_IDS.PREBID, label: "Prebid" },
   { value: PROJECT_SOURCE_IDS.BD, label: "BD" },
   { value: PROJECT_SOURCE_IDS.ACCOUNT, label: "Account" },
+  { value: PROJECT_SOURCE_IDS.AIMANTRA, label: "Aimantra" },
 ];
 
 /** DPR, Prebid, BD & Account: client/branch (and some units) optional */
@@ -52,7 +57,8 @@ export function isRelaxedProjectType(sourceId) {
     sourceId === PROJECT_SOURCE_IDS.DPR ||
     sourceId === PROJECT_SOURCE_IDS.PREBID ||
     sourceId === PROJECT_SOURCE_IDS.BD ||
-    sourceId === PROJECT_SOURCE_IDS.ACCOUNT
+    sourceId === PROJECT_SOURCE_IDS.ACCOUNT ||
+    sourceId === PROJECT_SOURCE_IDS.AIMANTRA
   );
 }
 
@@ -66,13 +72,21 @@ export function getProjectSourceId(project) {
   );
 }
 
-/** BD projects: hide weightage in UI and skip 100% validation */
+function resolveSourceId(projectOrSourceId) {
+  return typeof projectOrSourceId === "string"
+    ? projectOrSourceId
+    : getProjectSourceId(projectOrSourceId);
+}
+
+/** BD & Aimantra: hide weightage in UI and skip 100% validation */
 export function hidesProjectWeightage(projectOrSourceId) {
-  const sid =
-    typeof projectOrSourceId === "string"
-      ? projectOrSourceId
-      : getProjectSourceId(projectOrSourceId);
-  return sid === PROJECT_SOURCE_IDS.BD;
+  const sid = resolveSourceId(projectOrSourceId);
+  return sid === PROJECT_SOURCE_IDS.BD || sid === PROJECT_SOURCE_IDS.AIMANTRA;
+}
+
+/** Aimantra create/edit: only core identity, company, sector, owners, and dates */
+export function hidesExtendedProjectFields(projectOrSourceId) {
+  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.AIMANTRA;
 }
 
 export function getProjectTypeLabel(projectOrSourceId) {

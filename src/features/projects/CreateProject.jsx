@@ -67,6 +67,7 @@ import {
   PROJECT_TYPE_FORM_OPTIONS,
   isRelaxedProjectType,
   hidesProjectWeightage,
+  hidesExtendedProjectFields,
 } from "../../constants/projectSources";
 
 const CreateProject = () => {
@@ -111,6 +112,7 @@ const CreateProject = () => {
 
   const isRelaxedType = isRelaxedProjectType(form.source_id);
   const hideWeightage = hidesProjectWeightage(form.source_id);
+  const hideExtendedFields = hidesExtendedProjectFields(form.source_id);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentStep, setCurrentStep] = useState(1);
@@ -2260,15 +2262,19 @@ const CreateProject = () => {
     if (!form.short_name) missingFields.push("Short Name");
     if (!form.company) missingFields.push("Please select a Company");
     if (!form.sector) missingFields.push("Sector");
-    if (!form.workorder_Amount) missingFields.push("Workorder Amount");
-    if (!form.location) missingFields.push("Work location");
-    if (!form.workorder_document) missingFields.push("Workorder Document");
-    // Client & branch required for Detail Design only (optional for DPR / Prebid / BD / Account)
+    if (!form.loa_date) missingFields.push("LOA Date");
+    if (!form.completion_date) missingFields.push("Completion Date");
+    if (!hideExtendedFields) {
+      if (!form.workorder_Amount) missingFields.push("Workorder Amount");
+      if (!form.location) missingFields.push("Work location");
+      if (!form.workorder_document) missingFields.push("Workorder Document");
+      if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
+    }
+    // Client & branch required for Detail Design only (optional for DPR / Prebid / BD / Account / Aimantra)
     if (!isRelaxedType && (!form.client || !form.clientbranch)) {
       missingFields.push("Please select a Client & branch");
     }
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
-    if (!form.total_length || form.total_length <= 0) missingFields.push("Please enter a valid Total Length");
     if (!selectedActivities.length) missingFields.push("Please select at least one activity");
     if (!form.source_id) missingFields.push("Project Type");
 
@@ -2446,10 +2452,10 @@ const CreateProject = () => {
         project_name: form.project_name,
         project_code: form.project_code,
         short_name: form.short_name,
-        location: form.location,
+        location: form.location || "",
         company: selectedCompany?.id || null,
         sub_company: null,
-        total_length: parseFloat(form.total_length),
+        total_length: parseFloat(form.total_length) || 0,
         workorder_cost: parseFloat(form.workorder_Amount) || 0,
         loa_date: form.loa_date,
         completion_date: form.completion_date,
@@ -4388,6 +4394,7 @@ const CreateProject = () => {
               </div>
             </div>
             {/* Location */}
+            {!hideExtendedFields && (
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Location *</label>
               <div className="relative">
@@ -4404,6 +4411,7 @@ const CreateProject = () => {
                 />
               </div>
             </div>
+            )}
 
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Company *</label>
@@ -4464,7 +4472,7 @@ const CreateProject = () => {
             </div>
 
 
-            {form.company && (
+            {form.company && !hideExtendedFields && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-500">Company GST</label>
                 <div className="relative">
@@ -4545,6 +4553,8 @@ const CreateProject = () => {
                 )}
               </div>
             </div>
+            {!hideExtendedFields && (
+            <>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">
                 Client {isRelaxedType ? "" : "*"}
@@ -4752,6 +4762,8 @@ const CreateProject = () => {
                 </label>
               )}
             </div>
+            </>
+            )}
 
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">
@@ -4936,6 +4948,8 @@ const CreateProject = () => {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Total Length */}
+            {!hideExtendedFields && (
+            <>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500 capitalize">
                 Total{" "}
@@ -5017,6 +5031,8 @@ const CreateProject = () => {
                 </span>
               </div>
             </div>
+            </>
+            )}
 
             {/* LOA Date */}
             <div className="flex flex-col gap-1">
@@ -5050,7 +5066,7 @@ const CreateProject = () => {
             </div>
           </div>
           <div>
-            {parseFloat(form.workorder_Amount) > 0 && (
+            {!hideExtendedFields && parseFloat(form.workorder_Amount) > 0 && (
               <div className="col-span-1 sm:col-span-2 lg:col-span-3 mt-2 relative">
                 <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl  overflow-x-auto">
                   <div className="min-w-[280px]">
