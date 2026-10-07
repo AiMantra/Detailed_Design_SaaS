@@ -14,6 +14,9 @@ export const PROJECT_SOURCE_IDS = {
 /** HRMS division/sub-company that should only see Aimantra projects */
 export const AIMANTRA_SUB_COMPANY_ID = "3e640f93-152c-45b4-aee8-b461160d23d4";
 
+/** Extra emp codes that can see Aimantra projects (in addition to other types) */
+export const AIMANTRA_VISIBLE_EMP_CODES = ["SAPL0739"];
+
 /** Filter select keys → source UUID */
 export const PROJECT_TYPE_SOURCE_IDS = {
   "detail design": PROJECT_SOURCE_IDS.DETAIL_DESIGN,
@@ -110,30 +113,50 @@ export function isAimantraSubCompanyUser() {
   return String(getUserSubCompanyId()) === AIMANTRA_SUB_COMPANY_ID;
 }
 
+export function getUserEmpCode() {
+  return String(sessionStorage.getItem("emp_code") || "").trim().toUpperCase();
+}
+
+export function isAimantraAllowedEmp() {
+  return AIMANTRA_VISIBLE_EMP_CODES.includes(getUserEmpCode());
+}
+
+/** Can view Aimantra projects: Aimantra sub-company, or allowlisted emp_code */
+export function canSeeAimantraProjects() {
+  return isAimantraSubCompanyUser() || isAimantraAllowedEmp();
+}
+
 export function getDefaultProjectTypeFilter() {
-  return isAimantraSubCompanyUser() ? "aimantra" : "all";
+  return canSeeAimantraProjects() ? "aimantra" : "all";
 }
 
 export function getVisibleProjectTypeFilterOptions() {
-  if (isAimantraSubCompanyUser()) {
+  if (canSeeAimantraProjects()) {
     return PROJECT_TYPE_FILTER_OPTIONS.filter((o) => o.value === "aimantra");
   }
   return PROJECT_TYPE_FILTER_OPTIONS.filter((o) => o.value !== "aimantra");
 }
 
-/** API source_id for list fetches: Aimantra sub-company is locked to Aimantra type */
+export function getVisibleProjectTypeFormOptions() {
+  if (canSeeAimantraProjects()) {
+    return PROJECT_TYPE_FORM_OPTIONS.filter((o) => o.value === PROJECT_SOURCE_IDS.AIMANTRA);
+  }
+  return PROJECT_TYPE_FORM_OPTIONS.filter((o) => o.value !== PROJECT_SOURCE_IDS.AIMANTRA);
+}
+
+/** API source_id for list fetches: Aimantra-only users are locked to Aimantra type */
 export function resolveListSourceId(filterProjectType) {
-  if (isAimantraSubCompanyUser()) return PROJECT_SOURCE_IDS.AIMANTRA;
+  if (canSeeAimantraProjects()) return PROJECT_SOURCE_IDS.AIMANTRA;
   return PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
 }
 
 export function applyUserProjectVisibility(projects = []) {
-  const aimantraUser = isAimantraSubCompanyUser();
+  const aimantraOnly = canSeeAimantraProjects();
   const hasSourceMeta = projects.some((p) => getProjectSourceId(p));
   if (!hasSourceMeta) return projects;
   return projects.filter((p) => {
     const sid = String(getProjectSourceId(p));
-    if (aimantraUser) return sid === PROJECT_SOURCE_IDS.AIMANTRA;
+    if (aimantraOnly) return sid === PROJECT_SOURCE_IDS.AIMANTRA;
     return sid !== PROJECT_SOURCE_IDS.AIMANTRA;
   });
 }

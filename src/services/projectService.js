@@ -1,6 +1,6 @@
 
 import api from './api';
-import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, isAimantraSubCompanyUser, applyUserProjectVisibility } from '../constants/projectSources';
+import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, canSeeAimantraProjects, applyUserProjectVisibility } from '../constants/projectSources';
 
 
 
@@ -39,7 +39,7 @@ export const projectService = {
   getProjectsListSimple: async ({ source_id } = {}) => {
     try {
       const params = {};
-      const lockedSource = isAimantraSubCompanyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      const lockedSource = canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       const response = await api.get('/get-projects-lists/', { params });
       const data = response.data;
@@ -52,13 +52,13 @@ export const projectService = {
   },
 
   getProjectsByTypeKey: async (typeKey) => {
-    if (isAimantraSubCompanyUser() && typeKey && typeKey !== "all" && typeKey !== "aimantra") {
+    if (canSeeAimantraProjects() && typeKey && typeKey !== "all" && typeKey !== "aimantra") {
       return [];
     }
-    if (!isAimantraSubCompanyUser() && typeKey === "aimantra") {
+    if (!canSeeAimantraProjects() && typeKey === "aimantra") {
       return [];
     }
-    const source_id = isAimantraSubCompanyUser()
+    const source_id = canSeeAimantraProjects()
       ? PROJECT_SOURCE_IDS.AIMANTRA
       : PROJECT_TYPE_SOURCE_IDS[typeKey];
     if (!source_id) return projectService.getProjectsListSimple();
@@ -74,7 +74,7 @@ export const projectService = {
   getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {
     try {
       const params = { page, page_size };
-      const lockedSource = isAimantraSubCompanyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      const lockedSource = canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
       const response = await api.get('/get-projects-list/', { params });
@@ -94,7 +94,7 @@ export const projectService = {
     try {
       const page_size = 100;
       const params = { page: 1, page_size };
-      const lockedSource = isAimantraSubCompanyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      const lockedSource = canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
 

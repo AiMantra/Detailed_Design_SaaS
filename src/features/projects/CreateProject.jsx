@@ -65,7 +65,9 @@ import { CustomImageModal } from "../../utils/CustomFunctions";
 import { validateName } from "../../utils/HelperValidations";
 import { AddSectorButton } from "../setupsettings/SetupComponents";
 import {
-  PROJECT_TYPE_FORM_OPTIONS,
+  PROJECT_SOURCE_IDS,
+  getVisibleProjectTypeFormOptions,
+  canSeeAimantraProjects,
   isRelaxedProjectType,
   hidesProjectWeightage,
   hidesExtendedProjectFields,
@@ -109,7 +111,7 @@ const CreateProject = () => {
     assigned_to: [],
     clientbranch: "",
     workorder_document: "",
-    source_id: ""
+    source_id: canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : ""
   });
 
   const isRelaxedType = isRelaxedProjectType(form.source_id);
@@ -4385,7 +4387,7 @@ const CreateProject = () => {
                   className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
                 >
                   <option value="" disabled>Select Project Type</option>
-                  {PROJECT_TYPE_FORM_OPTIONS.map((opt) => (
+                  {getVisibleProjectTypeFormOptions().map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>

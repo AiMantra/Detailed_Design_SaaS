@@ -67,7 +67,7 @@ import { UNIT_OPTIONS, SECTOR_UNIT_MAPPING } from "../../utils/enumMapping";
 import { IMAGE_URL } from "../../services/api";
 import { CustomImageModal } from "../../utils/CustomFunctions";
 import {
-    PROJECT_TYPE_FORM_OPTIONS,
+    getVisibleProjectTypeFormOptions,
     isRelaxedProjectType,
     hidesProjectWeightage,
     hidesExtendedProjectFields,
@@ -4068,7 +4068,7 @@ const UpdateProject = () => {
                                     className="w-full pl-9 pr-10 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 appearance-none"
                                 >
                                     <option value="" disabled>Select Project Type</option>
-                                    {PROJECT_TYPE_FORM_OPTIONS.map((opt) => (
+                                    {getVisibleProjectTypeFormOptions().map((opt) => (
                                         <option key={opt.value} value={opt.value}>
                                             {opt.label}
                                         </option>
