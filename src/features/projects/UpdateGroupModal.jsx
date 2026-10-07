@@ -15,6 +15,8 @@ import {
     getProjectSourceId,
     getProjectTypeFilterValue,
     resolveProjectsForType,
+    hidesProjectWorkType,
+    isAimantraSubCompanyUser,
 } from "../../constants/projectSources";
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
@@ -364,6 +366,14 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     };
     const workTypesFor = (pid) => detailFor(pid)?.sector_detail?.stage_work_types || [];
 
+    const rowHidesWorkType = (row) =>
+        isAimantraSubCompanyUser() ||
+        hidesProjectWorkType(row.projectType) ||
+        hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(row.projectId))) ||
+        hidesProjectWorkType(detailFor(row.projectId));
+
+    const hideWorkTypeColumn = isAimantraSubCompanyUser();
+
     const updateRow = useCallback((id, field, value) => {
         setRows((prev) => prev.map((r) => {
             if (r._id !== id) return r;
@@ -452,7 +462,12 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
             if (r.startTime && r.endTime && r.endTime <= r.startTime) errs[`${r._id}.endTime`] = true;
-            if (!r.workType) errs[`${r._id}.workType`] = true;
+            const skipWorkType =
+                isAimantraSubCompanyUser() ||
+                hidesProjectWorkType(r.projectType) ||
+                hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(r.projectId))) ||
+                hidesProjectWorkType(detailFor(r.projectId));
+            if (!skipWorkType && !r.workType) errs[`${r._id}.workType`] = true;
         });
 
         if (!date) errs["date"] = "Date is required";
@@ -667,7 +682,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
 
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
+                                        {!hideWorkTypeColumn && (
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Work Type</th>
+                                        )}
                                         <th className="px-2 pb-1 text-left min-w-[190px]">Description</th>
                                         {/* <th className="px-1 py-2 text-center">Edit</th> */}
                                         {isEdit && (
@@ -862,6 +879,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         />
                                                     </td>
 
+                                                    {!hideWorkTypeColumn && !rowHidesWorkType(row) && (
                                                     <td className="px-1 py-2 align-top">
                                                         <Sel
                                                             value={row.workType}
@@ -885,6 +903,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             </p>
                                                         )}
                                                     </td>
+                                                    )}
 
 
                                                     {/* DESCRIPTION */}

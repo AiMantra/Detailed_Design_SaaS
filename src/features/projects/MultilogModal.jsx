@@ -14,6 +14,8 @@ import {
     getProjectSourceId,
     getProjectTypeFilterValue,
     resolveProjectsForType,
+    hidesProjectWorkType,
+    isAimantraSubCompanyUser,
 } from "../../constants/projectSources";
 // ─── constants ────────────────────────────────────────────────────────────────
 import api, { getLatestServerDate } from "../../services/api";
@@ -422,6 +424,14 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     const workTypesFor = (pid) =>
         detailFor(pid)?.sector_detail?.stage_work_types || [];
 
+    const rowHidesWorkType = (row) =>
+        isAimantraSubCompanyUser() ||
+        hidesProjectWorkType(row.projectType) ||
+        hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(row.projectId))) ||
+        hidesProjectWorkType(detailFor(row.projectId));
+
+    const hideWorkTypeColumn = isAimantraSubCompanyUser();
+
     const stagesFor = (pid, aid, sid) => {
         const sub = subActivitiesFor(pid, aid).find((s) => s.id === sid);
         return [...(sub?.stages || sub?.work_stages || [])];
@@ -530,7 +540,12 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                 errs[`${r._id}.endTime`] = true;
             }
 
-            if (!r.workType) errs[`${r._id}.workType`] = true;
+            const skipWorkType =
+                isAimantraSubCompanyUser() ||
+                hidesProjectWorkType(r.projectType) ||
+                hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(r.projectId))) ||
+                hidesProjectWorkType(detailFor(r.projectId));
+            if (!skipWorkType && !r.workType) errs[`${r._id}.workType`] = true;
         });
 
         // ✅ Date validation
@@ -720,7 +735,9 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                         <th className="px-2 pb-1 text-center min-w-[85px]">End Time <span className="text-red-400">*</span></th>
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
+                                        {!hideWorkTypeColumn && (
                                         <th className="px-2 pb-1 text-left min-w-[130px]">Work Type <span className="text-red-400">*</span></th>
+                                        )}
                                         <th className="px-2 pb-1 text-left min-w-[190px]">note</th>
                                         <th className="px-2 pb-1 w-7"></th>
                                     </tr>
@@ -884,6 +901,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                     </td>
 
                                                     {/* Work Type */}
+                                                    {!hideWorkTypeColumn && !rowHidesWorkType(row) && (
                                                     <td className="px-1 py-2 align-top">
                                                         <Sel
                                                             value={row.workType}
@@ -907,6 +925,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                             </p>
                                                         )}
                                                     </td>
+                                                    )}
 
                                                     {/* note */}
                                                     <td className="px-1 py-2 align-top">

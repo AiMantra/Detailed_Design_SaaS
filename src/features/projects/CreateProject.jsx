@@ -54,6 +54,7 @@ import {
   clearActivities,
   clearSubActivities,
   fetchReportingHeads,
+  fetchCompanyEmployees,
   fetchStageTemplate,
 } from "../api/apiSlice";
 import { showSnackbar } from "../notifications/notificationSlice";
@@ -80,6 +81,7 @@ const CreateProject = () => {
     sectors = [],
     clients = [],
     reportingHeads = [],
+    companyEmployees = [],
     stageTemplates = [],
     // activities = [],
     // subActivities = [],
@@ -113,6 +115,7 @@ const CreateProject = () => {
   const isRelaxedType = isRelaxedProjectType(form.source_id);
   const hideWeightage = hidesProjectWeightage(form.source_id);
   const hideExtendedFields = hidesExtendedProjectFields(form.source_id);
+  const ownerEmployees = hideExtendedFields ? companyEmployees : reportingHeads;
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentStep, setCurrentStep] = useState(1);
@@ -345,6 +348,7 @@ const CreateProject = () => {
           dispatch(fetchSectors()),
           dispatch(fetchClients()),
           dispatch(fetchReportingHeads()),
+          dispatch(fetchCompanyEmployees()),
 
           dispatch(fetchStageTemplate()),
           // dispatch(fetchActivities()),
@@ -4779,7 +4783,7 @@ const CreateProject = () => {
                   form.assigned_to.length > 0 &&
                   <div className="flex flex-wrap gap-2 mb-1">
                     {form.assigned_to?.map((userCode) => {
-                      const user = reportingHeads.find(u => u.emp_code === userCode);
+                      const user = ownerEmployees.find(u => u.emp_code === userCode);
 
                       return user ? (
                         <div
@@ -4854,7 +4858,7 @@ const CreateProject = () => {
                 {showSupervisorDropdown && (
                   <div className="absolute z-50 mt-2 w-full bg-white border rounded-xl shadow-lg max-h-60 overflow-y-auto border-gray-200 left-0">
                     {(() => {
-                      const availableUsers = reportingHeads.filter(
+                      const availableUsers = ownerEmployees.filter(
                         user => !form.assigned_to?.includes(user.emp_code)
                       );
 

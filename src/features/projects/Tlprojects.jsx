@@ -76,6 +76,8 @@ import {
     resolveListSourceId,
     getProjectTypeLabel,
     hidesProjectWeightage,
+    hidesProjectWorkType,
+    isAimantraSubCompanyUser,
 } from "../../constants/projectSources";
 
 const TlProjectList = () => {
@@ -937,6 +939,12 @@ const TlProjectList = () => {
                                         )}
                                     </div>
                                 )}
+                                {!(
+                                    isAimantraSubCompanyUser() ||
+                                    hidesProjectWorkType(
+                                        expandedProjectDetails[selectedTaskfortimelog.project_id]
+                                    )
+                                ) && (
                                 <div className="mb-4">
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">
                                         Work Type <span className="text-red-500">*</span>
@@ -965,6 +973,7 @@ const TlProjectList = () => {
                                         })()}
                                     </select>
                                 </div>
+                                )}
                                 {/* Description */}
                                 <div className="mb-5">
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">

@@ -81,6 +81,8 @@ import {
   resolveListSourceId,
   getProjectTypeLabel,
   hidesProjectWeightage,
+  hidesProjectWorkType,
+  isAimantraSubCompanyUser,
 } from "../../constants/projectSources";
 
 const ProjectList = () => {
@@ -779,7 +781,15 @@ const ProjectList = () => {
       return;
     }
 
-    if (!timeLogData.work_type) {
+    const timeLogProject =
+      expandedProjectDetails[selectedTaskfortimelog.project_id] ||
+      projectsOnly.find(
+        (p) => String(p.id || p.project_id) === String(selectedTaskfortimelog.project_id)
+      );
+    const skipWorkType =
+      isAimantraSubCompanyUser() || hidesProjectWorkType(timeLogProject);
+
+    if (!skipWorkType && !timeLogData.work_type) {
       dispatch(showSnackbar({
         message: 'Please Select Work Type',
         type: 'error'
@@ -795,7 +805,7 @@ const ProjectList = () => {
         date: timeLogData.date,
         startTime: timeLogData.startTime,
         endTime: timeLogData.endTime,
-        work_type: timeLogData.work_type,
+        work_type: skipWorkType ? "" : timeLogData.work_type,
         note: timeLogData.description,
         status: 'WORKED',
         stage: selectedTaskfortimelog.stage,
@@ -1460,6 +1470,15 @@ const ProjectList = () => {
                   )}
                 </div>
               )}
+              {!(
+                isAimantraSubCompanyUser() ||
+                hidesProjectWorkType(
+                  expandedProjectDetails[selectedTaskfortimelog.project_id] ||
+                  projectsOnly.find(
+                    (p) => String(p.id || p.project_id) === String(selectedTaskfortimelog.project_id)
+                  )
+                )
+              ) && (
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                   Work Type <span className="text-red-500">*</span>
@@ -1488,6 +1507,7 @@ const ProjectList = () => {
                   })()}
                 </select>
               </div>
+              )}
               {/* Description */}
               <div className="mb-5">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">

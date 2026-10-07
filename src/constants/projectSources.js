@@ -92,6 +92,12 @@ export function hidesExtendedProjectFields(projectOrSourceId) {
   return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.AIMANTRA;
 }
 
+/** Aimantra: work type is not used on worklog / planner */
+export function hidesProjectWorkType(projectOrSourceId) {
+  if (projectOrSourceId === "aimantra") return true;
+  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.AIMANTRA;
+}
+
 export function getUserSubCompanyId() {
   return (
     sessionStorage.getItem("company_id") ||

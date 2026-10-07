@@ -22,6 +22,7 @@ const initialState = {
   sectors: [],
   clients: [],
   reportingHeads: [],
+  companyEmployees: [],
   stageTemplates: [],
   activities: [],
   subActivities: [], 
@@ -340,6 +341,18 @@ export const fetchReportingHeads = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await reportingHeadService.getReportingHeads();
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchCompanyEmployees = createAsyncThunk(
+  'wfm/ourcompanyempdetailsactive/',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await reportingHeadService.getCompanyEmployeesActive();
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -1046,6 +1059,18 @@ const apiSlice = createSlice({
         state.reportingHeads = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchReportingHeads.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchCompanyEmployees.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCompanyEmployees.fulfilled, (state, action) => {
+        state.loading = false;
+        state.companyEmployees = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(fetchCompanyEmployees.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
