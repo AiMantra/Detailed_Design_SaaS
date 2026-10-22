@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 
 import { fetchTaskPlanners, fetchProjectsListSimple } from "../api/apiSlice";
-import { canSeeAimantraProjects } from "../../constants/projectSources";
 import LoadingModal from "../../components/modals/LoadingModal";
 import MultiWorkLogModal from "./MultilogModal";
 import UpdateGroupModal from "./UpdateGroupModal";
@@ -628,20 +627,15 @@ const TaskPlanner = () => {
     const [updateModalData, setUpdateModalData] = useState({ isOpen: false, date: "", tasks: [] });
 
     // ── Tabs ──────────────────────────────────────────────────────────────────
-    const hideMyTasks = canSeeAimantraProjects();
-
     const availableTabs = useMemo(() => {
         const role = user?.role;
-        let tabs = [];
         if (role === "ACCOUNT" || role === "ADMIN" || role === "TL") {
-            tabs = ["My Tasks", "User Tasks"];
+            return ["My Tasks", "User Tasks"];
         }
-        if (hideMyTasks) tabs = tabs.filter((t) => t !== "My Tasks");
-        if (hideMyTasks && tabs.length === 0 && role) tabs = ["User Tasks"];
-        return tabs;
-    }, [user, hideMyTasks]);
+        return [];
+    }, [user]);
 
-    const [activeTab, setActiveTab] = useState(hideMyTasks ? "User Tasks" : "My Tasks");
+    const [activeTab, setActiveTab] = useState("My Tasks");
     const isComparisonTab = activeTab === "TL Tasks" || activeTab === "User Tasks";
 
     // ── Load data ─────────────────────────────────────────────────────────────
