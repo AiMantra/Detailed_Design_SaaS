@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { fetchTaskPlanners, fetchProjectsListSimple } from "../api/apiSlice";
+import { canSeeAimantraProjects } from "../../constants/projectSources";
 import LoadingModal from "../../components/modals/LoadingModal";
 import MultiWorkLogModal from "./MultilogModal";
 import UpdateGroupModal from "./UpdateGroupModal";
@@ -105,9 +106,10 @@ const SummaryBar = ({ summary }) => {
         { label: "Completed", value: summary?.completed_planners, color: "text-emerald-600", bg: "bg-emerald-50" },
         { label: "Pending", value: summary?.pending_planners, color: "text-orange-600", bg: "bg-orange-50" },
         { label: "Work logs", value: summary?.total_time_logs, color: "text-teal-600", bg: "bg-teal-50" },
+        { label: "Unplanned", value: summary?.unplanned_logs, color: "text-purple-600", bg: "bg-purple-50" },
     ];
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
             {items.map((item) => (
                 <div key={item.label} className={`rounded-xl p-4 ${item.bg} border border-gray-100`}>
                     <p className={`text-2xl font-bold ${item.color}`}>{item.value ?? 0}</p>
@@ -479,15 +481,16 @@ const MyTasksTable = ({ group }) => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                     {group.tasks.map((task) => {
-                        const isCompleted = task.status !== "not_done";
+                        const isUnplanned = !!task.is_unplanned;
+                        const isCompleted = !isUnplanned && task.status !== "not_done";
                         return (
-                            <tr key={task.id} className="hover:bg-blue-50/30 transition-all duration-200 group">
+                            <tr key={task.id} className={`hover:bg-blue-50/30 transition-all duration-200 group ${isUnplanned ? "bg-purple-50/20" : ""}`}>
 
                                 {/* Task Note */}
                                 <td className="px-6 py-4 max-w-[280px]">
                                     <div className="flex items-start gap-3">
-                                        <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${isCompleted ? "bg-emerald-100 text-emerald-600" : isUnscheduled ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"}`}>
-                                            <FileText size={16} />
+                                        <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${isUnplanned ? "bg-purple-100 text-purple-600" : isCompleted ? "bg-emerald-100 text-emerald-600" : isUnscheduled ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"}`}>
+                                            {isUnplanned ? <Sparkles size={16} /> : <FileText size={16} />}
                                         </div>
                                         <span className="text-sm font-medium text-gray-800 break-words leading-snug">
                                             {task.note || "Untitled task"}
@@ -582,9 +585,15 @@ const MyTasksTable = ({ group }) => {
 
                                 {/* Status Pill */}
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border min-w-[110px] ${isCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-orange-50 text-orange-700 border-orange-200"}`}>
-                                        {isCompleted ? <CheckCircle2 size={14} className="shrink-0" /> : <CircleDashed size={14} className="shrink-0" />}
-                                        {isCompleted ? "Completed" : "Pending"}
+                                    <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border min-w-[110px] ${
+                                        isUnplanned
+                                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                                            : isCompleted
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-orange-50 text-orange-700 border-orange-200"
+                                    }`}>
+                                        {isUnplanned ? <Sparkles size={14} className="shrink-0" /> : isCompleted ? <CheckCircle2 size={14} className="shrink-0" /> : <CircleDashed size={14} className="shrink-0" />}
+                                        {isUnplanned ? "Unplanned" : isCompleted ? "Completed" : "Pending"}
                                     </span>
                                 </td>
 
@@ -619,14 +628,20 @@ const TaskPlanner = () => {
     const [updateModalData, setUpdateModalData] = useState({ isOpen: false, date: "", tasks: [] });
 
     // ── Tabs ──────────────────────────────────────────────────────────────────
+    const hideMyTasks = canSeeAimantraProjects();
+
     const availableTabs = useMemo(() => {
         const role = user?.role;
-        if (role === "ACCOUNT" || role === "ADMIN") return ["My Tasks", "User Tasks"];
-        if (role === "TL") return ["My Tasks", "User Tasks"];
-        return [];
-    }, [user]);
+        let tabs = [];
+        if (role === "ACCOUNT" || role === "ADMIN" || role === "TL") {
+            tabs = ["My Tasks", "User Tasks"];
+        }
+        if (hideMyTasks) tabs = tabs.filter((t) => t !== "My Tasks");
+        if (hideMyTasks && tabs.length === 0 && role) tabs = ["User Tasks"];
+        return tabs;
+    }, [user, hideMyTasks]);
 
-    const [activeTab, setActiveTab] = useState("My Tasks");
+    const [activeTab, setActiveTab] = useState(hideMyTasks ? "User Tasks" : "My Tasks");
     const isComparisonTab = activeTab === "TL Tasks" || activeTab === "User Tasks";
 
     // ── Load data ─────────────────────────────────────────────────────────────
@@ -663,7 +678,8 @@ const TaskPlanner = () => {
             if (searchTerm) {
                 const q = searchTerm.toLowerCase();
                 if (!(p.note || "").toLowerCase().includes(q) &&
-                    !(p.project_name || "").toLowerCase().includes(q)) return false;
+                    !(p.project_name || "").toLowerCase().includes(q) &&
+                    !(p.subactivity_name || "").toLowerCase().includes(q)) return false;
             }
             if (startDate || endDate) {
                 if (!p.date) return false;
@@ -718,9 +734,12 @@ const TaskPlanner = () => {
     // ── Today's group (for header button) ────────────────────────────────────
     const todayStr = getTodayStr();
     const todaysGroup = groupedPlanners.find((g) => g.date === todayStr);
+    const todaysPlannedTasks = (todaysGroup?.tasks || []).filter(
+        (t) => !t.is_unplanned && t.entry_type !== "manual"
+    );
     const isEdit = (() => {
-        if (!todaysGroup?.tasks?.length) return false;
-        const first = [...todaysGroup.tasks].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+        if (!todaysPlannedTasks.length) return false;
+        const first = [...todaysPlannedTasks].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
         if (!first?.created_at) return false;
         return (new Date() - new Date(first.created_at)) / 60000 <= 60;
     })();
@@ -776,9 +795,9 @@ const TaskPlanner = () => {
                     </motion.button>
 
                     {!isComparisonTab && (
-                        todaysGroup ? (
+                        todaysPlannedTasks.length ? (
                             <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                                onClick={() => setUpdateModalData({ isOpen: true, date: todaysGroup.date, tasks: todaysGroup.tasks })}
+                                onClick={() => setUpdateModalData({ isOpen: true, date: todaysGroup.date, tasks: todaysPlannedTasks })}
                                 className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
                                 <Edit size={20} />
                                 <span className="text-sm font-medium hidden sm:inline">Update today's plan</span>
