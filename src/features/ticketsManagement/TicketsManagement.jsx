@@ -7,6 +7,8 @@ import { MyTickets } from './Myticket';
 import { RaisedTickets } from './RaisedTicket';
 import { CreateTicketModal } from '../../components/modals/CreateTicketModal';
 import { fetchMyTickets, fetchAllTickets, clearTicketError, setCurrentView } from './ticketslice';
+import { canSeeTechSupport } from '../../constants/projectSources';
+import { Navigate } from 'react-router-dom';
 // import usePermission from '../../config/permissions';
 
 const TicketsManagement = () => {
@@ -62,6 +64,10 @@ const TicketsManagement = () => {
         }
         return raisedTicketsStats?.total || 0;
     };
+
+    if (!canSeeTechSupport()) {
+        return <Navigate to="/unauthorized" replace />;
+    }
 
     return (
         <>

@@ -14,6 +14,7 @@ import { showError, showSuccess } from '../../utils/toast.js'; // <-- ADD THIS
 import { trackWorkLogService } from '../../services/trackworklogService.js';
 import { taskPlannerService } from '../../services/taskPlannerService'; // <-- ADD THIS
 import { employeeWorklogHistoryService } from '../../services/employeeWorkLogHistory';
+import { filterTaskPlannerEmployees } from '../../constants/projectSources';
 
 
 const initialState = {
@@ -108,19 +109,85 @@ export const fetchTaskPlanners = createAsyncThunk(
       if (response?.results?.employees) employees = response.results.employees;
       else if (response?.employees) employees = response.employees;
 
-      const planners = employees.flatMap(emp =>
-        (emp.planners || []).map(planner => ({
+      employees = filterTaskPlannerEmployees(employees);
+
+      const dateFromLog = (log) => {
+        if (log?.date) return String(log.date).split("T")[0];
+        if (log?.start_time) return String(log.start_time).split("T")[0];
+        return "";
+      };
+
+      const collectUnplannedLogs = (emp) => {
+        const byId = new Map();
+        const add = (log) => {
+          if (!log?.id || byId.has(log.id)) return;
+          byId.set(log.id, log);
+        };
+        (emp.unplanned_logs || []).forEach(add);
+        (emp.time_logs || []).filter((log) => log.is_unplanned).forEach(add);
+        return [...byId.values()];
+      };
+
+      employees = employees.map((emp) => {
+        const unplanned = collectUnplannedLogs(emp);
+        const timeLogIds = new Set((emp.time_logs || []).map((log) => log.id));
+        const extraUnplanned = unplanned.filter((log) => !timeLogIds.has(log.id));
+        return {
+          ...emp,
+          time_logs: [...(emp.time_logs || []), ...extraUnplanned],
+        };
+      });
+
+      const planners = employees.flatMap((emp) => {
+        const planned = (emp.planners || []).map((planner) => ({
           ...planner,
           employee_name: emp.emp_name,
           employee_code: emp.emp_code,
-        }))
-      );
+          is_unplanned: false,
+        }));
+        const plannedIds = new Set(planned.map((p) => p.id));
+        const unplanned = collectUnplannedLogs(emp)
+          .filter((log) => !plannedIds.has(log.id))
+          .map((log) => ({
+            ...log,
+            date: dateFromLog(log),
+            employee_name: emp.emp_name,
+            employee_code: emp.emp_code,
+            is_unplanned: true,
+          }));
+        return [...planned, ...unplanned];
+      });
 
-      // Return BOTH — flat list for My Tasks, full employees for comparison
+      const summaryBase = response?.results?.summary || response?.summary || {};
+      const summary = {
+        ...summaryBase,
+        total_employees: employees.length,
+        total_planners: employees.reduce(
+          (sum, emp) => sum + (emp.summary?.total_planners ?? emp.planners?.length ?? 0),
+          0
+        ),
+        completed_planners: employees.reduce(
+          (sum, emp) => sum + (emp.summary?.completed_planners ?? 0),
+          0
+        ),
+        pending_planners: employees.reduce(
+          (sum, emp) => sum + (emp.summary?.pending_planners ?? 0),
+          0
+        ),
+        total_time_logs: employees.reduce(
+          (sum, emp) => sum + (emp.summary?.total_time_logs ?? emp.time_logs?.length ?? 0),
+          0
+        ),
+        unplanned_logs: employees.reduce(
+          (sum, emp) => sum + (emp.summary?.unplanned_logs ?? emp.unplanned_logs?.length ?? 0),
+          0
+        ),
+      };
+
       return {
         planners,
         employees,
-        summary: response?.results?.summary || response?.summary || null,
+        summary,
       };
     }
     // catch (error) {
@@ -773,7 +840,7 @@ export const fetchStageTemplates = createAsyncThunk(
   "api/fetchStageTemplates",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await stageTemplateService.getStageTemplates();
+      const response = await stagesTemplateService.getStageTemplates();
       return response;
       // const response = await axios.get(
       //   `${API_BASE_URL}/detaildesign/activity-template/`,

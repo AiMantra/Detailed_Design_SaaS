@@ -17,6 +17,9 @@ export const AIMANTRA_SUB_COMPANY_ID = "3e640f93-152c-45b4-aee8-b461160d23d4";
 /** Extra emp codes that can see Aimantra projects (in addition to other types) */
 export const AIMANTRA_VISIBLE_EMP_CODES = ["SAPL0739"];
 
+/** Tech Support menu is limited to these emp codes */
+export const TECH_SUPPORT_EMP_CODES = ["CIPL10021"];
+
 /** Filter select keys → source UUID */
 export const PROJECT_TYPE_SOURCE_IDS = {
   "detail design": PROJECT_SOURCE_IDS.DETAIL_DESIGN,
@@ -124,6 +127,25 @@ export function isAimantraAllowedEmp() {
 /** Can view Aimantra projects: Aimantra sub-company, or allowlisted emp_code */
 export function canSeeAimantraProjects() {
   return isAimantraSubCompanyUser() || isAimantraAllowedEmp();
+}
+
+export function canSeeTechSupport() {
+  return TECH_SUPPORT_EMP_CODES.includes(getUserEmpCode());
+}
+
+export function isAimantraSubcompanyEmployee(emp) {
+  return (
+    String(emp?.subcompany_id || emp?.sub_company_id || "") === AIMANTRA_SUB_COMPANY_ID
+  );
+}
+
+/** Task planner: Aimantra users only see Aimantra employees; others never see them */
+export function filterTaskPlannerEmployees(employees = []) {
+  if (!Array.isArray(employees)) return [];
+  if (canSeeAimantraProjects()) {
+    return employees.filter(isAimantraSubcompanyEmployee);
+  }
+  return employees.filter((emp) => !isAimantraSubcompanyEmployee(emp));
 }
 
 export function getDefaultProjectTypeFilter() {

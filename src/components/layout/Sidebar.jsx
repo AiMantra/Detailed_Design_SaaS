@@ -34,6 +34,7 @@ import logo from "../../assets/aimantra.png";
 
 import { CustomImageModal } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
+import { canSeeAimantraProjects, canSeeTechSupport } from "../../constants/projectSources";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -182,7 +183,12 @@ const Sidebar = () => {
     },
   ];
   console.log("User Role:", user);
-  const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role));
+  const filteredMenu = menuItems.filter((item) => {
+    if (!item.roles.includes(user?.role)) return false;
+    if (item.name === "Tech Support" && !canSeeTechSupport()) return false;
+    if (item.name === "My Tasks" && canSeeAimantraProjects()) return false;
+    return true;
+  });
 
   // Separate menu sections for better organization
   const mainMenu = filteredMenu.filter(item =>
@@ -224,7 +230,7 @@ const Sidebar = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          className="fixed top-0 left-0 w-full h-full bg-black/50 z-40 md:hidden"
           onClick={() => dispatch(closeSidebar())}
         />
       )}

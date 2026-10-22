@@ -46,8 +46,11 @@ import {
 import ReportDoc from "./ReportDoc";
 import "./aimantra.css";
 import {
-  PROJECT_TYPE_FILTER_OPTIONS,
   PROJECT_TYPE_SOURCE_IDS,
+  PROJECT_SOURCE_IDS,
+  canSeeAimantraProjects,
+  getDefaultProjectTypeFilter,
+  getVisibleProjectTypeFilterOptions,
 } from "../../constants/projectSources";
 
 const LOADING_LINES = [
@@ -262,7 +265,7 @@ export default function AiUserGuide() {
   const [activeDocId, setActiveDocId] = useState(null);
   const [customStart, setCustomStart] = useState(() => rangeLastWeek().start_date);
   const [customEnd, setCustomEnd] = useState(() => rangeLastWeek().end_date);
-  const [filterProjectType, setFilterProjectType] = useState("all");
+  const [filterProjectType, setFilterProjectType] = useState(() => getDefaultProjectTypeFilter());
   const [showTools, setShowTools] = useState(true);
   const [rangeError, setRangeError] = useState("");
   const listRef = useRef(null);
@@ -302,8 +305,12 @@ export default function AiUserGuide() {
 
   const selectedSourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || null;
 
-  const withSource = (intent) =>
-    selectedSourceId ? { ...intent, source_id: selectedSourceId } : intent;
+  const withSource = (intent) => {
+    if (canSeeAimantraProjects()) {
+      return { ...intent, source_id: PROJECT_SOURCE_IDS.AIMANTRA };
+    }
+    return selectedSourceId ? { ...intent, source_id: selectedSourceId } : intent;
+  };
 
   const ACTIONS = useMemo(() => buildActions(customRange), [customRange]);
   const firstName = user?.name ? String(user.name).split(" ")[0] : "";
@@ -622,7 +629,7 @@ export default function AiUserGuide() {
           Project type
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => {
+          {getVisibleProjectTypeFilterOptions().map((opt) => {
             const active = filterProjectType === opt.value;
             return (
               <button
@@ -902,7 +909,7 @@ export default function AiUserGuide() {
       <div className={`mx-auto ${fullPage ? "max-w-2xl" : ""}`}>
         {!fullPage && (
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {PROJECT_TYPE_FILTER_OPTIONS.map((opt) => {
+            {getVisibleProjectTypeFilterOptions().map((opt) => {
               const active = filterProjectType === opt.value;
               return (
                 <button

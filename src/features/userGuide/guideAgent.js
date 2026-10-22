@@ -20,6 +20,10 @@ import { buildWeeklyTimeLogReport } from "./weeklyReport";
 import {
   PROJECT_SOURCE_IDS,
   PROJECT_TYPE_LABELS,
+  canSeeAimantraProjects,
+  getProjectSourceId,
+  isAimantraSubcompanyEmployee,
+  applyUserProjectVisibility,
 } from "../../constants/projectSources";
 
 function pad(n) {
@@ -165,6 +169,31 @@ function parseSourceFromText(text) {
     return PROJECT_SOURCE_IDS.DETAIL_DESIGN;
   }
   return null;
+}
+
+function filterWorklogsToAimantraEmployees(data) {
+  const results = data?.results || [];
+  const hasSubcompany = results.some((emp) => emp.subcompany_id || emp.sub_company_id);
+  const filtered = hasSubcompany
+    ? results.filter(isAimantraSubcompanyEmployee)
+    : results;
+  let total_worklogs = 0;
+  let total_hours = 0;
+  filtered.forEach((emp) => {
+    (emp.worklogs || []).forEach((w) => {
+      total_worklogs += 1;
+      const h = w.hours ?? w.duration ?? w.total_hours;
+      if (typeof h === "number") total_hours += h;
+      else if (h != null && /^\d+(\.\d+)?$/.test(String(h))) total_hours += Number(h);
+    });
+  });
+  return {
+    ...data,
+    results: filtered,
+    total_worklogs,
+    total_hours,
+    total_users: filtered.length,
+  };
 }
 
 function filterWorklogsByProjects(data, projects) {
@@ -478,7 +507,9 @@ export async function runAgent(user, intent) {
         label: `${dateRange.end_date} → ${dateRange.start_date}`,
       };
     }
-    const source_id = intent.source_id || null;
+    const source_id = canSeeAimantraProjects()
+      ? PROJECT_SOURCE_IDS.AIMANTRA
+      : intent.source_id || null;
     const typeLabel = source_id ? PROJECT_TYPE_LABELS[source_id] : null;
     const filters = {
       start_date: dateRange.start_date,
@@ -491,7 +522,10 @@ export async function runAgent(user, intent) {
       guideListAllProjects(user, { source_id }).catch(() => []),
     ]);
 
-    const logs = source_id ? filterWorklogsByProjects(rawLogs, projects) : rawLogs;
+    let logs = source_id ? filterWorklogsByProjects(rawLogs, projects) : rawLogs;
+    if (canSeeAimantraProjects()) {
+      logs = filterWorklogsToAimantraEmployees(logs);
+    }
     const report = buildWeeklyTimeLogReport(logs, dateRange, projects);
     if (typeLabel) {
       report.title = `Weekly Project Time Log Summary (${typeLabel})`;
@@ -514,6 +548,14 @@ export async function runAgent(user, intent) {
       ]);
     }
     const details = await guideGetProjectDetails(resolved.id);
+    if (
+      canSeeAimantraProjects() &&
+      getProjectSourceId(details || resolved.meta) !== PROJECT_SOURCE_IDS.AIMANTRA
+    ) {
+      return textResult("Aimantra projects only", [
+        `“${intent.idOrCode}” is not an Aimantra project.`,
+      ]);
+    }
     const dateRange = intent.dateRange || rangeLastWeek();
 
     if (intent.type === "project") {
@@ -555,6 +597,12 @@ export async function runAgent(user, intent) {
     }
 
     const acts = work?.activities || [];
+    const onlyAimantraUsers = (users = []) => {
+      if (!canSeeAimantraProjects()) return users;
+      const hasSub = users.some((u) => u.subcompany_id || u.sub_company_id);
+      if (!hasSub) return users;
+      return users.filter(isAimantraSubcompanyEmployee);
+    };
     return {
       kind: "document",
       title: `Project Report — ${details?.project_code || intent.idOrCode}`,
@@ -575,9 +623,9 @@ export async function runAgent(user, intent) {
           blocks: acts.map((a) => ({
             title: a.activity_name,
             lines: [
-              ...(a.users || []).map((u) => `${u.name || u.emp_code}: ${u.total_time_spent || "—"}`),
+              ...onlyAimantraUsers(a.users || []).map((u) => `${u.name || u.emp_code}: ${u.total_time_spent || "—"}`),
               ...(a.subactivities || []).map((s) => {
-                const users = (s.users || [])
+                const users = onlyAimantraUsers(s.users || [])
                   .map((u) => `${u.name || u.emp_code}:${u.total_time_spent || "—"}`)
                   .join(", ");
                 return `— ${s.subactivity_name}${users ? ` · ${users}` : ""}`;
@@ -595,7 +643,20 @@ export async function runAgent(user, intent) {
     const dateRange = intent.dateRange || rangeLastWeek();
     if (intent.type === "employee_report") {
       const data = await guideGetEmployeeReport(intent.emp_code);
-      const projects = data?.projects || data?.results || [];
+      let projects = data?.projects || data?.results || [];
+      if (canSeeAimantraProjects()) {
+        projects = applyUserProjectVisibility(projects);
+        const aimantraUsers = (data?.users || data?.employees || []).some(isAimantraSubcompanyEmployee);
+        if (
+          data?.subcompany_id &&
+          !isAimantraSubcompanyEmployee(data) &&
+          !aimantraUsers
+        ) {
+          return textResult("Aimantra employees only", [
+            `Employee ${intent.emp_code} is not in the Aimantra sub-company.`,
+          ]);
+        }
+      }
       return {
         kind: "document",
         title: `Employee Report — ${intent.emp_code}`,
@@ -615,11 +676,29 @@ export async function runAgent(user, intent) {
       };
     }
 
-    const data = await guideGetEmployeeWorklogs({
+    let data = await guideGetEmployeeWorklogs({
       user_id: intent.emp_code,
       start_date: dateRange.start_date,
       end_date: dateRange.end_date,
     });
+    if (canSeeAimantraProjects()) {
+      const aimantraProjects = await guideListAllProjects(user, {
+        source_id: PROJECT_SOURCE_IDS.AIMANTRA,
+      }).catch(() => []);
+      data = filterWorklogsToAimantraEmployees(
+        filterWorklogsByProjects(data, aimantraProjects)
+      );
+      const asked = String(intent.emp_code || "").trim().toUpperCase();
+      const inResults = (data.results || []).some(
+        (emp) => String(emp.user_id || emp.emp_code || "").trim().toUpperCase() === asked
+      );
+      const hasSub = (data.results || []).some((emp) => emp.subcompany_id || emp.sub_company_id);
+      if (hasSub && !inResults) {
+        return textResult("Aimantra employees only", [
+          `Employee ${intent.emp_code} is not in the Aimantra sub-company.`,
+        ]);
+      }
+    }
     const results = data?.results || [];
     const lines = [];
     results.forEach((u) => {
