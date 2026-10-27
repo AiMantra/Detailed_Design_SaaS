@@ -117,12 +117,33 @@ export const fetchTaskPlanners = createAsyncThunk(
         return "";
       };
 
-      const collectUnplannedLogs = (emp) => {
+      const isUnplannedLog = (log) =>
+        log?.is_unplanned === true || log?.is_unplanned === "true";
+
+      const samePlannedWork = (planner, log) => {
+        if (!planner || !log) return false;
+        if (planner.subactivity_id && log.subactivity_id &&
+          String(planner.subactivity_id) === String(log.subactivity_id)) return true;
+        if (planner.id && log.subactivity_id &&
+          String(planner.id) === String(log.subactivity_id)) return true;
+        const sameProject = planner.project_id && log.project_id &&
+          String(planner.project_id) === String(log.project_id);
+        const sameActivity = planner.activity_id && log.activity_id &&
+          String(planner.activity_id) === String(log.activity_id);
+        const sameStart = planner.start_time && log.start_time &&
+          String(planner.start_time) === String(log.start_time);
+        return Boolean(sameProject && sameActivity && sameStart);
+      };
+
+      const collectUnplannedLogs = (emp, planned) => {
         const byId = new Map();
-        (emp.unplanned_logs || []).forEach((log) => {
+        const add = (log) => {
           if (!log?.id || byId.has(log.id)) return;
+          if (planned.some((p) => p.id === log.id || samePlannedWork(p, log))) return;
           byId.set(log.id, log);
-        });
+        };
+        (emp.unplanned_logs || []).forEach(add);
+        (emp.time_logs || []).filter(isUnplannedLog).forEach(add);
         return [...byId.values()];
       };
 
@@ -133,22 +154,14 @@ export const fetchTaskPlanners = createAsyncThunk(
           employee_code: emp.emp_code,
           is_unplanned: false,
         }));
-        const plannedIds = new Set(planned.map((p) => p.id));
-        const asUnplanned = (log) => ({
+        const unplanned = collectUnplannedLogs(emp, planned).map((log) => ({
           ...log,
           date: dateFromLog(log),
           employee_name: emp.emp_name,
           employee_code: emp.emp_code,
           is_unplanned: true,
-        });
-        const unplanned = collectUnplannedLogs(emp)
-          .filter((log) => !plannedIds.has(log.id))
-          .map(asUnplanned);
-        const unplannedIds = new Set(unplanned.map((log) => log.id));
-        const timeLogs = (emp.time_logs || [])
-          .filter((log) => log?.id && !plannedIds.has(log.id) && !unplannedIds.has(log.id))
-          .map(asUnplanned);
-        return [...planned, ...unplanned, ...timeLogs];
+        }));
+        return [...planned, ...unplanned];
       });
 
       const summaryBase = response?.results?.summary || response?.summary || {};
