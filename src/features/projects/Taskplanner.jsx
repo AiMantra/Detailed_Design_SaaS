@@ -35,33 +35,61 @@ const formatGroupDate = (dateStr) => {
     });
 };
 
-// ─── Build comparison rows for one employee ───────────────────────────────────
-// Matches planners and time_logs by subactivity_id.
-// Result types: "completed" | "pending" | "extra"
-const buildComparisonRows = (planners = [], timeLogs = [], date = "") => {
-    const isToday = date === getTodayStr();
-    const rows = [];
-    const logsBySubactivity = {};
-    timeLogs.forEach((log) => {
-        const key = log.subactivity_id;
-        if (!logsBySubactivity[key]) logsBySubactivity[key] = [];
-        logsBySubactivity[key].push(log);
+const plannerRowType = (planner, date) => {
+    const status = String(planner?.status || "").toLowerCase();
+    if (status === "not_done" || status === "pending") {
+        return date === getTodayStr() ? "pending" : "not_done";
+    }
+    return "completed";
+};
+
+const isUnplannedLog = (log) => log?.is_unplanned === true || log?.is_unplanned === "true";
+
+const samePlannedWork = (planner, log) => {
+    if (!planner || !log) return false;
+    if (planner.subactivity_id && log.subactivity_id &&
+        String(planner.subactivity_id) === String(log.subactivity_id)) return true;
+    if (planner.id && log.subactivity_id && String(planner.id) === String(log.subactivity_id)) return true;
+    const sameProject = planner.project_id && log.project_id &&
+        String(planner.project_id) === String(log.project_id);
+    const sameActivity = planner.activity_id && log.activity_id &&
+        String(planner.activity_id) === String(log.activity_id);
+    const sameStart = planner.start_time && log.start_time &&
+        String(planner.start_time) === String(log.start_time);
+    return Boolean(sameProject && sameActivity && sameStart);
+};
+
+const collectUniqueLogs = (...lists) => {
+    const seen = new Set();
+    const logs = [];
+    lists.flat().forEach((log) => {
+        if (!log?.id || seen.has(log.id)) return;
+        seen.add(log.id);
+        logs.push(log);
     });
+    return logs;
+};
+
+const buildComparisonRows = (planners = [], timeLogs = [], date = "", unplannedLogs = []) => {
+    const logs = collectUniqueLogs(timeLogs, unplannedLogs);
     const matchedLogIds = new Set();
-    planners.forEach((planner) => {
-        const candidates = logsBySubactivity[planner.subactivity_id] || [];
-        const matchedLog = candidates.find((l) => !matchedLogIds.has(l.id)) || null;
+
+    const rows = planners.map((planner) => {
+        const matchedLog = logs.find((log) => {
+            if (matchedLogIds.has(log.id) || isUnplannedLog(log)) return false;
+            return samePlannedWork(planner, log);
+        }) || null;
         if (matchedLog) matchedLogIds.add(matchedLog.id);
-        rows.push({
-            type: matchedLog ? "completed" : isToday ? "pending" : "not_done",  // ← key change
+        return {
+            type: matchedLog ? "completed" : plannerRowType(planner, date),
             planner,
             worklog: matchedLog,
-        });
+        };
     });
-    timeLogs.forEach((log) => {
-        if (!matchedLogIds.has(log.id)) {
-            rows.push({ type: "extra", planner: null, worklog: log });
-        }
+
+    logs.forEach((log) => {
+        if (matchedLogIds.has(log.id)) return;
+        rows.push({ type: "extra", planner: null, worklog: log });
     });
     return rows;
 };
@@ -124,7 +152,12 @@ const EmployeeComparisonCard = ({ employee, date }) => {
     const [collapsed, setCollapsed] = useState(false);
 
     const rows = useMemo(
-        () => buildComparisonRows(employee.planners || [], employee.time_logs || [], date),
+        () => buildComparisonRows(
+            employee.planners || [],
+            employee.time_logs || [],
+            date,
+            employee.unplanned_logs || [],
+        ),
         [employee, date]
     );
 
