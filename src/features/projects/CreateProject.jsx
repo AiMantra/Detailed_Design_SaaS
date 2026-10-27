@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Plus,
@@ -71,11 +71,14 @@ import {
   isRelaxedProjectType,
   hidesProjectWeightage,
   hidesExtendedProjectFields,
+  isHrProjectSource,
 } from "../../constants/projectSources";
+import { hrProjectService } from "../../services/hrProjectService";
 
 const CreateProject = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
 
   const {
     companies = [],
@@ -115,8 +118,9 @@ const CreateProject = () => {
   });
 
   const isRelaxedType = isRelaxedProjectType(form.source_id);
+  const isHrType = isHrProjectSource(form.source_id);
   const hideWeightage = hidesProjectWeightage(form.source_id);
-  const hideExtendedFields = hidesExtendedProjectFields(form.source_id);
+  const hideExtendedFields = hidesExtendedProjectFields(form.source_id) || isHrType;
   const ownerEmployees = hideExtendedFields ? companyEmployees : reportingHeads;
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -373,6 +377,14 @@ const CreateProject = () => {
       dispatch(clearSubActivities());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    const preset = routeLocation.state?.sourceId;
+    if (preset !== PROJECT_SOURCE_IDS.HR) return;
+    setForm((prev) => (
+      prev.source_id === preset ? prev : { ...prev, source_id: preset }
+    ));
+  }, [routeLocation.state]);
 
   useEffect(() => {
     if (sectors && sectors.length > 0) {
@@ -2267,9 +2279,9 @@ const CreateProject = () => {
     if (!form.project_name) missingFields.push("Project Name");
     if (!form.short_name) missingFields.push("Short Name");
     if (!form.company) missingFields.push("Please select a Company");
-    if (!form.sector) missingFields.push("Sector");
-    if (!form.loa_date) missingFields.push("LOA Date");
-    if (!form.completion_date) missingFields.push("Completion Date");
+    if (!isHrType && !form.sector) missingFields.push("Sector");
+    if (!isHrType && !form.loa_date) missingFields.push("LOA Date");
+    if (!isHrType && !form.completion_date) missingFields.push("Completion Date");
     if (!hideExtendedFields) {
       if (!form.workorder_Amount) missingFields.push("Workorder Amount");
       if (!form.location) missingFields.push("Work location");
@@ -2281,14 +2293,14 @@ const CreateProject = () => {
       missingFields.push("Please select a Client & branch");
     }
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
-    if (!selectedActivities.length) missingFields.push("Please select at least one activity");
+    if (!isHrType && !selectedActivities.length) missingFields.push("Please select at least one activity");
     if (!form.source_id) missingFields.push("Project Type");
 
     if (missingFields.length) {
       return showError(`Please fill: ${missingFields.join(", ")}`);
     }
 
-
+    if (isHrType) return true;
 
     // 🔹 Weightage Check (not required for BD)
     if (!hideWeightage) {
@@ -2387,6 +2399,24 @@ const CreateProject = () => {
     );
 
     try {
+      if (isHrType) {
+        const selectedCompany = companies.find((c) => c.name === form.company);
+        await hrProjectService.createProject({
+          project_code: form.project_code,
+          project_name: form.project_name,
+          short_name: form.short_name,
+          location: form.location || "",
+          company: selectedCompany?.id || "",
+          assigned_to: form.assigned_to,
+          created_by: "CIPL10021",
+          source: form.source_id,
+          source_id: form.source_id,
+        });
+        dispatch(showSnackbar({ message: "HR project created", type: "success" }));
+        navigate("/all-projects");
+        return;
+      }
+
       const allActivities = getAllActivities();
 
       // Build Activities + SubActivities together with sorting_var
@@ -4399,8 +4429,8 @@ const CreateProject = () => {
                 />
               </div>
             </div>
-            {/* Location */}
-            {!hideExtendedFields && (
+            {/* Location — shown for HR; hidden only for Aimantra */}
+            {(!hideExtendedFields || isHrType) && (
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Location *</label>
               <div className="relative">
@@ -4502,6 +4532,7 @@ const CreateProject = () => {
             )}
 
             {/* Sector Field */}
+            {!isHrType && (
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Sector *</label>
               <div className="relative" ref={sectorDropdownRef}>
@@ -4559,6 +4590,7 @@ const CreateProject = () => {
                 )}
               </div>
             </div>
+            )}
             {!hideExtendedFields && (
             <>
             <div className="flex flex-col gap-1">
@@ -4940,8 +4972,8 @@ const CreateProject = () => {
         <motion.div
           initial={false}
           animate={{
-            display: !isMobile || currentStep === 2 ? "block" : "none",
-            opacity: !isMobile || currentStep === 2 ? 1 : 0,
+            display: isHrType ? "none" : (!isMobile || currentStep === 2 ? "block" : "none"),
+            opacity: isHrType ? 0 : (!isMobile || currentStep === 2 ? 1 : 0),
           }}
           className="bg-white rounded-xl md:rounded-3xl shadow-lg md:shadow-2xl p-4 md:p-8 border border-gray-100"
         >
@@ -5052,7 +5084,7 @@ const CreateProject = () => {
                 onChange={handleChange}
                 max={form.completion_date}
                 className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                required
+                required={!isHrType}
               />
             </div>
             {/* Completion Date */}
@@ -5067,7 +5099,7 @@ const CreateProject = () => {
                 value={form.completion_date}
                 onChange={handleChange}
                 className="w-full px-3 h-11 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                required
+                required={!isHrType}
               />
             </div>
           </div>
@@ -5168,7 +5200,8 @@ const CreateProject = () => {
             </div>
           )}
         </motion.div>
-        {/* Step 3: Activities - FULL ORIGINAL CODE PRESERVED */}
+        {/* Step 3: activity/subactivity template stays preloaded for every type except HR */}
+        {!isHrType && (
         <motion.div
           initial={false}
           animate={{
@@ -6311,9 +6344,10 @@ const CreateProject = () => {
             </div>
           )}
         </motion.div>
+        )}
 
 
-        {!isMobile && (
+        {(!isMobile || isHrType) && (
           <div className="flex justify-center gap-4">
             {/* Cancel Button */}
             <button

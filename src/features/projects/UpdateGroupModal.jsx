@@ -8,6 +8,9 @@ import {
 import { fetchProjectDetails } from "../api/apiSlice";
 import api, { getLatestServerDate } from "../../services/api";
 import { projectService } from "../../services/projectService";
+import { hrProjectService } from "../../services/hrProjectService";
+import { isHrProject, mergeHrIntoProjects } from "../hr/hrUtils";
+import { KraShortcut, ProjectKindBadge } from "../hr/hrUi";
 import {
     PROJECT_TYPE_SOURCE_IDS,
     getVisibleProjectTypeFilterOptions,
@@ -197,8 +200,9 @@ const ProjectSearchInput = ({ projects, value, onChange, error, disabled, onTogg
                                         onMouseDown={() => handleSelect(p)}
                                         className={`px-2.5 py-2 cursor-pointer transition-colors text-xs ${pid === value ? "bg-blue-50 text-blue-700" : "hover:bg-blue-50/60 text-gray-700"}`}
                                     >
-                                        <div className="font-medium leading-tight">
+                                        <div className="font-medium leading-tight flex items-center gap-1">
                                             <Highlighted text={displayName(p)} term={search} />
+                                            <ProjectKindBadge project={p} />
                                         </div>
                                         {(p.project_code || p.code) && (
                                             <div className="text-[10px] text-gray-400 mt-0.5">
@@ -281,6 +285,27 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     const [loadingDetail, setLoadingDetail] = useState({});
     const [typedProjectCache, setTypedProjectCache] = useState({});
     const [loadingTypedProjects, setLoadingTypedProjects] = useState({});
+    const [hrProjects, setHrProjects] = useState([]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        let cancelled = false;
+        hrProjectService.listProjects()
+            .then((list) => {
+                if (!cancelled) setHrProjects(Array.isArray(list) ? list : []);
+            })
+            .catch(() => {
+                if (!cancelled) setHrProjects([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen]);
+
+    const projectChoices = useMemo(
+        () => mergeHrIntoProjects(projects, hrProjects),
+        [projects, hrProjects]
+    );
 
     const hasSourceMeta = useMemo(
         () => (projects || []).some((p) => getProjectSourceId(p)),
@@ -328,8 +353,11 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     useEffect(() => {
         if (isOpen && initialData) {
             setDate(initialData.date && initialData.date !== "Unscheduled" ? initialData.date : todayStr());
-            if (initialData.tasks && initialData.tasks.length > 0) {
-                const mappedRows = initialData.tasks.map(task => {
+            const plannedTasks = (initialData.tasks || []).filter(
+                (task) => !task.is_unplanned && task.entry_type !== "manual"
+            );
+            if (plannedTasks.length > 0) {
+                const mappedRows = plannedTasks.map(task => {
                     const pid = task.project_id || "";
                     const listed = projects.find((p) => (p.id || p.project_id) === pid);
                     const inferredType = getProjectTypeFilterValue(task);
@@ -366,10 +394,16 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     };
     const workTypesFor = (pid) => detailFor(pid)?.sector_detail?.stage_work_types || [];
 
+    const rowIsHr = (row) => {
+        const listed = projectChoices.find((p) => String(p.id || p.project_id) === String(row.projectId));
+        return isHrProject(listed) || isHrProject(detailFor(row.projectId));
+    };
+
     const rowHidesWorkType = (row) =>
+        rowIsHr(row) ||
         isAimantraSubCompanyUser() ||
         hidesProjectWorkType(row.projectType) ||
-        hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(row.projectId))) ||
+        hidesProjectWorkType(projectChoices.find((p) => String(p.id || p.project_id) === String(row.projectId))) ||
         hidesProjectWorkType(detailFor(row.projectId));
 
     const hideWorkTypeColumn = isAimantraSubCompanyUser();
@@ -411,14 +445,15 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     }, [projects]);
 
     const handleProjectChange = useCallback((rowId, pid) => {
-        const selected = projects.find((p) => (p.id || p.project_id) === pid);
+        const selected = projectChoices.find((p) => (p.id || p.project_id) === pid);
         const inferredType = selected ? getProjectTypeFilterValue(selected) : "all";
+        const hr = isHrProject(selected);
         setRows((prev) => prev.map((r) => {
             if (r._id !== rowId) return r;
             return {
                 ...r,
                 projectId: pid,
-                projectType: pid && inferredType !== "all" ? inferredType : r.projectType,
+                projectType: hr ? "hr" : (pid && inferredType !== "all" ? inferredType : r.projectType),
                 activityId: "",
                 subActivityId: "",
                 workType: "",
@@ -427,7 +462,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         }));
         setErrors((prev) => { const n = { ...prev }; delete n[`${rowId}.projectId`]; return n; });
         if (pid) ensureProjectDetail(pid);
-    }, [projects, ensureProjectDetail]);
+    }, [projectChoices, ensureProjectDetail]);
 
     const applyPreset = useCallback((rowId, start, end) => {
         setRows((prev) => prev.map((r) => r._id === rowId ? { ...r, startTime: start, endTime: end, isSelected: true } : r));
@@ -462,11 +497,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
             if (r.startTime && r.endTime && r.endTime <= r.startTime) errs[`${r._id}.endTime`] = true;
-            const skipWorkType =
-                isAimantraSubCompanyUser() ||
-                hidesProjectWorkType(r.projectType) ||
-                hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(r.projectId))) ||
-                hidesProjectWorkType(detailFor(r.projectId));
+            const skipWorkType = rowHidesWorkType(r);
             if (!skipWorkType && !r.workType) errs[`${r._id}.workType`] = true;
         });
 
@@ -489,13 +520,14 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             const selectedRowsworklog = rows.filter(r => r.isSelected);
             // ✅ Format exactly as requested
             const payload = selectedRows.map(row => ({
-                id: row.taskId,
+                ...(row.taskId ? { id: row.taskId } : {}),
                 project: row.projectId,
                 subactivity: row.subActivityId,
                 date: date,
                 start_time: row.startTime,
                 end_time: row.endTime,
                 note: row.description,
+                ...(row.workType ? { work_type: row.workType } : {}),
             }));
 
             const worklogPayload = selectedRowsworklog.map(row => ({
@@ -508,10 +540,12 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 note: row.description,
             }));
 
-            if (!isEdit) {
+            const planPayload = isEdit ? payload : worklogPayload.filter((row) => row.id);
+            if (planPayload.length && onSave) {
+                await onSave(date, planPayload);
+            }
+            if (!isEdit && worklogPayload.length) {
                 await onSaveWorklog(date, worklogPayload);
-            } else {
-                await onSave(date, payload);
             }
 
             onClose();
@@ -707,15 +741,18 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                             const workTypes = workTypesFor(row.projectId);
                                             const isEditing = editingRow === row._id;
                                             const typeFilteredProjects = resolveProjectsForType({
-                                                projects,
+                                                projects: projectChoices,
                                                 typeKey: row.projectType || "all",
                                                 includeProjectId: row.projectId,
                                                 hasSourceMeta,
                                                 remoteList: typedProjectCache[row.projectType],
                                             });
+                                            const hrRow = rowIsHr(row);
+                                            const selectedSub = subActivities.find((s) => s.id === row.subActivityId);
 
-                                            // Row is editable only when selected AND Edit button clicked
+                                            // Project/activity stay locked after the 1-hour window; start/end times stay editable
                                             const disabled = !isEdit;
+                                            const timesLocked = false;
 
                                             return (
                                                 <motion.tr
@@ -724,8 +761,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, x: -16 }}
                                                     transition={{ duration: 0.16 }}
-                                                    className={`group transition-all ${disabled ? "opacity-60 bg-gray-50/50" : ""
-                                                        }`}
+                                                    className={`group transition-all ${disabled ? "bg-gray-50/50" : ""}`}
                                                     style={{
                                                         position: "relative",
                                                         zIndex: openDropdowns[row._id] ? 50 : 1
@@ -788,7 +824,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             onChange={(v) =>
                                                                 updateRow(row._id, "activityId", v)
                                                             }
-                                                            placeholder="Select activity"
+                                                            placeholder={hrRow ? "Select KRA" : "Select activity"}
                                                             disabled={
                                                                 !row.projectId ||
                                                                 isLoadingThis ||
@@ -812,7 +848,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             onChange={(v) =>
                                                                 updateRow(row._id, "subActivityId", v)
                                                             }
-                                                            placeholder="Select sub-activity"
+                                                            placeholder={hrRow ? "Select KRA line" : "Select sub-activity"}
                                                             disabled={
                                                                 !row.activityId ||
                                                                 isLoadingThis ||
@@ -822,13 +858,20 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         >
                                                             {subActivities.map((s) => (
                                                                 <option key={s.id} value={s.id}>
-                                                                    {s.sorting_var
+                                                                    {hrRow ? "" : (s.sorting_var
                                                                         ? `Stage ${s.sorting_var} – `
-                                                                        : ""}
+                                                                        : "")}
                                                                     {s.subactivity_name}
                                                                 </option>
                                                             ))}
                                                         </Sel>
+                                                        {hrRow && (
+                                                            <KraShortcut
+                                                                name={selectedSub?.subactivity_name}
+                                                                projectId={row.projectId}
+                                                                compact
+                                                            />
+                                                        )}
                                                     </td>
 
                                                     {/* START TIME */}
@@ -840,7 +883,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             }
                                                             placeholder="In"
                                                             error={e("startTime")}
-                                                            disabled={disabled}
+                                                            disabled={timesLocked}
 
                                                         />
                                                     </td>
@@ -855,9 +898,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             placeholder="Out"
                                                             error={
                                                                 e("endTime") ||
-                                                                (!disabled && timeInvalid)
+                                                                timeInvalid
                                                             }
-                                                            disabled={disabled}
+                                                            disabled={timesLocked}
                                                         />
                                                     </td>
 
@@ -867,7 +910,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             onApply={(s, end) =>
                                                                 applyPreset(row._id, s, end)
                                                             }
-                                                            disabled={disabled}
+                                                            disabled={timesLocked}
                                                         />
                                                     </td>
 
@@ -903,6 +946,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                             </p>
                                                         )}
                                                     </td>
+                                                    )}
+                                                    {!hideWorkTypeColumn && hrRow && (
+                                                        <td className="px-1 py-2 align-top text-[10px] text-gray-400">—</td>
                                                     )}
 
 

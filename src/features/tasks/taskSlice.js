@@ -226,9 +226,9 @@ export const updateDailyWorkplan = createAsyncThunk(
           durationSeconds = 86400; // 24 hours
         }
 
-        // Return the formatted object including the ID
+        // New rows added inside the 1-hour window have no id and must still be sent.
         return {
-          id: id,
+          ...(id ? { id } : {}),
           project: project,
           user: userUUID,
           subactivity: subactivity,

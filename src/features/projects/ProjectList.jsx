@@ -84,6 +84,8 @@ import {
   hidesProjectWorkType,
   isAimantraSubCompanyUser,
 } from "../../constants/projectSources";
+import { isHrProject } from "../hr/hrUtils";
+import { HrStageProofActions } from "../hr/HrStageProofActions";
 
 const ProjectList = () => {
   const navigate = useNavigate();
@@ -431,14 +433,14 @@ const ProjectList = () => {
     const cgst = Number(project.cgst_percentage) || 0;
     const gst = (cost * igst) / 100 + (cost * cgst) / 100;
     const amount = gst !== 0 ? gst : (cost * 18) / 100;
-    return amount.toFixed(2);
+    return amount?.toFixed(2);
   };
 
   // Helper function to calculate total with GST
   const calculateTotalWithGST = (project) => {
     const cost = Number(getCost(project)) || 0;
     const gst = Number(calculateGSTAmount(project)) || 0;
-    return (cost + gst).toFixed(2);
+    return (cost + gst)?.toFixed(2);
   };
 
   // Filter and sort projects
@@ -1463,7 +1465,7 @@ const ProjectList = () => {
                         {calculateHours(
                           timeLogData.startTime,
                           timeLogData.endTime
-                        ).toFixed(2)}{" "}
+                        )?.toFixed(2)}{" "}
                         hrs
                       </span>
                     </div>
@@ -1479,35 +1481,35 @@ const ProjectList = () => {
                   )
                 )
               ) && (
-              <div className="mb-4">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Work Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={timeLogData.work_type || ""}
-                  onChange={(e) =>
-                    setTimeLogData({ ...timeLogData, work_type: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select work type</option>
-                  {/* You need to get the current project's sector_detail.stage_work_types */}
-                  {(() => {
-                    const workTypes = selectedTaskfortimelog.stage_work_types || [];
-                    if (workTypes.length > 0) {
-                      return workTypes.map((workType) => (
-                        <option key={workType.id} value={workType.id}>
-                          {workType.name}
-                        </option>
-                      ));
-                    } else {
-                      return <option value="" disabled>No work types available for this sector</option>;
-                    }
-                  })()}
-                </select>
-              </div>
-              )}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">
+                      Work Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={timeLogData.work_type || ""}
+                      onChange={(e) =>
+                        setTimeLogData({ ...timeLogData, work_type: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select work type</option>
+                      {/* You need to get the current project's sector_detail.stage_work_types */}
+                      {(() => {
+                        const workTypes = selectedTaskfortimelog.stage_work_types || [];
+                        if (workTypes.length > 0) {
+                          return workTypes.map((workType) => (
+                            <option key={workType.id} value={workType.id}>
+                              {workType.name}
+                            </option>
+                          ));
+                        } else {
+                          return <option value="" disabled>No work types available for this sector</option>;
+                        }
+                      })()}
+                    </select>
+                  </div>
+                )}
               {/* Description */}
               <div className="mb-5">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -2720,6 +2722,7 @@ const ProjectList = () => {
               >
                 {filteredProjects.map((project) => {
                   const projectId = getProjectId(project);
+                  const hrKind = isHrProject(project);
                   const projectName = getProjectName(project);
                   const projectCode = getProjectCode(project);
                   const completionDate = getCompletionDate(project);
@@ -2782,6 +2785,18 @@ const ProjectList = () => {
                                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
                                   {getProjectTypeLabel(project)}
                                 </span>
+                              )}
+                              {hrKind && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/timesheet/hr/${projectId}/proofs`);
+                                  }}
+                                  className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700"
+                                >
+                                  Submitted documents
+                                </button>
                               )}
                               <motion.span
                                 whileHover={{ scale: 1.05 }}
@@ -2891,23 +2906,25 @@ const ProjectList = () => {
                               </div>
 
 
-                              <div className="flex items-center gap-2">
-                                <div className="p-2 bg-indigo-50 rounded-lg">
-                                  <UserStar
-                                    size={16}
-                                    className="text-indigo-600"
-                                  />
+                              {!hrKind && (
+                                <div className="flex items-center gap-2">
+                                  <div className="p-2 bg-indigo-50 rounded-lg">
+                                    <UserStar
+                                      size={16}
+                                      className="text-indigo-600"
+                                    />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">
+                                      Client
+                                    </p>
+                                    <p className="text-sm font-semibold">
+                                      {project?.client_detail?.client_name ||
+                                        getClientName(project)}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">
-                                    Client
-                                  </p>
-                                  <p className="text-sm font-semibold">
-                                    {project?.client_detail?.client_name ||
-                                      getClientName(project)}
-                                  </p>
-                                </div>
-                              </div>
+                              )}
 
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-indigo-50 rounded-lg">
@@ -3068,7 +3085,7 @@ const ProjectList = () => {
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Key Metrics Dashboard */}
-                              {!isUser && (
+                              {!isUser && !hrKind && (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
                                     <p className="text-xs text-gray-500 mb-1">
@@ -3183,15 +3200,17 @@ const ProjectList = () => {
                                         {getSectorName(project)}
                                       </span>
                                     </div>
-                                    <div className="flex items-center py-2 border-b border-gray-200">
-                                      <span className="text-sm text-gray-500 w-40">
-                                        Client :
-                                      </span>
-                                      <span className="text-sm font-medium text-gray-800">
-                                        {project?.client_detail?.client_name ||
-                                          getClientName(project)}
-                                      </span>
-                                    </div>
+                                    {!hrKind && (
+                                      <div className="flex items-center py-2 border-b border-gray-200">
+                                        <span className="text-sm text-gray-500 w-40">
+                                          Client :
+                                        </span>
+                                        <span className="text-sm font-medium text-gray-800">
+                                          {project?.client_detail?.client_name ||
+                                            getClientName(project)}
+                                        </span>
+                                      </div>
+                                    )}
 
                                     {project.clientbranch &&
                                       (() => {
@@ -3357,7 +3376,7 @@ const ProjectList = () => {
                                               (getCost(project) *
                                                 project.igst_percentage) /
                                               100
-                                            ).toFixed(2)}{" "}
+                                            )?.toFixed(2)}{" "}
                                             Lakhs
                                           </p>
                                         </div>
@@ -3373,7 +3392,7 @@ const ProjectList = () => {
                                             (getCost(project) *
                                               (project.igst_percentage || 0)) /
                                             100
-                                          ).toFixed(2)}{" "}
+                                          )?.toFixed(2)}{" "}
                                           Lakhs
                                         </p>
                                       </div>
@@ -3439,11 +3458,11 @@ const ProjectList = () => {
                                                             <h5 className="font-semibold text-gray-800">
                                                               {activity.activity_name}
                                                             </h5>
-                                                            {!hidesProjectWeightage(projectData || project) && (
-                                                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">
-                                                              Weightage:{" "}
-                                                              {activity.weightage.toFixed(2) || 0}%
-                                                            </span>
+                                                            {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
+                                                              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">
+                                                                Weightage:{" "}
+                                                                {activity?.weightage?.toFixed(2) || 0}%
+                                                              </span>
                                                             )}
                                                             <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600">
                                                               {subs.length} tasks
@@ -3522,22 +3541,25 @@ const ProjectList = () => {
                                                                         <>
                                                                           <th className="px-2 py-3 text-center">view</th>
                                                                           <th className="px-2 py-3 text-center">Stage</th>
-                                                                          {!hidesProjectWeightage(projectData || project) && (
-                                                                          <>
-                                                                          <th className="px-2 py-3 text-center">%</th>
-                                                                          <th className="px-2 py-3 text-center">Amount ₹</th>
-                                                                          <th className="px-2 py-3 text-center">Raised</th>
-                                                                          <th className="px-2 py-3 text-center">Received</th>
-                                                                          <th className="px-2 py-3 text-center">Remaining</th>
-                                                                          </>
+                                                                          {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
+                                                                            <>
+                                                                              <th className="px-2 py-3 text-center">%</th>
+                                                                              <th className="px-2 py-3 text-center">Amount ₹</th>
+                                                                              <th className="px-2 py-3 text-center">Raised</th>
+                                                                              <th className="px-2 py-3 text-center">Received</th>
+                                                                              <th className="px-2 py-3 text-center">Remaining</th>
+                                                                            </>
                                                                           )}
 
                                                                           <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
-                                                                          {!hidesProjectWeightage(projectData || project) && (
-                                                                          <>
-                                                                          <th className="px-2 py-3 text-center">Action</th>
-                                                                          <th className="px-2 py-3 text-center">Invoice Status</th>
-                                                                          </>
+                                                                          {hrKind && (
+                                                                            <th className="px-2 py-3 text-center">Proof</th>
+                                                                          )}
+                                                                          {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
+                                                                            <>
+                                                                              <th className="px-2 py-3 text-center">Action</th>
+                                                                              <th className="px-2 py-3 text-center">Invoice Status</th>
+                                                                            </>
                                                                           )}
                                                                         </>
                                                                       }
@@ -3678,32 +3700,41 @@ const ProjectList = () => {
 
                                                                                         {/* Work Log Button (Now on each stage with stage.id) */}
                                                                                         <td className="text-center align-middle px-2 py-2 border-l border-gray-100">
-                                                                                          <button
-                                                                                            className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 inline-flex items-center gap-1"
-                                                                                            onClick={(e) => {
-                                                                                              e.stopPropagation();
-                                                                                              setSelectedTaskfortimelog({
-                                                                                                id: sub.id,
-                                                                                                stage: stage.id,  // ✅ ADDED stage_id
-                                                                                                project_id: projectId,
-                                                                                                subactivity_name: sub.subactivity_name,
-                                                                                                stage_name: stage.name,  // ✅ ADDED stage_name for display
-                                                                                                project_name: project.short_name || project.project_name,
-                                                                                                stage_work_types: expandedProjectDetails[projectId]?.sector_detail?.stage_work_types || []
-                                                                                              });
-                                                                                              setTimeLogData({
-                                                                                                date: new Date().toISOString().split("T")[0],
-                                                                                                startTime: "",
-                                                                                                endTime: "",
-                                                                                                description: "",
-                                                                                                work_type: ""
-                                                                                              });
-                                                                                              setShowTimeLogModal(true);
-                                                                                            }}
-                                                                                          >
-                                                                                            <PlusCircle size={14} />
-                                                                                            Work Log
-                                                                                          </button>
+                                                                                          <div className="inline-flex items-center justify-center gap-1 flex-wrap">
+                                                                                            <button
+                                                                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 inline-flex items-center gap-1"
+                                                                                              onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                setSelectedTaskfortimelog({
+                                                                                                  id: sub.id,
+                                                                                                  stage: stage.id,  // ✅ ADDED stage_id
+                                                                                                  project_id: projectId,
+                                                                                                  subactivity_name: sub.subactivity_name,
+                                                                                                  stage_name: stage.name,  // ✅ ADDED stage_name for display
+                                                                                                  project_name: project.short_name || project.project_name,
+                                                                                                  stage_work_types: expandedProjectDetails[projectId]?.sector_detail?.stage_work_types || []
+                                                                                                });
+                                                                                                setTimeLogData({
+                                                                                                  date: new Date().toISOString().split("T")[0],
+                                                                                                  startTime: "",
+                                                                                                  endTime: "",
+                                                                                                  description: "",
+                                                                                                  work_type: ""
+                                                                                                });
+                                                                                                setShowTimeLogModal(true);
+                                                                                              }}
+                                                                                            >
+                                                                                              <PlusCircle size={14} />
+                                                                                              Work Log
+                                                                                            </button>
+                                                                                            {hrKind && (
+                                                                                              <HrStageProofActions
+                                                                                                projectId={projectId}
+                                                                                                stage={stage}
+                                                                                                lineName={sub.subactivity_name}
+                                                                                              />
+                                                                                            )}
+                                                                                          </div>
                                                                                         </td>
                                                                                       </tr>
 
@@ -3819,64 +3850,64 @@ const ProjectList = () => {
 
                                                                                       {/* 🔵 ADMIN / ACCOUNT COLUMNS (Stage Specific) */}
                                                                                       <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
-                                                                                      {!hidesProjectWeightage(projectData || project) && (
-                                                                                      <>
-                                                                                      <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
-                                                                                      <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)} L` : ''} </td>
+                                                                                      {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
+                                                                                        <>
+                                                                                          <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
+                                                                                          <td className="text-center">₹ {stageAmount?.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage?.extra_payment_amount?.toFixed(2)} L` : ''} </td>
 
-                                                                                      {/* Raised */}
-                                                                                      <td className="text-center">
-                                                                                        {stageRaised.toFixed(2)} L
-                                                                                        {stageRaised > 0 && (
-                                                                                          <FileText
-                                                                                            className="inline-block ml-1 -mt-1 text-red-500 cursor-pointer"
-                                                                                            size={13}
-                                                                                            title="View Raised Files"
-                                                                                            onClick={(e) => {
-                                                                                              e.stopPropagation();
-                                                                                              setViewDocumentModel({
-                                                                                                model: true,
-                                                                                                data: (stage.payment_logs || []).filter((log) => log.to_status === "Raised"),
-                                                                                                title: `${stage.name} - Raised Documents`
-                                                                                              });
-                                                                                            }}
-                                                                                          />
-                                                                                        )}
-                                                                                      </td>
-
-                                                                                      {/* Received */}
-                                                                                      <td className="text-center">
-                                                                                        {stageReceived === 0 && (stage.payment_logs || []).some(log => log.to_status === "Raised") ? (
-                                                                                          getDaysStatus(
-                                                                                            (stage.payment_logs || []).find(log => log.to_status === "Raised")?.created_at
-                                                                                          )
-                                                                                        ) : (
-                                                                                          <>
-                                                                                            {stageReceived.toFixed(2)} L
-                                                                                            {stageReceived > 0 && (
+                                                                                          {/* Raised */}
+                                                                                          <td className="text-center">
+                                                                                            {stageRaised?.toFixed(2)} L
+                                                                                            {stageRaised > 0 && (
                                                                                               <FileText
                                                                                                 className="inline-block ml-1 -mt-1 text-red-500 cursor-pointer"
                                                                                                 size={13}
-                                                                                                title="View Received Files"
+                                                                                                title="View Raised Files"
                                                                                                 onClick={(e) => {
                                                                                                   e.stopPropagation();
                                                                                                   setViewDocumentModel({
                                                                                                     model: true,
-                                                                                                    data: (stage.payment_logs || []).filter((log) => log.to_status === "Received"),
-                                                                                                    title: `${stage.name} - Received Documents`
+                                                                                                    data: (stage.payment_logs || []).filter((log) => log.to_status === "Raised"),
+                                                                                                    title: `${stage.name} - Raised Documents`
                                                                                                   });
                                                                                                 }}
                                                                                               />
                                                                                             )}
-                                                                                          </>
-                                                                                        )}
-                                                                                      </td>
+                                                                                          </td>
 
-                                                                                      {/* Remaining */}
-                                                                                      <td className={`text-center font-medium ${stageRemaining <= 0 ? "text-green-500" : "text-red-500"}`}>
-                                                                                        {stageRemaining <= 0 ? "0.00" : stageRemaining.toFixed(2)} L
-                                                                                      </td>
-                                                                                      </>
+                                                                                          {/* Received */}
+                                                                                          <td className="text-center">
+                                                                                            {stageReceived === 0 && (stage.payment_logs || []).some(log => log.to_status === "Raised") ? (
+                                                                                              getDaysStatus(
+                                                                                                (stage.payment_logs || []).find(log => log.to_status === "Raised")?.created_at
+                                                                                              )
+                                                                                            ) : (
+                                                                                              <>
+                                                                                                {stageReceived?.toFixed(2)} L
+                                                                                                {stageReceived > 0 && (
+                                                                                                  <FileText
+                                                                                                    className="inline-block ml-1 -mt-1 text-red-500 cursor-pointer"
+                                                                                                    size={13}
+                                                                                                    title="View Received Files"
+                                                                                                    onClick={(e) => {
+                                                                                                      e.stopPropagation();
+                                                                                                      setViewDocumentModel({
+                                                                                                        model: true,
+                                                                                                        data: (stage.payment_logs || []).filter((log) => log.to_status === "Received"),
+                                                                                                        title: `${stage.name} - Received Documents`
+                                                                                                      });
+                                                                                                    }}
+                                                                                                  />
+                                                                                                )}
+                                                                                              </>
+                                                                                            )}
+                                                                                          </td>
+
+                                                                                          {/* Remaining */}
+                                                                                          <td className={`text-center font-medium ${stageRemaining <= 0 ? "text-green-500" : "text-red-500"}`}>
+                                                                                            {stageRemaining <= 0 ? "0.00" : stageRemaining?.toFixed(2)} L
+                                                                                          </td>
+                                                                                        </>
                                                                                       )}
 
                                                                                       {/* PO Status (Invoice Status Dropdown) */}
@@ -3917,72 +3948,112 @@ const ProjectList = () => {
                                                                                         </div>
                                                                                       </td>
 
-                                                                                      {/* Action (Approve/Reject for Submitted, Submit for others) */}
-                                                                                      {!hidesProjectWeightage(projectData || project) && (
-                                                                                      <>
-                                                                                      <td className="text-center" onClick={(e) => e.stopPropagation()}>
-                                                                                        {workStatus === "Submitted" ? (
-                                                                                          <div className="inline-flex items-center justify-center gap-1">
-                                                                                            <button
-                                                                                              onClick={() => {
-                                                                                                setShowProofModal(true);
-                                                                                                setProofData({
-                                                                                                  ...proofData,
-                                                                                                  stage: stage.id,
-                                                                                                  subactivity: sub.id,
-                                                                                                  to_status: "Approved",
-                                                                                                  projectId: projectId,
-                                                                                                  documents: [],
-                                                                                                  remarks: "",
-                                                                                                  rejection_proof: [],
-                                                                                                  rejection_reason: "",
-                                                                                                  rejection_type: "",
-                                                                                                  url: "",
-                                                                                                  created_by: user?.emp_code || "",
-                                                                                                });
-                                                                                              }}
-                                                                                              className="h-8 px-2 box-border border border-transparent text-xs flex items-center justify-center gap-1 rounded transition bg-green-100 text-green-700 hover:bg-green-200"
-                                                                                              title="Approve"
-                                                                                            >
-                                                                                              <Handshake size={12} />
-                                                                                              Approve
-                                                                                            </button>
-                                                                                            <button
-                                                                                              onClick={() => {
-                                                                                                setShowProofModal(true);
-                                                                                                setProofData({
-                                                                                                  ...proofData,
-                                                                                                  stage: stage.id,
-                                                                                                  subactivity: sub.id,
-                                                                                                  to_status: "Rejected",
-                                                                                                  projectId: projectId,
-                                                                                                  documents: [],
-                                                                                                  remarks: "",
-                                                                                                  rejection_proof: [],
-                                                                                                  rejection_reason: "",
-                                                                                                  rejection_type: "",
-                                                                                                  url: "",
-                                                                                                  created_by: user?.emp_code || "",
-                                                                                                });
-                                                                                              }}
-                                                                                              className="h-8 px-2 box-border text-xs flex items-center justify-center gap-1 rounded transition bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                                                                                              title="Reject"
-                                                                                            >
-                                                                                              Reject
-                                                                                            </button>
+                                                                                      {hrKind && (
+                                                                                        <td className="text-center align-middle px-2 py-2" onClick={(e) => e.stopPropagation()}>
+                                                                                          <div className="inline-flex items-center justify-center gap-1 flex-wrap">
+                                                                                            <HrStageProofActions
+                                                                                              projectId={projectId}
+                                                                                              stage={stage}
+                                                                                              lineName={sub.subactivity_name}
+                                                                                            />
                                                                                           </div>
-                                                                                        ) : workStatus === "Approved" ? (
-                                                                                          <div className="relative inline-block">
-                                                                                            <select
-                                                                                              onChange={(e) => {
-                                                                                                const action = e.target.value;
-                                                                                                if (action === "Reject") {
+                                                                                        </td>
+                                                                                      )}
+
+                                                                                      {/* Action (Approve/Reject for Submitted, Submit for others) */}
+                                                                                      {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
+                                                                                        <>
+                                                                                          <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                                                                            {workStatus === "Submitted" ? (
+                                                                                              <div className="inline-flex items-center justify-center gap-1">
+                                                                                                <button
+                                                                                                  onClick={() => {
+                                                                                                    setShowProofModal(true);
+                                                                                                    setProofData({
+                                                                                                      ...proofData,
+                                                                                                      stage: stage.id,
+                                                                                                      subactivity: sub.id,
+                                                                                                      to_status: "Approved",
+                                                                                                      projectId: projectId,
+                                                                                                      documents: [],
+                                                                                                      remarks: "",
+                                                                                                      rejection_proof: [],
+                                                                                                      rejection_reason: "",
+                                                                                                      rejection_type: "",
+                                                                                                      url: "",
+                                                                                                      created_by: user?.emp_code || "",
+                                                                                                    });
+                                                                                                  }}
+                                                                                                  className="h-8 px-2 box-border border border-transparent text-xs flex items-center justify-center gap-1 rounded transition bg-green-100 text-green-700 hover:bg-green-200"
+                                                                                                  title="Approve"
+                                                                                                >
+                                                                                                  <Handshake size={12} />
+                                                                                                  Approve
+                                                                                                </button>
+                                                                                                <button
+                                                                                                  onClick={() => {
+                                                                                                    setShowProofModal(true);
+                                                                                                    setProofData({
+                                                                                                      ...proofData,
+                                                                                                      stage: stage.id,
+                                                                                                      subactivity: sub.id,
+                                                                                                      to_status: "Rejected",
+                                                                                                      projectId: projectId,
+                                                                                                      documents: [],
+                                                                                                      remarks: "",
+                                                                                                      rejection_proof: [],
+                                                                                                      rejection_reason: "",
+                                                                                                      rejection_type: "",
+                                                                                                      url: "",
+                                                                                                      created_by: user?.emp_code || "",
+                                                                                                    });
+                                                                                                  }}
+                                                                                                  className="h-8 px-2 box-border text-xs flex items-center justify-center gap-1 rounded transition bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                                                                  title="Reject"
+                                                                                                >
+                                                                                                  Reject
+                                                                                                </button>
+                                                                                              </div>
+                                                                                            ) : workStatus === "Approved" ? (
+                                                                                              <div className="relative inline-block">
+                                                                                                <select
+                                                                                                  onChange={(e) => {
+                                                                                                    const action = e.target.value;
+                                                                                                    if (action === "Reject") {
+                                                                                                      setShowProofModal(true);
+                                                                                                      setProofData({
+                                                                                                        ...proofData,
+                                                                                                        stage: stage.id,
+                                                                                                        subactivity: sub.id,
+                                                                                                        to_status: "Rejected",
+                                                                                                        projectId: projectId,
+                                                                                                        documents: [],
+                                                                                                        remarks: "",
+                                                                                                        rejection_proof: [],
+                                                                                                        rejection_reason: "",
+                                                                                                        rejection_type: "",
+                                                                                                        url: "",
+                                                                                                        created_by: user?.emp_code || "",
+                                                                                                      });
+                                                                                                    }
+                                                                                                    e.target.value = "";
+                                                                                                  }}
+                                                                                                  defaultValue=""
+                                                                                                  className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                                >
+                                                                                                  <option value="" disabled>Action</option>
+                                                                                                  <option value="Reject" className="text-red-600">❌ Reject</option>
+                                                                                                </select>
+                                                                                              </div>
+                                                                                            ) : (
+                                                                                              <button
+                                                                                                onClick={() => {
                                                                                                   setShowProofModal(true);
                                                                                                   setProofData({
                                                                                                     ...proofData,
                                                                                                     stage: stage.id,
                                                                                                     subactivity: sub.id,
-                                                                                                    to_status: "Rejected",
+                                                                                                    to_status: "Submitted",
                                                                                                     projectId: projectId,
                                                                                                     documents: [],
                                                                                                     remarks: "",
@@ -3992,111 +4063,83 @@ const ProjectList = () => {
                                                                                                     url: "",
                                                                                                     created_by: user?.emp_code || "",
                                                                                                   });
-                                                                                                }
-                                                                                                e.target.value = "";
-                                                                                              }}
-                                                                                              defaultValue=""
-                                                                                              className="mx-2 h-8 w-24 box-border text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                                                            >
-                                                                                              <option value="" disabled>Action</option>
-                                                                                              <option value="Reject" className="text-red-600">❌ Reject</option>
-                                                                                            </select>
-                                                                                          </div>
-                                                                                        ) : (
-                                                                                          <button
-                                                                                            onClick={() => {
-                                                                                              setShowProofModal(true);
-                                                                                              setProofData({
-                                                                                                ...proofData,
-                                                                                                stage: stage.id,
-                                                                                                subactivity: sub.id,
-                                                                                                to_status: "Submitted",
-                                                                                                projectId: projectId,
-                                                                                                documents: [],
-                                                                                                remarks: "",
-                                                                                                rejection_proof: [],
-                                                                                                rejection_reason: "",
-                                                                                                rejection_type: "",
-                                                                                                url: "",
-                                                                                                created_by: user?.emp_code || "",
-                                                                                              });
-                                                                                            }}
-                                                                                            disabled={workStatus === "Completed"}
-                                                                                            className={`h-8 w-24 box-border border border-transparent text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Completed"
-                                                                                              ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
-                                                                                              : workStatus === "Rejected"
-                                                                                                ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                                                                                : "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                                                                                              }`}
-                                                                                            title={workStatus === "Rejected" ? "Resubmit with corrections" : "Submit Proof"}
-                                                                                          >
-                                                                                            <CheckCircle size={12} />
-                                                                                            {workStatus === "Rejected" ? "Resubmit" : "Submit"}
-                                                                                          </button>
-                                                                                        )}
-                                                                                      </td>
+                                                                                                }}
+                                                                                                disabled={workStatus === "Completed"}
+                                                                                                className={`h-8 w-24 box-border border border-transparent text-xs px-2 py-1 flex items-center justify-center gap-1 mx-auto rounded transition ${workStatus === "Completed"
+                                                                                                  ? "!cursor-no-drop opacity-50 bg-gray-100 text-gray-500"
+                                                                                                  : workStatus === "Rejected"
+                                                                                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                                                                                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                                                                                  }`}
+                                                                                                title={workStatus === "Rejected" ? "Resubmit with corrections" : "Submit Proof"}
+                                                                                              >
+                                                                                                <CheckCircle size={12} />
+                                                                                                {workStatus === "Rejected" ? "Resubmit" : "Submit"}
+                                                                                              </button>
+                                                                                            )}
+                                                                                          </td>
 
-                                                                                      {/* 2. Invoice Status (Dropdown) - Now matches the 8th column header */}
-                                                                                      <td className="text-center p-1" onClick={(e) => e.stopPropagation()}>
-                                                                                        <div className="relative inline-block">
-                                                                                          <select
-                                                                                            value={paymentStatus}
-                                                                                            disabled={paymentStatus === "Waiting"}
+                                                                                          {/* 2. Invoice Status (Dropdown) - Now matches the 8th column header */}
+                                                                                          <td className="text-center p-1" onClick={(e) => e.stopPropagation()}>
+                                                                                            <div className="relative inline-block">
+                                                                                              <select
+                                                                                                value={paymentStatus}
+                                                                                                disabled={paymentStatus === "Waiting"}
 
-                                                                                            onChange={(e) => {
-                                                                                              const selectedAction = e.target.value;
+                                                                                                onChange={(e) => {
+                                                                                                  const selectedAction = e.target.value;
 
-                                                                                              // 🔥 Intercept the action: Check if Account is trying to raise without TL approval
-                                                                                              if (isACCOUNT && workStatus !== "Approved" && selectedAction === "Raised") {
-                                                                                                // Show error message popup
-                                                                                                dispatch(showSnackbar({
-                                                                                                  message: "Team Lead has not approved this yet. You cannot raise the amount.",
-                                                                                                  type: "error"
-                                                                                                }));
+                                                                                                  // 🔥 Intercept the action: Check if Account is trying to raise without TL approval
+                                                                                                  if (isACCOUNT && workStatus !== "Approved" && selectedAction === "Raised") {
+                                                                                                    // Show error message popup
+                                                                                                    dispatch(showSnackbar({
+                                                                                                      message: "Team Lead has not approved this yet. You cannot raise the amount.",
+                                                                                                      type: "error"
+                                                                                                    }));
 
-                                                                                                // Revert the dropdown back to its original value
-                                                                                                e.target.value = invoiceStatus;
-                                                                                                return; // Stop the function here so the modal doesn't open
-                                                                                              }
+                                                                                                    // Revert the dropdown back to its original value
+                                                                                                    e.target.value = invoiceStatus;
+                                                                                                    return; // Stop the function here so the modal doesn't open
+                                                                                                  }
 
-                                                                                              // If validation passes, open the modal normally
-                                                                                              handleSubmissionapproveStatus(
-                                                                                                stage.id,
-                                                                                                sub,
-                                                                                                selectedAction,
-                                                                                                stageRemaining > 0 ? stageRemaining.toFixed(2) : stageAmount.toFixed(2),
-                                                                                                stage.extra_payment_amount || 0,
-                                                                                                projectId,
-                                                                                                'payment'
-                                                                                              );
-                                                                                            }}
-                                                                                            className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
-                                                                                            style={{
-                                                                                              backgroundColor:
-                                                                                                paymentStatus === "Pending" ? "#FEF3C7" :
-                                                                                                  paymentStatus === "Raised" ? "#DBEAFE" :
-                                                                                                    paymentStatus === "Received" ? "#D1FAE5" :
-                                                                                                      paymentStatus === "Completed" ? "#F3E8FF" : "#F3F4F6",
-                                                                                              color:
-                                                                                                paymentStatus === "Pending" ? "#D97706" :
-                                                                                                  paymentStatus === "Raised" ? "#2563EB" :
-                                                                                                    paymentStatus === "Received" ? "#059669" :
-                                                                                                      paymentStatus === "Completed" ? "#9333EA" : "#6B7280",
-                                                                                              borderColor:
-                                                                                                paymentStatus === "Pending" ? "#D97706" :
-                                                                                                  paymentStatus === "Raised" ? "#2563EB" :
-                                                                                                    paymentStatus === "Received" ? "#059669" :
-                                                                                                      paymentStatus === "Completed" ? "#9333EA" : "#D1D5DB"
-                                                                                            }}
-                                                                                          >
-                                                                                            <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>Not Started</option>
-                                                                                            <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>Pending</option>
-                                                                                            <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>Raised</option>
-                                                                                            <option value="Received" disabled={paymentStatus !== "Raised"} style={{ backgroundColor: "#D1FAE5", color: "#059669" }}>Received</option>
-                                                                                          </select>
-                                                                                        </div>
-                                                                                      </td>
-                                                                                      </>
+                                                                                                  // If validation passes, open the modal normally
+                                                                                                  handleSubmissionapproveStatus(
+                                                                                                    stage.id,
+                                                                                                    sub,
+                                                                                                    selectedAction,
+                                                                                                    stageRemaining > 0 ? stageRemaining?.toFixed(2) : stageAmount?.toFixed(2),
+                                                                                                    stage?.extra_payment_amount || 0,
+                                                                                                    projectId,
+                                                                                                    'payment'
+                                                                                                  );
+                                                                                                }}
+                                                                                                className="text-xs border m-1 rounded cursor-pointer w-[90px] p-1"
+                                                                                                style={{
+                                                                                                  backgroundColor:
+                                                                                                    paymentStatus === "Pending" ? "#FEF3C7" :
+                                                                                                      paymentStatus === "Raised" ? "#DBEAFE" :
+                                                                                                        paymentStatus === "Received" ? "#D1FAE5" :
+                                                                                                          paymentStatus === "Completed" ? "#F3E8FF" : "#F3F4F6",
+                                                                                                  color:
+                                                                                                    paymentStatus === "Pending" ? "#D97706" :
+                                                                                                      paymentStatus === "Raised" ? "#2563EB" :
+                                                                                                        paymentStatus === "Received" ? "#059669" :
+                                                                                                          paymentStatus === "Completed" ? "#9333EA" : "#6B7280",
+                                                                                                  borderColor:
+                                                                                                    paymentStatus === "Pending" ? "#D97706" :
+                                                                                                      paymentStatus === "Raised" ? "#2563EB" :
+                                                                                                        paymentStatus === "Received" ? "#059669" :
+                                                                                                          paymentStatus === "Completed" ? "#9333EA" : "#D1D5DB"
+                                                                                                }}
+                                                                                              >
+                                                                                                <option value="Waiting" disabled style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>Not Started</option>
+                                                                                                <option value="Pending" disabled style={{ backgroundColor: "#FEF3C7", color: "#D97706" }}>Pending</option>
+                                                                                                <option value="Raised" style={{ backgroundColor: "#DBEAFE", color: "#2563EB" }}>Raised</option>
+                                                                                                <option value="Received" disabled={paymentStatus !== "Raised"} style={{ backgroundColor: "#D1FAE5", color: "#059669" }}>Received</option>
+                                                                                              </select>
+                                                                                            </div>
+                                                                                          </td>
+                                                                                        </>
                                                                                       )}
 
                                                                                     </tr>

@@ -71,6 +71,7 @@ import {
     isRelaxedProjectType,
     hidesProjectWeightage,
     hidesExtendedProjectFields,
+    isHrProjectSource,
 } from "../../constants/projectSources";
 
 const UpdateProject = () => {
@@ -113,8 +114,9 @@ const UpdateProject = () => {
         source_id: "",
     });
     const isRelaxedType = isRelaxedProjectType(form.source_id);
+    const isHrType = isHrProjectSource(form.source_id);
     const hideWeightage = hidesProjectWeightage(form.source_id);
-    const hideExtendedFields = hidesExtendedProjectFields(form.source_id);
+    const hideExtendedFields = hidesExtendedProjectFields(form.source_id) || isHrType;
     const ownerEmployees = hideExtendedFields ? companyEmployees : reportingHeads;
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -2082,7 +2084,7 @@ const UpdateProject = () => {
         }
 
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
-        if (!selectedActivities.length) missingFields.push("Please select at least one activity");
+        if (!isHrType && !selectedActivities.length) missingFields.push("Please select at least one activity");
         if (!form.source_id) missingFields.push("Project Type");
 
         if (missingFields.length) {
@@ -2091,13 +2093,13 @@ const UpdateProject = () => {
 
         const totalWeightage = Object.values(activityWeightages).reduce((sum, w) => sum + (w || 0), 0);
 
-        if (!hideWeightage && Math.abs(totalWeightage - 100) > 0.01) {
+        if (!isHrType && !hideWeightage && Math.abs(totalWeightage - 100) > 0.01) {
             return showError(`Total activity weightage must be 100%. Current: ${totalWeightage}%`);
         }
 
         const allActivities = getAllActivities();
 
-        for (const activityId of selectedActivities) {
+        if (!isHrType) for (const activityId of selectedActivities) {
             const activityObj = allActivities.find((a) => a.id === activityId);
             const activityLabel = activityObj?.activity_name || activityId;
 
@@ -2329,7 +2331,7 @@ const UpdateProject = () => {
         setter(false);
     };
 
-    const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
+    const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, isHrType ? 2 : 3));
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
     const totalWeightage = Object.values(activityWeightages).reduce((sum, w) => sum + (w || 0), 0);
 
@@ -4815,6 +4817,7 @@ const UpdateProject = () => {
                                 <ChevronLeft size={16} />
                                 Previous
                             </button>
+                            {!isHrType && (
                             <button
                                 type="button"
                                 onClick={nextStep}
@@ -4823,11 +4826,13 @@ const UpdateProject = () => {
                                 Next: Activities
                                 <ChevronRight size={16} />
                             </button>
+                            )}
                         </div>
                     )}
                 </motion.div>
 
-                {/* Step 3: Activities - Keep the same as in your original file */}
+                {/* Step 3: activity/subactivity template stays for every type except HR */}
+                {!isHrType && (
                 <motion.div
                     initial={false}
                     animate={{
@@ -6000,9 +6005,10 @@ const UpdateProject = () => {
                         </div>
                     )}
                 </motion.div>
+                )}
 
 
-                {!isMobile && (
+                {(!isMobile || isHrType) && (
                     <div className="flex justify-center gap-4">
                         {/* Cancel Button */}
                         <button

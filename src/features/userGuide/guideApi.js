@@ -11,7 +11,6 @@ import { employeeWorklogHistoryService } from "../../services/employeeWorkLogHis
 import { trackWorkLogService } from "../../services/trackworklogService";
 import { taskPlannerService } from "../../services/taskPlannerService";
 import { subActivityService } from "../../services/subActivityService";
-import { filterTaskPlannerEmployees } from "../../constants/projectSources";
 
 function matchProject(list, idOrCode) {
   const needle = String(idOrCode || "").trim().toLowerCase();
@@ -98,7 +97,6 @@ export async function guideGetTaskPlanners(user, date) {
   let employees = [];
   if (response?.results?.employees) employees = response.results.employees;
   else if (response?.employees) employees = response.employees;
-  employees = filterTaskPlannerEmployees(employees);
 
   const planners = employees.flatMap((emp) =>
     (emp.planners || []).map((planner) => ({

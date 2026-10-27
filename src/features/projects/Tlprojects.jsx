@@ -79,6 +79,8 @@ import {
     hidesProjectWorkType,
     isAimantraSubCompanyUser,
 } from "../../constants/projectSources";
+import { isHrProject } from "../hr/hrUtils";
+import { HrStageProofActions } from "../hr/HrStageProofActions";
 
 const TlProjectList = () => {
     const navigate = useNavigate();
@@ -2171,6 +2173,7 @@ const TlProjectList = () => {
                                 <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid gap-6">
                                     {filteredProjects.map((project) => {
                                         const projectId = getProjectId(project);
+                                        const hrKind = isHrProject(project);
                                         const projectName = getProjectName(project);
                                         const projectCode = getProjectCode(project);
                                         const completionDate = getCompletionDate(project);
@@ -2221,6 +2224,18 @@ const TlProjectList = () => {
                                                                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
                                                                         {getProjectTypeLabel(project)}
                                                                     </span>
+                                                                )}
+                                                                {hrKind && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/timesheet/hr/${projectId}/proofs`);
+                                                                        }}
+                                                                        className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700"
+                                                                    >
+                                                                        Submitted documents
+                                                                    </button>
                                                                 )}
                                                                 <motion.span whileHover={{ scale: 1.05 }} className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1
                                                                      ${isCompleted ? "bg-green-100 text-green-700" : `${statusInfo.colors.bg} ${statusInfo.colors.text}`}`}>
@@ -2477,7 +2492,7 @@ const TlProjectList = () => {
                                                                                                                     <div className="flex-1">
                                                                                                                         <div className="flex items-center gap-3 flex-wrap">
                                                                                                                             <h5 className="font-semibold text-gray-800">{activity.activity_name}</h5>
-                                                                                                                            {!hidesProjectWeightage(projectData) && (
+                                                                                                                            {!hidesProjectWeightage(projectData) && !isHrProject(projectData || project) && (
                                                                                                                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">Weightage: {activity.weightage || 0}%</span>
                                                                                                                             )}
                                                                                                                             <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600">{subs.length} tasks</span>
@@ -2510,7 +2525,7 @@ const TlProjectList = () => {
                                                                                                                                                 <th className="px-2 py-3 text-center">Area</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">View</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Stage</th>
-                                                                                                                                                {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
                                                                                                                                                 <>
                                                                                                                                                 <th className="px-2 py-3 text-center">%</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Amount ₹</th>
@@ -2521,13 +2536,16 @@ const TlProjectList = () => {
                                                                                                                                                 )}
                                                                                                                                                 <th className="px-2 py-3 text-center" title="Project Owner Status">PO Status</th>
                                                                                                                                                 {/* <th className="px-2 py-3 text-center" >Status</th> */}
-                                                                                                                                                {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
                                                                                                                                                 <>
                                                                                                                                                 <th className="px-2 py-3 text-center">Action</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Invoice Status</th>
                                                                                                                                                 </>
                                                                                                                                                 )}
-                                                                                                                                                <th className="px-2 py-3 text-center">Tl Work Log</th>
+                                                                                                                                                                                {hrKind && (
+                                                                                                                                                                                    <th className="px-2 py-3 text-center">Proof</th>
+                                                                                                                                                                                )}
+                                                                                                                                                                                <th className="px-2 py-3 text-center">Tl Work Log</th>
                                                                                                                                             </tr>
                                                                                                                                         </thead>
                                                                                                                                         <tbody>
@@ -2656,7 +2674,7 @@ const TlProjectList = () => {
                                                                                                                                                                             {/* 🔵 Dynamic Stage Info Columns */}
 
                                                                                                                                                                             <td className="text-center font-semibold text-blue-600 border-gray-300 py-3">{stage.name}</td>
-                                                                                                                                                                            {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                                            {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
                                                                                                                                                                             <>
                                                                                                                                                                             <td className="text-center text-blue-600">{stage.payment_percent || 0}%</td>
                                                                                                                                                                             <td className="text-center">₹ {stageAmount.toFixed(2)} L {stage.extra_payment_amount ? ` + ${stage.extra_payment_amount.toFixed(2)}` : ''} L</td>
@@ -2739,7 +2757,7 @@ const TlProjectList = () => {
 
 
                                                                                                                                                                             {/* Action (Approve/Reject for Submitted/Approved tasks, Submit button for others) */}
-                                                                                                                                                                            {!hidesProjectWeightage(projectData || project) && (
+                                                                                                                                                                            {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
                                                                                                                                                                             <>
                                                                                                                                                                             <td className="text-center">
                                                                                                                                                                                 {!isUser && (
@@ -2859,6 +2877,17 @@ const TlProjectList = () => {
                                                                                                                                                                                 </div>
                                                                                                                                                                             </td>
                                                                                                                                                                             </>
+                                                                                                                                                                            )}
+                                                                                                                                                                            {hrKind && (
+                                                                                                                                                                                <td className="text-center align-middle px-2 py-2" onClick={(e) => e.stopPropagation()}>
+                                                                                                                                                                                    <div className="inline-flex items-center justify-center gap-1 flex-wrap">
+                                                                                                                                                                                        <HrStageProofActions
+                                                                                                                                                                                            projectId={projectId}
+                                                                                                                                                                                            stage={stage}
+                                                                                                                                                                                            lineName={sub.subactivity_name}
+                                                                                                                                                                                        />
+                                                                                                                                                                                    </div>
+                                                                                                                                                                                </td>
                                                                                                                                                                             )}
                                                                                                                                                                             <td className="text-center align-middle px-2 py-2 border-l border-gray-100">
                                                                                                                                                                                 <button

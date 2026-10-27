@@ -9,6 +9,7 @@ export const PROJECT_SOURCE_IDS = {
   BD: "c4e54604-9a83-4065-b798-ad0e58673789",
   ACCOUNT: "c4e54604-9a83-4065-b798-ad0e58673790",
   AIMANTRA: "c4e54604-9a83-4065-b798-ad0e58673791",
+  HR: "c4e54604-9a83-4065-b798-ad0e58673792",
 };
 
 /** HRMS division/sub-company that should only see Aimantra projects */
@@ -28,6 +29,7 @@ export const PROJECT_TYPE_SOURCE_IDS = {
   bd: PROJECT_SOURCE_IDS.BD,
   account: PROJECT_SOURCE_IDS.ACCOUNT,
   aimantra: PROJECT_SOURCE_IDS.AIMANTRA,
+  hr: PROJECT_SOURCE_IDS.HR,
 };
 
 /** source UUID → display label */
@@ -38,6 +40,7 @@ export const PROJECT_TYPE_LABELS = {
   [PROJECT_SOURCE_IDS.BD]: "BD",
   [PROJECT_SOURCE_IDS.ACCOUNT]: "Account",
   [PROJECT_SOURCE_IDS.AIMANTRA]: "Aimantra",
+  [PROJECT_SOURCE_IDS.HR]: "HR",
 };
 
 export const PROJECT_TYPE_FILTER_OPTIONS = [
@@ -48,6 +51,7 @@ export const PROJECT_TYPE_FILTER_OPTIONS = [
   { value: "bd", label: "BD" },
   { value: "account", label: "Account" },
   { value: "aimantra", label: "Aimantra" },
+  { value: "hr", label: "HR" },
 ];
 
 /** Create / Update Project Type dropdown options */
@@ -58,6 +62,7 @@ export const PROJECT_TYPE_FORM_OPTIONS = [
   { value: PROJECT_SOURCE_IDS.BD, label: "BD" },
   { value: PROJECT_SOURCE_IDS.ACCOUNT, label: "Account" },
   { value: PROJECT_SOURCE_IDS.AIMANTRA, label: "Aimantra" },
+  { value: PROJECT_SOURCE_IDS.HR, label: "HR" },
 ];
 
 /** DPR, Prebid, BD & Account: client/branch (and some units) optional */
@@ -67,8 +72,14 @@ export function isRelaxedProjectType(sourceId) {
     sourceId === PROJECT_SOURCE_IDS.PREBID ||
     sourceId === PROJECT_SOURCE_IDS.BD ||
     sourceId === PROJECT_SOURCE_IDS.ACCOUNT ||
-    sourceId === PROJECT_SOURCE_IDS.AIMANTRA
+    sourceId === PROJECT_SOURCE_IDS.AIMANTRA ||
+    sourceId === PROJECT_SOURCE_IDS.HR
   );
+}
+
+export function isHrProjectSource(projectOrSourceId) {
+  if (projectOrSourceId === "hr") return true;
+  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.HR;
 }
 
 export function getProjectSourceId(project) {
@@ -90,7 +101,7 @@ function resolveSourceId(projectOrSourceId) {
 /** BD & Aimantra: hide weightage in UI and skip 100% validation */
 export function hidesProjectWeightage(projectOrSourceId) {
   const sid = resolveSourceId(projectOrSourceId);
-  return sid === PROJECT_SOURCE_IDS.BD || sid === PROJECT_SOURCE_IDS.AIMANTRA;
+  return sid === PROJECT_SOURCE_IDS.BD || sid === PROJECT_SOURCE_IDS.AIMANTRA || sid === PROJECT_SOURCE_IDS.HR;
 }
 
 /** Aimantra create/edit: only core identity, company, sector, owners, and dates */
@@ -100,8 +111,9 @@ export function hidesExtendedProjectFields(projectOrSourceId) {
 
 /** Aimantra: work type is not used on worklog / planner */
 export function hidesProjectWorkType(projectOrSourceId) {
-  if (projectOrSourceId === "aimantra") return true;
-  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.AIMANTRA;
+  if (projectOrSourceId === "aimantra" || projectOrSourceId === "hr") return true;
+  const sid = resolveSourceId(projectOrSourceId);
+  return sid === PROJECT_SOURCE_IDS.AIMANTRA || sid === PROJECT_SOURCE_IDS.HR;
 }
 
 export function getUserSubCompanyId() {
@@ -139,13 +151,11 @@ export function isAimantraSubcompanyEmployee(emp) {
   );
 }
 
-/** Task planner: Aimantra users only see Aimantra employees; others never see them */
+/** Task planner: Aimantra users only see employees with this subcompany_id */
 export function filterTaskPlannerEmployees(employees = []) {
   if (!Array.isArray(employees)) return [];
-  if (canSeeAimantraProjects()) {
-    return employees.filter(isAimantraSubcompanyEmployee);
-  }
-  return employees.filter((emp) => !isAimantraSubcompanyEmployee(emp));
+  if (!canSeeAimantraProjects()) return employees;
+  return employees.filter(isAimantraSubcompanyEmployee);
 }
 
 export function getDefaultProjectTypeFilter() {

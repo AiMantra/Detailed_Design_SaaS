@@ -119,24 +119,12 @@ export const fetchTaskPlanners = createAsyncThunk(
 
       const collectUnplannedLogs = (emp) => {
         const byId = new Map();
-        const add = (log) => {
+        (emp.unplanned_logs || []).forEach((log) => {
           if (!log?.id || byId.has(log.id)) return;
           byId.set(log.id, log);
-        };
-        (emp.unplanned_logs || []).forEach(add);
-        (emp.time_logs || []).filter((log) => log.is_unplanned).forEach(add);
+        });
         return [...byId.values()];
       };
-
-      employees = employees.map((emp) => {
-        const unplanned = collectUnplannedLogs(emp);
-        const timeLogIds = new Set((emp.time_logs || []).map((log) => log.id));
-        const extraUnplanned = unplanned.filter((log) => !timeLogIds.has(log.id));
-        return {
-          ...emp,
-          time_logs: [...(emp.time_logs || []), ...extraUnplanned],
-        };
-      });
 
       const planners = employees.flatMap((emp) => {
         const planned = (emp.planners || []).map((planner) => ({
@@ -146,16 +134,21 @@ export const fetchTaskPlanners = createAsyncThunk(
           is_unplanned: false,
         }));
         const plannedIds = new Set(planned.map((p) => p.id));
+        const asUnplanned = (log) => ({
+          ...log,
+          date: dateFromLog(log),
+          employee_name: emp.emp_name,
+          employee_code: emp.emp_code,
+          is_unplanned: true,
+        });
         const unplanned = collectUnplannedLogs(emp)
           .filter((log) => !plannedIds.has(log.id))
-          .map((log) => ({
-            ...log,
-            date: dateFromLog(log),
-            employee_name: emp.emp_name,
-            employee_code: emp.emp_code,
-            is_unplanned: true,
-          }));
-        return [...planned, ...unplanned];
+          .map(asUnplanned);
+        const unplannedIds = new Set(unplanned.map((log) => log.id));
+        const timeLogs = (emp.time_logs || [])
+          .filter((log) => log?.id && !plannedIds.has(log.id) && !unplannedIds.has(log.id))
+          .map(asUnplanned);
+        return [...planned, ...unplanned, ...timeLogs];
       });
 
       const summaryBase = response?.results?.summary || response?.summary || {};

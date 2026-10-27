@@ -20,7 +20,6 @@ import {
   Wrench,
   CheckCircle,
   Briefcase,
-  Users,
   Clock,
   Settings2,
   ChartArea,
@@ -87,8 +86,6 @@ const Sidebar = () => {
       badge: null,
       description: "Browse all projects and pick tasks",
     },
-
-
     {
       name: "My Projects",
       icon: FolderKanban,

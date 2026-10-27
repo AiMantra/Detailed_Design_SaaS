@@ -30,6 +30,9 @@ import TaskPlanner from "../features/projects/Taskplanner";
 import TrackWorkLog from "../features/projects/TrackWorkLog";
 import EmployeeWorklogHistory from "../features/projects/EmployeeWorkLogHistory"
 import BulkProjectUpload from "../features/projects/BulkCreateProject";
+import HrRequirements from "../features/hr/HrRequirements";
+import HrRequirementDetail from "../features/hr/HrRequirementDetail";
+import HrStageProofs from "../features/hr/HrStageProofs";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -146,6 +149,9 @@ export default function AppRoutes() {
             <CreateProject />
           </ProtectedRoute>
         } />
+        <Route path="/timesheet/hr/:projectId/proofs" element={<HrStageProofs />} />
+        <Route path="/timesheet/hr/:projectId/requirements" element={<HrRequirements />} />
+        <Route path="/timesheet/hr/:projectId/requirements/:requirementId" element={<HrRequirementDetail />} />
         <Route path="/project/update/:projectId" element={
           <ProtectedRoute allowedRoles={["ACCOUNT", "ADMIN", "TL"]}>
             <UpdateProject />
