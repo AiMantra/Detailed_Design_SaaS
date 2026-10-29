@@ -4535,9 +4535,9 @@ const CreateProject = () => {
             )}
 
             {/* Sector Field */}
-            {!isHrType && !isInternalType && (
+            {!isHrType && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Sector *</label>
+              <label className="text-xs text-gray-500">Sector {isInternalType ? "" : "*"}</label>
               <div className="relative" ref={sectorDropdownRef}>
                 <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <input
