@@ -72,6 +72,7 @@ import {
   hidesProjectWeightage,
   hidesExtendedProjectFields,
   isHrProjectSource,
+  isInternalProjectSource,
 } from "../../constants/projectSources";
 import { hrProjectService } from "../../services/hrProjectService";
 
@@ -119,6 +120,7 @@ const CreateProject = () => {
 
   const isRelaxedType = isRelaxedProjectType(form.source_id);
   const isHrType = isHrProjectSource(form.source_id);
+  const isInternalType = isInternalProjectSource(form.source_id);
   const hideWeightage = hidesProjectWeightage(form.source_id);
   const hideExtendedFields = hidesExtendedProjectFields(form.source_id) || isHrType;
   const ownerEmployees = hideExtendedFields ? companyEmployees : reportingHeads;
@@ -2279,9 +2281,10 @@ const CreateProject = () => {
     if (!form.project_name) missingFields.push("Project Name");
     if (!form.short_name) missingFields.push("Short Name");
     if (!form.company) missingFields.push("Please select a Company");
-    if (!isHrType && !form.sector) missingFields.push("Sector");
-    if (!isHrType && !form.loa_date) missingFields.push("LOA Date");
-    if (!isHrType && !form.completion_date) missingFields.push("Completion Date");
+    if (!isHrType && !isInternalType && !form.sector) missingFields.push("Sector");
+    if (!isHrType && !isInternalType && !form.loa_date) missingFields.push("LOA Date");
+    if (!isHrType && !isInternalType && !form.completion_date) missingFields.push("Completion Date");
+    if (isInternalType && !form.location) missingFields.push("Work location");
     if (!hideExtendedFields) {
       if (!form.workorder_Amount) missingFields.push("Workorder Amount");
       if (!form.location) missingFields.push("Work location");
@@ -2293,14 +2296,14 @@ const CreateProject = () => {
       missingFields.push("Please select a Client & branch");
     }
     if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
-    if (!isHrType && !selectedActivities.length) missingFields.push("Please select at least one activity");
+    if (!isHrType && !isInternalType && !selectedActivities.length) missingFields.push("Please select at least one activity");
     if (!form.source_id) missingFields.push("Project Type");
 
     if (missingFields.length) {
       return showError(`Please fill: ${missingFields.join(", ")}`);
     }
 
-    if (isHrType) return true;
+    if (isHrType || isInternalType) return true;
 
     // 🔹 Weightage Check (not required for BD)
     if (!hideWeightage) {
@@ -2473,8 +2476,8 @@ const CreateProject = () => {
 
         return {
           activity_name: activityObj?.activity_name,
-          start_date: dates.startDate,
-          end_date: dates.endDate,
+          start_date: dates?.startDate || null,
+          end_date: dates?.endDate || null,
           weightage: weightage,
           sorting_var: activitySortingVar,
           subactivities: subactivities,
@@ -4429,8 +4432,8 @@ const CreateProject = () => {
                 />
               </div>
             </div>
-            {/* Location — shown for HR; hidden only for Aimantra */}
-            {(!hideExtendedFields || isHrType) && (
+            {/* Location — shown for HR / Internal; hidden only for Aimantra */}
+            {(!hideExtendedFields || isHrType || isInternalType) && (
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Location *</label>
               <div className="relative">
@@ -4532,7 +4535,7 @@ const CreateProject = () => {
             )}
 
             {/* Sector Field */}
-            {!isHrType && (
+            {!isHrType && !isInternalType && (
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">Sector *</label>
               <div className="relative" ref={sectorDropdownRef}>
@@ -4972,8 +4975,8 @@ const CreateProject = () => {
         <motion.div
           initial={false}
           animate={{
-            display: isHrType ? "none" : (!isMobile || currentStep === 2 ? "block" : "none"),
-            opacity: isHrType ? 0 : (!isMobile || currentStep === 2 ? 1 : 0),
+            display: (isHrType || isInternalType) ? "none" : (!isMobile || currentStep === 2 ? "block" : "none"),
+            opacity: (isHrType || isInternalType) ? 0 : (!isMobile || currentStep === 2 ? 1 : 0),
           }}
           className="bg-white rounded-xl md:rounded-3xl shadow-lg md:shadow-2xl p-4 md:p-8 border border-gray-100"
         >
@@ -5072,6 +5075,8 @@ const CreateProject = () => {
             </>
             )}
 
+            {!isInternalType && (
+            <>
             {/* LOA Date */}
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-500 flex items-center gap-1">
@@ -5102,6 +5107,8 @@ const CreateProject = () => {
                 required={!isHrType}
               />
             </div>
+            </>
+            )}
           </div>
           <div>
             {!hideExtendedFields && parseFloat(form.workorder_Amount) > 0 && (
@@ -5459,7 +5466,7 @@ const CreateProject = () => {
                           </div>
 
                           <div className="flex items-center gap-2 md:gap-3 ml-2">
-                            {activityDates[activityId]?.startDate &&
+                            {!isInternalType && activityDates[activityId]?.startDate &&
                               activityDates[activityId]?.endDate && (
                                 <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
                                   {new Date(
@@ -5514,6 +5521,7 @@ const CreateProject = () => {
                                 </div>
                               </div>
                               )}
+                              {!isInternalType && (
                               <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
                                 <div className="space-y-1">
                                   <label className="text-xs font-medium text-gray-600">
@@ -5558,6 +5566,7 @@ const CreateProject = () => {
                                   />
                                 </div>
                               </div>
+                              )}
                               <div className="flex justify-between items-center mb-2">
                                 <h6 className="font-medium text-gray-700 text-xs md:text-sm">
                                   Sub-Activities:
@@ -5818,7 +5827,7 @@ const CreateProject = () => {
                                                     )}
                                                   </select>
                                                 </div>
-                                                {currentUnit !== "status" && sub?.planned_quantity_exist && (
+                                                {!isInternalType && currentUnit !== "status" && sub?.planned_quantity_exist && (
                                                   <div>
                                                     <label className="block text-[10px] text-gray-500 mb-1">
                                                       Planned Quantity
@@ -5848,7 +5857,7 @@ const CreateProject = () => {
                                                   </div>
                                                 )}
 
-                                                {(sub?.chainage_exist || showAllFields[key]) &&
+                                                {!isInternalType && (sub?.chainage_exist || showAllFields[key]) &&
                                                   <div>
                                                     <div className="grid grid-cols-1 gap-1 col-span-3">
                                                       <div>
@@ -5889,7 +5898,7 @@ const CreateProject = () => {
                                                   </div>
                                                 }
 
-                                                {sub?.length_exist &&
+                                                {!isInternalType && sub?.length_exist &&
                                                   <div>
                                                     <div className="grid grid-cols-1 gap-1 col-span-3">
                                                       <div>
@@ -5999,6 +6008,8 @@ const CreateProject = () => {
                                                   </div>}
 
                                                 {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+                                                {!isInternalType && (
+                                                <>
                                                 <div >
                                                   <div className="grid grid-cols-1 gap-1 col-span-3">
                                                     <label className="block text-[10px] text-gray-500 ">
@@ -6028,6 +6039,8 @@ const CreateProject = () => {
                                                       className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-2 focus:ring-blue-500"
                                                     />
                                                   </div> </div>
+                                                </>
+                                                )}
 
 
 

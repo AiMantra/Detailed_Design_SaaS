@@ -78,6 +78,7 @@ import {
     hidesProjectWeightage,
     hidesProjectWorkType,
     isAimantraSubCompanyUser,
+    isInternalProjectSource,
 } from "../../constants/projectSources";
 import { isHrProject } from "../hr/hrUtils";
 import { HrStageProofActions } from "../hr/HrStageProofActions";
@@ -2044,7 +2045,7 @@ const TlProjectList = () => {
                                     <p className="text-sm opacity-90">Total Projects</p>
                                 </motion.div>
 
-                                {/* Not Started - Neutral/Waiting */}
+                                {filterProjectType !== "admincivilmantra" && (
                                 <motion.div
                                     variants={itemVariants}
                                     whileHover={{ scale: 1.05, y: -5 }}
@@ -2054,6 +2055,7 @@ const TlProjectList = () => {
                                     <p className="text-3xl font-bold">{ProjectListStats.notStarted}</p>
                                     <p className="text-sm opacity-90">Not Started</p>
                                 </motion.div>
+                                )}
 
                                 {/* In Progress - Active/Working */}
                                 <motion.div
@@ -2174,6 +2176,7 @@ const TlProjectList = () => {
                                     {filteredProjects.map((project) => {
                                         const projectId = getProjectId(project);
                                         const hrKind = isHrProject(project);
+                                        const isInternalType = isInternalProjectSource(project);
                                         const projectName = getProjectName(project);
                                         const projectCode = getProjectCode(project);
                                         const completionDate = getCompletionDate(project);
@@ -2253,6 +2256,8 @@ const TlProjectList = () => {
                                                             </div>
 
                                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                {!isInternalType && (
+                                                                <>
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="p-2 bg-blue-50 rounded-lg"><Calendar size={16} className="text-blue-600" /></div>
                                                                     <div><p className="text-xs text-gray-500">Start</p><p className="text-sm font-semibold">{formatDate(getLoaDate(project))}</p></div>
@@ -2263,14 +2268,18 @@ const TlProjectList = () => {
                                                                     </div>
                                                                     <div><p className="text-xs text-gray-500">{isCompleted ? "Completed" : "Deadline"}</p><p className="text-sm font-semibold">{isCompleted ? formatDate(actualCompletionDate) : formatDate(completionDate)}</p></div>
                                                                 </div>
+                                                                </>
+                                                                )}
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="p-2 bg-purple-50 rounded-lg"><TrendingUp size={16} className="text-purple-600" /></div>
                                                                     <div><p className="text-xs text-gray-500">Status</p><p className="text-sm font-semibold">{progress === 100 ? "Completed" : progress > 0 ? "Ongoing" : "Pending"}</p></div>
                                                                 </div>
+                                                                {!isInternalType && (
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="p-2 bg-indigo-50 rounded-lg"><UserStar size={16} className="text-indigo-600" /></div>
                                                                     <div><p className="text-xs text-gray-500">Client</p><p className="text-sm font-semibold">{project?.client_detail?.client_name || getClientName(project)}</p></div>
                                                                 </div>
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -2336,10 +2345,12 @@ const TlProjectList = () => {
                                                             >
                                                                 {/* Key Metrics Dashboard */}
                                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                                                    {!isInternalType && (
                                                                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
                                                                         <p className="text-xs text-gray-500 mb-1">Total Length</p>
                                                                         <p className="text-xl font-bold text-blue-700">{getTotalLength(project)} <span className="text-sm font-normal">{getSectorUnit(project)}</span></p>
                                                                     </div>
+                                                                    )}
                                                                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3">
                                                                         <p className="text-xs text-gray-500 mb-1">Workorder Amount</p>
                                                                         <p className="text-xl font-bold text-green-700">₹{getCost(project)} <span className="text-sm font-normal">Lakhs</span></p>
@@ -2392,10 +2403,12 @@ const TlProjectList = () => {
                                                                                 <span className="text-sm text-gray-500 w-40">Sector :</span>
                                                                                 <span className="text-sm font-medium text-gray-800">{getSectorName(project)}</span>
                                                                             </div>
+                                                                            {!isInternalType && (
                                                                             <div className="flex items-center py-2 border-b border-gray-200">
                                                                                 <span className="text-sm text-gray-500 w-40">Client :</span>
                                                                                 <span className="text-sm font-medium text-gray-800">{project?.client_detail?.client_name || getClientName(project)}</span>
                                                                             </div>
+                                                                            )}
                                                                             {project.clientbranch && (() => {
                                                                                 // const matchedBranch = project.client_detail?.branches?.find(b => b.gst?.trim() === project.clientbranch?.trim());
                                                                                 const matchedBranch = project.client_detail?.branches
@@ -2421,14 +2434,18 @@ const TlProjectList = () => {
                                                                             Project Specifications & Dates
                                                                         </h4>
                                                                         <div className="space-y-3">
+                                                                            {!isInternalType && (
                                                                             <div className="flex items-center py-2 border-b border-gray-200">
                                                                                 <span className="text-sm text-gray-500 w-40">Total Length :</span>
                                                                                 <span className="text-sm font-medium text-gray-800">{getTotalLength(project)} {getSectorUnit(project)}</span>
                                                                             </div>
+                                                                            )}
                                                                             <div className="flex items-center py-2 border-b border-gray-200">
                                                                                 <span className="text-sm text-gray-500 w-40">Workorder Amount :</span>
                                                                                 <span className="text-sm font-medium text-gray-800">₹{getCost(project)} Lakhs</span>
                                                                             </div>
+                                                                            {!isInternalType && (
+                                                                            <>
                                                                             <div className="flex items-center py-2 border-b border-gray-200">
                                                                                 <span className="text-sm text-gray-500 w-40">LOA Date :</span>
                                                                                 <span className="text-sm font-medium text-gray-800">{formatDate(getLoaDate(project))}</span>
@@ -2437,13 +2454,15 @@ const TlProjectList = () => {
                                                                                 <span className="text-sm text-gray-500 w-40">Completion Date :</span>
                                                                                 <span className="text-sm font-medium text-gray-800">{formatDate(completionDate)}</span>
                                                                             </div>
-                                                                            {isCompleted && actualCompletionDate && (
+                                                                            </>
+                                                                            )}
+                                                                            {!isInternalType && isCompleted && actualCompletionDate && (
                                                                                 <div className="flex items-center py-2 border-b border-gray-200">
                                                                                     <span className="text-sm text-gray-500 w-40">Actual Completion Date :</span>
                                                                                     <span className="text-sm font-medium text-green-600">{formatDate(actualCompletionDate)}</span>
                                                                                 </div>
                                                                             )}
-                                                                            {!isCompleted && daysLeft !== undefined && (
+                                                                            {!isInternalType && !isCompleted && daysLeft !== undefined && (
                                                                                 <div className={`flex items-center py-2 border-b border-gray-200 ${daysLeft < 0 ? "bg-red-50 -mx-2 px-2 rounded-lg" : daysLeft <= 2 ? "bg-orange-50 -mx-2 px-2 rounded-lg" : ""}`}>
                                                                                     <span className="text-sm text-gray-500 w-40">Days Remaining :</span>
                                                                                     <span className={`text-sm font-bold ${daysLeft < 0 ? "text-red-600" : daysLeft <= 2 ? "text-blue-600" : "text-green-600"}`}>
@@ -2520,9 +2539,13 @@ const TlProjectList = () => {
                                                                                                                                             <tr>
                                                                                                                                                 <th className="px-2 py-3"></th>
                                                                                                                                                 <th className="px-2 py-3 text-left">Sub Activity</th>
+                                                                                                                                                {!isInternalType && (
+                                                                                                                                                <>
                                                                                                                                                 <th className="px-2 py-3 text-center">Chainage</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Qty</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Area</th>
+                                                                                                                                                </>
+                                                                                                                                                )}
                                                                                                                                                 <th className="px-2 py-3 text-center">View</th>
                                                                                                                                                 <th className="px-2 py-3 text-center">Stage</th>
                                                                                                                                                 {!hidesProjectWeightage(projectData || project) && !isHrProject(projectData || project) && (
@@ -2648,6 +2671,8 @@ const TlProjectList = () => {
                                                                                                                                                                                     <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
                                                                                                                                                                                         {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                                                                                                                     </td>
+                                                                                                                                                                                    {!isInternalType && (
+                                                                                                                                                                                    <>
                                                                                                                                                                                     <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                                                                                                                         {formatNumber(sub.chainage_start)}
                                                                                                                                                                                     </td>
@@ -2657,6 +2682,8 @@ const TlProjectList = () => {
                                                                                                                                                                                     <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                                                                                                                         {formatNumber(sub.covered_area)}
                                                                                                                                                                                     </td>
+                                                                                                                                                                                    </>
+                                                                                                                                                                                    )}
                                                                                                                                                                                     <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                                                                                                                         <button
                                                                                                                                                                                             className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
@@ -2925,9 +2952,13 @@ const TlProjectList = () => {
                                                                                                                                                                 <tr className="border-t text-[12px] bg-white">
                                                                                                                                                                     <td className="px-2 text-center align-middle border-r border-gray-100"></td>
                                                                                                                                                                     <td className="px-2 font-medium align-middle border-r border-gray-100">{"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}</td>
+                                                                                                                                                                    {!isInternalType && (
+                                                                                                                                                                    <>
                                                                                                                                                                     <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
                                                                                                                                                                     <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
                                                                                                                                                                     <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
+                                                                                                                                                                    </>
+                                                                                                                                                                    )}
                                                                                                                                                                     <td colSpan="9" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
                                                                                                                                                                 </tr>
                                                                                                                                                             )}

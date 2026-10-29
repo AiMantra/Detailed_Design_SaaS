@@ -83,6 +83,7 @@ import {
   hidesProjectWeightage,
   hidesProjectWorkType,
   isAimantraSubCompanyUser,
+  isInternalProjectSource,
 } from "../../constants/projectSources";
 import { isHrProject } from "../hr/hrUtils";
 import { HrStageProofActions } from "../hr/HrStageProofActions";
@@ -2502,7 +2503,7 @@ const ProjectList = () => {
                 <p className="text-sm opacity-90">Total Projects</p>
               </motion.div>
 
-              {/* Not Started - Neutral/Waiting */}
+              {filterProjectType !== "admincivilmantra" && (
               <motion.div
                 variants={itemVariants}
                 whileHover={{ scale: 1.05, y: -5 }}
@@ -2512,6 +2513,7 @@ const ProjectList = () => {
                 <p className="text-3xl font-bold">{ProjectListStats.notStarted}</p>
                 <p className="text-sm opacity-90">Not Started</p>
               </motion.div>
+              )}
 
               {/* In Progress - Active/Working */}
               <motion.div
@@ -2723,6 +2725,7 @@ const ProjectList = () => {
                 {filteredProjects.map((project) => {
                   const projectId = getProjectId(project);
                   const hrKind = isHrProject(project);
+                  const isInternalType = isInternalProjectSource(project);
                   const projectName = getProjectName(project);
                   const projectCode = getProjectCode(project);
                   const completionDate = getCompletionDate(project);
@@ -2835,6 +2838,8 @@ const ProjectList = () => {
 
                             {/* 🔹 Key Info Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                              {!isInternalType && (
+                              <>
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-blue-50 rounded-lg">
                                   <Calendar
@@ -2883,6 +2888,8 @@ const ProjectList = () => {
                                   </p>
                                 </div>
                               </div>
+                              </>
+                              )}
 
                               <div className="flex items-center gap-2">
                                 <div className="p-2 bg-purple-50 rounded-lg">
@@ -2906,7 +2913,7 @@ const ProjectList = () => {
                               </div>
 
 
-                              {!hrKind && (
+                              {!hrKind && !isInternalType && (
                                 <div className="flex items-center gap-2">
                                   <div className="p-2 bg-indigo-50 rounded-lg">
                                     <UserStar
@@ -3087,6 +3094,7 @@ const ProjectList = () => {
                               {/* Key Metrics Dashboard */}
                               {!isUser && !hrKind && (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                  {!isInternalType && (
                                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
                                     <p className="text-xs text-gray-500 mb-1">
                                       Total Length
@@ -3098,6 +3106,7 @@ const ProjectList = () => {
                                       </span>
                                     </p>
                                   </div>
+                                  )}
                                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3">
                                     <p className="text-xs text-gray-500 mb-1">
                                       Workorder Amount
@@ -3200,7 +3209,7 @@ const ProjectList = () => {
                                         {getSectorName(project)}
                                       </span>
                                     </div>
-                                    {!hrKind && (
+                                    {!hrKind && !isInternalType && (
                                       <div className="flex items-center py-2 border-b border-gray-200">
                                         <span className="text-sm text-gray-500 w-40">
                                           Client :
@@ -3252,6 +3261,7 @@ const ProjectList = () => {
                                     Project Specifications & Dates
                                   </h4>
                                   <div className="space-y-3">
+                                    {!isInternalType && (
                                     <div className="flex items-center py-2 border-b border-gray-200">
                                       <span className="text-sm text-gray-500 w-40">
                                         Total Length :
@@ -3261,6 +3271,7 @@ const ProjectList = () => {
                                         {getSectorUnit(project)}
                                       </span>
                                     </div>
+                                    )}
                                     {!isUser && (
                                       <div className="flex items-center py-2 border-b border-gray-200">
                                         <span className="text-sm text-gray-500 w-40">
@@ -3291,7 +3302,7 @@ const ProjectList = () => {
                                         </span>
                                       </div>
                                     )}
-                                    {!isUser && (
+                                    {!isUser && !isInternalType && (
                                       <>
                                         <div className="flex items-center py-2 border-b border-gray-200">
                                           <span className="text-sm text-gray-500 w-40">
@@ -3311,7 +3322,7 @@ const ProjectList = () => {
                                         </div>
                                       </>
                                     )}
-                                    {isCompleted && actualCompletionDate && (
+                                    {!isInternalType && isCompleted && actualCompletionDate && (
                                       <div className="flex items-center py-2 border-b border-gray-200">
                                         <span className="text-sm text-gray-500 w-40">
                                           Actual Completion Date :
@@ -3322,7 +3333,7 @@ const ProjectList = () => {
                                       </div>
                                     )}
 
-                                    {!isCompleted && daysLeft !== undefined && (
+                                    {!isInternalType && !isCompleted && daysLeft !== undefined && (
                                       <div
                                         className={`flex items-center py-2 border-b border-gray-200 ${daysLeft < 0 ? "bg-red-50 -mx-2 px-2 rounded-lg" : daysLeft <= 2 ? "bg-orange-50 -mx-2 px-2 rounded-lg" : ""}`}
                                       >
@@ -3532,9 +3543,13 @@ const ProjectList = () => {
                                                                     <tr>
                                                                       <th className="px-2 py-3"></th>
                                                                       <th className="px-2 py-3 text-left ">Sub Activity</th>
+                                                                      {!isInternalType && (
+                                                                        <>
                                                                       <th className="px-2 py-3 text-center">Chainage</th>
                                                                       <th className="px-2 py-3 text-center">Qty</th>
                                                                       <th className="px-2 py-3 text-center">Area</th>
+                                                                        </>
+                                                                      )}
 
                                                                       {
                                                                         !isUser &&
@@ -3633,6 +3648,8 @@ const ProjectList = () => {
                                                                                             <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
                                                                                               {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                             </td>
+                                                                                            {!isInternalType && (
+                                                                                            <>
                                                                                             <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                               {formatNumber(sub.chainage_start)}
                                                                                             </td>
@@ -3642,6 +3659,8 @@ const ProjectList = () => {
                                                                                             <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                               {formatNumber(sub.covered_area)}
                                                                                             </td>
+                                                                                            </>
+                                                                                            )}
 
 
                                                                                           </>
@@ -3751,6 +3770,8 @@ const ProjectList = () => {
                                                                                   <td className="px-2 font-medium align-middle border-r border-gray-100">
                                                                                     {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                   </td>
+                                                                                  {!isInternalType && (
+                                                                                  <>
                                                                                   <td className="text-center align-middle border-r border-gray-100">
                                                                                     {formatNumber(sub.chainage_start)}
                                                                                   </td>
@@ -3760,6 +3781,8 @@ const ProjectList = () => {
                                                                                   <td className="text-center align-middle border-r border-gray-100">
                                                                                     {formatNumber(sub.covered_area)}
                                                                                   </td>
+                                                                                  </>
+                                                                                  )}
                                                                                   <td colSpan="4" className="text-center text-gray-400 py-4 italic">
                                                                                     No work stages found for this sub-activity
                                                                                   </td>
@@ -3822,6 +3845,8 @@ const ProjectList = () => {
                                                                                           <td rowSpan={rowSpanCount} className="px-2 font-medium align-middle border-r border-gray-100">
                                                                                             {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                           </td>
+                                                                                          {!isInternalType && (
+                                                                                          <>
                                                                                           <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                             {formatNumber(sub.chainage_start)}
                                                                                           </td>
@@ -3831,6 +3856,8 @@ const ProjectList = () => {
                                                                                           <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
                                                                                             {formatNumber(sub.covered_area)}
                                                                                           </td>
+                                                                                          </>
+                                                                                          )}
 
 
                                                                                           {/* 👁️ Eye Button Moved inside the sIdx === 0 check so it spans rows */}
@@ -4150,9 +4177,13 @@ const ProjectList = () => {
                                                                                 <tr className="border-t text-[12px] bg-white">
                                                                                   <td className="px-2 text-center align-middle border-r border-gray-100"></td>
                                                                                   <td className="px-2 font-medium align-middle border-r border-gray-100">{"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}</td>
+                                                                                  {!isInternalType && (
+                                                                                  <>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
                                                                                   <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
+                                                                                  </>
+                                                                                  )}
                                                                                   <td colSpan="9" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
                                                                                 </tr>
                                                                               )

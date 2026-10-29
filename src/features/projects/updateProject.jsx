@@ -72,6 +72,7 @@ import {
     hidesProjectWeightage,
     hidesExtendedProjectFields,
     isHrProjectSource,
+    isInternalProjectSource,
 } from "../../constants/projectSources";
 
 const UpdateProject = () => {
@@ -115,6 +116,7 @@ const UpdateProject = () => {
     });
     const isRelaxedType = isRelaxedProjectType(form.source_id);
     const isHrType = isHrProjectSource(form.source_id);
+    const isInternalType = isInternalProjectSource(form.source_id);
     const hideWeightage = hidesProjectWeightage(form.source_id);
     const hideExtendedFields = hidesExtendedProjectFields(form.source_id) || isHrType;
     const ownerEmployees = hideExtendedFields ? companyEmployees : reportingHeads;
@@ -2069,9 +2071,10 @@ const UpdateProject = () => {
         if (!form.project_name) missingFields.push("Project Name");
         if (!form.short_name) missingFields.push("Short Name");
         if (!form.company) missingFields.push("Please select a Company");
-        if (!form.sector) missingFields.push("Sector");
-        if (!form.loa_date) missingFields.push("LOA Date");
-        if (!form.completion_date) missingFields.push("Completion Date");
+        if (!isHrType && !isInternalType && !form.sector) missingFields.push("Sector");
+        if (!isHrType && !isInternalType && !form.loa_date) missingFields.push("LOA Date");
+        if (!isHrType && !isInternalType && !form.completion_date) missingFields.push("Completion Date");
+        if (isInternalType && !form.location) missingFields.push("Work location");
         if (!hideExtendedFields) {
             if (!form.workorder_Amount) missingFields.push("Workorder Amount");
             if (!form.location) missingFields.push("Work location");
@@ -2084,12 +2087,14 @@ const UpdateProject = () => {
         }
 
         if (!form.assigned_to?.length) missingFields.push("Please select a Project Owner");
-        if (!isHrType && !selectedActivities.length) missingFields.push("Please select at least one activity");
+        if (!isHrType && !isInternalType && !selectedActivities.length) missingFields.push("Please select at least one activity");
         if (!form.source_id) missingFields.push("Project Type");
 
         if (missingFields.length) {
             return showError(`Please fill: ${missingFields.join(", ")}`);
         }
+
+        if (isHrType || isInternalType) return true;
 
         const totalWeightage = Object.values(activityWeightages).reduce((sum, w) => sum + (w || 0), 0);
 
@@ -2247,8 +2252,8 @@ const UpdateProject = () => {
                     // id: activityId,
                     ...(isNewActivity ? {} : { id: activityId }),
                     activity_name: activityObj?.activity_name,
-                    start_date: dates.startDate,
-                    end_date: dates.endDate,
+                    start_date: dates?.startDate || null,
+                    end_date: dates?.endDate || null,
                     weightage: weightage,
                     sorting_var: activitySortingVar,
                     subactivities: subactivities,
@@ -4083,7 +4088,7 @@ const UpdateProject = () => {
                             </div>
                         </div>
 
-                        {!hideExtendedFields && (
+                        {(!hideExtendedFields || isHrType || isInternalType) && (
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Location *</label>
                             <div className="relative">
@@ -4212,6 +4217,7 @@ const UpdateProject = () => {
                             </div>
                         )}
 
+                        {!isHrType && !isInternalType && (
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500">Sector *</label>
                             <div className="relative" ref={sectorDropdownRef}>
@@ -4308,6 +4314,7 @@ const UpdateProject = () => {
                                 )}
                             </div>
                         </div>
+                        )}
 
                         {!hideExtendedFields && (
                         <>
@@ -4637,8 +4644,8 @@ const UpdateProject = () => {
                 <motion.div
                     initial={false}
                     animate={{
-                        display: !isMobile || currentStep === 2 ? "block" : "none",
-                        opacity: !isMobile || currentStep === 2 ? 1 : 0,
+                        display: isInternalType ? "none" : (!isMobile || currentStep === 2 ? "block" : "none"),
+                        opacity: isInternalType ? 0 : (!isMobile || currentStep === 2 ? 1 : 0),
                     }}
                     className="bg-white rounded-xl md:rounded-3xl shadow-lg md:shadow-2xl p-4 md:p-8 border border-gray-100"
                 >
@@ -4708,6 +4715,8 @@ const UpdateProject = () => {
                         </>
                         )}
 
+                        {!isInternalType && (
+                        <>
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-500 flex items-center gap-1">
                                 <Calendar size={12} /> LOA Date *
@@ -4743,6 +4752,8 @@ const UpdateProject = () => {
                                 required
                             />
                         </div>
+                        </>
+                        )}
                     </div>
 
                     <div>
@@ -5050,7 +5061,7 @@ const UpdateProject = () => {
                                                             </div>
 
                                                             <div className="flex items-center gap-2 md:gap-3 ml-2">
-                                                                {activityDates[activityId]?.startDate &&
+                                                                {!isInternalType && activityDates[activityId]?.startDate &&
                                                                     activityDates[activityId]?.endDate && (
                                                                         <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
                                                                             {new Date(
@@ -5104,6 +5115,7 @@ const UpdateProject = () => {
                                                                         </div>
                                                                     </div>
                                                                     )}
+                                                                    {!isInternalType && (
                                                                     <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
                                                                         <div className="space-y-1">
                                                                             <label className="text-xs font-medium text-gray-600">
@@ -5148,6 +5160,7 @@ const UpdateProject = () => {
                                                                             />
                                                                         </div>
                                                                     </div>
+                                                                    )}
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <h6 className="font-medium text-gray-700 text-xs md:text-sm">
                                                                             Sub-Activities:
@@ -5431,7 +5444,7 @@ const UpdateProject = () => {
                                                                                                                 )}
                                                                                                             </select>
                                                                                                         </div>
-                                                                                                        {currentUnit !== "status" && (sub?.planned_quantity_exist || showAllFields[key]) && (
+                                                                                                        {!isInternalType && currentUnit !== "status" && (sub?.planned_quantity_exist || showAllFields[key]) && (
                                                                                                             <div>
                                                                                                                 <label className="block text-[10px] text-gray-500 mb-1">
                                                                                                                     Planned Quantity
@@ -5460,7 +5473,7 @@ const UpdateProject = () => {
                                                                                                             </div>
                                                                                                         )}
 
-                                                                                                        {(sub?.chainage_exist || showAllFields[key]) &&
+                                                                                                        {!isInternalType && (sub?.chainage_exist || showAllFields[key]) &&
                                                                                                             <div>
                                                                                                                 <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                     <div>
@@ -5502,7 +5515,7 @@ const UpdateProject = () => {
                                                                                                             </div>
                                                                                                         }
 
-                                                                                                        {(sub?.length_exist || showAllFields[key]) &&
+                                                                                                        {!isInternalType && (sub?.length_exist || showAllFields[key]) &&
                                                                                                             <div>
                                                                                                                 <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                     <div>
@@ -5622,6 +5635,8 @@ const UpdateProject = () => {
 
 
                                                                                                         {/* Sub-Activity Dates aligned with Quantities and Chainages */}
+                                                                                                        {!isInternalType && (
+                                                                                                        <>
                                                                                                         <div >
                                                                                                             <div className="grid grid-cols-1 gap-1 col-span-3">
                                                                                                                 <label className="block text-[10px] text-gray-500 ">
@@ -5652,6 +5667,8 @@ const UpdateProject = () => {
                                                                                                                 />
                                                                                                             </div>
                                                                                                         </div>
+                                                                                                        </>
+                                                                                                        )}
 
 
                                                                                                         <div className="col-span-3 mt-4 pl-5">

@@ -20,6 +20,9 @@ import {
 // ─── constants ────────────────────────────────────────────────────────────────
 import api, { getLatestServerDate } from "../../services/api";
 import { projectService } from "../../services/projectService";
+import { hrProjectService } from "../../services/hrProjectService";
+import { isHrProject, mergeHrIntoProjects } from "../hr/hrUtils";
+import { KraShortcut, ProjectKindBadge } from "../hr/hrUi";
 const TIME_PRESETS = [
     { label: "Full Day", start: "09:00", end: "18:00" },
     { label: "Half Day", start: "09:00", end: "13:00" },
@@ -252,8 +255,9 @@ const ProjectSearchInput = ({ projects, value, onChange, error, onToggle }) => {
                                                 : "hover:bg-blue-50/60 text-gray-700"
                                             }`}
                                     >
-                                        <div className="font-medium leading-tight">
+                                        <div className="font-medium leading-tight flex items-center gap-1">
                                             <Highlighted text={name} term={search} />
+                                            <ProjectKindBadge project={p} />
                                         </div>
                                         {code && (
                                             <div className="text-[10px] text-gray-400 mt-0.5">
@@ -357,6 +361,27 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     const [loadingDetail, setLoadingDetail] = useState({});
     const [typedProjectCache, setTypedProjectCache] = useState({});
     const [loadingTypedProjects, setLoadingTypedProjects] = useState({});
+    const [hrProjects, setHrProjects] = useState([]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        let cancelled = false;
+        hrProjectService.listProjects()
+            .then((list) => {
+                if (!cancelled) setHrProjects(Array.isArray(list) ? list : []);
+            })
+            .catch(() => {
+                if (!cancelled) setHrProjects([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen]);
+
+    const projectChoices = useMemo(
+        () => mergeHrIntoProjects(projects, hrProjects),
+        [projects, hrProjects]
+    );
 
     const hasSourceMeta = useMemo(
         () => (projects || []).some((p) => getProjectSourceId(p)),
@@ -424,10 +449,16 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     const workTypesFor = (pid) =>
         detailFor(pid)?.sector_detail?.stage_work_types || [];
 
+    const rowIsHr = (row) => {
+        const listed = projectChoices.find((p) => String(p.id || p.project_id) === String(row.projectId));
+        return isHrProject(listed) || isHrProject(detailFor(row.projectId));
+    };
+
     const rowHidesWorkType = (row) =>
+        rowIsHr(row) ||
         isAimantraSubCompanyUser() ||
         hidesProjectWorkType(row.projectType) ||
-        hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(row.projectId))) ||
+        hidesProjectWorkType(projectChoices.find((p) => String(p.id || p.project_id) === String(row.projectId))) ||
         hidesProjectWorkType(detailFor(row.projectId));
 
     const hideWorkTypeColumn = isAimantraSubCompanyUser();
@@ -480,15 +511,16 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     }, [projects]);
 
     const handleProjectChange = useCallback((rowId, pid) => {
-        const selected = projects.find((p) => (p.id || p.project_id) === pid);
+        const selected = projectChoices.find((p) => (p.id || p.project_id) === pid);
         const inferredType = selected ? getProjectTypeFilterValue(selected) : "all";
+        const hr = isHrProject(selected);
         setRows((prev) =>
             prev.map((r) => {
                 if (r._id !== rowId) return r;
                 return {
                     ...r,
                     projectId: pid,
-                    projectType: pid && inferredType !== "all" ? inferredType : r.projectType,
+                    projectType: hr ? "hr" : (pid && inferredType !== "all" ? inferredType : r.projectType),
                     activityId: "",
                     subActivityId: "",
                     stageId: "",
@@ -502,7 +534,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             return n;
         });
         if (pid) ensureProjectDetail(pid);
-    }, [projects, ensureProjectDetail]);
+    }, [projectChoices, ensureProjectDetail]);
 
     const applyPreset = useCallback((rowId, start, end) => {
         setRows((prev) => prev.map((r) => r._id === rowId ? { ...r, startTime: start, endTime: end } : r));
@@ -528,7 +560,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             if (!r.projectId) errs[`${r._id}.projectId`] = true;
             if (!r.activityId) errs[`${r._id}.activityId`] = true;
             if (!r.subActivityId) errs[`${r._id}.subActivityId`] = true;
-            if (!r.stageId) errs[`${r._id}.stageId`] = true;
+            if (!rowIsHr(r) && !r.stageId) errs[`${r._id}.stageId`] = true;
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
 
@@ -540,11 +572,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                 errs[`${r._id}.endTime`] = true;
             }
 
-            const skipWorkType =
-                isAimantraSubCompanyUser() ||
-                hidesProjectWorkType(r.projectType) ||
-                hidesProjectWorkType(projects.find((p) => String(p.id || p.project_id) === String(r.projectId))) ||
-                hidesProjectWorkType(detailFor(r.projectId));
+            const skipWorkType = rowHidesWorkType(r);
             if (!skipWorkType && !r.workType) errs[`${r._id}.workType`] = true;
         });
 
@@ -754,12 +782,14 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                             const timeInvalid = row.startTime && row.endTime && row.endTime <= row.startTime;
                                             const e = (f) => !!errors[`${row._id}.${f}`];
                                             const typeFilteredProjects = resolveProjectsForType({
-                                                projects,
+                                                projects: projectChoices,
                                                 typeKey: row.projectType || "all",
                                                 includeProjectId: row.projectId,
                                                 hasSourceMeta,
                                                 remoteList: typedProjectCache[row.projectType],
                                             });
+                                            const hrRow = rowIsHr(row);
+                                            const selectedSub = subActivities.find((s) => s.id === row.subActivityId);
 
                                             return (
                                                 <motion.tr
@@ -814,7 +844,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                         <Sel
                                                             value={row.activityId}
                                                             onChange={(v) => updateRow(row._id, "activityId", v)}
-                                                            placeholder="Select activity"
+                                                            placeholder={hrRow ? "Select KRA" : "Select activity"}
                                                             disabled={!row.projectId || isLoadingThis}
                                                             loading={isLoadingThis}
                                                             error={e("activityId")}
@@ -830,42 +860,55 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                         <Sel
                                                             value={row.subActivityId}
                                                             onChange={(v) => updateRow(row._id, "subActivityId", v)}
-                                                            placeholder="Select sub-activity"
+                                                            placeholder={hrRow ? "Select KRA line" : "Select sub-activity"}
                                                             disabled={!row.activityId || isLoadingThis}
                                                             error={e("subActivityId")}
                                                         >
                                                             {subActivities.map((s) => (
                                                                 <option key={s.id} value={s.id}>
-                                                                    {s.sorting_var ? `Stage ${s.sorting_var} – ` : ""}{s.subactivity_name}
+                                                                    {hrRow ? "" : (s.sorting_var ? `Stage ${s.sorting_var} – ` : "")}{s.subactivity_name}
                                                                 </option>
                                                             ))}
                                                         </Sel>
+                                                        {hrRow && (
+                                                            <KraShortcut
+                                                                name={selectedSub?.subactivity_name}
+                                                                projectId={row.projectId}
+                                                                compact
+                                                            />
+                                                        )}
                                                     </td>
 
                                                     {/* Work Stage */}
                                                     <td className="px-1 py-2 align-top">
-                                                        <Sel
-                                                            value={row.stageId}
-                                                            onChange={(v) => updateRow(row._id, "stageId", v)}
-                                                            placeholder={
-                                                                !row.subActivityId ? "Select stage" :
-                                                                    isLoadingThis ? "Loading…" :
-                                                                        workStages.length === 0 ? "No stages" : "Select stage"
-                                                            }
-                                                            disabled={!row.subActivityId || isLoadingThis || workStages.length === 0}
-                                                            loading={isLoadingThis}
-                                                            error={e("stageId")}
-                                                        >
-                                                            {workStages.map((st) => (
-                                                                <option key={st.id} value={st.id}>
-                                                                    {st.name || st.stage_name || "Stage"}
-                                                                </option>
-                                                            ))}
-                                                        </Sel>
-                                                        {row.subActivityId && !isLoadingThis && workStages.length === 0 && (
-                                                            <p className="text-[9px] text-amber-500 mt-0.5 leading-tight">
-                                                                No work stages for this sub-activity
-                                                            </p>
+                                                        {hrRow ? (
+                                                            <p className="text-[10px] text-gray-400 px-1 py-1.5">Not used for HR</p>
+                                                        ) : (
+                                                            <>
+                                                                <Sel
+                                                                    value={row.stageId}
+                                                                    onChange={(v) => updateRow(row._id, "stageId", v)}
+                                                                    placeholder={
+                                                                        !row.subActivityId ? "Select stage" :
+                                                                            isLoadingThis ? "Loading…" :
+                                                                                workStages.length === 0 ? "No stages" : "Select stage"
+                                                                    }
+                                                                    disabled={!row.subActivityId || isLoadingThis || workStages.length === 0}
+                                                                    loading={isLoadingThis}
+                                                                    error={e("stageId")}
+                                                                >
+                                                                    {workStages.map((st) => (
+                                                                        <option key={st.id} value={st.id}>
+                                                                            {st.name || st.stage_name || "Stage"}
+                                                                        </option>
+                                                                    ))}
+                                                                </Sel>
+                                                                {row.subActivityId && !isLoadingThis && workStages.length === 0 && (
+                                                                    <p className="text-[9px] text-amber-500 mt-0.5 leading-tight">
+                                                                        No work stages for this sub-activity
+                                                                    </p>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </td>
 
@@ -925,6 +968,9 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                             </p>
                                                         )}
                                                     </td>
+                                                    )}
+                                                    {!hideWorkTypeColumn && hrRow && (
+                                                        <td className="px-1 py-2 align-top text-[10px] text-gray-400">—</td>
                                                     )}
 
                                                     {/* note */}

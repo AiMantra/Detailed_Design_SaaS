@@ -10,6 +10,7 @@ export const PROJECT_SOURCE_IDS = {
   ACCOUNT: "c4e54604-9a83-4065-b798-ad0e58673790",
   AIMANTRA: "c4e54604-9a83-4065-b798-ad0e58673791",
   HR: "c4e54604-9a83-4065-b798-ad0e58673792",
+  INTERNAL: "c4e54604-9a83-4065-b798-ad0e58673793",
 };
 
 /** HRMS division/sub-company that should only see Aimantra projects */
@@ -30,6 +31,7 @@ export const PROJECT_TYPE_SOURCE_IDS = {
   account: PROJECT_SOURCE_IDS.ACCOUNT,
   aimantra: PROJECT_SOURCE_IDS.AIMANTRA,
   hr: PROJECT_SOURCE_IDS.HR,
+  admincivilmantra: PROJECT_SOURCE_IDS.INTERNAL,
 };
 
 /** source UUID → display label */
@@ -41,6 +43,7 @@ export const PROJECT_TYPE_LABELS = {
   [PROJECT_SOURCE_IDS.ACCOUNT]: "Account",
   [PROJECT_SOURCE_IDS.AIMANTRA]: "Aimantra",
   [PROJECT_SOURCE_IDS.HR]: "HR",
+  [PROJECT_SOURCE_IDS.INTERNAL]: "admincivilmantra",
 };
 
 export const PROJECT_TYPE_FILTER_OPTIONS = [
@@ -52,6 +55,7 @@ export const PROJECT_TYPE_FILTER_OPTIONS = [
   { value: "account", label: "Account" },
   { value: "aimantra", label: "Aimantra" },
   { value: "hr", label: "HR" },
+  { value: "admincivilmantra", label: "admincivilmantra" },
 ];
 
 /** Create / Update Project Type dropdown options */
@@ -63,6 +67,7 @@ export const PROJECT_TYPE_FORM_OPTIONS = [
   { value: PROJECT_SOURCE_IDS.ACCOUNT, label: "Account" },
   { value: PROJECT_SOURCE_IDS.AIMANTRA, label: "Aimantra" },
   { value: PROJECT_SOURCE_IDS.HR, label: "HR" },
+  { value: PROJECT_SOURCE_IDS.INTERNAL, label: "admincivilmantra" },
 ];
 
 /** DPR, Prebid, BD & Account: client/branch (and some units) optional */
@@ -73,13 +78,20 @@ export function isRelaxedProjectType(sourceId) {
     sourceId === PROJECT_SOURCE_IDS.BD ||
     sourceId === PROJECT_SOURCE_IDS.ACCOUNT ||
     sourceId === PROJECT_SOURCE_IDS.AIMANTRA ||
-    sourceId === PROJECT_SOURCE_IDS.HR
+    sourceId === PROJECT_SOURCE_IDS.HR ||
+    sourceId === PROJECT_SOURCE_IDS.INTERNAL
   );
 }
 
 export function isHrProjectSource(projectOrSourceId) {
   if (projectOrSourceId === "hr") return true;
   return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.HR;
+}
+
+/** Internal: slim create/edit (name, code, short name, location, company, owner + LOA/completion) */
+export function isInternalProjectSource(projectOrSourceId) {
+  if (projectOrSourceId === "admincivilmantra" || projectOrSourceId === "internal") return true;
+  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.INTERNAL;
 }
 
 export function getProjectSourceId(project) {
@@ -101,12 +113,18 @@ function resolveSourceId(projectOrSourceId) {
 /** BD & Aimantra: hide weightage in UI and skip 100% validation */
 export function hidesProjectWeightage(projectOrSourceId) {
   const sid = resolveSourceId(projectOrSourceId);
-  return sid === PROJECT_SOURCE_IDS.BD || sid === PROJECT_SOURCE_IDS.AIMANTRA || sid === PROJECT_SOURCE_IDS.HR;
+  return (
+    sid === PROJECT_SOURCE_IDS.BD ||
+    sid === PROJECT_SOURCE_IDS.AIMANTRA ||
+    sid === PROJECT_SOURCE_IDS.HR ||
+    sid === PROJECT_SOURCE_IDS.INTERNAL
+  );
 }
 
-/** Aimantra create/edit: only core identity, company, sector, owners, and dates */
+/** Aimantra / Internal create/edit: hide workorder, length, client, GST extras */
 export function hidesExtendedProjectFields(projectOrSourceId) {
-  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.AIMANTRA;
+  const sid = resolveSourceId(projectOrSourceId);
+  return sid === PROJECT_SOURCE_IDS.AIMANTRA || sid === PROJECT_SOURCE_IDS.INTERNAL;
 }
 
 /** Aimantra: work type is not used on worklog / planner */
