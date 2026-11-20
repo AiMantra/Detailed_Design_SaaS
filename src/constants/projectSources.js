@@ -11,10 +11,18 @@ export const PROJECT_SOURCE_IDS = {
   AIMANTRA: "c4e54604-9a83-4065-b798-ad0e58673791",
   HR: "c4e54604-9a83-4065-b798-ad0e58673792",
   INTERNAL: "c4e54604-9a83-4065-b798-ad0e58673793",
+  PROJECT_COORDINATION: "c4e54604-9a83-4065-b798-ad0e58673794",
+  DESIGN: "c4e54604-9a83-4065-b798-ad0e58673795",
 };
 
 /** HRMS division/sub-company that should only see Aimantra projects */
 export const AIMANTRA_SUB_COMPANY_ID = "3e640f93-152c-45b4-aee8-b461160d23d4";
+
+/** HRMS division/sub-company whose users should only see Saptagon projects */
+export const SAPTAGON_SUB_COMPANY_ID = "beb197dd-9ad1-4136-a1ad-bb469e7127a2";
+
+/** Company UUID on a project that marks it as a Saptagon project */
+export const SAPTAGON_COMPANY_ID = "eb10af51-9734-4ff0-a250-133e15e3237e";
 
 /** Extra emp codes that can see Aimantra projects (in addition to other types) */
 export const AIMANTRA_VISIBLE_EMP_CODES = ["SAPL0739"];
@@ -32,6 +40,8 @@ export const PROJECT_TYPE_SOURCE_IDS = {
   aimantra: PROJECT_SOURCE_IDS.AIMANTRA,
   hr: PROJECT_SOURCE_IDS.HR,
   admincivilmantra: PROJECT_SOURCE_IDS.INTERNAL,
+  "project coordination": PROJECT_SOURCE_IDS.PROJECT_COORDINATION,
+  design: PROJECT_SOURCE_IDS.DESIGN,
 };
 
 /** source UUID → display label */
@@ -44,6 +54,8 @@ export const PROJECT_TYPE_LABELS = {
   [PROJECT_SOURCE_IDS.AIMANTRA]: "Aimantra",
   [PROJECT_SOURCE_IDS.HR]: "HR",
   [PROJECT_SOURCE_IDS.INTERNAL]: "admincivilmantra",
+  [PROJECT_SOURCE_IDS.PROJECT_COORDINATION]: "Project Coordination",
+  [PROJECT_SOURCE_IDS.DESIGN]: "Design",
 };
 
 export const PROJECT_TYPE_FILTER_OPTIONS = [
@@ -56,6 +68,8 @@ export const PROJECT_TYPE_FILTER_OPTIONS = [
   { value: "aimantra", label: "Aimantra" },
   { value: "hr", label: "HR" },
   { value: "admincivilmantra", label: "admincivilmantra" },
+  { value: "project coordination", label: "Project Coordination" },
+  { value: "design", label: "Design" },
 ];
 
 /** Create / Update Project Type dropdown options */
@@ -68,6 +82,8 @@ export const PROJECT_TYPE_FORM_OPTIONS = [
   { value: PROJECT_SOURCE_IDS.AIMANTRA, label: "Aimantra" },
   { value: PROJECT_SOURCE_IDS.HR, label: "HR" },
   { value: PROJECT_SOURCE_IDS.INTERNAL, label: "admincivilmantra" },
+  { value: PROJECT_SOURCE_IDS.PROJECT_COORDINATION, label: "Project Coordination" },
+  { value: PROJECT_SOURCE_IDS.DESIGN, label: "Design" },
 ];
 
 /** DPR, Prebid, BD & Account: client/branch (and some units) optional */
@@ -79,7 +95,19 @@ export function isRelaxedProjectType(sourceId) {
     sourceId === PROJECT_SOURCE_IDS.ACCOUNT ||
     sourceId === PROJECT_SOURCE_IDS.AIMANTRA ||
     sourceId === PROJECT_SOURCE_IDS.HR ||
-    sourceId === PROJECT_SOURCE_IDS.INTERNAL
+    sourceId === PROJECT_SOURCE_IDS.INTERNAL ||
+    sourceId === PROJECT_SOURCE_IDS.PROJECT_COORDINATION ||
+    sourceId === PROJECT_SOURCE_IDS.DESIGN
+  );
+}
+
+export function isSaptagonOnlyProjectType(projectOrSourceId) {
+  const sid = resolveSourceId(projectOrSourceId);
+  return (
+    sid === PROJECT_SOURCE_IDS.PROJECT_COORDINATION ||
+    sid === PROJECT_SOURCE_IDS.DESIGN ||
+    projectOrSourceId === "project coordination" ||
+    projectOrSourceId === "design"
   );
 }
 
@@ -146,17 +174,55 @@ export function isAimantraSubCompanyUser() {
   return String(getUserSubCompanyId()) === AIMANTRA_SUB_COMPANY_ID;
 }
 
+export function isSaptagonSubCompanyUser() {
+  return String(getUserSubCompanyId()) === SAPTAGON_SUB_COMPANY_ID;
+}
+
+export function getProjectCompanyIds(project) {
+  return [
+    project?.company,
+    project?.company_id,
+    project?.company_detail?.id,
+  ]
+    .map((id) => String(id || "").trim())
+    .filter(Boolean);
+}
+
+export function isSaptagonProject(project) {
+  if (!project) return false;
+  return getProjectCompanyIds(project).includes(SAPTAGON_COMPANY_ID);
+}
+
 export function getUserEmpCode() {
   return String(sessionStorage.getItem("emp_code") || "").trim().toUpperCase();
+}
+
+export function getAppUserRole() {
+  return String(sessionStorage.getItem("userRole") || "").toUpperCase();
+}
+
+/** ACCOUNT role sees Civilmantra + Saptagon (all companies), not one sub-company */
+export function canSeeAllCompanies() {
+  return getAppUserRole() === "ACCOUNT";
 }
 
 export function isAimantraAllowedEmp() {
   return AIMANTRA_VISIBLE_EMP_CODES.includes(getUserEmpCode());
 }
 
-/** Can view Aimantra projects: Aimantra sub-company, or allowlisted emp_code */
+/** Can view Aimantra projects: Account role, Aimantra sub-company, or allowlisted emp */
 export function canSeeAimantraProjects() {
-  return isAimantraSubCompanyUser() || isAimantraAllowedEmp();
+  return canSeeAllCompanies() || isAimantraSubCompanyUser() || isAimantraAllowedEmp();
+}
+
+/** Locked to Aimantra only — allowlisted emps still see their own company plus Aimantra */
+export function isAimantraOnlyUser() {
+  return !canSeeAllCompanies() && isAimantraSubCompanyUser();
+}
+
+/** Locked to Saptagon projects only — Account and Aimantra allowlist are excluded */
+export function isSaptagonOnlyUser() {
+  return !canSeeAllCompanies() && isSaptagonSubCompanyUser() && !isAimantraAllowedEmp();
 }
 
 export function canSeeTechSupport() {
@@ -169,45 +235,114 @@ export function isAimantraSubcompanyEmployee(emp) {
   );
 }
 
-/** Task planner: Aimantra users only see employees with this subcompany_id */
+export function isSaptagonSubcompanyEmployee(emp) {
+  return (
+    String(emp?.subcompany_id || emp?.sub_company_id || "") === SAPTAGON_SUB_COMPANY_ID
+  );
+}
+
+function employeeHasSubcompany(emp) {
+  return Boolean(emp?.subcompany_id || emp?.sub_company_id);
+}
+
+/** Task planner: Aimantra/Saptagon users only see employees in their sub-company */
 export function filterTaskPlannerEmployees(employees = []) {
   if (!Array.isArray(employees)) return [];
-  if (!canSeeAimantraProjects()) return employees;
-  return employees.filter(isAimantraSubcompanyEmployee);
+  const hasSubcompany = employees.some(employeeHasSubcompany);
+  if (!hasSubcompany) return employees;
+  if (isAimantraOnlyUser()) return employees.filter(isAimantraSubcompanyEmployee);
+  if (isSaptagonOnlyUser()) return employees.filter(isSaptagonSubcompanyEmployee);
+  return employees;
 }
 
 export function getDefaultProjectTypeFilter() {
-  return canSeeAimantraProjects() ? "aimantra" : "all";
+  if (canSeeAllCompanies()) return "all";
+  return isAimantraOnlyUser() ? "aimantra" : "all";
 }
 
+export function canSeeSaptagonProjectTypes() {
+  return isSaptagonSubCompanyUser();
+}
+
+const SAPTAGON_FILTER_KEYS = new Set(["project coordination", "design"]);
+const SAPTAGON_FORM_SOURCE_IDS = new Set([
+  PROJECT_SOURCE_IDS.PROJECT_COORDINATION,
+  PROJECT_SOURCE_IDS.DESIGN,
+]);
+
 export function getVisibleProjectTypeFilterOptions() {
-  if (canSeeAimantraProjects()) {
+  if (isAimantraOnlyUser()) {
     return PROJECT_TYPE_FILTER_OPTIONS.filter((o) => o.value === "aimantra");
   }
-  return PROJECT_TYPE_FILTER_OPTIONS.filter((o) => o.value !== "aimantra");
+
+  let options = PROJECT_TYPE_FILTER_OPTIONS.filter((o) => !SAPTAGON_FILTER_KEYS.has(o.value));
+  if (!canSeeAllCompanies() && !isAimantraAllowedEmp()) {
+    options = options.filter((o) => o.value !== "aimantra");
+  }
+  if (canSeeSaptagonProjectTypes()) {
+    options = options.concat(PROJECT_TYPE_FILTER_OPTIONS.filter((o) => SAPTAGON_FILTER_KEYS.has(o.value)));
+  }
+  return options;
 }
 
 export function getVisibleProjectTypeFormOptions() {
-  if (canSeeAimantraProjects()) {
+  if (isAimantraOnlyUser()) {
     return PROJECT_TYPE_FORM_OPTIONS.filter((o) => o.value === PROJECT_SOURCE_IDS.AIMANTRA);
   }
-  return PROJECT_TYPE_FORM_OPTIONS.filter((o) => o.value !== PROJECT_SOURCE_IDS.AIMANTRA);
+
+  let options = PROJECT_TYPE_FORM_OPTIONS.filter((o) => !SAPTAGON_FORM_SOURCE_IDS.has(o.value));
+  if (!canSeeAllCompanies() && !isAimantraAllowedEmp()) {
+    options = options.filter((o) => o.value !== PROJECT_SOURCE_IDS.AIMANTRA);
+  }
+  if (canSeeSaptagonProjectTypes()) {
+    options = options.concat(PROJECT_TYPE_FORM_OPTIONS.filter((o) => SAPTAGON_FORM_SOURCE_IDS.has(o.value)));
+  }
+  return options;
 }
 
 /** API source_id for list fetches: Aimantra-only users are locked to Aimantra type */
 export function resolveListSourceId(filterProjectType) {
-  if (canSeeAimantraProjects()) return PROJECT_SOURCE_IDS.AIMANTRA;
+  if (isAimantraOnlyUser()) return PROJECT_SOURCE_IDS.AIMANTRA;
   return PROJECT_TYPE_SOURCE_IDS[filterProjectType] || "";
 }
 
+function mergeProjectsByKey(lists) {
+  const map = new Map();
+  lists.flat().forEach((project) => {
+    if (!project) return;
+    const key = String(project.id || project.project_id || project.project_code || "");
+    if (!key) return;
+    map.set(key, project);
+  });
+  return [...map.values()];
+}
+
 export function applyUserProjectVisibility(projects = []) {
-  const aimantraOnly = canSeeAimantraProjects();
+  if (canSeeAllCompanies()) return projects;
+
+  if (!isSaptagonSubCompanyUser()) {
+    projects = projects.filter((p) => !isSaptagonOnlyProjectType(p));
+  }
+
+  const allowAimantra = isAimantraAllowedEmp();
+  const aimantraProjects = projects.filter(
+    (p) => String(getProjectSourceId(p)) === PROJECT_SOURCE_IDS.AIMANTRA
+  );
+
+  if (isSaptagonSubCompanyUser()) {
+    const hasCompanyMeta = projects.some((p) => getProjectCompanyIds(p).length > 0);
+    const saptagon = hasCompanyMeta ? projects.filter(isSaptagonProject) : projects;
+    return allowAimantra ? mergeProjectsByKey([saptagon, aimantraProjects]) : saptagon;
+  }
+
   const hasSourceMeta = projects.some((p) => getProjectSourceId(p));
   if (!hasSourceMeta) return projects;
   return projects.filter((p) => {
     const sid = String(getProjectSourceId(p));
-    if (aimantraOnly) return sid === PROJECT_SOURCE_IDS.AIMANTRA;
-    return sid !== PROJECT_SOURCE_IDS.AIMANTRA;
+    if (sid === PROJECT_SOURCE_IDS.AIMANTRA) {
+      return isAimantraOnlyUser() || allowAimantra;
+    }
+    return !isAimantraOnlyUser();
   });
 }
 

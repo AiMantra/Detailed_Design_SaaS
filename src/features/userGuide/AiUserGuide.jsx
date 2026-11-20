@@ -17,6 +17,8 @@ import {
   EyeOff,
   RotateCcw,
   FileBarChart2,
+  History,
+  Table2,
   UserRound,
   FolderKanban,
   CalendarRange,
@@ -41,6 +43,7 @@ import {
   rangeThisMonth,
   rangeLastMonth,
   rangeLast7Days,
+  rangeOneDay,
   toYmd,
 } from "./guideAgent";
 import ReportDoc from "./ReportDoc";
@@ -48,7 +51,7 @@ import "./aimantra.css";
 import {
   PROJECT_TYPE_SOURCE_IDS,
   PROJECT_SOURCE_IDS,
-  canSeeAimantraProjects,
+  isAimantraOnlyUser,
   getDefaultProjectTypeFilter,
   getVisibleProjectTypeFilterOptions,
 } from "../../constants/projectSources";
@@ -129,13 +132,14 @@ function IconBtn({ title, onClick, children, active }) {
   );
 }
 
-function buildActions(customRange) {
+function buildActions(customRange, singleDayRange) {
   const fallback = customRange || rangeLastWeek();
+  const dayRange = singleDayRange || rangeOneDay();
   return [
     {
       id: "weekly",
       label: "Weekly report",
-      hint: "All projects · last week",
+      hint: "Split by Detail Design, DPR, HR, Aimantra",
       icon: FileBarChart2,
       group: "reports",
       intent: () => ({ type: "all_projects_report", dateRange: rangeLastWeek() }),
@@ -178,6 +182,18 @@ function buildActions(customRange) {
       userText: "Generate all-projects report for last 7 days",
     },
     {
+      id: "oneday",
+      label: "One day",
+      hint: dayRange.label,
+      icon: CalendarDays,
+      group: "reports",
+      intent: () => ({
+        type: "all_projects_report",
+        dateRange: dayRange,
+      }),
+      userText: `Generate all-projects report for ${dayRange.start_date}`,
+    },
+    {
       id: "custom",
       label: "Custom dates",
       hint: "Uses range below",
@@ -192,6 +208,80 @@ function buildActions(customRange) {
         },
       }),
       userText: `Generate all-projects report from ${fallback.start_date} to ${fallback.end_date}`,
+    },
+    {
+      id: "history",
+      label: "Employee history",
+      hint: "Date, emp, project, hours",
+      icon: History,
+      group: "reports",
+      intent: () => ({ type: "employee_history_report", dateRange: rangeLastWeek() }),
+      userText: "Generate employee engagement history for last week",
+    },
+    {
+      id: "historyday",
+      label: "History (one day)",
+      hint: dayRange.label,
+      icon: History,
+      group: "reports",
+      intent: () => ({
+        type: "employee_history_report",
+        dateRange: dayRange,
+      }),
+      userText: `Generate employee engagement history for ${dayRange.start_date}`,
+    },
+    {
+      id: "historycustom",
+      label: "History (range)",
+      hint: "Uses range below",
+      icon: History,
+      group: "reports",
+      intent: () => ({
+        type: "employee_history_report",
+        dateRange: {
+          start_date: fallback.start_date,
+          end_date: fallback.end_date,
+          label: `${fallback.start_date} → ${fallback.end_date}`,
+        },
+      }),
+      userText: `Generate employee engagement history from ${fallback.start_date} to ${fallback.end_date}`,
+    },
+    {
+      id: "roster",
+      label: "Daily sheet",
+      hint: "Date × employees like Excel",
+      icon: Table2,
+      group: "reports",
+      intent: () => ({ type: "employee_roster_report", dateRange: rangeLastWeek() }),
+      userText: "Generate daily engagement sheet for last week",
+    },
+    {
+      id: "rosterday",
+      label: "Sheet (one day)",
+      hint: dayRange.label,
+      icon: Table2,
+      group: "reports",
+      intent: () => ({
+        type: "employee_roster_report",
+        dateRange: dayRange,
+      }),
+      userText: `Generate daily engagement sheet for ${dayRange.start_date}`,
+    },
+    {
+      id: "rostercustom",
+      label: "Sheet (range)",
+      hint: "Uses range below",
+      icon: Table2,
+      group: "reports",
+      intent: () => ({
+        type: "employee_roster_report",
+        dateRange: {
+          start_date: fallback.start_date,
+          end_date: fallback.end_date,
+          label: `${fallback.start_date} → ${fallback.end_date}`,
+        },
+      }),
+      userText: `Generate daily engagement sheet from ${fallback.start_date} to ${fallback.end_date}`,
     },
     {
       id: "one",
@@ -265,19 +355,27 @@ export default function AiUserGuide() {
   const [activeDocId, setActiveDocId] = useState(null);
   const [customStart, setCustomStart] = useState(() => rangeLastWeek().start_date);
   const [customEnd, setCustomEnd] = useState(() => rangeLastWeek().end_date);
+  const [singleDay, setSingleDay] = useState(() => toYmd(new Date()));
   const [filterProjectType, setFilterProjectType] = useState(() => getDefaultProjectTypeFilter());
   const [showTools, setShowTools] = useState(true);
   const [rangeError, setRangeError] = useState("");
+  const [dayError, setDayError] = useState("");
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const msgId = useRef(0);
 
+  const todayYmd = toYmd(new Date());
   const customRangeValid = Boolean(
-    customStart && customEnd && customStart <= customEnd
+    customStart && customEnd && customStart <= customEnd && customEnd <= todayYmd
   );
+  const singleDayValid = Boolean(singleDay && singleDay <= todayYmd);
 
   const onCustomStartChange = (value) => {
     setCustomStart(value);
+    if (value && value > todayYmd) {
+      setRangeError("Date cannot be after today.");
+      return;
+    }
     if (value && customEnd && value > customEnd) {
       setRangeError("From date must be on or before To date.");
       return;
@@ -287,6 +385,10 @@ export default function AiUserGuide() {
 
   const onCustomEndChange = (value) => {
     setCustomEnd(value);
+    if (value && value > todayYmd) {
+      setRangeError("Date cannot be after today.");
+      return;
+    }
     if (value && customStart && value < customStart) {
       setRangeError("To date must be on or after From date.");
       return;
@@ -294,32 +396,100 @@ export default function AiUserGuide() {
     setRangeError("");
   };
 
+  const onSingleDayChange = (value) => {
+    setSingleDay(value);
+    if (value && value > todayYmd) {
+      setDayError("Date cannot be after today.");
+      return;
+    }
+    setDayError("");
+    if (value && value <= todayYmd) {
+      setCustomStart(value);
+      setCustomEnd(value);
+      setRangeError("");
+    }
+  };
+
+  const applyDateRangeToPickers = (range) => {
+    if (!range?.start_date || !range?.end_date) return;
+    setCustomStart(range.start_date);
+    setCustomEnd(range.end_date);
+    if (range.start_date === range.end_date) setSingleDay(range.start_date);
+    setRangeError("");
+  };
+
+  const pickedDayRange = () => ({
+    start_date: singleDay,
+    end_date: singleDay,
+    label: singleDay,
+  });
+
+  const pickedCustomRange = () => ({
+    start_date: customStart,
+    end_date: customEnd,
+    label: `${customStart} → ${customEnd}`,
+  });
+
+  const runPickedDay = (type, label) => {
+    if (!singleDayValid) {
+      setDayError("Choose a date up to today.");
+      return;
+    }
+    const dateRange = pickedDayRange();
+    onAction({
+      intent: () => ({ type, dateRange }),
+      userText: `${label} for ${dateRange.start_date}`,
+    });
+  };
+
+  const runPickedRange = (type, label) => {
+    if (!customRangeValid) {
+      setRangeError("From date must be on or before To date.");
+      return;
+    }
+    const dateRange = pickedCustomRange();
+    onAction({
+      intent: () => ({ type, dateRange }),
+      userText: `${label} from ${dateRange.start_date} to ${dateRange.end_date}`,
+    });
+  };
+
   const customRange = useMemo(
     () => ({
-      start_date: customStart || toYmd(new Date()),
-      end_date: customEnd || toYmd(new Date()),
+      start_date: customStart || todayYmd,
+      end_date: customEnd || todayYmd,
       label: "Custom range",
     }),
-    [customStart, customEnd]
+    [customStart, customEnd, todayYmd]
   );
+
+  const singleDayRange = useMemo(() => rangeOneDay(singleDay || todayYmd), [singleDay, todayYmd]);
 
   const selectedSourceId = PROJECT_TYPE_SOURCE_IDS[filterProjectType] || null;
 
   const withSource = (intent) => {
-    if (canSeeAimantraProjects()) {
+    if (isAimantraOnlyUser()) {
       return { ...intent, source_id: PROJECT_SOURCE_IDS.AIMANTRA };
     }
     return selectedSourceId ? { ...intent, source_id: selectedSourceId } : intent;
   };
 
-  const ACTIONS = useMemo(() => buildActions(customRange), [customRange]);
+  const ACTIONS = useMemo(
+    () => buildActions(customRange, singleDayRange),
+    [customRange, singleDayRange]
+  );
   const firstName = user?.name ? String(user.name).split(" ")[0] : "";
   const isFresh = messages.length <= 1 && !loading;
 
   const docs = useMemo(
     () =>
       messages.filter(
-        (m) => m.role === "assistant" && (m.kind === "weekly_timelog" || m.kind === "document")
+        (m) =>
+          m.role === "assistant" &&
+          (m.kind === "weekly_timelog" ||
+            m.kind === "employee_history" ||
+            m.kind === "employee_roster" ||
+            m.kind === "document")
       ),
     [messages]
   );
@@ -467,7 +637,12 @@ export default function AiUserGuide() {
         },
       ]);
 
-      if (result.kind === "weekly_timelog" || result.kind === "document") {
+      if (
+        result.kind === "weekly_timelog" ||
+        result.kind === "employee_history" ||
+        result.kind === "employee_roster" ||
+        result.kind === "document"
+      ) {
         setActiveDocId(entryId);
       }
     } catch (err) {
@@ -516,8 +691,14 @@ export default function AiUserGuide() {
       return;
     }
     const intent = action.intent();
+    applyDateRangeToPickers(intent.dateRange);
     const next =
-      intent.type === "all_projects_report" ? withSource(intent) : intent;
+      (intent.type === "all_projects_report" ||
+        intent.type === "employee_history_report" ||
+        intent.type === "employee_roster_report") &&
+      filterProjectType !== "all"
+        ? withSource(intent)
+        : intent;
     await executeIntent(next, action.userText);
   };
 
@@ -527,6 +708,7 @@ export default function AiUserGuide() {
     setQuery("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     const intent = parseUserMessage(text, user, pending);
+    applyDateRangeToPickers(intent.dateRange);
     await executeIntent(intent, text);
   };
 
@@ -651,6 +833,53 @@ export default function AiUserGuide() {
 
       <div className="aimantra-card rounded-2xl p-3.5">
         <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          Single day
+        </p>
+        <label className="block text-[11px] text-zinc-500">
+          Date
+          <input
+            type="date"
+            value={singleDay}
+            max={todayYmd}
+            onChange={(e) => onSingleDayChange(e.target.value)}
+            className={`mt-1 w-full rounded-xl border bg-black/30 px-3 py-2 text-[12px] text-zinc-100 focus:outline-none [color-scheme:dark] ${
+              dayError
+                ? "border-rose-400/50 focus:border-rose-400/60"
+                : "border-white/[0.08] focus:border-teal-400/40"
+            }`}
+          />
+        </label>
+        {dayError && (
+          <p className="mt-2 text-[11px] font-medium text-rose-300">{dayError}</p>
+        )}
+        <button
+          type="button"
+          disabled={loading || !singleDayValid || Boolean(dayError)}
+          onClick={() => runPickedDay("all_projects_report", "Generate all-projects report")}
+          className="aimantra-send mt-3 w-full rounded-xl px-3 py-2.5 text-[12.5px] font-semibold disabled:opacity-40"
+        >
+          Run day report
+        </button>
+        <button
+          type="button"
+          disabled={loading || !singleDayValid || Boolean(dayError)}
+          onClick={() => runPickedDay("employee_history_report", "Generate employee engagement history")}
+          className="mt-2 w-full rounded-xl border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-[12.5px] font-semibold text-zinc-100 disabled:opacity-40"
+        >
+          Run day history
+        </button>
+        <button
+          type="button"
+          disabled={loading || !singleDayValid || Boolean(dayError)}
+          onClick={() => runPickedDay("employee_roster_report", "Generate daily engagement sheet")}
+          className="mt-2 w-full rounded-xl border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-[12.5px] font-semibold text-zinc-100 disabled:opacity-40"
+        >
+          Run day sheet
+        </button>
+      </div>
+
+      <div className="aimantra-card rounded-2xl p-3.5">
+        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
           Custom range
         </p>
         <div className="grid grid-cols-1 gap-2">
@@ -659,7 +888,7 @@ export default function AiUserGuide() {
             <input
               type="date"
               value={customStart}
-              max={customEnd || undefined}
+              max={todayYmd}
               onChange={(e) => onCustomStartChange(e.target.value)}
               className={`mt-1 w-full rounded-xl border bg-black/30 px-3 py-2 text-[12px] text-zinc-100 focus:outline-none [color-scheme:dark] ${
                 rangeError
@@ -674,6 +903,7 @@ export default function AiUserGuide() {
               type="date"
               value={customEnd}
               min={customStart || undefined}
+              max={todayYmd}
               onChange={(e) => onCustomEndChange(e.target.value)}
               className={`mt-1 w-full rounded-xl border bg-black/30 px-3 py-2 text-[12px] text-zinc-100 focus:outline-none [color-scheme:dark] ${
                 rangeError
@@ -689,16 +919,26 @@ export default function AiUserGuide() {
         <button
           type="button"
           disabled={loading || !customRangeValid || Boolean(rangeError)}
-          onClick={() => {
-            if (!customRangeValid) {
-              setRangeError("From date must be on or before To date.");
-              return;
-            }
-            onAction(ACTIONS.find((a) => a.id === "custom"));
-          }}
+          onClick={() => runPickedRange("all_projects_report", "Generate all-projects report")}
           className="aimantra-send mt-3 w-full rounded-xl px-3 py-2.5 text-[12.5px] font-semibold disabled:opacity-40"
         >
           Run report
+        </button>
+        <button
+          type="button"
+          disabled={loading || !customRangeValid || Boolean(rangeError)}
+          onClick={() => runPickedRange("employee_history_report", "Generate employee engagement history")}
+          className="mt-2 w-full rounded-xl border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-[12.5px] font-semibold text-zinc-100 disabled:opacity-40"
+        >
+          Run history
+        </button>
+        <button
+          type="button"
+          disabled={loading || !customRangeValid || Boolean(rangeError)}
+          onClick={() => runPickedRange("employee_roster_report", "Generate daily engagement sheet")}
+          className="mt-2 w-full rounded-xl border border-white/[0.12] bg-white/[0.04] px-3 py-2.5 text-[12.5px] font-semibold text-zinc-100 disabled:opacity-40"
+        >
+          Run daily sheet
         </button>
       </div>
 
@@ -707,7 +947,15 @@ export default function AiUserGuide() {
           Skills
         </p>
         <div className="grid gap-2">
-          {ACTIONS.filter((a) => a.id !== "custom").map((action) => (
+          {ACTIONS.filter(
+            (a) =>
+              a.id !== "custom" &&
+              a.id !== "oneday" &&
+              a.id !== "historyday" &&
+              a.id !== "historycustom" &&
+              a.id !== "rosterday" &&
+              a.id !== "rostercustom"
+          ).map((action) => (
             <SkillCard key={action.id} action={action} />
           ))}
         </div>
@@ -813,7 +1061,10 @@ export default function AiUserGuide() {
                   <AgentMark size={28} />
                 </div>
                 <div className="min-w-0 flex-1 space-y-3">
-                  {m.kind === "weekly_timelog" || m.kind === "document" ? (
+                  {m.kind === "weekly_timelog" ||
+                  m.kind === "employee_history" ||
+                  m.kind === "employee_roster" ||
+                  m.kind === "document" ? (
                     fullPage ? (
                       <button
                         type="button"
@@ -823,7 +1074,7 @@ export default function AiUserGuide() {
                         }`}
                       >
                         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal-300/90">
-                          {m.kind === "weekly_timelog" ? "Report ready" : "Document ready"}
+                          {m.kind === "document" ? "Document ready" : "Report ready"}
                         </p>
                         <p className="mt-1 text-[14px] font-medium text-white">{m.title}</p>
                         <p className="mt-0.5 text-[12px] text-zinc-500">

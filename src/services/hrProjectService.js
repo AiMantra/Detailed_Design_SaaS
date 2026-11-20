@@ -42,6 +42,7 @@ export const hrProjectService = {
         "short_name",
         "location",
         "company",
+        "sector",
         "created_by",
         "source",
         "source_id",
@@ -62,6 +63,39 @@ export const hrProjectService = {
       return response.data;
     } catch (error) {
       raise(error, "Failed to create HR project");
+    }
+  },
+
+  updateProject: async (projectId, fields) => {
+    try {
+      const formData = new FormData();
+      const scalarKeys = [
+        "project_code",
+        "project_name",
+        "short_name",
+        "location",
+        "company",
+        "sector",
+        "updated_by",
+        "source",
+        "source_id",
+      ];
+      scalarKeys.forEach((key) => {
+        const value = fields[key];
+        if (value === undefined || value === null || value === "") return;
+        formData.append(key, value);
+      });
+      const assignees = Array.isArray(fields.assigned_to) ? fields.assigned_to : [];
+      assignees.forEach((code) => {
+        if (code) formData.append("assigned_to", code);
+      });
+
+      const response = await api.put(`/hr-project/${projectId}/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    } catch (error) {
+      raise(error, "Failed to update HR project");
     }
   },
 

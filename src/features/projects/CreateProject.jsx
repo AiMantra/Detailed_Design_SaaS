@@ -67,7 +67,7 @@ import { AddSectorButton } from "../setupsettings/SetupComponents";
 import {
   PROJECT_SOURCE_IDS,
   getVisibleProjectTypeFormOptions,
-  canSeeAimantraProjects,
+  isAimantraOnlyUser,
   isRelaxedProjectType,
   hidesProjectWeightage,
   hidesExtendedProjectFields,
@@ -115,7 +115,7 @@ const CreateProject = () => {
     assigned_to: [],
     clientbranch: "",
     workorder_document: "",
-    source_id: canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : ""
+    source_id: isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : ""
   });
 
   const isRelaxedType = isRelaxedProjectType(form.source_id);
@@ -2410,6 +2410,7 @@ const CreateProject = () => {
           short_name: form.short_name,
           location: form.location || "",
           company: selectedCompany?.id || "",
+          sector: sectorsMap[form.sector] || "",
           assigned_to: form.assigned_to,
           created_by: "CIPL10021",
           source: form.source_id,
@@ -4535,9 +4536,8 @@ const CreateProject = () => {
             )}
 
             {/* Sector Field */}
-            {!isHrType && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Sector {isInternalType ? "" : "*"}</label>
+              <label className="text-xs text-gray-500">Sector {isInternalType || isHrType ? "" : "*"}</label>
               <div className="relative" ref={sectorDropdownRef}>
                 <Factory className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 <input
@@ -4593,7 +4593,6 @@ const CreateProject = () => {
                 )}
               </div>
             </div>
-            )}
             {!hideExtendedFields && (
             <>
             <div className="flex flex-col gap-1">

@@ -11,6 +11,15 @@ import { employeeWorklogHistoryService } from "../../services/employeeWorkLogHis
 import { trackWorkLogService } from "../../services/trackworklogService";
 import { taskPlannerService } from "../../services/taskPlannerService";
 import { subActivityService } from "../../services/subActivityService";
+import { hrProjectService } from "../../services/hrProjectService";
+import {
+  PROJECT_SOURCE_IDS,
+  canSeeAllCompanies,
+  isAimantraOnlyUser,
+  isSaptagonOnlyUser,
+  applyUserProjectVisibility,
+} from "../../constants/projectSources";
+import { mergeHrIntoProjects } from "../hr/hrUtils";
 
 function matchProject(list, idOrCode) {
   const needle = String(idOrCode || "").trim().toLowerCase();
@@ -113,6 +122,48 @@ export async function guideGetTaskPlanners(user, date) {
   };
 }
 
+async function fetchProjectPagesRaw({ source_id } = {}) {
+  const page_size = 100;
+  const params = { page: 1, page_size };
+  if (source_id) params.source_id = source_id;
+  if (canSeeAllCompanies()) params.all_companies = true;
+  const first = await api.get("/get-projects-list/", { params });
+  const data = first.data;
+  if (Array.isArray(data)) return data;
+  let results = [...(data?.results || [])];
+  const totalPages = Number(data?.total_pages) || 1;
+  for (let page = 2; page <= totalPages; page += 1) {
+    const next = await api.get("/get-projects-list/", { params: { ...params, page } });
+    results = results.concat(next.data?.results || []);
+  }
+  try {
+    const simpleParams = {};
+    if (source_id) simpleParams.source_id = source_id;
+    if (canSeeAllCompanies()) simpleParams.all_companies = true;
+    const simple = await api.get("/get-projects-lists/", { params: simpleParams });
+    const extra = Array.isArray(simple.data) ? simple.data : simple.data?.results || [];
+    if (extra.length) results = mergeProjectsById(results, extra);
+  } catch {
+    /* keep paged list */
+  }
+  return results;
+}
+
+function mergeProjectsById(...lists) {
+  const map = new Map();
+  lists.flat().forEach((project) => {
+    if (!project) return;
+    const id = String(project.id || project.project_id || "");
+    const code = String(project.project_code || project.code || "").toLowerCase();
+    const name = String(project.project_name || project.short_name || project.name || "").toLowerCase();
+    const key = id || (code ? `code:${code}` : name ? `name:${name}` : "");
+    if (!key) return;
+    const existing = map.get(key);
+    map.set(key, existing ? { ...existing, ...project } : project);
+  });
+  return [...map.values()];
+}
+
 export async function guideListAllProjects(user, { source_id } = {}) {
   try {
     const all = await projectService.getAllProjectsLessDetails(user, {
@@ -143,6 +194,39 @@ export async function guideListAllProjects(user, { source_id } = {}) {
   } catch {
     return [];
   }
+}
+
+/** Weekly all-types report: every source, including Aimantra/HR/admin, no company visibility strip. */
+export async function guideListProjectsForWeeklyReport({ source_id } = {}) {
+  if (isAimantraOnlyUser() && !source_id) {
+    source_id = PROJECT_SOURCE_IDS.AIMANTRA;
+  }
+
+  const loadHr = async () => {
+    try {
+      return await hrProjectService.listProjects();
+    } catch {
+      return [];
+    }
+  };
+
+  if (source_id) {
+    const [typed, hr] = await Promise.all([
+      fetchProjectPagesRaw({ source_id }).catch(() => []),
+      source_id === PROJECT_SOURCE_IDS.HR ? loadHr() : Promise.resolve([]),
+    ]);
+    const typedList = source_id === PROJECT_SOURCE_IDS.HR ? mergeHrIntoProjects(typed, hr) : typed;
+    return isSaptagonOnlyUser() ? applyUserProjectVisibility(typedList) : typedList;
+  }
+
+  const sourceIds = Object.values(PROJECT_SOURCE_IDS);
+  const [untyped, hr, ...typed] = await Promise.all([
+    fetchProjectPagesRaw({}).catch(() => []),
+    loadHr(),
+    ...sourceIds.map((id) => fetchProjectPagesRaw({ source_id: id }).catch(() => [])),
+  ]);
+  const all = mergeHrIntoProjects(mergeProjectsById(untyped, ...typed), hr);
+  return isSaptagonOnlyUser() ? applyUserProjectVisibility(all) : all;
 }
 
 export async function guideGetAllProjectsWorkSummary(startDate, endDate) {

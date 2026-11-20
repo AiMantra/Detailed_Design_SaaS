@@ -1,6 +1,35 @@
 
 import api from './api';
-import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, canSeeAimantraProjects, applyUserProjectVisibility } from '../constants/projectSources';
+import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, canSeeAimantraProjects, canSeeAllCompanies, isAimantraOnlyUser, isAimantraAllowedEmp, applyUserProjectVisibility, getProjectSourceId } from '../constants/projectSources';
+
+function mergeProjectLists(...lists) {
+  const map = new Map();
+  lists.flat().forEach((project) => {
+    if (!project) return;
+    const key = String(project.id || project.project_id || project.project_code || "");
+    if (!key) return;
+    map.set(key, project);
+  });
+  return [...map.values()];
+}
+
+async function appendAimantraForAllowlist(list, source_id) {
+  if (!isAimantraAllowedEmp() || isAimantraOnlyUser()) return list;
+  if (source_id && source_id !== PROJECT_SOURCE_IDS.AIMANTRA) return list;
+  const already = (list || []).some(
+    (p) => String(getProjectSourceId(p)) === PROJECT_SOURCE_IDS.AIMANTRA
+  );
+  if (already) return list;
+  try {
+    const response = await api.get("/get-projects-lists/", {
+      params: { source_id: PROJECT_SOURCE_IDS.AIMANTRA, all_companies: true },
+    });
+    const extra = Array.isArray(response.data) ? response.data : response.data?.results || [];
+    return mergeProjectLists(list, extra);
+  } catch {
+    return list;
+  }
+}
 
 
 
@@ -39,12 +68,14 @@ export const projectService = {
   getProjectsListSimple: async ({ source_id } = {}) => {
     try {
       const params = {};
-      const lockedSource = canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      const lockedSource = isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
+      if (canSeeAllCompanies()) params.all_companies = true;
       const response = await api.get('/get-projects-lists/', { params });
       const data = response.data;
       const list = Array.isArray(data) ? data : (data?.results || []);
-      return applyUserProjectVisibility(list);
+      const merged = await appendAimantraForAllowlist(list, lockedSource);
+      return applyUserProjectVisibility(merged);
     } catch (error) {
       console.error('Error fetching projects:', error);
       throw error;
@@ -52,13 +83,13 @@ export const projectService = {
   },
 
   getProjectsByTypeKey: async (typeKey) => {
-    if (canSeeAimantraProjects() && typeKey && typeKey !== "all" && typeKey !== "aimantra") {
+    if (isAimantraOnlyUser() && typeKey && typeKey !== "all" && typeKey !== "aimantra") {
       return [];
     }
     if (!canSeeAimantraProjects() && typeKey === "aimantra") {
       return [];
     }
-    const source_id = canSeeAimantraProjects()
+    const source_id = isAimantraOnlyUser()
       ? PROJECT_SOURCE_IDS.AIMANTRA
       : PROJECT_TYPE_SOURCE_IDS[typeKey];
     if (!source_id) return projectService.getProjectsListSimple();
@@ -74,15 +105,20 @@ export const projectService = {
   getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {
     try {
       const params = { page, page_size };
-      const lockedSource = canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      const lockedSource = isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
+      if (canSeeAllCompanies()) params.all_companies = true;
       const response = await api.get('/get-projects-list/', { params });
       const data = response.data;
-      if (Array.isArray(data)) return applyUserProjectVisibility(data);
+      if (Array.isArray(data)) {
+        const merged = await appendAimantraForAllowlist(data, lockedSource);
+        return applyUserProjectVisibility(merged);
+      }
+      const merged = await appendAimantraForAllowlist(data?.results || [], lockedSource);
       return {
         ...data,
-        results: applyUserProjectVisibility(data?.results || []),
+        results: applyUserProjectVisibility(merged),
       };
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -94,14 +130,18 @@ export const projectService = {
     try {
       const page_size = 100;
       const params = { page: 1, page_size };
-      const lockedSource = canSeeAimantraProjects() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
+      const lockedSource = isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
+      if (canSeeAllCompanies()) params.all_companies = true;
 
       const firstResponse = await api.get('/get-projects-list/', { params });
       const firstData = firstResponse.data;
 
-      if (Array.isArray(firstData)) return applyUserProjectVisibility(firstData);
+      if (Array.isArray(firstData)) {
+        const merged = await appendAimantraForAllowlist(firstData, lockedSource);
+        return applyUserProjectVisibility(merged);
+      }
 
       let results = [...(firstData?.results || [])];
       const totalPages = firstData?.total_pages || 1;
@@ -113,7 +153,8 @@ export const projectService = {
         results = results.concat(nextResponse.data?.results || []);
       }
 
-      return applyUserProjectVisibility(results);
+      const merged = await appendAimantraForAllowlist(results, lockedSource);
+      return applyUserProjectVisibility(merged);
     } catch (error) {
       console.error('Error fetching all projects:', error);
       throw error;

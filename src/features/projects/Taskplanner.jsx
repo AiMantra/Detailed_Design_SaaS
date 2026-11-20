@@ -1,6 +1,7 @@
 
 
 import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -57,6 +58,41 @@ const samePlannedWork = (planner, log) => {
     const sameStart = planner.start_time && log.start_time &&
         String(planner.start_time) === String(log.start_time);
     return Boolean(sameProject && sameActivity && sameStart);
+};
+
+const TruncatedNote = ({ text }) => {
+    const [tip, setTip] = useState(null);
+    if (!text) return null;
+
+    const showTip = (event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const width = 320;
+        const left = Math.min(rect.left, window.innerWidth - width - 12);
+        setTip({ text, top: rect.bottom + 6, left: Math.max(12, left) });
+    };
+
+    return (
+        <>
+            <p
+                className="max-w-[180px] cursor-help truncate text-xs italic text-gray-400"
+                title={text}
+                onMouseEnter={showTip}
+                onMouseLeave={() => setTip(null)}
+            >
+                {text}
+            </p>
+            {tip &&
+                createPortal(
+                    <div
+                        className="pointer-events-none fixed z-[9999] max-w-[320px] whitespace-pre-wrap rounded-lg bg-slate-900 px-3 py-2 text-left text-xs leading-snug text-white shadow-xl"
+                        style={{ top: tip.top, left: tip.left }}
+                    >
+                        {tip.text}
+                    </div>,
+                    document.body
+                )}
+        </>
+    );
 };
 
 const collectUniqueLogs = (...lists) => {
@@ -361,11 +397,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 <Hourglass size={11} className="text-purple-400" />
                                                                 {p.duration || "—"}
                                                             </div>
-                                                            {p.note && (
-                                                                <p className="text-xs text-gray-400 italic truncate max-w-[180px]">
-                                                                    {p.note}
-                                                                </p>
-                                                            )}
+                                                            <TruncatedNote text={p.note} />
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-gray-300 italic">Not planned</span>
@@ -390,11 +422,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 <Hourglass size={11} className="text-teal-400" />
                                                                 {w.duration || "—"}
                                                             </div>
-                                                            {w.note && (
-                                                                <p className="text-xs text-gray-400 italic truncate max-w-[180px]">
-                                                                    {w.note}
-                                                                </p>
-                                                            )}
+                                                            <TruncatedNote text={w.note} />
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-gray-300 italic">No log</span>
@@ -524,7 +552,10 @@ const MyTasksTable = ({ group }) => {
                                         <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${isUnplanned ? "bg-purple-100 text-purple-600" : isCompleted ? "bg-emerald-100 text-emerald-600" : isUnscheduled ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"}`}>
                                             {isUnplanned ? <Sparkles size={16} /> : <FileText size={16} />}
                                         </div>
-                                        <span className="text-sm font-medium text-gray-800 break-words leading-snug">
+                                        <span
+                                            className="text-sm font-medium text-gray-800 break-words leading-snug"
+                                            title={task.note || "Untitled task"}
+                                        >
                                             {task.note || "Untitled task"}
                                         </span>
                                     </div>

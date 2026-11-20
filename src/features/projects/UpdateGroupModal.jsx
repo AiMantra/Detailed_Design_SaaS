@@ -615,13 +615,12 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }, [serverDate]);
 
-    // Agar already - selected date server - verified max se aage nikal jaaye, clamp kar do
     useEffect(() => {
         if (maxSelectableDate && date && date > maxSelectableDate) {
-            console.log("Clamping date from", date, "to maxSelectableDate", maxSelectableDate);
             setDate(maxSelectableDate);
         }
     }, [maxSelectableDate]);
+
     return (
         <AnimatePresence>
             {isOpen && (

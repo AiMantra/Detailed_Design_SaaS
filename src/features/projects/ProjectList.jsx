@@ -2504,15 +2504,15 @@ const ProjectList = () => {
               </motion.div>
 
               {filterProjectType !== "admincivilmantra" && (
-              <motion.div
-                variants={itemVariants}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-xl"
-              >
-                <Clock size={24} className="mb-2 opacity-80" />
-                <p className="text-3xl font-bold">{ProjectListStats.notStarted}</p>
-                <p className="text-sm opacity-90">Not Started</p>
-              </motion.div>
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl p-6 text-white shadow-xl"
+                >
+                  <Clock size={24} className="mb-2 opacity-80" />
+                  <p className="text-3xl font-bold">{ProjectListStats.notStarted}</p>
+                  <p className="text-sm opacity-90">Not Started</p>
+                </motion.div>
               )}
 
               {/* In Progress - Active/Working */}
@@ -2839,56 +2839,56 @@ const ProjectList = () => {
                             {/* 🔹 Key Info Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                               {!isInternalType && (
-                              <>
-                              <div className="flex items-center gap-2">
-                                <div className="p-2 bg-blue-50 rounded-lg">
-                                  <Calendar
-                                    size={16}
-                                    className="text-blue-600"
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">Start</p>
-                                  <p className="text-sm font-semibold">
-                                    {formatDate(getLoaDate(project))}
-                                  </p>
-                                </div>
-                              </div>
+                                <>
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-blue-50 rounded-lg">
+                                      <Calendar
+                                        size={16}
+                                        className="text-blue-600"
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500">Start</p>
+                                      <p className="text-sm font-semibold">
+                                        {formatDate(getLoaDate(project))}
+                                      </p>
+                                    </div>
+                                  </div>
 
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`p-2 rounded-lg ${isCompleted
-                                    ? "bg-green-50"
-                                    : daysLeft < 0
-                                      ? "bg-red-50"
-                                      : daysLeft <= 2
-                                        ? "bg-orange-50"
-                                        : "bg-green-50"
-                                    }`}
-                                >
-                                  <Clock
-                                    size={16}
-                                    className={
-                                      isCompleted
-                                        ? "text-green-600"
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className={`p-2 rounded-lg ${isCompleted
+                                        ? "bg-green-50"
                                         : daysLeft < 0
-                                          ? "text-red-600"
-                                          : "text-green-600"
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">
-                                    {isCompleted ? "Completed" : "Deadline"}
-                                  </p>
-                                  <p className="text-sm font-semibold">
-                                    {isCompleted
-                                      ? formatDate(actualCompletionDate)
-                                      : formatDate(completionDate)}
-                                  </p>
-                                </div>
-                              </div>
-                              </>
+                                          ? "bg-red-50"
+                                          : daysLeft <= 2
+                                            ? "bg-orange-50"
+                                            : "bg-green-50"
+                                        }`}
+                                    >
+                                      <Clock
+                                        size={16}
+                                        className={
+                                          isCompleted
+                                            ? "text-green-600"
+                                            : daysLeft < 0
+                                              ? "text-red-600"
+                                              : "text-green-600"
+                                        }
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500">
+                                        {isCompleted ? "Completed" : "Deadline"}
+                                      </p>
+                                      <p className="text-sm font-semibold">
+                                        {isCompleted
+                                          ? formatDate(actualCompletionDate)
+                                          : formatDate(completionDate)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </>
                               )}
 
                               <div className="flex items-center gap-2">
@@ -3095,17 +3095,17 @@ const ProjectList = () => {
                               {!isUser && !hrKind && (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                   {!isInternalType && (
-                                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
-                                    <p className="text-xs text-gray-500 mb-1">
-                                      Total Length
-                                    </p>
-                                    <p className="text-xl font-bold text-blue-700">
-                                      {getTotalLength(project)}{" "}
-                                      <span className="text-sm font-normal">
-                                        {getSectorUnit(project)}
-                                      </span>
-                                    </p>
-                                  </div>
+                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3">
+                                      <p className="text-xs text-gray-500 mb-1">
+                                        Total Length
+                                      </p>
+                                      <p className="text-xl font-bold text-blue-700">
+                                        {getTotalLength(project)}{" "}
+                                        <span className="text-sm font-normal">
+                                          {getSectorUnit(project)}
+                                        </span>
+                                      </p>
+                                    </div>
                                   )}
                                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3">
                                     <p className="text-xs text-gray-500 mb-1">
@@ -3262,15 +3262,15 @@ const ProjectList = () => {
                                   </h4>
                                   <div className="space-y-3">
                                     {!isInternalType && (
-                                    <div className="flex items-center py-2 border-b border-gray-200">
-                                      <span className="text-sm text-gray-500 w-40">
-                                        Total Length :
-                                      </span>
-                                      <span className="text-sm font-medium text-gray-800">
-                                        {getTotalLength(project)}{" "}
-                                        {getSectorUnit(project)}
-                                      </span>
-                                    </div>
+                                      <div className="flex items-center py-2 border-b border-gray-200">
+                                        <span className="text-sm text-gray-500 w-40">
+                                          Total Length :
+                                        </span>
+                                        <span className="text-sm font-medium text-gray-800">
+                                          {getTotalLength(project)}{" "}
+                                          {getSectorUnit(project)}
+                                        </span>
+                                      </div>
                                     )}
                                     {!isUser && (
                                       <div className="flex items-center py-2 border-b border-gray-200">
@@ -3545,9 +3545,9 @@ const ProjectList = () => {
                                                                       <th className="px-2 py-3 text-left ">Sub Activity</th>
                                                                       {!isInternalType && (
                                                                         <>
-                                                                      <th className="px-2 py-3 text-center">Chainage</th>
-                                                                      <th className="px-2 py-3 text-center">Qty</th>
-                                                                      <th className="px-2 py-3 text-center">Area</th>
+                                                                          <th className="px-2 py-3 text-center">Chainage</th>
+                                                                          <th className="px-2 py-3 text-center">Qty</th>
+                                                                          <th className="px-2 py-3 text-center">Area</th>
                                                                         </>
                                                                       )}
 
@@ -3649,17 +3649,17 @@ const ProjectList = () => {
                                                                                               {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                             </td>
                                                                                             {!isInternalType && (
-                                                                                            <>
-                                                                                            <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                              {formatNumber(sub.chainage_start)}
-                                                                                            </td>
-                                                                                            <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                              {sub.total_quantity}
-                                                                                            </td>
-                                                                                            <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                              {formatNumber(sub.covered_area)}
-                                                                                            </td>
-                                                                                            </>
+                                                                                              <>
+                                                                                                <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                  {formatNumber(sub.chainage_start)}
+                                                                                                </td>
+                                                                                                <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                  {sub.total_quantity}
+                                                                                                </td>
+                                                                                                <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                  {formatNumber(sub.covered_area)}
+                                                                                                </td>
+                                                                                              </>
                                                                                             )}
 
 
@@ -3771,17 +3771,17 @@ const ProjectList = () => {
                                                                                     {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                   </td>
                                                                                   {!isInternalType && (
-                                                                                  <>
-                                                                                  <td className="text-center align-middle border-r border-gray-100">
-                                                                                    {formatNumber(sub.chainage_start)}
-                                                                                  </td>
-                                                                                  <td className="text-center align-middle border-r border-gray-100">
-                                                                                    {sub.total_quantity}
-                                                                                  </td>
-                                                                                  <td className="text-center align-middle border-r border-gray-100">
-                                                                                    {formatNumber(sub.covered_area)}
-                                                                                  </td>
-                                                                                  </>
+                                                                                    <>
+                                                                                      <td className="text-center align-middle border-r border-gray-100">
+                                                                                        {formatNumber(sub.chainage_start)}
+                                                                                      </td>
+                                                                                      <td className="text-center align-middle border-r border-gray-100">
+                                                                                        {sub.total_quantity}
+                                                                                      </td>
+                                                                                      <td className="text-center align-middle border-r border-gray-100">
+                                                                                        {formatNumber(sub.covered_area)}
+                                                                                      </td>
+                                                                                    </>
                                                                                   )}
                                                                                   <td colSpan="4" className="text-center text-gray-400 py-4 italic">
                                                                                     No work stages found for this sub-activity
@@ -3846,17 +3846,17 @@ const ProjectList = () => {
                                                                                             {"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}
                                                                                           </td>
                                                                                           {!isInternalType && (
-                                                                                          <>
-                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                            {formatNumber(sub.chainage_start)}
-                                                                                          </td>
-                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                            {sub.total_quantity}
-                                                                                          </td>
-                                                                                          <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
-                                                                                            {formatNumber(sub.covered_area)}
-                                                                                          </td>
-                                                                                          </>
+                                                                                            <>
+                                                                                              <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                {formatNumber(sub.chainage_start)}
+                                                                                              </td>
+                                                                                              <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                {sub.total_quantity}
+                                                                                              </td>
+                                                                                              <td rowSpan={rowSpanCount} className="text-center align-middle border-r border-gray-100">
+                                                                                                {formatNumber(sub.covered_area)}
+                                                                                              </td>
+                                                                                            </>
                                                                                           )}
 
 
@@ -4178,11 +4178,11 @@ const ProjectList = () => {
                                                                                   <td className="px-2 text-center align-middle border-r border-gray-100"></td>
                                                                                   <td className="px-2 font-medium align-middle border-r border-gray-100">{"Stage " + (sub.sorting_var || 0) + " - " + sub.subactivity_name}</td>
                                                                                   {!isInternalType && (
-                                                                                  <>
-                                                                                  <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
-                                                                                  <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
-                                                                                  <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
-                                                                                  </>
+                                                                                    <>
+                                                                                      <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.chainage_start)}</td>
+                                                                                      <td className="text-center align-middle border-r border-gray-100">{sub.total_quantity}</td>
+                                                                                      <td className="text-center align-middle border-r border-gray-100">{formatNumber(sub.covered_area)}</td>
+                                                                                    </>
                                                                                   )}
                                                                                   <td colSpan="9" className="text-center text-gray-400 py-4 italic">No work stages found for this sub-activity</td>
                                                                                 </tr>

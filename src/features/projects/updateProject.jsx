@@ -74,6 +74,7 @@ import {
     isHrProjectSource,
     isInternalProjectSource,
 } from "../../constants/projectSources";
+import { hrProjectService } from "../../services/hrProjectService";
 
 const UpdateProject = () => {
     const dispatch = useDispatch();
@@ -2175,6 +2176,26 @@ const UpdateProject = () => {
         );
 
         try {
+            if (isHrType) {
+                const selectedCompany = companies.find((c) => c.name === form.company);
+                await hrProjectService.updateProject(projectId, {
+                    project_code: form.project_code,
+                    project_name: form.project_name,
+                    short_name: form.short_name,
+                    location: form.location || "",
+                    company: selectedCompany?.id || "",
+                    sector: sectorsMap[form.sector] || "",
+                    assigned_to: form.assigned_to,
+                    updated_by: sessionStorage.getItem("emp_code"),
+                    source: form.source_id,
+                    source_id: form.source_id,
+                });
+                dispatch(showSnackbar({ message: "HR project updated", type: "success" }));
+                const refreshedProject = await dispatch(fetchProjectDetails(projectId)).unwrap();
+                setProjectData(refreshedProject);
+                return;
+            }
+
             const allActivities = getAllActivities();
             const activitiesPayload = selectedActivities.map((activityId) => {
                 const activityObj = allActivities.find((a) => a.id === activityId);
@@ -4217,9 +4238,8 @@ const UpdateProject = () => {
                             </div>
                         )}
 
-                        {!isHrType && (
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-500">Sector {isInternalType ? "" : "*"}</label>
+                            <label className="text-xs text-gray-500">Sector {isInternalType || isHrType ? "" : "*"}</label>
                             <div className="relative" ref={sectorDropdownRef}>
                                 <Factory
                                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -4314,7 +4334,6 @@ const UpdateProject = () => {
                                 )}
                             </div>
                         </div>
-                        )}
 
                         {!hideExtendedFields && (
                         <>

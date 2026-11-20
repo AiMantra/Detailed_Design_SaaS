@@ -14,15 +14,23 @@ import {
   guideGetTaskPlanners,
   guideGetEmployeeReport,
   guideListAllProjects,
+  guideListProjectsForWeeklyReport,
   clientDisplayName,
 } from "./guideApi";
-import { buildWeeklyTimeLogReport } from "./weeklyReport";
+import {
+  buildWeeklyTimeLogReport,
+  buildEmployeeHistoryReport,
+  buildEmployeeRosterReport,
+  filterWorklogsForSource,
+} from "./weeklyReport";
 import {
   PROJECT_SOURCE_IDS,
   PROJECT_TYPE_LABELS,
-  canSeeAimantraProjects,
+  isAimantraOnlyUser,
+  isSaptagonOnlyUser,
   getProjectSourceId,
   isAimantraSubcompanyEmployee,
+  isSaptagonSubcompanyEmployee,
   applyUserProjectVisibility,
 } from "../../constants/projectSources";
 
@@ -99,6 +107,23 @@ export function rangeLast7Days() {
   };
 }
 
+export function rangeOneDay(ymd) {
+  const today = toYmd(new Date());
+  const day = !ymd || ymd > today ? today : ymd;
+  const d = new Date(`${day}T00:00:00`);
+  const label = d.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return {
+    start_date: day,
+    end_date: day,
+    label,
+  };
+}
+
 export function parseDateRangeFromText(text) {
   const lower = (text || "").toLowerCase();
   const fromM = text.match(/from\s+(\d{4}-\d{2}-\d{2})/i);
@@ -131,6 +156,10 @@ export function parseDateRangeFromText(text) {
     const end = toM?.[1] || toYmd(new Date());
     return normalize(start, end, `${fromM?.[1] || "…"} → ${toM?.[1] || "today"}`);
   }
+  const onDay = text.match(/\b(?:on|for)\s+(\d{4}-\d{2}-\d{2})\b/i);
+  if (onDay) return rangeOneDay(onDay[1]);
+  const loneDay = text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  if (loneDay) return rangeOneDay(loneDay[1]);
   if (/yesterday/i.test(lower)) {
     const y = addDays(new Date(), -1);
     return { start_date: toYmd(y), end_date: toYmd(y), label: "Yesterday" };
@@ -152,6 +181,8 @@ function stripDates(text) {
     .replace(/\bfrom\s+\d{4}-\d{2}-\d{2}\b/gi, " ")
     .replace(/\bto\s+\d{4}-\d{2}-\d{2}\b/gi, " ")
     .replace(/\d{4}-\d{2}-\d{2}\s*(?:to|–|-|until)\s*\d{4}-\d{2}-\d{2}/gi, " ")
+    .replace(/\b(?:on|for)\s+\d{4}-\d{2}-\d{2}\b/gi, " ")
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/gi, " ")
     .replace(/\b(last|this|past|previous)\s+(week|month)\b/gi, " ")
     .replace(/\b(weekly|yesterday|today|last\s*7\s*days|7\s*days)\b/gi, " ")
     .replace(/\s+/g, " ")
@@ -162,21 +193,23 @@ function parseSourceFromText(text) {
   const lower = (text || "").toLowerCase();
   if (/\bpre[\s-]?bid\b|\bprebid\b/i.test(lower)) return PROJECT_SOURCE_IDS.PREBID;
   if (/\baimantra\b/i.test(lower)) return PROJECT_SOURCE_IDS.AIMANTRA;
+  if (/\bhrcivilmantra\b|\bhr\s*projects?\b|\bhr\b/i.test(lower)) return PROJECT_SOURCE_IDS.HR;
+  if (/\badmincivilmantra\b|\binternal\b/i.test(lower)) return PROJECT_SOURCE_IDS.INTERNAL;
   if (/\bbd\b/i.test(lower)) return PROJECT_SOURCE_IDS.BD;
   if (/\baccount\b/i.test(lower)) return PROJECT_SOURCE_IDS.ACCOUNT;
   if (/\bdpr\b/i.test(lower)) return PROJECT_SOURCE_IDS.DPR;
   if (/\bdetail\s*design\b|\bdetaildesign\b/i.test(lower)) {
     return PROJECT_SOURCE_IDS.DETAIL_DESIGN;
   }
+  if (/\bproject\s*coordination\b/i.test(lower)) return PROJECT_SOURCE_IDS.PROJECT_COORDINATION;
+  if (/\bdesign\b/i.test(lower)) return PROJECT_SOURCE_IDS.DESIGN;
   return null;
 }
 
-function filterWorklogsToAimantraEmployees(data) {
+function filterWorklogsToSubcompanyEmployees(data, matchFn) {
   const results = data?.results || [];
   const hasSubcompany = results.some((emp) => emp.subcompany_id || emp.sub_company_id);
-  const filtered = hasSubcompany
-    ? results.filter(isAimantraSubcompanyEmployee)
-    : results;
+  const filtered = hasSubcompany ? results.filter(matchFn) : results;
   let total_worklogs = 0;
   let total_hours = 0;
   filtered.forEach((emp) => {
@@ -210,6 +243,10 @@ function filterWorklogsByProjects(data, projects) {
   const results = (data?.results || [])
     .map((emp) => {
       const worklogs = (emp.worklogs || []).filter((w) => {
+        const blob = `${w.entry_type || ""} ${w.status || ""} ${w.note || ""} ${w.description || ""} ${w.project || ""}`.toLowerCase();
+        if (w.entry_type === "LEAVE" || w.entry_type === "HOLIDAY" || w.status === "ABSENT" || /\b(leave|holiday)\b/.test(blob)) {
+          return true;
+        }
         const raw = String(w.project || w.project_code || w.project_name || "")
           .trim()
           .toLowerCase();
@@ -244,6 +281,34 @@ function filterWorklogsByProjects(data, projects) {
   };
 }
 
+async function fetchPeriodWorklogs(user, intent) {
+  const dateRange = intent.dateRange || rangeLastWeek();
+  const source_id = isAimantraOnlyUser()
+    ? PROJECT_SOURCE_IDS.AIMANTRA
+    : intent.source_id || null;
+  const typeLabel = source_id ? PROJECT_TYPE_LABELS[source_id] : null;
+  const filters = {
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+  };
+  if (user?.role === "USER" && user?.emp_code) filters.user_id = user.emp_code;
+
+  const [rawLogs, projects] = await Promise.all([
+    guideGetEmployeeWorklogs(filters),
+    guideListProjectsForWeeklyReport({ source_id }).catch(() => []),
+  ]);
+
+  let logs = source_id ? filterWorklogsForSource(rawLogs, projects, source_id) : rawLogs;
+  if (isAimantraOnlyUser()) {
+    logs = filterWorklogsToSubcompanyEmployees(logs, isAimantraSubcompanyEmployee);
+  }
+  if (isSaptagonOnlyUser()) {
+    logs = filterWorklogsByProjects(logs, projects);
+    logs = filterWorklogsToSubcompanyEmployees(logs, isSaptagonSubcompanyEmployee);
+  }
+  return { dateRange, source_id, typeLabel, logs, projects };
+}
+
 const STOP = new Set([
   "report", "reports", "summary", "project", "projects", "all", "employee",
   "employees", "give", "me", "a", "the", "of", "for", "please", "show",
@@ -251,6 +316,7 @@ const STOP = new Set([
   "details", "open", "go", "to", "help", "hi", "hello", "planner", "rework",
   "last", "this", "past", "previous", "week", "month", "days", "day",
   "timelog", "time", "log", "logs", "weekly", "monthly", "today", "yesterday",
+  "engagement", "engaged", "between", "roster", "timesheet", "sheet",
 ]);
 
 function isCode(token) {
@@ -358,6 +424,32 @@ export function parseUserMessage(text, user = {}, pending = null) {
     }
   }
 
+  // Excel-style date × employee daily sheet
+  if (
+    /\b(roster|timesheet|time\s*sheet|daily\s+sheet|engagement\s+sheet|excel\s+sheet)\b/i.test(
+      lower
+    )
+  ) {
+    return {
+      type: "employee_roster_report",
+      dateRange: dateRange || rangeLastWeek(),
+      source_id,
+    };
+  }
+
+  // Employee engagement history (all types in one table)
+  if (
+    /\b(employee\s+history|engagement\s+report|history\s+report|where\s+(all\s+)?employees?\b|employees?\s+engaged)\b/i.test(
+      lower
+    )
+  ) {
+    return {
+      type: "employee_history_report",
+      dateRange: dateRange || rangeLastWeek(),
+      source_id,
+    };
+  }
+
   // All-projects weekly report (no project code)
   if (
     /\b(project\s+report|all\s+projects?\s+report|weekly\s+report|time\s*log\s+summary|weekly\s+time\s*log)\b/i.test(
@@ -462,7 +554,18 @@ export async function runAgent(user, intent) {
       "I can generate reports **inside this chat only** (website filters stay untouched).",
       "",
       "**All projects weekly report**",
-      "→ Click the button, or type: project report last week",
+      "→ Click the button, or type: weekly report last week",
+      "→ Split by type: Detail Design · DPR · HR (hrcivilmantra) · Aimantra",
+      "→ One type only: dpr weekly report · aimantra last week · hrcivilmantra weekly report",
+      "",
+      "**Daily engagement sheet** (Excel-style)",
+      "→ Date rows, one column pair per employee (project + working hours)",
+      "→ Leave / holiday marked like the office sheet",
+      "→ Type: daily sheet last week · roster from 2026-10-15 to 2026-10-21",
+      "",
+      "**Employee engagement history**",
+      "→ Date, emp code, emp name, project, hours for every employee in one report",
+      "→ Type: employee history last week · history from 2026-11-01 to 2026-11-11",
       "",
       "**One project**",
       "→ Type: project report D1342 last week",
@@ -470,7 +573,7 @@ export async function runAgent(user, intent) {
       "**Employee worklog**",
       "→ Type: employee EMP001 last week",
       "",
-      "Dates: last week · this week · this month · from 2026-09-01 to 2026-09-08",
+      "Dates: today · yesterday · on 2026-11-11 · last week · from 2026-09-01 to 2026-09-08",
     ]);
   }
 
@@ -494,38 +597,7 @@ export async function runAgent(user, intent) {
   }
 
   if (intent.type === "all_projects_report") {
-    let dateRange = intent.dateRange || rangeLastWeek();
-    if (
-      dateRange?.start_date &&
-      dateRange?.end_date &&
-      dateRange.start_date > dateRange.end_date
-    ) {
-      dateRange = {
-        ...dateRange,
-        start_date: dateRange.end_date,
-        end_date: dateRange.start_date,
-        label: `${dateRange.end_date} → ${dateRange.start_date}`,
-      };
-    }
-    const source_id = canSeeAimantraProjects()
-      ? PROJECT_SOURCE_IDS.AIMANTRA
-      : intent.source_id || null;
-    const typeLabel = source_id ? PROJECT_TYPE_LABELS[source_id] : null;
-    const filters = {
-      start_date: dateRange.start_date,
-      end_date: dateRange.end_date,
-    };
-    if (user?.role === "USER" && user?.emp_code) filters.user_id = user.emp_code;
-
-    const [rawLogs, projects] = await Promise.all([
-      guideGetEmployeeWorklogs(filters),
-      guideListAllProjects(user, { source_id }).catch(() => []),
-    ]);
-
-    let logs = source_id ? filterWorklogsByProjects(rawLogs, projects) : rawLogs;
-    if (canSeeAimantraProjects()) {
-      logs = filterWorklogsToAimantraEmployees(logs);
-    }
+    const { dateRange, typeLabel, logs, projects } = await fetchPeriodWorklogs(user, intent);
     const report = buildWeeklyTimeLogReport(logs, dateRange, projects);
     if (typeLabel) {
       report.title = `Weekly Project Time Log Summary (${typeLabel})`;
@@ -535,6 +607,36 @@ export async function runAgent(user, intent) {
       report.emptyMessage = typeLabel
         ? `No ${typeLabel} worklogs found in this period.`
         : "No worklogs found in this period.";
+    }
+    return report;
+  }
+
+  if (intent.type === "employee_history_report") {
+    const { dateRange, typeLabel, logs, projects } = await fetchPeriodWorklogs(user, intent);
+    const report = buildEmployeeHistoryReport(logs, dateRange, projects);
+    if (typeLabel) {
+      report.title = `Employee Engagement History (${typeLabel})`;
+      report.brand = `aimantra agent — ${typeLabel}`;
+    }
+    if (!report.rows?.length) {
+      report.emptyMessage = typeLabel
+        ? `No ${typeLabel} employee engagement found in this period.`
+        : "No employee engagement found in this period.";
+    }
+    return report;
+  }
+
+  if (intent.type === "employee_roster_report") {
+    const { dateRange, typeLabel, logs, projects } = await fetchPeriodWorklogs(user, intent);
+    const report = buildEmployeeRosterReport(logs, dateRange, projects);
+    if (typeLabel) {
+      report.title = `Daily Employee Engagement Sheet (${typeLabel})`;
+      report.brand = `aimantra agent — ${typeLabel}`;
+    }
+    if (!report.employees?.length) {
+      report.emptyMessage = typeLabel
+        ? `No ${typeLabel} employee engagement found in this period.`
+        : "No employee engagement found in this period.";
     }
     return report;
   }
@@ -549,7 +651,7 @@ export async function runAgent(user, intent) {
     }
     const details = await guideGetProjectDetails(resolved.id);
     if (
-      canSeeAimantraProjects() &&
+      isAimantraOnlyUser() &&
       getProjectSourceId(details || resolved.meta) !== PROJECT_SOURCE_IDS.AIMANTRA
     ) {
       return textResult("Aimantra projects only", [
@@ -598,7 +700,7 @@ export async function runAgent(user, intent) {
 
     const acts = work?.activities || [];
     const onlyAimantraUsers = (users = []) => {
-      if (!canSeeAimantraProjects()) return users;
+      if (!isAimantraOnlyUser()) return users;
       const hasSub = users.some((u) => u.subcompany_id || u.sub_company_id);
       if (!hasSub) return users;
       return users.filter(isAimantraSubcompanyEmployee);
@@ -644,10 +746,11 @@ export async function runAgent(user, intent) {
     if (intent.type === "employee_report") {
       const data = await guideGetEmployeeReport(intent.emp_code);
       let projects = data?.projects || data?.results || [];
-      if (canSeeAimantraProjects()) {
+      if (isAimantraOnlyUser() || isSaptagonOnlyUser()) {
         projects = applyUserProjectVisibility(projects);
         const aimantraUsers = (data?.users || data?.employees || []).some(isAimantraSubcompanyEmployee);
         if (
+          isAimantraOnlyUser() &&
           data?.subcompany_id &&
           !isAimantraSubcompanyEmployee(data) &&
           !aimantraUsers
@@ -681,12 +784,13 @@ export async function runAgent(user, intent) {
       start_date: dateRange.start_date,
       end_date: dateRange.end_date,
     });
-    if (canSeeAimantraProjects()) {
+    if (isAimantraOnlyUser()) {
       const aimantraProjects = await guideListAllProjects(user, {
         source_id: PROJECT_SOURCE_IDS.AIMANTRA,
       }).catch(() => []);
-      data = filterWorklogsToAimantraEmployees(
-        filterWorklogsByProjects(data, aimantraProjects)
+      data = filterWorklogsToSubcompanyEmployees(
+        filterWorklogsByProjects(data, aimantraProjects),
+        isAimantraSubcompanyEmployee
       );
       const asked = String(intent.emp_code || "").trim().toUpperCase();
       const inResults = (data.results || []).some(

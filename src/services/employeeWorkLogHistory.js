@@ -1,4 +1,5 @@
 import api from './api';
+import { canSeeAllCompanies } from '../constants/projectSources';
 // Note: Adjust this import path to match exactly where your 
 // api instance is located in your project.
 
@@ -17,6 +18,9 @@ export const employeeWorklogHistoryService = {
             }
             if (filters.end_date) {
                 queryParams.append('end_date', filters.end_date);
+            }
+            if (filters.all_companies || canSeeAllCompanies()) {
+                queryParams.append('all_companies', 'true');
             }
 
             const queryString = queryParams.toString();

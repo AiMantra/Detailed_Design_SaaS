@@ -33,7 +33,7 @@ import logo from "../../assets/aimantra.png";
 
 import { CustomImageModal } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
-import { canSeeAimantraProjects, canSeeTechSupport } from "../../constants/projectSources";
+import { isAimantraOnlyUser, canSeeTechSupport } from "../../constants/projectSources";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -183,7 +183,7 @@ const Sidebar = () => {
   const filteredMenu = menuItems.filter((item) => {
     if (!item.roles.includes(user?.role)) return false;
     if (item.name === "Tech Support" && !canSeeTechSupport()) return false;
-    if (item.name === "My Tasks" && canSeeAimantraProjects()) return false;
+    if (item.name === "My Tasks" && isAimantraOnlyUser()) return false;
     return true;
   });
 
