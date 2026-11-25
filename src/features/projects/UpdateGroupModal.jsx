@@ -19,8 +19,14 @@ import {
     getProjectTypeFilterValue,
     resolveProjectsForType,
     hidesProjectWorkType,
+    skipsRequiredWorkType,
     isAimantraSubCompanyUser,
+    isSaptagonOnlyUser,
+    showsWorklogLetterNumber,
+    applyUserProjectVisibility,
 } from "../../constants/projectSources";
+import LetterNumberSelect from "./LetterNumberSelect";
+import { parseLetterFromNote, stripLetterFromNote } from "../../services/letterService";
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
 const TIME_PRESETS = [
@@ -68,6 +74,7 @@ const emptyRow = () => ({
     endTime: "",
     workType: "",
     description: "",
+    letterNumber: "",
     isSelected: true, // ✅ NEW: Selected by default when adding a new row
 });
 
@@ -283,6 +290,10 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
 
     const [detailCache, setDetailCache] = useState({});
     const [loadingDetail, setLoadingDetail] = useState({});
+    const detailCacheRef = useRef({});
+    const loadingDetailRef = useRef({});
+    detailCacheRef.current = detailCache;
+    loadingDetailRef.current = loadingDetail;
     const [typedProjectCache, setTypedProjectCache] = useState({});
     const [loadingTypedProjects, setLoadingTypedProjects] = useState({});
     const [hrProjects, setHrProjects] = useState([]);
@@ -303,7 +314,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     }, [isOpen]);
 
     const projectChoices = useMemo(
-        () => mergeHrIntoProjects(projects, hrProjects),
+        () => applyUserProjectVisibility(
+            isSaptagonOnlyUser() ? (projects || []) : mergeHrIntoProjects(projects, hrProjects)
+        ),
         [projects, hrProjects]
     );
 
@@ -338,16 +351,19 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
     const isAnyDropdownOpen = Object.values(openDropdowns).some(Boolean);
 
     const ensureProjectDetail = useCallback(async (projectId) => {
-        if (!projectId || detailCache[projectId] || loadingDetail[projectId]) return;
-        // setLoadingDetail((prev) => ({ ...prev, [projectId]: true }));
+        if (!projectId || detailCacheRef.current[projectId] || loadingDetailRef.current[projectId]) return;
+        loadingDetailRef.current = { ...loadingDetailRef.current, [projectId]: true };
+        setLoadingDetail((prev) => ({ ...prev, [projectId]: true }));
         try {
             const result = await dispatch(fetchProjectDetails(projectId)).unwrap();
+            detailCacheRef.current = { ...detailCacheRef.current, [projectId]: result };
             setDetailCache((prev) => ({ ...prev, [projectId]: result }));
         } catch (err) {
         } finally {
-            // setLoadingDetail((prev) => ({ ...prev, [projectId]: false }));
+            loadingDetailRef.current = { ...loadingDetailRef.current, [projectId]: false };
+            setLoadingDetail((prev) => ({ ...prev, [projectId]: false }));
         }
-    }, [dispatch, detailCache, loadingDetail]);
+    }, [dispatch]);
 
     // Initialize data when modal opens
     useEffect(() => {
@@ -371,7 +387,8 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                         startTime: extractTime(task.start_time),
                         endTime: extractTime(task.end_time),
                         workType: task.work_type || "",
-                        description: task.note || "",
+                        description: stripLetterFromNote(task.note || ""),
+                        letterNumber: task.letter_number || parseLetterFromNote(task.note) || "",
                         isSelected: false, // ✅ Existing tasks are unchecked by default
                         status: task.status || "not_done",
                     };
@@ -384,7 +401,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             }
             setErrors({});
         }
-    }, [isOpen, initialData, ensureProjectDetail]);
+    }, [isOpen]);
 
     const detailFor = (pid) => detailCache[pid] || null;
     const activitiesFor = (pid) => [...(detailFor(pid)?.activities_detail || [])].sort((a, b) => (Number(a.sorting_var) || 0) - (Number(b.sorting_var) || 0));
@@ -408,11 +425,21 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
 
     const hideWorkTypeColumn = isAimantraSubCompanyUser();
 
+    const rowShowsLetter = (row) => {
+        const listed = projectChoices.find((p) => String(p.id || p.project_id) === String(row.projectId));
+        return (
+            showsWorklogLetterNumber(row.projectType) ||
+            showsWorklogLetterNumber(listed || detailFor(row.projectId))
+        );
+    };
+
+    const showLetterColumn = rows.some(rowShowsLetter);
+
     const updateRow = useCallback((id, field, value) => {
         setRows((prev) => prev.map((r) => {
             if (r._id !== id) return r;
             const u = { ...r, [field]: value };
-            if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.workType = ""; }
+            if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.workType = ""; u.letterNumber = ""; }
             if (field === "activityId") { u.subActivityId = ""; }
 
             // If they modify a row, automatically check the box so it gets saved
@@ -438,6 +465,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 activityId: "",
                 subActivityId: "",
                 workType: "",
+                letterNumber: "",
                 isSelected: true,
             };
         }));
@@ -457,6 +485,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 activityId: "",
                 subActivityId: "",
                 workType: "",
+                letterNumber: "",
                 isSelected: true,
             };
         }));
@@ -497,8 +526,20 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
             if (!r.startTime) errs[`${r._id}.startTime`] = true;
             if (!r.endTime) errs[`${r._id}.endTime`] = true;
             if (r.startTime && r.endTime && r.endTime <= r.startTime) errs[`${r._id}.endTime`] = true;
-            const skipWorkType = rowHidesWorkType(r);
+            const skipWorkType =
+                rowHidesWorkType(r) ||
+                skipsRequiredWorkType(r.projectType) ||
+                skipsRequiredWorkType(projectChoices.find((p) => String(p.id || p.project_id) === String(r.projectId))) ||
+                skipsRequiredWorkType(detailFor(r.projectId));
             if (!skipWorkType && !r.workType) errs[`${r._id}.workType`] = true;
+            const listed = projectChoices.find((p) => String(p.id || p.project_id) === String(r.projectId));
+            if (
+                (showsWorklogLetterNumber(r.projectType) ||
+                    showsWorklogLetterNumber(listed || detailFor(r.projectId))) &&
+                !r.letterNumber
+            ) {
+                errs[`${r._id}.letterNumber`] = true;
+            }
         });
 
         if (!date) errs["date"] = "Date is required";
@@ -527,6 +568,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 start_time: row.startTime,
                 end_time: row.endTime,
                 note: row.description,
+                letter_number: row.letterNumber || "",
                 ...(row.workType ? { work_type: row.workType } : {}),
             }));
 
@@ -538,6 +580,7 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                 start_time: row.startTime,
                 end_time: row.endTime,
                 note: row.description,
+                letter_number: row.letterNumber || "",
             }));
 
             const planPayload = isEdit ? payload : worklogPayload.filter((row) => row.id);
@@ -717,6 +760,9 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
                                         {!hideWorkTypeColumn && (
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Work Type</th>
+                                        )}
+                                        {showLetterColumn && (
+                                        <th className="px-2 pb-1 text-left min-w-[180px]">Letter No <span className="text-red-400">*</span></th>
                                         )}
                                         <th className="px-2 pb-1 text-left min-w-[190px]">Description</th>
                                         {/* <th className="px-1 py-2 text-center">Edit</th> */}
@@ -950,6 +996,22 @@ const UpdateGroupModal = ({ isOpen, onClose, onSave, onSaveWorklog, projects = [
                                                         <td className="px-1 py-2 align-top text-[10px] text-gray-400">—</td>
                                                     )}
 
+                                                    {showLetterColumn && (
+                                                    <td className="px-1 py-2 align-top">
+                                                        {rowShowsLetter(row) ? (
+                                                            <LetterNumberSelect
+                                                                projectId={row.projectId}
+                                                                value={row.letterNumber || ""}
+                                                                onChange={(letterNumber) => updateRow(row._id, "letterNumber", letterNumber)}
+                                                                compact
+                                                                required
+                                                                error={e("letterNumber")}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-[10px] text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    )}
 
                                                     {/* DESCRIPTION */}
                                                     <td className="px-1 py-2 align-top">

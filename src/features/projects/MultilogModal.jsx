@@ -15,8 +15,13 @@ import {
     getProjectTypeFilterValue,
     resolveProjectsForType,
     hidesProjectWorkType,
+    skipsRequiredWorkType,
     isAimantraSubCompanyUser,
+    isSaptagonOnlyUser,
+    showsWorklogLetterNumber,
+    applyUserProjectVisibility,
 } from "../../constants/projectSources";
+import LetterNumberSelect from "./LetterNumberSelect";
 // ─── constants ────────────────────────────────────────────────────────────────
 import api, { getLatestServerDate } from "../../services/api";
 import { projectService } from "../../services/projectService";
@@ -67,6 +72,7 @@ const emptyRow = () => ({
     endTime: "",
     workType: "",
     note: "",
+    letterNumber: "",
 });
 
 // highlight matching text
@@ -379,7 +385,9 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
     }, [isOpen]);
 
     const projectChoices = useMemo(
-        () => mergeHrIntoProjects(projects, hrProjects),
+        () => applyUserProjectVisibility(
+            isSaptagonOnlyUser() ? (projects || []) : mergeHrIntoProjects(projects, hrProjects)
+        ),
         [projects, hrProjects]
     );
 
@@ -463,6 +471,16 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
 
     const hideWorkTypeColumn = isAimantraSubCompanyUser();
 
+    const rowShowsLetter = (row) => {
+        const listed = projectChoices.find((p) => String(p.id || p.project_id) === String(row.projectId));
+        return (
+            showsWorklogLetterNumber(row.projectType) ||
+            showsWorklogLetterNumber(listed || detailFor(row.projectId))
+        );
+    };
+
+    const showLetterColumn = rows.some(rowShowsLetter);
+
     const stagesFor = (pid, aid, sid) => {
         const sub = subActivitiesFor(pid, aid).find((s) => s.id === sid);
         return [...(sub?.stages || sub?.work_stages || [])];
@@ -474,7 +492,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
             prev.map((r) => {
                 if (r._id !== id) return r;
                 const u = { ...r, [field]: value };
-                if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.stageId = ""; u.workType = ""; }
+                if (field === "projectId") { u.activityId = ""; u.subActivityId = ""; u.stageId = ""; u.workType = ""; u.letterNumber = ""; }
                 if (field === "activityId") { u.subActivityId = ""; u.stageId = ""; }
                 if (field === "subActivityId") { u.stageId = ""; }
                 return u;
@@ -500,6 +518,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                     subActivityId: "",
                     stageId: "",
                     workType: "",
+                    letterNumber: "",
                 };
             })
         );
@@ -525,6 +544,7 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                     subActivityId: "",
                     stageId: "",
                     workType: "",
+                    letterNumber: "",
                 };
             })
         );
@@ -572,8 +592,16 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                 errs[`${r._id}.endTime`] = true;
             }
 
-            const skipWorkType = rowHidesWorkType(r);
+            const skipWorkType =
+                rowHidesWorkType(r) ||
+                skipsRequiredWorkType(r.projectType) ||
+                skipsRequiredWorkType(projectChoices.find((p) => String(p.id || p.project_id) === String(r.projectId))) ||
+                skipsRequiredWorkType(detailFor(r.projectId));
             if (!skipWorkType && !r.workType) errs[`${r._id}.workType`] = true;
+            const listed = projectChoices.find((p) => String(p.id || p.project_id) === String(r.projectId));
+            if (showsWorklogLetterNumber(listed || detailFor(r.projectId)) && !r.letterNumber) {
+                errs[`${r._id}.letterNumber`] = true;
+            }
         });
 
         const today = todayStr();
@@ -762,7 +790,10 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                         <th className="px-2 pb-1 text-center min-w-[165px]">Quick Presets</th>
                                         <th className="px-2 pb-1 text-center min-w-[68px]">Duration</th>
                                         {!hideWorkTypeColumn && (
-                                        <th className="px-2 pb-1 text-left min-w-[130px]">Work Type <span className="text-red-400">*</span></th>
+                                        <th className="px-2 pb-1 text-left min-w-[130px]">Work Type</th>
+                                        )}
+                                        {showLetterColumn && (
+                                        <th className="px-2 pb-1 text-left min-w-[180px]">Letter No <span className="text-red-400">*</span></th>
                                         )}
                                         <th className="px-2 pb-1 text-left min-w-[190px]">note</th>
                                         <th className="px-2 pb-1 w-7"></th>
@@ -969,6 +1000,23 @@ const MultiWorkLogModal = ({ isOpen, onClose, onSave, projects = [], defaultDate
                                                     )}
                                                     {!hideWorkTypeColumn && hrRow && (
                                                         <td className="px-1 py-2 align-top text-[10px] text-gray-400">—</td>
+                                                    )}
+
+                                                    {showLetterColumn && (
+                                                    <td className="px-1 py-2 align-top">
+                                                        {rowShowsLetter(row) ? (
+                                                            <LetterNumberSelect
+                                                                projectId={row.projectId}
+                                                                value={row.letterNumber || ""}
+                                                                onChange={(letterNumber) => updateRow(row._id, "letterNumber", letterNumber)}
+                                                                compact
+                                                                required
+                                                                error={e("letterNumber")}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-[10px] text-gray-400">—</span>
+                                                        )}
+                                                    </td>
                                                     )}
 
                                                     {/* note */}

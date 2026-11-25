@@ -145,7 +145,10 @@ export function hidesProjectWeightage(projectOrSourceId) {
     sid === PROJECT_SOURCE_IDS.BD ||
     sid === PROJECT_SOURCE_IDS.AIMANTRA ||
     sid === PROJECT_SOURCE_IDS.HR ||
-    sid === PROJECT_SOURCE_IDS.INTERNAL
+    sid === PROJECT_SOURCE_IDS.INTERNAL ||
+    sid === PROJECT_SOURCE_IDS.PROJECT_COORDINATION ||
+    sid === PROJECT_SOURCE_IDS.DESIGN ||
+    isSaptagonProject(projectOrSourceId)
   );
 }
 
@@ -160,6 +163,14 @@ export function hidesProjectWorkType(projectOrSourceId) {
   if (projectOrSourceId === "aimantra" || projectOrSourceId === "hr") return true;
   const sid = resolveSourceId(projectOrSourceId);
   return sid === PROJECT_SOURCE_IDS.AIMANTRA || sid === PROJECT_SOURCE_IDS.HR;
+}
+
+/** Work type can still show, but is not required */
+export function skipsRequiredWorkType(projectOrSourceId) {
+  if (isSaptagonOnlyUser()) return true;
+  if (projectOrSourceId === "project coordination") return true;
+  if (hidesProjectWorkType(projectOrSourceId)) return true;
+  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.PROJECT_COORDINATION;
 }
 
 export function getUserSubCompanyId() {
@@ -191,6 +202,22 @@ export function getProjectCompanyIds(project) {
 export function isSaptagonProject(project) {
   if (!project) return false;
   return getProjectCompanyIds(project).includes(SAPTAGON_COMPANY_ID);
+}
+
+/** CSMS letter-record filter; last path UUID is always this company/filter id */
+export const CSMS_BASE_URL = "https://csms.aimantra.info";
+export const CSMS_LETTER_FILTER_ID = "a2b6154c-5c4a-4bcb-a4ec-b151c5c652b5";
+
+/** Letter number on worklog / planner for Project Coordination */
+export function showsWorklogLetterNumber(projectOrSourceId) {
+  if (!projectOrSourceId) return false;
+  if (projectOrSourceId === "project coordination") return true;
+  return resolveSourceId(projectOrSourceId) === PROJECT_SOURCE_IDS.PROJECT_COORDINATION;
+}
+
+/** Hide Chainage / Qty / Area in listing tables for admincivilmantra and Saptagon projects */
+export function hidesChainageQtyArea(project) {
+  return isInternalProjectSource(project) || isSaptagonProject(project);
 }
 
 export function getUserEmpCode() {
@@ -281,6 +308,9 @@ export function getVisibleProjectTypeFilterOptions() {
   }
   if (canSeeSaptagonProjectTypes()) {
     options = options.concat(PROJECT_TYPE_FILTER_OPTIONS.filter((o) => SAPTAGON_FILTER_KEYS.has(o.value)));
+  }
+  if (isSaptagonOnlyUser()) {
+    options = options.filter((o) => o.value !== "hr");
   }
   return options;
 }

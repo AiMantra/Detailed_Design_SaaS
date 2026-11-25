@@ -1,6 +1,12 @@
 
 import api from './api';
-import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, canSeeAimantraProjects, canSeeAllCompanies, isAimantraOnlyUser, isAimantraAllowedEmp, applyUserProjectVisibility, getProjectSourceId } from '../constants/projectSources';
+import { PROJECT_TYPE_SOURCE_IDS, PROJECT_SOURCE_IDS, SAPTAGON_COMPANY_ID, canSeeAimantraProjects, canSeeAllCompanies, isAimantraOnlyUser, isAimantraAllowedEmp, isSaptagonOnlyUser, applyUserProjectVisibility, getProjectSourceId } from '../constants/projectSources';
+
+function withListScope(params = {}) {
+  if (canSeeAllCompanies()) params.all_companies = true;
+  if (isSaptagonOnlyUser()) params.company_id = SAPTAGON_COMPANY_ID;
+  return params;
+}
 
 function mergeProjectLists(...lists) {
   const map = new Map();
@@ -67,10 +73,9 @@ export const projectService = {
 
   getProjectsListSimple: async ({ source_id } = {}) => {
     try {
-      const params = {};
+      const params = withListScope({});
       const lockedSource = isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
-      if (canSeeAllCompanies()) params.all_companies = true;
       const response = await api.get('/get-projects-lists/', { params });
       const data = response.data;
       const list = Array.isArray(data) ? data : (data?.results || []);
@@ -104,11 +109,10 @@ export const projectService = {
 
   getProjectsLessDetails: async (user, { page = 1, page_size = 10, source_id, project_code } = {}) => {
     try {
-      const params = { page, page_size };
+      const params = withListScope({ page, page_size });
       const lockedSource = isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
-      if (canSeeAllCompanies()) params.all_companies = true;
       const response = await api.get('/get-projects-list/', { params });
       const data = response.data;
       if (Array.isArray(data)) {
@@ -129,11 +133,10 @@ export const projectService = {
   getAllProjectsLessDetails: async (user, { source_id, project_code } = {}) => {
     try {
       const page_size = 100;
-      const params = { page: 1, page_size };
+      const params = withListScope({ page: 1, page_size });
       const lockedSource = isAimantraOnlyUser() ? PROJECT_SOURCE_IDS.AIMANTRA : source_id;
       if (lockedSource) params.source_id = lockedSource;
       if (project_code) params.project_code = project_code;
-      if (canSeeAllCompanies()) params.all_companies = true;
 
       const firstResponse = await api.get('/get-projects-list/', { params });
       const firstData = firstResponse.data;

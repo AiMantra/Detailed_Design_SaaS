@@ -16,6 +16,7 @@ import LoadingModal from "../../components/modals/LoadingModal";
 import MultiWorkLogModal from "./MultilogModal";
 import UpdateGroupModal from "./UpdateGroupModal";
 import { saveDailyWorkplan, updateDailyWorkplan, saveDailyWorkLogBulk } from "../tasks/taskSlice";
+import { applyUserProjectVisibility } from "../../constants/projectSources";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -680,7 +681,6 @@ const TaskPlanner = () => {
         taskPlanners = [],       // flat array — used for My Tasks
         taskPlannersData = null, // { employees[], summary } — used for comparison
         projectsListAll = [],
-        loading: apiLoading = false,
     } = useSelector((state) => state.api || {});
 
     const [searchTerm, setSearchTerm] = useState("");
@@ -802,7 +802,11 @@ const TaskPlanner = () => {
         return (new Date() - new Date(first.created_at)) / 60000 <= 60;
     })();
 
-    const isLoading = apiLoading || refreshing;
+    const isLoading = refreshing;
+    const visibleProjects = useMemo(
+        () => applyUserProjectVisibility(projectsListAll),
+        [projectsListAll]
+    );
 
     const tabIcon = (tab) => {
         if (tab === "My Tasks") return <UserCheck size={15} />;
@@ -991,7 +995,7 @@ const TaskPlanner = () => {
             <MultiWorkLogModal
                 isOpen={showMultiLog}
                 onClose={() => setShowMultiLog(false)}
-                projects={projectsListAll}
+                projects={visibleProjects}
                 onSave={async (date, rows) => {
                     try {
                         const payload = rows.map((r) => ({ ...r, date, status: r.status || "WORKED" }));
@@ -1006,7 +1010,7 @@ const TaskPlanner = () => {
             <UpdateGroupModal
                 isOpen={updateModalData.isOpen}
                 onClose={() => setUpdateModalData({ ...updateModalData, isOpen: false })}
-                projects={projectsListAll}
+                projects={visibleProjects}
                 isEdit={isEdit}
                 initialData={updateModalData}
                 onSave={async (date, rows) => {

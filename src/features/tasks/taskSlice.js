@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
 import { showSuccess, showError } from "../../utils/toast";
+import { composeWorklogNote } from "../../services/letterService";
 
 // const getUserUUID = () => {
 //   return sessionStorage.getItem('user_uuid') ||
@@ -81,7 +82,7 @@ export const fetchUserWorkSummary = createAsyncThunk(
 // Save daily work log directly (no picking required)
 export const saveDailyWorkLog = createAsyncThunk(
   'tasks/saveDailyWorkLog',
-  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status, phase = "R0", submission_po_status = "", submission_invoice_status = "", approval_po_status = "", approval_invoice_status = "", stage }, { getState, rejectWithValue }) => {
+  async ({ projectId, subActivityId, date, startTime, endTime, work_type, note, status, phase = "R0", submission_po_status = "", submission_invoice_status = "", approval_po_status = "", approval_invoice_status = "", stage, letter_number, letterNumber }, { getState, rejectWithValue }) => {
     try {
       const userUUID = getEmpCode();
 
@@ -113,6 +114,7 @@ export const saveDailyWorkLog = createAsyncThunk(
         durationSeconds = 86400; // 24 hours
       }
 
+      const resolvedLetter = letter_number || letterNumber || "";
       const timeLogData = {
         project: projectId,
         user: userUUID,
@@ -124,7 +126,8 @@ export const saveDailyWorkLog = createAsyncThunk(
         end_time: endDateTime,
         duration: durationSeconds,
         work_type: work_type,
-        note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+        letter_number: resolvedLetter,
+        note: composeWorklogNote(note || (status === 'WORKED' ? `Worked on task` : `No work done`), resolvedLetter),
         // phase: phase,
         // submission_po_status: submission_po_status,
         // submission_invoice_status: submission_invoice_status,
@@ -192,6 +195,7 @@ export const updateDailyWorkplan = createAsyncThunk(
           id, // IMPORTANT: The ID of the task being updated
           project, subactivity, date, start_time, end_time,
           work_type, note, status, phase = "R0",
+          letter_number, letterNumber,
           submission_po_status = "", submission_invoice_status = "",
           approval_po_status = "", approval_invoice_status = ""
         } = log;
@@ -239,7 +243,8 @@ export const updateDailyWorkplan = createAsyncThunk(
           duration: durationSeconds,
           work_type: work_type,
           date: date,
-          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          letter_number: letter_number || letterNumber || "",
+          note: composeWorklogNote(note || (status === 'WORKED' ? `Worked on task` : `No work done`), letter_number || letterNumber),
           phase: phase,
           submission_po_status: submission_po_status,
           submission_invoice_status: submission_invoice_status,
@@ -302,6 +307,7 @@ export const saveDailyWorkLogBulk = createAsyncThunk(
           id, // IMPORTANT: The ID of the task being updated
           project, subactivity, date, start_time, end_time,
           work_type, note, status, phase = "R0",
+          letter_number, letterNumber,
           submission_po_status = "", submission_invoice_status = "",
           approval_po_status = "", approval_invoice_status = ""
         } = log;
@@ -349,7 +355,8 @@ export const saveDailyWorkLogBulk = createAsyncThunk(
           duration: durationSeconds,
           work_type: work_type,
           date: date,
-          note: note || (status === 'WORKED' ? `Worked on task` : `No work done`),
+          letter_number: letter_number || letterNumber || "",
+          note: composeWorklogNote(note || (status === 'WORKED' ? `Worked on task` : `No work done`), letter_number || letterNumber),
           phase: phase,
           submission_po_status: submission_po_status,
           submission_invoice_status: submission_invoice_status,
@@ -409,7 +416,7 @@ export const saveDailyWorkplan = createAsyncThunk(
         const {
           projectId, subActivityId, date, startTime, endTime,
           workType, note, status, phase = "R0",
-          stage, stageId,
+          stage, stageId, letter_number, letterNumber,
           submission_po_status = "", submission_invoice_status = "",
           approval_po_status = "", approval_invoice_status = ""
         } = log;
@@ -440,6 +447,7 @@ export const saveDailyWorkplan = createAsyncThunk(
           durationSeconds = 86400; // 24 hours
         }
 
+        const resolvedLetter = letter_number || letterNumber || "";
         // Return the formatted object for this specific row
         return {
           project: projectId,
@@ -452,7 +460,8 @@ export const saveDailyWorkplan = createAsyncThunk(
           duration: durationSeconds,
           work_type: workType,
           date: date,
-          note: note,
+          letter_number: resolvedLetter,
+          note: composeWorklogNote(note, resolvedLetter),
           stage: stage || stageId || null,
           phase: phase,
           submission_po_status: submission_po_status,
