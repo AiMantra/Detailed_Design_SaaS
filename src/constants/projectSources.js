@@ -302,15 +302,13 @@ export function getVisibleProjectTypeFilterOptions() {
     return PROJECT_TYPE_FILTER_OPTIONS.filter((o) => o.value === "aimantra");
   }
 
+  if (isSaptagonSubCompanyUser()) {
+    return PROJECT_TYPE_FILTER_OPTIONS;
+  }
+
   let options = PROJECT_TYPE_FILTER_OPTIONS.filter((o) => !SAPTAGON_FILTER_KEYS.has(o.value));
   if (!canSeeAllCompanies() && !isAimantraAllowedEmp()) {
     options = options.filter((o) => o.value !== "aimantra");
-  }
-  if (canSeeSaptagonProjectTypes()) {
-    options = options.concat(PROJECT_TYPE_FILTER_OPTIONS.filter((o) => SAPTAGON_FILTER_KEYS.has(o.value)));
-  }
-  if (isSaptagonOnlyUser()) {
-    options = options.filter((o) => o.value !== "hr");
   }
   return options;
 }

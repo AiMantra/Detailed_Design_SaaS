@@ -719,14 +719,25 @@ const TaskPlanner = () => {
         load();
     }, [dispatch, user, activeTab, startDate]);
 
-    const handleRefresh = async () => {
-        setRefreshing(true);
+    const reloadPlanners = async ({ showSpinner = false, date } = {}) => {
+        const fetchDate = date || startDate || getTodayStr();
+        if (showSpinner) setRefreshing(true);
         try {
-            await dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() })).unwrap();
+            const load = () => dispatch(fetchTaskPlanners({ user, activeTab, date: fetchDate })).unwrap();
+            let result = await load();
+            if (!(result?.planners || []).length) {
+                await new Promise((resolve) => setTimeout(resolve, 700));
+                result = await load();
+            }
+            return result;
         } catch (e) {
         } finally {
-            setRefreshing(false);
+            if (showSpinner) setRefreshing(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        await reloadPlanners({ showSpinner: true });
     };
 
     // ── My Tasks: filter + group by date ──────────────────────────────────────
@@ -1001,7 +1012,7 @@ const TaskPlanner = () => {
                         const payload = rows.map((r) => ({ ...r, date, status: r.status || "WORKED" }));
                         await dispatch(saveDailyWorkplan(payload)).unwrap();
                         setShowMultiLog(false);
-                        dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() }));
+                        await reloadPlanners({ date });
                     } catch (e) {
                     }
                 }}
@@ -1017,7 +1028,7 @@ const TaskPlanner = () => {
                     try {
                         const payload = rows.map((r) => ({ ...r, date, status: r.status || "WORKED" }));
                         await dispatch(updateDailyWorkplan(payload)).unwrap();
-                        dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() }));
+                        await reloadPlanners({ date });
                     } catch (e) {
                     }
                 }}
@@ -1025,7 +1036,7 @@ const TaskPlanner = () => {
                     try {
                         const payload = rows.map((r) => ({ ...r, date, status: r.status || "WORKED" }));
                         await dispatch(saveDailyWorkLogBulk(payload)).unwrap();
-                        dispatch(fetchTaskPlanners({ user, activeTab, date: startDate || getTodayStr() }));
+                        await reloadPlanners({ date });
                     } catch (e) {
                     }
                 }}

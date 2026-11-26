@@ -71,8 +71,10 @@ import { timeToSeconds, formatSecondsToDuration, formatDuration, formatDurationD
 import { CustomImageModal, CustomTooltip } from "../../utils/CustomFunctions";
 import { IMAGE_URL } from "../../services/api";
 import {
+    PROJECT_TYPE_FILTER_OPTIONS,
     getVisibleProjectTypeFilterOptions,
     getDefaultProjectTypeFilter,
+    isSaptagonSubCompanyUser,
     resolveListSourceId,
     getProjectTypeLabel,
     hidesProjectWeightage,
@@ -2190,7 +2192,10 @@ const TlProjectList = () => {
                                         className="w-full appearance-none pl-10 pr-10 py-3 border border-gray-200 rounded-xl bg-white text-sm text-gray-700 focus:ring-2 focus:ring-blue-500"
                                         aria-label="Filter by project type"
                                     >
-                                        {getVisibleProjectTypeFilterOptions().map((opt) => (
+                                        {(isSaptagonSubCompanyUser()
+                                            ? PROJECT_TYPE_FILTER_OPTIONS
+                                            : getVisibleProjectTypeFilterOptions()
+                                        ).map((opt) => (
                                             <option key={opt.value} value={opt.value}>
                                                 {opt.label}
                                             </option>
