@@ -1,7 +1,6 @@
 
 
 import React, { useState, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -61,37 +60,61 @@ const samePlannedWork = (planner, log) => {
     return Boolean(sameProject && sameActivity && sameStart);
 };
 
-const TruncatedNote = ({ text }) => {
-    const [tip, setTip] = useState(null);
-    if (!text) return null;
-
-    const showTip = (event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const width = 320;
-        const left = Math.min(rect.left, window.innerWidth - width - 12);
-        setTip({ text, top: rect.bottom + 6, left: Math.max(12, left) });
-    };
+const DescriptionNote = ({ text, className = "text-xs text-gray-600" }) => {
+    const [open, setOpen] = useState(false);
+    const body = String(text || "").trim();
 
     return (
         <>
-            <p
-                className="max-w-[180px] cursor-help truncate text-xs italic text-gray-400"
-                title={text}
-                onMouseEnter={showTip}
-                onMouseLeave={() => setTip(null)}
-            >
-                {text}
-            </p>
-            {tip &&
-                createPortal(
-                    <div
-                        className="pointer-events-none fixed z-[9999] max-w-[320px] whitespace-pre-wrap rounded-lg bg-slate-900 px-3 py-2 text-left text-xs leading-snug text-white shadow-xl"
-                        style={{ top: tip.top, left: tip.left }}
+            <div className="flex items-start gap-2 min-w-0">
+                <button
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className="shrink-0 mt-0.5 text-gray-400 hover:text-blue-600"
+                    title="View full description"
+                >
+                    <FileText size={14} />
+                </button>
+                <span className={`${className} line-clamp-2`}>
+                    {body || "No description provided."}
+                </span>
+            </div>
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                        onClick={() => setOpen(false)}
                     >
-                        {tip.text}
-                    </div>,
-                    document.body
+                        <motion.div
+                            initial={{ scale: 0.96, y: 16 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.96, y: 16 }}
+                            className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-gray-100"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                                    <FileText size={16} className="text-gray-400" />
+                                    Description
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setOpen(false)}
+                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-[60vh] overflow-y-auto">
+                                {body || "No description provided."}
+                            </p>
+                        </motion.div>
+                    </motion.div>
                 )}
+            </AnimatePresence>
         </>
     );
 };
@@ -398,7 +421,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 <Hourglass size={11} className="text-purple-400" />
                                                                 {p.duration || "—"}
                                                             </div>
-                                                            <TruncatedNote text={p.note} />
+                                                            <DescriptionNote text={p.note} />
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-gray-300 italic">Not planned</span>
@@ -423,7 +446,7 @@ const EmployeeComparisonCard = ({ employee, date }) => {
                                                                 <Hourglass size={11} className="text-teal-400" />
                                                                 {w.duration || "—"}
                                                             </div>
-                                                            <TruncatedNote text={w.note} />
+                                                            <DescriptionNote text={w.note} />
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-gray-300 italic">No log</span>
@@ -549,17 +572,10 @@ const MyTasksTable = ({ group }) => {
 
                                 {/* Task Note */}
                                 <td className="px-6 py-4 max-w-[280px]">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${isUnplanned ? "bg-purple-100 text-purple-600" : isCompleted ? "bg-emerald-100 text-emerald-600" : isUnscheduled ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"}`}>
-                                            {isUnplanned ? <Sparkles size={16} /> : <FileText size={16} />}
-                                        </div>
-                                        <span
-                                            className="text-sm font-medium text-gray-800 break-words leading-snug"
-                                            title={task.note || "Untitled task"}
-                                        >
-                                            {task.note || "Untitled task"}
-                                        </span>
-                                    </div>
+                                    <DescriptionNote
+                                        text={task.note}
+                                        className="text-sm font-medium text-gray-800"
+                                    />
                                 </td>
 
                                 {/* Project details stacked */}

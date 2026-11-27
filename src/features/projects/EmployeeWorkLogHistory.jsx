@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   Search, Calendar, Clock, FileText, FolderOpen, RefreshCw,
   Briefcase, AlignLeft, ChevronDown, ChevronRight, User,
-  CheckCircle2, CircleDashed, Hourglass
+  CheckCircle2, CircleDashed, Hourglass, X
 } from "lucide-react";
 
 import LoadingModal from "../../components/modals/LoadingModal";
@@ -30,6 +30,68 @@ const getStatusConfig = (status) => {
     badge: "bg-orange-50 text-orange-700 border-orange-200",
     dot: "bg-orange-400",
   };
+};
+
+const DescriptionNote = ({ text, className = "text-sm text-gray-600" }) => {
+  const [open, setOpen] = useState(false);
+  const body = String(text || "").trim();
+
+  return (
+    <>
+      <div className="flex items-start gap-2 min-w-0 whitespace-normal">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className="shrink-0 mt-0.5 text-gray-400 hover:text-blue-600"
+          title="View full description"
+        >
+          <FileText size={14} />
+        </button>
+        <span className={`${className} line-clamp-2`}>
+          {body || "No description provided."}
+        </span>
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 16 }}
+              className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-gray-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText size={16} className="text-gray-400" />
+                  Description
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-[60vh] overflow-y-auto">
+                {body || "No description provided."}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 };
 
 // ─── Format Helpers ───────────────────────────────────────────────────────────
@@ -182,12 +244,7 @@ const EmployeeHistoryCard = ({ employee, defaultExpanded = false }) => {
 
                               {/* Description */}
                               <td className="px-6 py-4 max-w-[280px] whitespace-normal">
-                                <div className="flex items-start gap-2">
-                                  <FileText size={14} className="text-gray-400 shrink-0 mt-0.5" />
-                                  <span className="text-sm text-gray-600 line-clamp-2">
-                                    {log.description || "No description provided."}
-                                  </span>
-                                </div>
+                                <DescriptionNote text={log.description} />
                               </td>
 
                               {/* Hours */}
